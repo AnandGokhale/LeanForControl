@@ -2,43 +2,49 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.MetricSpace.Basic
+import LeanForControl.Lyapunov.definitions
 
 variable {n : ℕ}
 
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 
--- We define a trajectory
-def IsTrajectory (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
-  ∀ t : ℝ, HasDerivAt φ (f (φ t)) t
-
--- An equilibrium point
-def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  f x_eq = 0
-
--- And Lyapunov stability
-def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  ∀ ε > 0, ∃ δ > 0, ∀ φ : ℝ → ℝⁿ,
-    IsTrajectory φ f → -- Removed explicit 'n'
-    ‖φ 0 - x_eq‖ < δ →
-    ∀ t ≥ 0, ‖φ t - x_eq‖ < ε
-
-
--- Finally, the definition of a Lyapunov function
-structure IsLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
-  hcont    : Continuous V
-  hzero    : V x_eq = 0
-  hpos     : ∀ x : ℝⁿ, x ≠ x_eq → 0 < V x
-  hderiv   : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → -- Removed explicit 'n'
-              ∀ t : ℝ, HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t
-  hnonincr : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → -- Removed explicit 'n'
-              ∀ t : ℝ, fderiv ℝ V (φ t) (f (φ t)) ≤ 0
-
+lemma global_is_local_lyapunov (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
+    (hV : IsGlobalLyapunovFunction f V x_eq) :
+    IsLocalLyapunovFunction f V x_eq := by
+  obtain ⟨hcont, halphas, hderiv, hnonincr⟩ := hV
+  -- Extract the Class K_infty bounding functions and their core properties
+  -- We specifically pull out the zero and strict monotonicity properties of α₁ and α₂
+  obtain ⟨α₁, α₂, ⟨⟨_, hα₁_zero, hα₁_strict_mono⟩, _⟩, ⟨⟨_, hα₂_zero, _⟩, _⟩, h_sandwich⟩ := halphas
+  refine ⟨hcont, ?_, ?_, hderiv, hnonincr⟩
+  · -- Proof of hzero: V(x_eq) = 0
+    -- Since α₁(‖x_eq - x_eq‖) ≤ V(x_eq) ≤ α₂(‖x_eq - x_eq‖)
+    have h_upper : V x_eq ≤ 0 := by
+      have h2 := (h_sandwich x_eq).2
+      simp only [sub_self, norm_zero] at h2
+      rwa [hα₂_zero] at h2
+    have h_lower : 0 ≤ V x_eq := by
+      have h1 := (h_sandwich x_eq).1
+      simp only [sub_self, norm_zero] at h1
+      rwa [hα₁_zero] at h1
+    linarith
+  · -- Proof of hpos: ∀ x ≠ x_eq, 0 < V x
+    intro x hx
+    -- The norm is strictly positive because x ≠ x_eq
+    have h_norm_pos : 0 < ‖x - x_eq‖ := norm_sub_pos_iff.mpr hx
+    -- Apply the lower bound from the sandwich condition: α₁(‖x - x_eq‖) ≤ V(x)
+    have h_lower := (h_sandwich x).1
+    -- Use strict monotonicity of α₁ to show α₁(‖x - x_eq‖) > 0
+    have h_alpha_pos : 0 < α₁ ‖x - x_eq‖ := by
+      have h_mono : α₁ 0 < α₁ ‖x - x_eq‖ :=
+        hα₁_strict_mono (Set.mem_Ici.mpr (le_refl 0)) (Set.mem_Ici.mpr (le_of_lt h_norm_pos)) h_norm_pos
+      rwa [hα₁_zero] at h_mono
+    linarith
 
 
 -- Lemma 1: V is nonincreasing along trajectories
 lemma V_nonincreasing (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
-    (hV : IsLyapunovFunction f V x_eq)
+    (hV : IsLocalLyapunovFunction f V x_eq)
     (φ : ℝ → ℝⁿ) (htraj : IsTrajectory φ f) :
     Antitone (V ∘ φ) := by
   have h1 : ∀ t, HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t := fun t => hV.hderiv φ htraj t
@@ -54,11 +60,22 @@ lemma V_nonincreasing (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝ�
 
 -- A useful consequence: V(φ t) ≤ V(φ 0) for all t ≥ 0
 lemma V_le_initial (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
-    (hV : IsLyapunovFunction f V x_eq)
+    (hV : IsLocalLyapunovFunction f V x_eq)
     (φ : ℝ → ℝⁿ) (htraj : IsTrajectory φ f)
     (t : ℝ) (ht : 0 ≤ t) :
     V (φ t) ≤ V (φ 0) :=
   V_nonincreasing f V x_eq hV φ htraj ht
+
+
+lemma V_le_initial_global (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
+    (hV : IsGlobalLyapunovFunction f V x_eq)
+    (φ : ℝ → ℝⁿ) (htraj : IsTrajectory φ f)
+    (t : ℝ) (ht : 0 ≤ t) :
+    V (φ t) ≤ V (φ 0) := by
+  have hV_local : IsLocalLyapunovFunction f V x_eq := global_is_local_lyapunov f V x_eq hV
+  exact V_le_initial f V x_eq hV_local φ htraj t ht
+
+
 
 -- Lemma 2: trajectories are continuous)
 lemma trajectory_continuous (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) (htraj : IsTrajectory φ f) :
@@ -76,10 +93,10 @@ lemma sphere_nonempty (x_eq : ℝⁿ) (ε : ℝ) (hn : 0 < n) (hε : 0 < ε) :
 
 
 -- The main theorem: if there exists a Lyapunov function, then the equilibrium is stable
-theorem lyapunov_stable
+theorem local_lyapunov_stable
     (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
     (hn : 0 < n)
-    (hV : IsLyapunovFunction f V x_eq) :
+    (hV : IsLocalLyapunovFunction f V x_eq) :
     LyapunovStable f x_eq := by
   intro ε hε
   -- Step 1: The sphere of radius epsilon is compact and nonempty
@@ -157,4 +174,28 @@ theorem lyapunov_stable
     have h := hδ' hclose_δ
     rw [hV.hzero, Real.dist_eq] at h
     linarith [abs_lt.mp (by linarith : |V (φ 0) - 0| < m)]
+  linarith
+
+
+
+-- The core global bound: α₁(\|φ(t)\|) ≤ α₂(\|φ(0)\|)
+-- This inequality proves that the trajectory is globally bounded by the initial state.
+theorem global_lyapunov_bound
+    (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
+    (hV : IsGlobalLyapunovFunction f V x_eq)
+    (φ : ℝ → ℝⁿ) (htraj : IsTrajectory φ f)
+    (t : ℝ) (ht : 0 ≤ t) :
+    ∃ α₁ α₂ : ℝ → ℝ, IsClassKInfty α₁ ∧ IsClassKInfty α₂ ∧
+      α₁ ‖φ t - x_eq‖ ≤ α₂ ‖φ 0 - x_eq‖ := by
+  -- Extract the Class K_infty functions from the Lyapunov property
+  obtain ⟨α₁, α₂, hα₁_K, hα₂_K, h_sandwich⟩ := hV.halphas
+  -- Provide them to fulfill the existential goal
+  refine ⟨α₁, α₂, hα₁_K, hα₂_K, ?_⟩
+  -- Step 1: α₁(‖φ t - x_eq‖) ≤ V(φ t) from the lower sandwich bound
+  have h1 : α₁ ‖φ t - x_eq‖ ≤ V (φ t) := (h_sandwich (φ t)).1
+  -- Step 2: V(φ t) ≤ V(φ 0) because V is non-increasing along the trajectory
+  have h2 : V (φ t) ≤ V (φ 0) := V_le_initial_global f V x_eq hV φ htraj t ht
+  -- Step 3: V(φ 0) ≤ α₂(‖φ 0 - x_eq‖) from the upper sandwich bound
+  have h3 : V (φ 0) ≤ α₂ ‖φ 0 - x_eq‖ := (h_sandwich (φ 0)).2
+  -- Step 4: Chain the inequalities together
   linarith
