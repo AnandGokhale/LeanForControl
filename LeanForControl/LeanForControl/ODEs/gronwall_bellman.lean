@@ -28,16 +28,12 @@ Multiplying by exp(M(t)) and using exp(M(t))·exp(−M(s)) = exp(∫_s^t μ):
 
 lemma hasDerivAt_integral {a b : ℝ} {μ : ℝ → ℝ}
     (hμ : ContinuousOn μ (Icc a b)) (t : ℝ) (ht : t ∈ Ioo a b) :
-    HasDerivAt (fun x ↦ ∫ τ in a..x, μ τ) (μ t) t := by
-  have h_nhds : Icc a b ∈ nhds t := Icc_mem_nhds ht.1 ht.2
-  have h_cont : ContinuousAt μ t := hμ.continuousAt h_nhds
-  have ht_Icc : t ∈ Icc a b := ⟨le_of_lt ht.1, le_of_lt ht.2⟩
-  have h_int : IntervalIntegrable μ volume a t :=
-    (hμ.mono (Icc_subset_Icc_right ht_Icc.2)).intervalIntegrable_of_Icc ht_Icc.1
-  have hμ_Ioo : ContinuousOn μ (Ioo a b) := hμ.mono Ioo_subset_Icc_self
-  have h_meas : StronglyMeasurableAtFilter μ (nhds t) volume :=
-    hμ_Ioo.stronglyMeasurableAtFilter isOpen_Ioo t ht
-  exact intervalIntegral.integral_hasDerivAt_right h_int h_meas h_cont
+    HasDerivAt (fun x ↦ ∫ τ in a..x, μ τ) (μ t) t :=
+  intervalIntegral.integral_hasDerivAt_right
+    ((hμ.mono (Icc_subset_Icc_right ht.2.le)).intervalIntegrable_of_Icc ht.1.le)
+    ((hμ.mono Ioo_subset_Icc_self).stronglyMeasurableAtFilter isOpen_Ioo t ht)
+    (hμ.continuousAt (Icc_mem_nhds ht.1 ht.2))
+
 
 lemma continuousOn_integral_Icc {a t : ℝ} {f : ℝ → ℝ}
     (hf_int : IntegrableOn f (Icc a t) volume) :
@@ -104,16 +100,8 @@ theorem gronwall_inequality
   have hM_a : M a = 0 := by simp [M]
   have hw_a : w a = 0 := by simp [w, hM_a, hz_a]
   -- ── FTC derivatives ─────────────────────────────────────────────
-  have hM_deriv : ∀ t ∈ Ioo a b, HasDerivAt M (μ t) t := by
-    intro t ht
-    have ht_Icc : t ∈ Icc a b := ⟨le_of_lt ht.1, le_of_lt ht.2⟩
-    have h_nhds : Icc a b ∈ nhds t := Icc_mem_nhds ht.1 ht.2
-    have h_cont : ContinuousAt μ t := hμ.continuousAt h_nhds
-    have h_int : IntervalIntegrable μ volume a t := hμ_ible t ht_Icc
-    have hμ_Ioo : ContinuousOn μ (Ioo a b) := hμ.mono Ioo_subset_Icc_self
-    have h_meas : StronglyMeasurableAtFilter μ (nhds t) volume :=
-      hμ_Ioo.stronglyMeasurableAtFilter isOpen_Ioo t ht
-    exact intervalIntegral.integral_hasDerivAt_right h_int h_meas h_cont
+  have hM_deriv : ∀ t ∈ Ioo a b, HasDerivAt M (μ t) t :=
+    fun t ht => hasDerivAt_integral hμ t ht
   have hz_deriv : ∀ t ∈ Ioo a b, HasDerivAt z (μ t * y t) t := by
     intro t ht
     have ht_Icc : t ∈ Icc a b := ⟨le_of_lt ht.1, le_of_lt ht.2⟩

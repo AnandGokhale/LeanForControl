@@ -73,8 +73,8 @@ theorem diniDerivRight_of_hasDerivWithinAt {f : ℝ → ℝ} {t L : ℝ}
     -- 4. Clean up the denominator: (t + h - t) becomes h
     apply Tendsto.congr' _ h_comp
     filter_upwards with h
-    have h_eq : t + h - t = h := by ring
-    rw [Function.comp_apply, slope_def_field, h_eq]
+    rw [Function.comp_apply, slope_def_field]
+    ring
   -- Since the limit exists and the filter 𝓝[>] 0 is nontrivial (NeBot),
   -- the limsup evaluates exactly to the limit.
   exact Tendsto.limsup_eq h_tendsto
