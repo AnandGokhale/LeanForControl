@@ -12,7 +12,7 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "LeanArchitect"
 git = "https://github.com/hanwenzhu/LeanArchitect.git"
-rev = "main"
+rev = "f1c14e1c14290117ffcb017cf2d089a6a5e1523a"
 
 [[require]]
 name = "mathlib"

@@ -38,7 +38,7 @@
    "rev": "f1c14e1c14290117ffcb017cf2d089a6a5e1523a",
    "name": "LeanArchitect",
    "manifestFile": "lake-manifest.json",
-   "inputRev": "main",
+   "inputRev": "f1c14e1c14290117ffcb017cf2d089a6a5e1523a",
    "inherited": false,
    "configFile": "lakefile.lean"},
   {"url": "https://github.com/leanprover/leansqlite",

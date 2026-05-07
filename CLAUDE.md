@@ -116,3 +116,30 @@ When needed, inspect local hypotheses and exact goal state before guessing.
 No cheats.
 
 If something is hard, cut it into smaller true statements and prove those.
+
+## Reporting workflow
+
+Three artifacts, three audiences:
+
+- **Lean source** — proof-checked. `lake build` green is the only definition of "done". `sorry`/`admit`/`axiom` count stays at zero.
+- **`blueprint/web/`** — human-readable rendering. `@[blueprint "label" (statement := /-- LaTeX -/)]` exposes a decl. The `statement` is prose and is **not checked against the Lean signature**: keep it tight, never paraphrase, never overpromise. Generated nodes under `.lake/build/blueprint/` are read-only.
+- **`notes/`** — append-only directory of small mini-updates named `N-slug.md`, where `N` is the next integer past the highest existing (gaps from deletions are fine, no reindexing). One focused update per file: what landed, a decision, an open follow-up, a blocker. Link to blueprint labels and Lean file:line; do not restate the math, do not paste generated content. Bridge to the next session and to web agents.
+
+Mental model: Lean = test suite (stronger than pytests), blueprint = reviewable artifact, `notes/` = handoff.
+
+End-of-session, project root:
+
+```sh
+lake build                          # all proofs hold
+$EDITOR notes/N-<slug>.md           # one focused mini-update; N = max existing + 1
+lake build :blueprint               # extract LaTeX nodes
+conda activate cortese              # leanblueprint lives in env `cortese`
+leanblueprint checkdecls            # every label resolves to a Lean decl
+leanblueprint web                   # render blueprint/web/
+git add -A && git status            # stage everything; eyeball the diff
+git commit -m "<short, factual>"    # one commit per sprint
+```
+
+Commit message: lead with what changed (one line, imperative), reference the
+new `notes/N-slug.md` so the handoff and the commit point at each other. Do
+not push; the user pushes when ready.
