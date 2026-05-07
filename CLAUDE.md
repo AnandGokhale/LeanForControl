@@ -136,9 +136,30 @@ lake build :blueprint               # extract LaTeX nodes
 conda activate cortese              # leanblueprint lives in env `cortese`
 leanblueprint checkdecls            # every label resolves to a Lean decl
 leanblueprint web                   # render blueprint/web/
-git add -A && git status            # stage everything; eyeball the diff
+git status                          # READ — see "staging discipline" below
+git add <specific paths>            # prefer named paths over `-A`
+git status                          # confirm what's staged before committing
 git commit -m "<short, factual>"    # one commit per sprint
+zip exports/N-<slug>.zip \
+    $(git diff --name-only HEAD~1 HEAD -- '*.lean')   # web-agent handoff
 ```
+
+The `exports/N-<slug>.zip` mirrors the basename of the new
+`notes/N-<slug>.md`, contains only the `.lean` files that changed in this
+sprint's commit, and is gitignored (`exports/*.zip`). Hand this zip to the
+web agent alongside the matching note.
+
+**Staging discipline.** Before staging, read `git status` carefully. If any
+untracked entry looks like a build artifact, generated file, or OS junk —
+`.aux`/`.log`/`.toc`/`.paux`, plastex output, `blueprint/web/`,
+`blueprint/print/`, `blueprint/lean_decls`, `.DS_Store`, anything under a
+new `.lake/`-style cache directory introduced by a new dep — update
+`.gitignore` first, re-run `git status`, and only then stage. Use `git add -A`
+**only when** you have just verified that every untracked path on the list
+is something you intend to track. The cost of accidentally tracking
+generated artifacts is high: the blob lives in history forever, removing it
+later is messy, and the next CI/agent run will silently regenerate
+divergent copies.
 
 Commit message: lead with what changed (one line, imperative), reference the
 new `notes/N-slug.md` so the handoff and the commit point at each other. Do
