@@ -1,99 +1,139 @@
-# Next steps for the local agent
+# Next phase: Hautus for observability
 
-## Immediate target
+## Goal
 
-Do **not** start Hautus yet.
+Prove the observability Hautus lemma before touching the controllability side.
 
-The next goal is to bridge:
+Target shape:
 
-- observability as a kernel statement
-- observability as a rank / full-column-rank statement
+\[
+\rank \begin{bmatrix} \lambda I - A \\ C \end{bmatrix} = n
+\qquad
+\text{for all } \lambda \in \mathbb{C}
+\]
 
-That infrastructure will be needed anyway.
+Do observability first.
+
+Do not start controllability Hautus yet.
 
 ---
 
-## Step 1: add `MatrixLemmas.lean`
+## File plan
 
 Create:
 
-- `LeanForControl/LinearSystems/MatrixLemmas.lean`
+- `LeanForControl/LinearSystems/Hautus.lean`
 
-Put only matrix-level facts here.
-
-Do **not** put control-specific theorems here.
-
----
-
-## Step 2: move to a stronger scalar assumption
-
-Keep the current definitions over a weak scalar type.
-
-For the next lemmas, work over a field.
-
-Reason:
-
-- rank and kernel tools are cleaner
-- full-column-rank statements are cleaner
-- this avoids fighting semiring generality too early
-
----
-
-## Step 3: prove the matrix-to-linear-map bridge
-
-Add lemmas connecting:
-
-- `observabilityMatrix A C *ᵥ x = 0`
-- kernel of the associated linear map
-- rank / finrank / full-column-rank formulations
-
-The agent should search mathlib first instead of inventing custom notions.
-
----
-
-## Step 4: prove the rank version of observability
-
-Target theorem:
-
-- observability iff the observability matrix has full column rank
-
-Equivalent rank form is also fine.
-
-This should live in `Observability.lean`, using helper lemmas from `MatrixLemmas.lean`.
-
----
-
-## Step 5: mirror the same pattern for controllability
-
-In `Controllability.lean`:
-
-- add the matching kernel / range / rank infrastructure
-- prove the controllability-matrix characterization before Hautus
-
----
-
-## Step 6: only then start Hautus
-
-Start with observability-side Hautus first.
-
-Do not begin from the final rank statement immediately.
-
-Better route:
-
-1. failure of observability
-2. invariant unobservable subspace
-3. eigenvector witness
-4. conclude Hautus fails
-
-Then prove the converse.
-
-Only after that decide whether to get controllability by duality or prove it directly.
-
----
-
-## File actions
-
-Next files to touch:
+If a proof needs reusable matrix-only facts, put those in:
 
 - `LeanForControl/LinearSystems/MatrixLemmas.lean`
-- `LeanForControl/LinearSystems/Observability.lean`
+
+Keep control statements out of `MatrixLemmas.lean`.
+
+---
+
+## Scalar field
+
+For Hautus, work over `ℂ`.
+
+Do not fight this.
+
+The theorem is about eigenvalues, so move to the field that naturally supports that machinery.
+
+---
+
+## Proof order
+
+### Step 1
+
+Define the Hautus observability test cleanly.
+
+Do this in a way that does not commit too early to one exact rank API if the linear-map form is easier.
+
+### Step 2
+
+Prove the **failure direction** first:
+
+- if `(A, C)` is not observable
+- then there exists `λ : ℂ` such that the Hautus test fails
+
+Recommended route:
+
+1. define the unobservable subspace
+2. prove it is `A`-invariant
+3. show if observability fails, this subspace is nontrivial
+4. extract an eigenvector from the nontrivial invariant subspace
+5. use that eigenvector to violate the Hautus test
+
+This is the main job of the phase.
+
+### Step 3
+
+Then prove the converse:
+
+- if the Hautus test fails for some `λ`
+- then `(A, C)` is not observable
+
+This direction should be shorter.
+
+Use the witness vector directly.
+
+### Step 4
+
+Only after both directions are stable, package the full iff theorem.
+
+---
+
+## Immediate helper lemmas to expect
+
+Likely needed:
+
+- unobservable subspace is a submodule
+- unobservable subspace is `A`-invariant
+- nontrivial finite-dimensional invariant subspace over `ℂ` contains an eigenvector
+- witness vector from Hautus failure implies non-observability
+- reassociation lemmas for matrix-vector products if needed
+
+Do not prove all helpers up front.
+
+Add them only when the proof demands them.
+
+---
+
+## Strategy rules
+
+Prefer:
+
+- invariant-subspace arguments
+- kernel / linear-map reasoning
+- short helper lemmas
+- exact witness-based proofs
+
+Avoid:
+
+- brute-force rank manipulation
+- giant block-matrix proofs
+- starting from the final statement and thrashing on syntax
+- touching controllability Hautus in this sprint
+
+---
+
+## Reporting
+
+At the end of the phase:
+
+1. `lake build` green
+2. update `notes.md`
+3. regenerate blueprint if new `@[blueprint]` declarations were added
+
+---
+
+## Definition of success
+
+This phase is a success if:
+
+- `Hautus.lean` exists and compiles
+- the observability Hautus failure direction is proved
+- ideally the full observability Hautus iff is proved
+- no `sorry`, `admit`, or `axiom`
+- build stays green
