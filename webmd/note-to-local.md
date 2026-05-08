@@ -1,139 +1,194 @@
-# Next phase: Hautus for observability
-
 ## Goal
 
-Prove the observability Hautus lemma before touching the controllability side.
+Build a Lean library for core finite-dimensional linear systems theory in the spirit of Hespanha.
 
-Target shape:
+Long-term targets include:
 
-\[
-\rank \begin{bmatrix} \lambda I - A \\ C \end{bmatrix} = n
-\qquad
-\text{for all } \lambda \in \mathbb{C}
-\]
+- controllability
+- observability
+- Hautus tests
+- stability and Lyapunov theory
+- LQR
+- estimator theory
 
-Do observability first.
+## Current campaign
 
-Do not start controllability Hautus yet.
+Use `dp-infhor.tex` as the current proving ground.
 
----
+This is not the final goal. It is a focused subproject chosen because it forces the right reusable infrastructure:
 
-## File plan
+- semidefinite covariance geometry
+- block-matrix algebra
+- finite-horizon quadratic optimization
+- Riccati / LQR wrappers
+- detectability and coercivity arguments
 
-Create:
+## Rule for what to prove now
 
-- `LeanForControl/LinearSystems/Hautus.lean`
+A result belongs in the current queue if it is either:
 
-If a proof needs reusable matrix-only facts, put those in:
+1. needed directly for `dp-infhor.tex`, or
+2. clearly part of the long-term linear-systems backbone
 
-- `LeanForControl/LinearSystems/MatrixLemmas.lean`
+Avoid one-off technical work that serves neither.
 
-Keep control statements out of `MatrixLemmas.lean`.
+## Recap
 
----
+Already landed:
 
-## Scalar field
+- observability matrix
+- controllability matrix
+- rank characterizations
+- observability Hautus over `ℂ`
+- reporting / blueprint infrastructure
 
-For Hautus, work over `ℂ`.
+So the linear-systems base is real. The next work should broaden it in the direction needed by `dp-infhor.tex`.
 
-Do not fight this.
+## Immediate todo
 
-The theorem is about eigenvalues, so move to the field that naturally supports that machinery.
+Work in this order:
 
----
+1. Wrap up the current work and finish up the controllability Hautus sprint
+1. Switch focus to dp-infhor.tex
+    1. pass the execution gates
+    2. formalize semidefinite-prior geometry
+    3. formalize the reduced finite-horizon quadratic problem
+    4. import or wrap the standard infinite-horizon LQR convergence fact
+    5. prove coercivity of the nonstabilizable block
+    6. prove cross-term decay
+    7. prove convergence of the reduced minimizer and optimal value
 
-## Proof order
+## Roadmap for dp-infhor.tex
 
-### Step 1
+### Phase 0 — execution gates
 
-Define the Hautus observability test cleanly.
+Before Phase 1, check or build the required infrastructure: matrix order, block-matrix identities, quadratic minimization lemmas, semidefinite-prior primitives, discrete-time recursion conventions, imported-fact wrappers, and a fixed file split.
 
-Do this in a way that does not commit too early to one exact rank API if the linear-map form is easier.
+### Phase 1 — semidefinite prior geometry
 
-### Step 2
+Need:
 
-Prove the **failure direction** first:
+- support/range constraint
+- block covariance decomposition
+- C2 implies the lower-right prior block is positive definite
+- range parameterization of the semidefinite block
 
-- if `(A, C)` is not observable
-- then there exists `λ : ℂ` such that the Hautus test fails
+Deliverables:
 
-Recommended route:
+- `Σ₂ ≻ 0`
+- reduced coordinates `e₁ - a₁ = Z₁ η`
+- prior quadratic term rewritten in `η`
 
-1. define the unobservable subspace
-2. prove it is `A`-invariant
-3. show if observability fails, this subspace is nontrivial
-4. extract an eigenvector from the nontrivial invariant subspace
-5. use that eigenvector to violate the Hautus test
+### Phase 2 — finite-horizon reduced problem
 
-This is the main job of the phase.
+Need:
 
-### Step 3
+- forecasted-disturbance Bellman recursion
+- matrices `P_T`, `Y_T`, `S_T`
+- reduced quadratic form
+- positive definite reduced Hessian
+- uniqueness of the finite-horizon minimizer
 
-Then prove the converse:
+Deliverables:
 
-- if the Hautus test fails for some `λ`
-- then `(A, C)` is not observable
+- forecasted-disturbance LQR lemma
+- reduced quadratic-form lemma
+- finite-horizon minimizer theorem
 
-This direction should be shorter.
+### Phase 3 — asymptotic controllable block
 
-Use the witness vector directly.
+Need:
 
-### Step 4
+- standard infinite-horizon LQR convergence wrapper
+- limiting Riccati solution
+- limiting gain and closed loop
 
-Only after both directions are stable, package the full iff theorem.
+Deliverables:
 
----
+- `P_T → P`
+- `K_T → K`
+- `A_c,T → A_c`
+- `A_c` Schur
 
-## Immediate helper lemmas to expect
+### Phase 4 — coercivity of the nonstabilizable block
 
-Likely needed:
+Need:
 
-- unobservable subspace is a submodule
-- unobservable subspace is `A`-invariant
-- nontrivial finite-dimensional invariant subspace over `ℂ` contains an eigenvector
-- witness vector from Hautus failure implies non-observability
-- reassociation lemmas for matrix-vector products if needed
+- finite zero-output test
+- finite-window coercivity
+- sampled Gramian divergence
+- growth of the tail block
 
-Do not prove all helpers up front.
+Deliverables:
 
-Add them only when the proof demands them.
+- zero-output test
+- coercivity corollary
+- `λ_min(S_T) → ∞`
+- `λ_min(Σ₂⁻¹ + S_T) → ∞`
 
----
+### Phase 5 — cross-term decay
 
-## Strategy rules
+Need:
 
-Prefer:
+- Schur-complement positivity bound
+- control of `P_T - Y_T M_T⁻¹ Y_T'`
+- use coercive growth of `M_T = Σ₂⁻¹ + S_T`
 
-- invariant-subspace arguments
-- kernel / linear-map reasoning
-- short helper lemmas
-- exact witness-based proofs
+Deliverables:
 
-Avoid:
+- `M_T⁻¹ Y_T' → 0`
+- `Y_T M_T⁻¹ → 0`
+- `M_T⁻¹ Σ₂⁻¹ a₂ → 0`
 
-- brute-force rank manipulation
-- giant block-matrix proofs
-- starting from the final statement and thrashing on syntax
-- touching controllability Hautus in this sprint
+### Phase 6 — infinite-horizon limit
 
----
+Split the final result into small pieces.
 
-## Reporting
+Deliverables:
 
-At the end of the phase:
+1. closed-form minimizer in the nonstabilizable variable for fixed `η`
+2. coefficientwise convergence of the reduced objective
+3. `η_T* → η_∞`
+4. `e₂(0|T)* → 0`
+5. optimal value convergence
+6. packaged infinite-horizon estimator theorem
 
-1. `lake build` green
-2. update `notes.md`
-3. regenerate blueprint if new `@[blueprint]` declarations were added
+## Theorem queue
 
----
+### Preliminary lemmas
 
-## Definition of success
+- semidefinite initial variance optimization lemma
+- `Σ₂ ≻ 0`
+- prior diagonalization / range parameterization
+- forecasted-disturbance LQR lemma
+- reduced quadratic-form lemma
+- reduced Hessian positive definite
+- standard LQR convergence wrapper
+- finite zero-output test
+- finite-window coercivity
+- Gramian divergence / tail coercivity
+- Schur-complement cross-term decay lemmas
 
-This phase is a success if:
+### Main results
 
-- `Hautus.lean` exists and compiles
-- the observability Hautus failure direction is proved
-- ideally the full observability Hautus iff is proved
+- convergence of the reduced minimizer
+- convergence of the nonstabilizable initial block to zero
+- convergence of the optimal value
+- packaged infinite-horizon estimator theorem
+
+## Working rules
+
+- stay in `ℝ` unless a lemma truly needs `ℂ`
+- prove reusable lemmas when possible
+- keep matrix plumbing out of main theorem files
+- do not wander into unrelated control topics
+- do not jump to the final proposition too early
+
+## Done condition
+
+This campaign is successful when:
+
+- the `dp-infhor.tex` chain is formalized
+- the reusable pieces clearly strengthen the linear-systems library
+- `lake build` stays green
 - no `sorry`, `admit`, or `axiom`
-- build stays green
