@@ -10,9 +10,23 @@ weak.linter.mathlibStandardSet = true
 maxSynthPendingDepth = 3
 
 [[require]]
+name = "LeanArchitect"
+git = "https://github.com/hanwenzhu/LeanArchitect.git"
+rev = "f1c14e1c14290117ffcb017cf2d089a6a5e1523a"
+
+[[require]]
 name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.30.0-rc2"
 
+
+[[require]]
+name = "checkdecls"
+git = "https://github.com/PatrickMassot/checkdecls.git"
+
+[[require]]
+name = "«doc-gen4»"
+git = "https://github.com/leanprover/doc-gen4"
+rev = "main"
 [[lean_lib]]
 name = "LeanForControl"

@@ -1,0 +1,73 @@
+% This file is the actual content of the blueprint.
+% It is consumed by both the web and the print build.
+% Do not put \begin{document} here.
+
+% Pull in the LaTeX nodes generated from `@[blueprint]`-tagged Lean
+% declarations. The library file is rebuilt by `lake build :blueprint`
+% and lives under .lake/build/blueprint/library/.
+\input{../../.lake/build/blueprint/library/LeanForControl}
+
+\chapter{Linear systems}
+
+\section{Observability and controllability matrices}
+
+For a finite-dimensional linear system
+\[
+  \dot{x} = A x + B u, \qquad y = C x,
+\]
+with state matrix $A$, input matrix $B$, and output matrix $C$, this section
+collects the (finite-horizon) controllability and observability matrices and
+the bridge theorem connecting the textbook observability predicate to the
+kernel of the observability matrix.
+
+\subsection{Observability matrix}
+
+\inputleannode{def:observabilityMatrix}
+
+\inputleannode{def:isObservable}
+
+\inputleannode{lem:observabilityMatrix-apply}
+
+\inputleannode{lem:observabilityMatrix-mulVec-apply}
+
+\subsection{Controllability matrix}
+
+\inputleannode{def:controllabilityMatrix}
+
+\inputleannode{lem:controllabilityMatrix-apply}
+
+\inputleannode{def:isControllable}
+
+\subsection{Milestone: observability iff trivial kernel of \texorpdfstring{$\mathcal{O}$}{O}}
+
+\inputleannode{thm:isObservable-iff-ker-trivial}
+
+\subsection{Rank characterizations}
+
+\inputleannode{thm:isObservable-iff-rank}
+
+\inputleannode{thm:isControllable-iff-rank}
+
+\subsection{Hautus observability}
+
+\inputleannode{def:unobservableSubspace}
+
+\inputleannode{thm:unobservable-eq-bot-iff-observable}
+
+\inputleannode{lem:unobservableSubspace-invariant}
+
+\inputleannode{def:hautusObservabilityMatrix}
+
+\inputleannode{lem:hautus-mulVec-eq-zero-iff}
+
+\inputleannode{thm:not-isObservable-implies-hautus-failure}
+
+\inputleannode{thm:hautus-failure-implies-not-isObservable}
+
+\inputleannode{thm:isObservable-iff-hautus}
+
+\subsection{Hautus controllability}
+
+\inputleannode{def:hautusControllabilityMatrix}
+
+\inputleannode{thm:isControllable-iff-hautus}
