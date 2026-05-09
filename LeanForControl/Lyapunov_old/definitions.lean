@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.MetricSpace.Basic
+import Mathlib.Analysis.Calculus.ContDiff.Defs
 variable {n : ℕ}
 
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
@@ -38,11 +39,17 @@ def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
     ‖φ 0 - x_eq‖ < δ →
     ∀ t ≥ 0, ‖φ t - x_eq‖ < ε
 
-def AsymptoticallyStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∃ c > 0, ∀ φ : ℝ → ℝⁿ,
     IsTrajectory φ f →
     ‖φ 0 - x_eq‖ < c →
+    Filter.Tendsto φ Filter.atTop (nhds x_eq)
+
+def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  LyapunovStable f x_eq ∧
+  ∀ φ : ℝ → ℝⁿ,
+    IsTrajectory φ f →
     Filter.Tendsto φ Filter.atTop (nhds x_eq)
 
 
@@ -72,3 +79,15 @@ structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (
               ∀ t : ℝ, HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t
   hnonincr : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → -- Removed explicit 'n'
               ∀ t : ℝ, fderiv ℝ V (φ t) (f (φ t)) ≤ 0
+
+structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
+  hcont    : Continuous V
+  hV_c1    : ContDiff ℝ 1 V        -- V is continuously differentiable (C¹)
+  hzero    : V x_eq = 0
+  hpos     : ∀ x : ℝⁿ, x ≠ x_eq → 0 < V x
+  hderiv   : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → -- Removed explicit 'n'
+              ∀ t : ℝ, HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t
+  hnonincr : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → -- Removed explicit 'n'
+              ∀ t : ℝ, fderiv ℝ V (φ t) (f (φ t)) ≤ 0
+  hstrictneg : ∀ x : ℝⁿ, x ≠ x_eq → fderiv ℝ V x (f x) < 0
+  hradiallyunbounded : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop

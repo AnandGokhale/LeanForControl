@@ -2,6 +2,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.MetricSpace.Basic
+import Mathlib.Topology.Order.MonotoneConvergence
+
 import LeanForControl.Lyapunov.definitions
 
 variable {n : ℕ}
@@ -99,84 +101,75 @@ theorem local_lyapunov_stable
     (hV : IsLocalLyapunovFunction f V x_eq) :
     LyapunovStable f x_eq := by
   intro ε hε
-  -- Step 1: The sphere of radius epsilon is compact and nonempty
-  have hS_compact : IsCompact (Metric.sphere x_eq ε) := isCompact_sphere x_eq ε
-  have hS_nonempty : (Metric.sphere x_eq ε).Nonempty := sphere_nonempty x_eq ε hn hε
-  -- Step 2: V achieves a minimum m ON the sphere
+  -- Step 1: The ball of radius epsilon is compact and nonempty, V achieves a minimum ON the ball
   obtain ⟨x_min, hx_min_mem, hx_min_le⟩ :=
-    hS_compact.exists_isMinOn hS_nonempty hV.hcont.continuousOn
-  -- Let V(x_min) = m be the minimum value of V on the sphere
-  set m := V x_min
+    (isCompact_sphere x_eq ε).exists_isMinOn (sphere_nonempty x_eq ε hn hε)
+    hV.hcont.continuousOn
   -- Step 3: x_min != x_eq, since x_eq is not on the sphere, so m > 0 by positivity of V
   have hx_min_ne : x_min ≠ x_eq := by
     intro heq
     simp [heq] at hx_min_mem
     linarith
-  have hm_pos : 0 < m := hV.hpos x_min hx_min_ne
+  have hm_pos : 0 < V x_min := hV.hpos x_min hx_min_ne
   -- Step 4: By continuity find delta with V x < m
-  have hcont_at : ContinuousAt V x_eq := hV.hcont.continuousAt
-  rw [Metric.continuousAt_iff] at hcont_at
-  obtain ⟨δ', hδ'_pos, hδ'⟩ := hcont_at m hm_pos
-  -- hδ' : ∀ y, dist y x_eq < δ' → dist (V y) (V x_eq) < m
-
+  obtain ⟨δ', hδ'_pos, hδ'⟩ := Metric.continuousAt_iff.mp hV.hcont.continuousAt (V x_min) hm_pos
   -- Take δ = min δ' ε (must be close enough for both V < m AND inside ball)
   refine ⟨min δ' ε, by positivity, ?_⟩
   intro φ htraj hclose t ht
-  -- hclose : ‖φ 0 - x_eq‖ < min δ' ε
-
-  -- Unpack the min bound into two separate facts
-  have hclose_δ : dist (φ 0) x_eq < δ' := by
-    rw [dist_eq_norm]; linarith [min_le_left δ' ε]
-  have hclose_ε : dist (φ 0) x_eq < ε := by
-    rw [dist_eq_norm]; linarith [min_le_right δ' ε]
--- ⑤ Suppose for contradiction ‖φ t - x_eq‖ ≥ ε
   by_contra hcontra
   push Not at hcontra
-  -- hcontra : ε ≤ ‖φ t - x_eq‖
-
-  -- ⑥ IVT: φ starts inside ball, ends outside → must cross the sphere
-  have hφ_cont : Continuous φ := trajectory_continuous φ f htraj
-  -- Define g s = dist (φ s) x_eq, which is continuous
-  set g := fun s => dist (φ s) x_eq with hg_def
-  have hg_cont : Continuous g := hφ_cont.dist continuous_const
-  -- Restate the boundary conditions in terms of g
-  have hg_0 : g 0 < ε := hclose_ε
-  have hg_t : ε ≤ g t := by
-    simp [hg_def, dist_eq_norm]
-    linarith
-  -- IVT: ∃ t' ∈ [0, t] with g t' = ε
-  obtain ⟨t', ht'_mem, ht'_eq⟩ :=
-    isPreconnected_Icc.intermediate_value₂
-      (Set.mem_Icc.mpr ⟨le_refl 0, ht⟩)   -- 0 ∈ [0, t]
-      (Set.mem_Icc.mpr ⟨ht, le_refl t⟩)   -- t ∈ [0, t]
-      hg_cont.continuousOn
+  -- Step 5: Continuity directly into the IVT
+  obtain ⟨t', ht'_mem, ht'_eq⟩ := isPreconnected_Icc.intermediate_value₂
+      (Set.left_mem_Icc.mpr ht) (Set.right_mem_Icc.mpr ht)
+      ((trajectory_continuous φ f htraj).dist continuous_const).continuousOn
       continuousOn_const
-      (le_of_lt hg_0)
-      hg_t
-  -- ⑦ φ t' is on the sphere
-  have ht'_on_sphere : φ t' ∈ Metric.sphere x_eq ε := by
-    rw [Metric.mem_sphere]
-    exact ht'_eq  -- g t' = ε means dist (φ t') x_eq = ε
-  -- V(φ t') ≥ m since x_min minimizes V on the sphere
-  have hV_t'_ge : m ≤ V (φ t') :=
-    hx_min_le ht'_on_sphere
-  -- V(φ t') ≤ V(φ 0) since V∘φ is antitone and t' ≥ 0
-  have hV_t'_le : V (φ t') ≤ V (φ 0) :=
-    V_le_initial f V x_eq hV φ htraj t' ht'_mem.1
-    -- V(φ t') ≥ m since x_min minimizes V on the sphere
-  have hV_t'_ge : m ≤ V (φ t') :=
-    hx_min_le ht'_on_sphere
-  -- V(φ t') ≤ V(φ 0) since V∘φ is antitone and t' ≥ 0
-  have hV_t'_le : V (φ t') ≤ V (φ 0) :=
-    V_le_initial f V x_eq hV φ htraj t' ht'_mem.1
-  -- V(φ 0) < m from continuity + closeness of φ 0 to x_eq
-  have hV_init : V (φ 0) < m := by
-    have h := hδ' hclose_δ
-    rw [hV.hzero, Real.dist_eq] at h
-    linarith [abs_lt.mp (by linarith : |V (φ 0) - 0| < m)]
-  linarith
+      (le_of_lt (by rw [dist_eq_norm]; exact lt_of_lt_of_le hclose (min_le_right δ' ε)))
+      (by rw [dist_eq_norm]; exact hcontra)
+  -- Step 6: Isolate the V(φ 0) bound
+  have hV_init : V (φ 0) < V x_min := by
+    have h := hδ' (by rw [dist_eq_norm]; exact lt_of_lt_of_le hclose (min_le_left δ' ε))
+    rw [hV.hzero, Real.dist_eq, sub_zero] at h
+    exact (abs_lt.mp h).2
+  -- Step 7: Collapse the final contradiction using a calc block
+  exact lt_irrefl (V x_min) <| calc V x_min
+    _ ≤ V (φ t') := hx_min_le (by rw [Metric.mem_sphere]; exact ht'_eq)
+    _ ≤ V (φ 0)  := V_le_initial f V x_eq hV φ htraj t' ht'_mem.1
+    _ < V x_min  := hV_init
 
 
+theorem lyapunov_global_asymptotic_stable
+    (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ)
+    (hV : IsGlobalLyapunovFunction f V x_eq)
+    (φ : ℝ → ℝⁿ) (htraj : IsIntegralSolution f φ) :
+    Filter.Tendsto φ Filter.atTop (nhds x_eq) := by
+
+  -- 1. Define the initial energy level c = V (φ 0)
+  set c := V (φ 0)
+
+  -- 2. Establish the sublevel set Ω_c
+  set Ω_c := SublevelSet V c
+
+  -- 3. Show Ω_c is compact
+  have hΩ_compact : IsCompact Ω_c :=
+    isCompact_sublevel_set V hV.hcont hV.hradial c
+
+  -- 4. Prove positive invariance of Ω_c
+  have h_invariant : ∀ t ≥ 0, φ t ∈ Ω_c := by
+    -- V is strictly decreasing along trajectories (hV.hstrictneg + IsIntegralSolution)
+    -- Since V(φ t) ≤ V(φ 0) = c, φ t ∈ Ω_c for all t ≥ 0.
+    sorry
+
+  -- 5. The limit L = inf { V(φ t) } exists and L ≥ 0
+  -- (This is identical to your previous local proof setup)
+  sorry
+
+  -- 6. Contradiction if L > 0
+  -- Let K = Ω_c ∩ { x | V x ≥ L }.
+  -- K is closed (intersection of closed sets) and bounded (subset of Ω_c), thus compact.
+  -- By EVT on K, Vdot attains a maximum -γ < 0.
+  -- By the FTC, V(φ t) ≤ V(φ 0) - γt, which forces V(φ t) < 0 eventually, contradicting V ≥ 0.
+  -- Therefore, L = 0.
+  sorry
 
 -- The core global bound: α₁(\|φ(t)\|) ≤ α₂(\|φ(0)\|)
 -- This inequality proves that the trajectory is globally bounded by the initial state.

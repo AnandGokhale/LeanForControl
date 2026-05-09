@@ -17,21 +17,10 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
     (hu₀      : u t₀ = u₀) :
     IsIntegralSolution t₀ t₁ u u₀ f := by
       intro s hs
-      have h_sub : Icc t₀ s ⊆ Icc t₀ t₁ := Icc_subset_Icc_right hs.2
-      have hu_cont_s : ContinuousOn u (Icc t₀ s) := hu_cont.mono h_sub
-      have hf_cont_s : ContinuousOn (fun τ => f τ (u τ)) (Icc t₀ s) := by
-        have h_prod : ContinuousOn (fun τ : ℝ => (τ, u τ)) (Icc t₀ s) :=
-          ContinuousOn.prodMk continuousOn_id hu_cont_s
-        exact hf_cont.comp_continuousOn h_prod
-      have h_int : ∫ τ in t₀..s, f τ (u τ) = u s - u t₀ := by
-        apply intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1
-        · exact hu_cont_s
-        · intro τ hτ
-          exact hu_deriv τ ⟨hτ.1, lt_of_lt_of_le hτ.2 hs.2⟩
-        · exact hf_cont_s.intervalIntegrable_of_Icc hs.1
-      rw [hu₀] at h_int
-      linarith
-
+      have h := hu_cont.mono (Icc_subset_Icc_right hs.2)
+      linarith [hu₀, intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1 h
+        (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
+        (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
 def g_lambda (lam : ℝ) : ℝ → ℝ → ℝ := fun _ _ => lam
 
@@ -47,8 +36,7 @@ lemma diniDerivRight_nonneg_of_eventually_pos {w : ℝ → ℝ} {a : ℝ}
     0 ≤ D⁺ w a := by
   unfold diniDerivRight
   apply le_limsup_of_frequently_le _ hbdd
-  have hh_pos : ∀ᶠ h in 𝓝[>] 0, (0 : ℝ) < h := self_mem_nhdsWithin
-  exact (hpos.and hh_pos).frequently.mono fun h ⟨hwh, hh⟩ => by
+  exact (hpos.and self_mem_nhdsWithin).frequently.mono fun h ⟨hwh, hh⟩ => by
     simp only [hw0, sub_zero]
     exact le_of_lt (div_pos hwh hh)
 
@@ -84,34 +72,17 @@ lemma comparison_claim_1
   push Not at h_not
   obtain ⟨t_bad, ht_bad_mem, h_bad_ineq⟩ := h_not
   have hz₀ : z t₀ = u₀ := by
-    have h_eq := hz_sol t₀ (left_mem_Icc.mpr (le_of_lt ht))
-    simp [intervalIntegral.integral_same] at h_eq
-    exact h_eq
-  have hvz₀ : v t₀ ≤ z t₀ := by linarith
+    simpa [intervalIntegral.integral_same] using hz_sol t₀ (left_mem_Icc.mpr ht.le)
+  let diff s := v s - z s
+  have h_cont_diff : ContinuousOn diff (Icc t₀ t_bad) :=
+    hv_cont.continuousOn.sub (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
+  obtain ⟨s, hs_mem, hs_eq⟩ := intermediate_value_Icc ht_bad_mem.1 h_cont_diff
+    ⟨by simpa [diff, hz₀] using hv₀, le_of_lt (sub_pos.mpr h_bad_ineq)⟩
+
   -- Step 2: Define the set of points before t_bad where v(t) = z(t)
   -- Because v(t₀) ≤ z(t₀) and v(t_bad) > z(t_bad), they must cross.
   let S := { s ∈ Icc t₀ t_bad | v s = z s }
-  have hS_nonempty : S.Nonempty := by
-    -- Define our difference function
-    let diff := fun s => v s - z s
-    -- Prove diff is continuous on the sub-interval [t₀, t_bad]
-    have h_cont_diff : ContinuousOn diff (Icc t₀ t_bad) := by
-      have h_subset : Icc t₀ t_bad ⊆ Icc t₀ t₁ := Icc_subset_Icc_right ht_bad_mem.2
-      exact hv_cont.continuousOn.sub (hz_cont.mono h_subset)
-    -- Establish the bounds for IVT
-    have h_diff_t₀ : diff t₀ ≤ 0 := sub_nonpos.mpr hvz₀
-    have h_diff_tbad : 0 ≤ diff t_bad := le_of_lt (sub_pos.mpr h_bad_ineq)
-    -- 0 is in the interval [diff t₀, diff t_bad]
-    have h_zero_mem : (0 : ℝ) ∈ Icc (diff t₀) (diff t_bad) := ⟨h_diff_t₀, h_diff_tbad⟩
-    -- Apply the theorem!
-    have h_ivt := intermediate_value_Icc ht_bad_mem.1 h_cont_diff h_zero_mem
-    -- Extract the crossing point 's' from the image set
-    obtain ⟨s, hs_mem_Icc, hs_eq_zero⟩ := h_ivt
-    -- Plug 's' into S to prove it's nonempty
-    use s
-    simp only [S, mem_setOf_eq]
-    refine ⟨hs_mem_Icc, ?_⟩
-    exact sub_eq_zero.mp hs_eq_zero
+  have hS_nonempty : S.Nonempty := ⟨s, hs_mem, sub_eq_zero.mp hs_eq⟩
   -- Step 3: Extract the LAST time they cross before t_bad. Let's call it 'a'.
   -- Since S is closed and bounded, it has a maximum.
   have hS_bdd : BddAbove S := by
@@ -170,9 +141,8 @@ lemma comparison_claim_1
         intro x hx
         exact ⟨le_trans ht₀_le_a (le_trans (le_of_lt ht.1) hx.1), le_trans hx.2 ht_bad_mem.2⟩
       exact hv_cont.continuousOn.sub (hz_cont.mono h_subset)
-    have h_diff_t : diff t ≤ 0 := sub_nonpos.mpr h_not
-    have h_diff_tbad : 0 ≤ diff t_bad := le_of_lt (sub_pos.mpr h_bad_ineq)
-    have h_zero_mem : (0 : ℝ) ∈ Icc (diff t) (diff t_bad) := ⟨h_diff_t, h_diff_tbad⟩
+    have h_zero_mem : (0 : ℝ) ∈ Icc (diff t) (diff t_bad) :=
+      ⟨(sub_nonpos.mpr h_not), (le_of_lt (sub_pos.mpr h_bad_ineq))⟩
     have h_ivt := intermediate_value_Icc ht.2 h_cont_diff h_zero_mem
     obtain ⟨s, hs_mem, hs_eq_zero⟩ := h_ivt
     have hs_in_S : s ∈ S := by
@@ -186,20 +156,14 @@ lemma comparison_claim_1
   let q_z := fun h => (z (a + h) - z a) / h
   have h_eventual_le : ∀ᶠ h in 𝓝[>] 0, q_z h ≤ q_v h := by
     -- The interval (0, t_bad - a) is a valid right-neighborhood of 0
-    have h_pos : 0 < t_bad - a := sub_pos.mpr ha_lt_tbad
-    have h_nhds : Iio (t_bad - a) ∈ 𝓝 0 := Iio_mem_nhds h_pos
-    have h_nhdsWithin : Iio (t_bad - a) ∈ 𝓝[>] 0 := nhdsWithin_le_nhds h_nhds
-    filter_upwards [self_mem_nhdsWithin, h_nhdsWithin]
-    intro h h_gt0 h_lt
-    dsimp [q_v, q_z]
-    have h1 : 0 < h := h_gt0
-    have h2 : h < t_bad - a := h_lt
-    have hah : a + h ∈ Ioc a t_bad := ⟨by linarith, by linarith⟩
-    have h_val := h_strict (a + h) hah
-    rw [h_eq_a]
+    have h_nhds : Iio (t_bad - a) ∈ 𝓝 0 := Iio_mem_nhds (sub_pos.mpr ha_lt_tbad)
+    filter_upwards [self_mem_nhdsWithin, (nhdsWithin_le_nhds h_nhds)] with h h_gt0 h_lt
+    have : 0 < h := h_gt0
+    have : h < t_bad - a := h_lt
     apply div_le_div_of_nonneg_right
-    · linarith
-    · linarith
+      (by rw [h_eq_a]; linarith [h_strict (a + h) ⟨by linarith, by linarith⟩])
+      h_gt0.le
+
   have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 (f a (z a) + lam)) := by
     -- 1. Extract the right derivative specifically at 'a'
     have h_deriv_a := hz_deriv a ha_mem_Ico
@@ -222,18 +186,14 @@ lemma comparison_claim_1
     dsimp [q_z]
     have h_eq : a + h - a = h := by ring
     rw [slope_def_field, h_eq]
-  have h_D_z_a : limsup q_z (𝓝[>] 0) = f a (z a) + lam := hz_lim.limsup_eq
-  have h_limsup_le : limsup q_z (𝓝[>] 0) ≤ limsup q_v (𝓝[>] 0) := by
-    exact Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le (hv_bdd a ha_mem_Ico)
-  have h_D_v_a : limsup q_v (𝓝[>] 0) = D⁺ v a := rfl
-  have h_chain : f a (z a) + lam ≤ f a (v a) := by
-    calc f a (z a) + lam
-      _ = limsup q_z (𝓝[>] 0) := h_D_z_a.symm
-      _ ≤ limsup q_v (𝓝[>] 0) := h_limsup_le
-      _ = D⁺ v a              := h_D_v_a
+
+  have h_chain := calc f a (z a) + lam
+      _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
+      _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup
+        h_eventual_le hz_lim.isCoboundedUnder_le (hv_bdd a ha_mem_Ico)
+      _ = D⁺ v a              := rfl
       _ ≤ f a (v a)           := hDv a ha_mem_Ico
   rw [← h_eq_a] at h_chain
-  have h_lam_nonpos : lam ≤ 0 := by linarith
   linarith
 
 
