@@ -15,3 +15,8 @@ blueprint/src/*.toc
 # Per-sprint .lean snapshots for the web-agent handoff. Generated alongside
 # `notes/N-slug.md`; never tracked in git.
 exports/*.zip
+
+# doc-gen4 builds inside the nested `docbuild/` project. Track only its
+# `lakefile.toml`, `lake-manifest.json`, and `lean-toolchain`; never the
+# build cache.
+docbuild/.lake/
