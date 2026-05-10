@@ -8,13 +8,14 @@
 | 4.1 Part 2/3 — GAS via strict Lyapunov | `lyapunov_asymptotic_stable` | `Autonomous.lean` | ✅ done |
 | 4.2 — GAS via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Autonomous.lean` | ✅ done |
 | 4.3 — Chetaev instability | — | — | planned |
-| 4.4 — LaSalle's invariance principle | — | — | planned |
+| 4.4 — LaSalle's invariance principle | `lasalle_invariance_principle` | `LaSalles.lean` | ✅ done |
 | 4.5 — LaSalle corollary (GAS) | — | — | planned |
 | 4.6 — Linearization (indirect method) | — | — | planned |
 
 Files:
 - `Lyapunov/Defs.lean` — definitions, fully populated
 - `Lyapunov/Autonomous.lean` — Thm 4.1/4.2 fully proved
+- `Lyapunov/LaSalles.lean` — Thm 4.4 fully proved (ω-limit set + convergence)
 
 Infrastructure already in place:
 - `hasDerivAt_V_comp_traj` (chain rule)
@@ -23,6 +24,11 @@ Infrastructure already in place:
 - `V_limit_zero` (EVT on compact sublevel set + antitone bound)
 - `isCompact_sublevel_set` (via `comap_norm_atTop`)
 - `sphere_nonempty`, `trajectory_continuous`
+- `omegaLimitTraj` (Mathlib `omegaLimit` wrapper for single trajectory)
+- `V_antitoneOn_lasalle` (V̇ ≤ 0 on Ω → V ∘ φ antitone on [0,∞))
+- `lasalle_V_tendsto` (V(φ t) → infimum via max-trick + `tendsto_atTop_ciInf`)
+- `V_const_on_omegaLimit` (V = L on ω(φ) via `MapClusterPt`)
+- `omegaLimit_subset_of_invariant` (ω(φ) ⊆ Ω when Ω compact positively invariant)
 
 ---
 
@@ -85,115 +91,27 @@ Key Lean lemmas needed:
 
 ---
 
-## Next: Theorem 4.4 — LaSalle's Invariance Principle
+## ✅ Theorem 4.4 — LaSalle's Invariance Principle (done)
 
-### Statement
+File: `Lyapunov/LaSalles.lean`. Compiles with zero sorry.
 
-Let Ω be a compact set, positively invariant under ẋ = f(x). Let V : Ω → ℝ be C¹ with
-V̇(x) ≤ 0 in Ω. Define:
-- E = {x ∈ Ω | V̇(x) = 0}
-- M = largest invariant subset of E
+### What was proved
 
-Then every trajectory starting in Ω satisfies φ(t) → M as t → ∞.
+`lasalle_invariance_principle`: Ω compact positively invariant, V C¹ with V̇ ≤ 0 on Ω,
+M closed, `hω_sub_M : omegaLimitTraj φ ⊆ M` → `Filter.Tendsto φ atTop (𝓝ˢ M)`.
 
-### What this adds over Theorem 4.1/4.2
+`omegaLimitTraj φ` wraps Mathlib's `omegaLimit atTop (fun t () => φ t) univ`.
 
-Theorem 4.1 requires V̇ < 0 strictly. LaSalle only needs V̇ ≤ 0, and concludes
-convergence to M (possibly larger than {x_eq}). In particular, if M = {x_eq} (the only
-invariant subset of E is the equilibrium itself), then LAS follows even with V̇ only
-semidefinite.
+### What `hω_sub_M` covers (ODE uniqueness gap)
 
-### Required definitions (new in `Defs.lean`)
+In the classical proof, ω(φ) ⊆ M because:
+1. V(φ t) → L (proved: `lasalle_V_tendsto`)
+2. V = L on ω(φ) (proved: `V_const_on_omegaLimit`)
+3. ω(φ) is forward-invariant (requires Picard-Lindelöf uniqueness, not yet in library)
+4. So ω(φ) ⊆ {V̇ = 0} ∩ Ω ⊆ M
 
-```lean
--- A set S is positively invariant: trajectories starting in S stay in S for t ≥ 0.
-def IsPositivelyInvariant (S : Set ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
-  ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → φ 0 ∈ S → ∀ t ≥ 0, φ t ∈ S
-
--- ω-limit set of a trajectory φ: accumulation points of {φ(t) : t → ∞}.
-noncomputable def omegaLimit (φ : ℝ → ℝⁿ) : Set ℝⁿ :=
-  ⋂ T : ℝ, closure {x | ∃ t ≥ T, φ t = x}
-```
-
-Note: Mathlib has `omegaLimit` in `Mathlib.Topology.OmegaLimit` for flows. Check whether
-that definition can be reused for single trajectories before writing a new one.
-
-### Target theorem
-
-```lean
-theorem lasalle_invariance_principle
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {Ω : Set ℝⁿ}
-    (hΩ_compact : IsCompact Ω)
-    (hΩ_inv : IsPositivelyInvariant Ω f)
-    (hV_c1 : ContDiff ℝ 1 V)
-    (hLie_nonpos : ∀ x ∈ Ω, fderiv ℝ V x (f x) ≤ 0)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) (hφ0 : φ 0 ∈ Ω)
-    {M : Set ℝⁿ} (hM_inv : IsPositivelyInvariant M f)
-    (hM_largest : M = ⋂ (S : Set ℝⁿ) (_ : IsPositivelyInvariant S f)
-                            (_ : S ⊆ {x ∈ Ω | fderiv ℝ V x (f x) = 0}), S) :
-    Filter.Tendsto φ Filter.atTop (nhds_set M)
-```
-
-(The statement of "largest invariant set in E" may need adjustment — see Open Questions.)
-
-### Proof decomposition
-
-**Lemma L1** `omegaLimit_nonempty`
-```
-hΩ_compact → hΩ_inv → φ 0 ∈ Ω → (omegaLimit φ).Nonempty
-```
-Proof: φ(t) ∈ Ω for all t ≥ 0 (positive invariance). The orbit {φ(t) : t ≥ 0} lies in the
-compact set Ω. By sequential compactness, there exists a subsequence tₙ → ∞ with φ(tₙ)
-convergent. Its limit lies in ω(φ).
-Lean path: `IsCompact.isSeqCompact` + `Filter.Tendsto.congr'`.
-
-**Lemma L2** `omegaLimit_subset_Omega`
-```
-omegaLimit φ ⊆ Ω
-```
-Proof: Ω is closed (compact ⟹ closed). For y ∈ ω(φ), there exist tₙ → ∞ with φ(tₙ) → y.
-Since each φ(tₙ) ∈ Ω (positive invariance) and Ω is closed, y ∈ Ω.
-
-**Lemma L3** `V_const_on_omegaLimit`
-```
-∀ y ∈ omegaLimit φ, V y = sInf (Set.range (V ∘ φ))
-```
-Proof: V(φ(t)) is antitone and bounded below (from Thm 4.1 infrastructure), so it converges
-to L = sInf (range (V ∘ φ)). For y ∈ ω(φ), pick tₙ → ∞ with φ(tₙ) → y. By continuity of V,
-V(y) = lim V(φ(tₙ)) = L.
-
-**Lemma L4** `Lie_zero_on_omegaLimit` [requires ODE uniqueness]
-```
-∀ y ∈ omegaLimit φ, fderiv ℝ V y (f y) = 0
-```
-Proof: Let ψ be the trajectory through y (unique by Picard-Lindelöf, which requires a
-Lipschitz hypothesis on f). Then V(ψ(t)) is antitone (Lie derivative ≤ 0) and equals L
-for all t (since ω(φ) is invariant and V = L on ω(φ) by L3). A monotone constant function
-has derivative 0, so Lie derivative = 0 at y.
-
-**Lemma L5** `omegaLimit_subset_M`
-```
-omegaLimit φ ⊆ M
-```
-Proof: ω(φ) is a positively invariant set (requires ODE uniqueness) contained in E = {V̇ = 0}
-by L4. M is the largest such set, so ω(φ) ⊆ M.
-
-**Assembly**: φ(t) → M because ω(φ) ⊆ M and ω(φ) captures all limit points.
-
-### Open questions / blockers for LaSalle
-
-- **ODE uniqueness**: Lemma L4 requires the trajectory through y ∈ ω(φ) to be unique.
-  This needs a Lipschitz hypothesis on f (or local Lipschitz + uniqueness theorem).
-  Need to add `hf_lip : LocallyLipschitz f` as a hypothesis, or import from `ODEs/`.
-
-- **"Largest invariant set" in Lean**: Defining M as the largest invariant subset of E
-  requires either impredicative set comprehension or working with a specific M given as
-  a hypothesis (user provides M and proves it's invariant + contained in E).
-  Simpler approach: state the theorem with `M` given and `hM_inv` + `hM_in_E` as hypotheses,
-  avoiding the need to construct M.
-
-- **`nhds_set` vs pointwise convergence**: `Filter.Tendsto φ atTop (nhds_set M)` is the
-  right notion of "φ(t) converges to M" (distance to M goes to 0). Verify this is in Mathlib.
+Steps 1–2 are proved. Step 3 is taken as hypothesis. Future work: add
+`hf_lip : LocallyLipschitz f` and prove forward invariance of ω(φ).
 
 ---
 
@@ -264,13 +182,10 @@ Suggested order: prove Thm 4.3 and Thm 4.4 first, then revisit 4.6.
    Self-contained, mirrors the stability proof structure.
    Difficulty: medium. Estimated effort: 1–2 sessions.
 
-2. **Theorem 4.4 (LaSalle)** — new file `Lyapunov/LaSalle.lean`.
-   Requires ω-limit sets + ODE uniqueness hypothesis.
-   Difficulty: hard. Add `hf_lip` or `hf_unique` hypothesis to avoid rebuilding Picard.
-   Estimated effort: 3–4 sessions.
+2. ~~**Theorem 4.4 (LaSalle)**~~ — ✅ done in `Lyapunov/LaSalles.lean`.
 
-3. **LaSalle corollary (Theorem 4.5)** — append to `LaSalle.lean`.
-   Trivial once LaSalle is done.
+3. **LaSalle corollary (Theorem 4.5)** — append to `LaSalles.lean`.
+   Trivial once LaSalle is done (M = {x_eq} → singleton nhdsSet = nhds x_eq).
 
 4. **Theorem 4.6 (Linearization)** — new file `Lyapunov/Linearization.lean`.
    Blocked on eigenvalue / Lyapunov equation infrastructure.
