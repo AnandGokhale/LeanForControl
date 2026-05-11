@@ -1,8 +1,6 @@
 # LeanForControl
 
 A Lean 4 + mathlib formalization of linear-systems and control theory.
-Long-term goal: Hespanha's textbook. Driving headfake: the discrete-time
-infinite-horizon Kalman-filter result in `webmd/dp-infhor.tex`.
 
 ## Quick start
 
@@ -13,9 +11,9 @@ lake exe cache get          # download mathlib's prebuilt artifacts
 lake build                  # builds the project (~minutes the first time)
 ```
 
-`lake build` green = source of truth. No `sorry`/`admit`/`axiom` allowed.
+`lake build` green is the source of truth. No `sorry`, `admit`, or `axiom`.
 
-## Three artifacts, three ways to look at the project
+## Three ways to look at the project
 
 ### 1. Lean source — the proofs themselves
 
@@ -26,19 +24,20 @@ VS Code with the Lean 4 extension; you get inline proof states.
 
 ```bash
 lake build :blueprint                       # extract LaTeX nodes from @[blueprint] decls
-conda activate cortese                      # leanblueprint lives here
-leanblueprint checkdecls                    # sanity-check labels
+leanblueprint checkdecls                    # sanity-check labels match real Lean decls
 leanblueprint web                           # render → blueprint/web/
 python3 -m http.server -d blueprint/web 8001
 ```
 
-Then open `http://localhost:8001`. You see prose statements, `\leanok`
-checkmarks, and a clickable dependency graph. **Caveat**: the prose
-statements are *not* checked against the Lean signatures — they're
-hand-written. See [`CLAUDE.md`](CLAUDE.md) ("Reporting workflow") for the
-trust model.
+`leanblueprint` is a Python tool from `leanprover-community`; install via
+`pip install leanblueprint` (any active Python environment will do).
 
-### 3. doc-gen4 — the actual Lean source rendered like mathlib's docs
+Then open `http://localhost:8001`. You see prose statements, `\leanok`
+checkmarks, and a clickable dependency graph. **Caveat**: prose statements
+are *not* checked against the Lean signatures — they're hand-written. Trust
+the Lean source over the prose if they ever drift.
+
+### 3. doc-gen4 — Lean source rendered like mathlib's docs
 
 ```bash
 cd docbuild
@@ -46,45 +45,38 @@ lake build LeanForControl:docs              # ~tens of minutes the first time
 python3 -m http.server -d .lake/build/doc 8000
 ```
 
-Then open `http://localhost:8000`. Full source code, expandable proofs,
+Open `http://localhost:8000` for full source code, expandable proofs, and
 clickable cross-references — the same rendering you see at
-[mathlib4_docs](https://leanprover-community.github.io/mathlib4_docs/).
-The first build is slow; subsequent builds are incremental.
+[mathlib4_docs](https://leanprover-community.github.io/mathlib4_docs/). The
+first build is slow; subsequent builds are incremental.
 
-## Conventions you'll bump into
+## Annotating Lean for the blueprint
 
-- **`plans/`** — forward-looking sprint plans. `plans/master.md` is the
-  roadmap; `plans/N-slug.md` is the next/active sprint.
-- **`notes/`** — backward-looking handoff. One mini-update per sprint.
-  Web agents and future-you read these to catch up.
-- **`exports/N-slug.zip`** — per-sprint `.lean` snapshots (gitignored).
-- **`@[blueprint "label"]`** — annotation that exposes a Lean decl in the
-  blueprint with hand-written prose. See `Observability.lean` for examples.
-
-End-of-session recipe (compile → notes/ → blueprint → commit → zip) is
-documented in [`CLAUDE.md`](CLAUDE.md).
+`@[blueprint "label" (statement := /-- LaTeX prose -/)]` exposes a Lean
+declaration in the blueprint with the supplied statement. See
+`LeanForControl/LinearSystems/Observability.lean` for examples covering
+definitions, lemmas, and theorems (with `proof :=` fields). The `statement`
+text is hand-written prose, not auto-extracted from the Lean signature —
+keep it tight and faithful; trust the Lean source if they ever drift.
 
 ## Repo layout
 
 ```
-LeanForControl/                         ← Lean source
-├── LinearSystems/                      ← active: matrices, Hautus, etc.
-└── (Dini, ODEs, Lyapunov)              ← legacy
-blueprint/src/content.tex               ← prose ↔ Lean glue
-docbuild/                               ← nested project for doc-gen4
-plans/                                  ← forward-looking
-notes/                                  ← backward-looking
-webmd/                                  ← long-form planning notes
-.claude/agents/lean-prover.md           ← project-scoped Claude Code agent
+LeanForControl/                          ← Lean source
+├── Basic.lean
+├── LinearSystems/                       ← active: matrices, observability, controllability, Hautus
+└── (Dini, ODEs, Lyapunov, …)            ← legacy
+blueprint/src/                           ← .tex sources (run leanblueprint web to render)
+docbuild/                                ← nested project for doc-gen4
+home_page/                               ← Jekyll scaffold for the project's home page
+.github/workflows/                       ← lean-action CI + blueprint deploy CI
 ```
 
 ## When something breaks
 
-- `lake build` fails with `failed to fetch cache` after a `lake update`?
+- `lake build` fails with `failed to fetch cache` after `lake update`?
   Mathlib pinning shifted; re-run `lake exe cache get`.
 - `leanblueprint checkdecls` reports a missing decl? You added an
   `@[blueprint "label"]` to a name that doesn't exist (typo or rename).
 - doc-gen4 first build hangs at `genCore Lean`? Wait. It's compiling all
   of Lean core's documentation; ~10 min on its own.
-
-For everything else, see `CLAUDE.md`.
