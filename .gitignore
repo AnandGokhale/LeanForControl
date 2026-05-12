@@ -20,3 +20,6 @@ exports/*.zip
 # `lakefile.toml`, `lake-manifest.json`, and `lean-toolchain`; never the
 # build cache.
 docbuild/.lake/
+
+# macOS Finder metadata.
+.DS_Store
