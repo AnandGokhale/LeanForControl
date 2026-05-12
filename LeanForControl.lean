@@ -4,6 +4,8 @@ import LeanForControl.LinearSystems.Controllability
 import LeanForControl.LinearSystems.Hautus
 import LeanForControl.LinearSystems.MatrixLemmas
 import LeanForControl.LinearSystems.Observability
+import LeanForControl.Lyapunov.Defs
+import LeanForControl.Lyapunov.Autonomous
 import LeanForControl.Lyapunov.LaSalles
 import LeanForControl.ODEs.comparison_lemma
 import LeanForControl.ODEs.gronwall_bellman
