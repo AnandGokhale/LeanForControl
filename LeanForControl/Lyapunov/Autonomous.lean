@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.Lyapunov.Defs
+import Architect
 
 variable {n : ℕ}
 
@@ -244,6 +245,32 @@ lemma sublevel_set_invariant
 -- (8) For t ∈ [0, T*], ‖φ t - x_eq‖ ≤ ε' ≤ ε₀ → φ t ∈ closedBall ε₀ ⊆ D.
 -- (9) V_nonincreasing_on on [0, T*] → V(φ(T*)) ≤ V(φ 0) < m.
 -- (10) φ(T*) ∈ sphere ε' → V(φ(T*)) ≥ m. Contradiction.
+/-- **Milestone (Lyapunov stability theorem).**
+
+If `V` is a local Lyapunov function for `ẋ = f(x)` at `x_eq` on an open
+domain `D`, then `x_eq` is Lyapunov stable. -/
+@[blueprint "thm:lyapunov-stable"
+  (statement := /-- Let $\dot{x} = f(x)$ have an equilibrium $x_{\mathrm{eq}}$.
+    If $V : \mathbb{R}^{n} \to \mathbb{R}$ is a local Lyapunov function for
+    $f$ at $x_{\mathrm{eq}}$ on an open domain $D \ni x_{\mathrm{eq}}$
+    (see \cref{def:isLocalLyapunovFunction}), then $x_{\mathrm{eq}}$ is
+    Lyapunov stable (see \cref{def:lyapunovStable}). -/)
+  (proof := /-- Pick $\varepsilon_{0} > 0$ small enough that the closed ball
+    of radius $\varepsilon_{0}$ around $x_{\mathrm{eq}}$ sits inside $D$. For
+    $\varepsilon \le \varepsilon_{0}$ let
+    $m = \min_{\|y - x_{\mathrm{eq}}\| = \varepsilon} V(y) > 0$ (compactness
+    of the sphere plus positive-definiteness of $V$). Continuity of $V$ at
+    $x_{\mathrm{eq}}$ with $V(x_{\mathrm{eq}}) = 0$ gives $\delta > 0$ with
+    $V(y) < m$ whenever $\|y - x_{\mathrm{eq}}\| < \delta$. Suppose for
+    contradiction some trajectory $\varphi$ with
+    $\|\varphi(0) - x_{\mathrm{eq}}\| < \delta$ has
+    $\|\varphi(t^{*}) - x_{\mathrm{eq}}\| \ge \varepsilon$ for some
+    $t^{*} \ge 0$. By IVT and minimality there is a first time $T^{*}$ where
+    $\|\varphi(T^{*}) - x_{\mathrm{eq}}\| = \varepsilon$; on $[0, T^{*}]$
+    the trajectory stays in $D$, so $V \circ \varphi$ is non-increasing
+    (Lie derivative $\le 0$), giving $V(\varphi(T^{*})) \le V(\varphi(0)) <
+    m$. But $\varphi(T^{*})$ lies on the sphere of radius $\varepsilon$ so
+    $V(\varphi(T^{*})) \ge m$. Contradiction. -/)]
 theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
@@ -535,6 +562,24 @@ lemma tendsto_of_V_tendsto_zero
     hV_tendsto
 
 -- Theorem 4.1, Parts 2 & 3: IsStrictLyapunovFunction → GlobalAsymptoticStable.
+/-- **Milestone (asymptotic stability via strict Lyapunov function).**
+
+A strict global Lyapunov function with continuous dynamics implies global
+asymptotic stability. -/
+@[blueprint "thm:lyapunov-asymptotic-stable"
+  (statement := /-- Let $\dot{x} = f(x)$ with $f$ continuous and let
+    $V : \mathbb{R}^{n} \to \mathbb{R}$ be a strict global Lyapunov function
+    for $f$ at $x_{\mathrm{eq}}$ (see \cref{def:isStrictLyapunovFunction}).
+    Then $x_{\mathrm{eq}}$ is globally asymptotically stable
+    (see \cref{def:globalAsymptoticStable}). -/)
+  (proof := /-- Lyapunov stability is \cref{thm:lyapunov-stable} applied to
+    the local-Lyapunov part of the strict hypothesis. For attractivity, fix
+    a trajectory $\varphi$. Compactness of every sublevel set
+    (see \cref{def:isStrictLyapunovFunction}) confines $\varphi$ to the
+    compact set $\{V \le V(\varphi(0))\}$, and $V \circ \varphi$ is
+    non-increasing, hence converges to some $L \ge 0$. A LaSalle-style
+    argument using the strict Lie-derivative inequality forces $L = 0$, and
+    a continuity argument then yields $\varphi(t) \to x_{\mathrm{eq}}$. -/)]
 theorem lyapunov_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLyapunovFunction f V x_eq)
@@ -549,6 +594,22 @@ theorem lyapunov_asymptotic_stable
     exact tendsto_of_V_tendsto_zero hV htraj hL_tendsto
 
 -- Corollary: IsAsymptoticLyapunovFunction → GAS (Khalil's classical form).
+/-- **Milestone (Khalil's classical form of GAS).**
+
+A radially unbounded, positive definite `C¹` Lyapunov function with strict
+negative-definite Lie derivative implies global asymptotic stability. -/
+@[blueprint "thm:lyapunov-global-asymptotic-stable"
+  (statement := /-- Let $\dot{x} = f(x)$ with $f$ continuous, and let
+    $V : \mathbb{R}^{n} \to \mathbb{R}$ be an asymptotic Lyapunov function
+    for $f$ at $x_{\mathrm{eq}}$
+    (see \cref{def:isAsymptoticLyapunovFunction}). Then $x_{\mathrm{eq}}$
+    is globally asymptotically stable
+    (see \cref{def:globalAsymptoticStable}). -/)
+  (proof := /-- Radial unboundedness combined with
+    \cref{lem:isCompact-sublevel-set} converts the asymptotic Lyapunov
+    function into a strict Lyapunov function in the sense of
+    \cref{def:isStrictLyapunovFunction}. The conclusion then follows from
+    \cref{thm:lyapunov-asymptotic-stable}. -/)]
 theorem lyapunov_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsAsymptoticLyapunovFunction f V x_eq)
@@ -567,6 +628,25 @@ theorem lyapunov_global_asymptotic_stable
 --     V_tendsto_limit (with compactness replacing radial unboundedness) gives V(φ t) → L ≥ 0.
 --     V_limit_zero on the compact Ωc₀ gives L = 0.
 --     tendsto_of_V_tendsto_zero (local version) gives φ t → x_eq.
+/-- **Milestone (local asymptotic stability).**
+
+A strict local Lyapunov function with a compact sublevel set inside the
+domain implies local asymptotic stability. -/
+@[blueprint "thm:lyapunov-local-asymptotic-stable"
+  (statement := /-- Let $\dot{x} = f(x)$ with $f$ continuous and let
+    $V : \mathbb{R}^{n} \to \mathbb{R}$ be a strict local Lyapunov function
+    for $f$ at $x_{\mathrm{eq}}$ on an open set $D \ni x_{\mathrm{eq}}$
+    (see \cref{def:isStrictLocalLyapunovFunction}). Then $x_{\mathrm{eq}}$
+    is locally asymptotically stable
+    (see \cref{def:localAsymptoticStable}). -/)
+  (proof := /-- Lyapunov stability is \cref{thm:lyapunov-stable} applied to
+    the local-Lyapunov part of the strict hypothesis. For the basin of
+    attraction take the compact sublevel set $\Omega_{c_{0}}(V) \subseteq D$
+    supplied by the hypothesis; trajectories starting in the interior of
+    $\Omega_{c_{0}}(V)$ stay inside (sublevel-set invariance), so $V \circ
+    \varphi$ converges to some $L \ge 0$. The strict Lie-derivative
+    inequality on the compact $\Omega_{c_{0}}(V)$ forces $L = 0$, and a
+    continuity argument then gives $\varphi(t) \to x_{\mathrm{eq}}$. -/)]
 theorem lyapunov_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLocalLyapunovFunction f V x_eq D)
