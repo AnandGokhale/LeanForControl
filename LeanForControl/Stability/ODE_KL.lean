@@ -1,9 +1,8 @@
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.Analysis.Calculus.Deriv.Inverse
-import Mathlib.Analysis.Calculus.MeanValue
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+
 import LeanForControl.Stability.classK
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.Topology.MetricSpace.Basic
+
 
 /-! ## Lemma 4.4 — KL bound for ẏ = -α(y)
 
