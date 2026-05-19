@@ -4,61 +4,63 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 
 
-/-! ## Lemma 4.4 — KL bound for ẏ = -α(y)
+/-! ## Lemma 4.4 — Class KL bound via the Osgood construction
 
-Reference: Khalil, Nonlinear Systems, Lemma 4.4 / Appendix C.6.
+Given a Class K function `α : ClassK a b` satisfying the **Osgood condition**
+(`EtaDiverges`), the flow of `ẏ = −α(y)` starting at `r ∈ (0, a)` is well-defined
+for all time and yields a Class KL bound.
+
+**Construction.** Define the *time-to-go* integral
+
+    η(y) = −∫_{base}^y 1/α(x) dx,
+
+which is strictly decreasing on `(0, a)` (since `α > 0`), with `η(y) → +∞` as `y → 0⁺`
+(the Osgood condition). The Class KL candidate is then
+
+    σ(r, s) = η⁻¹(η(r) + s),     σ(0, s) = 0.
+
+Increasing `s` shifts the argument of `η⁻¹` toward `+∞`, driving the output toward `0`.
+Increasing `r` decreases `η(r)`, and since `η⁻¹` is anti-monotone, the output grows.
+
+Reference: Khalil, *Nonlinear Systems* 3rd ed., Lemma 4.4 / Appendix C.6.
 -/
 
-open Set Filter Topology MeasureTheory intervalIntegral Classical
-
-/-! ### The η function -/
-
-
-
-
-/-!
-## Osgood Construction (Class K to Class KL)
-
-Given a Class K function α, we can construct an associated Class KL function σ
-via the flow of ẏ = -α(y). This requires evaluating the integral η(y) = -∫ 1/α(x) dx
-and inverting it: σ(r, s) = η⁻¹(η(r) + s).
--/
+open Set Filter Topology MeasureTheory intervalIntegral
 
 section OsgoodConstruction
 
 variable {a b : ℝ}
 
-/-- η_base(y) = −∫_{base}^y 1/α(x) dx. The time-to-go function. -/
+/-! ### Definitions -/
+
+/-- The *time-to-go* integral: `η_base(y) = −∫_{base}^y 1/α(x) dx`.
+    Strictly decreasing on `(0, a)` because `α > 0` makes the integrand positive. -/
 noncomputable def ClassK.eta (α : ClassK a b) (base y : ℝ) : ℝ :=
   -∫ x in base..y, (1 / α.toFun x)
 
-
-
-/-- The Osgood condition: η(y) → +∞ as y → 0⁺.
-    This guarantees the system reaches the origin only in infinite time. -/
+/-- The Osgood condition: `η_base(y) → +∞` as `y → 0⁺`.
+    This ensures the system `ẏ = −α(y)` never reaches the origin in finite time. -/
 def ClassK.EtaDiverges (α : ClassK a b) (base : ℝ) : Prop :=
   Filter.Tendsto (α.eta base) (nhdsWithin 0 (Set.Ioi 0)) Filter.atTop
 
-/-- The mathematical inverse of η.
-    Because η is only well-behaved on (0, a), this function will return
-    junk values outside the range of η. -/
--- noncomputable def ClassK.etaInv (α : ClassK a b) (base : ℝ) : ℝ → ℝ :=
---   Function.invFun (α.eta base)
+open Classical in
+/-- The partial inverse of η: `etaInv base t` is the unique `r ∈ (0, a)` with `η(r) = t`,
+    or `0` if no such `r` exists (outside the range of η). -/
 noncomputable def ClassK.etaInv (α : ClassK a b) (base : ℝ) : ℝ → ℝ :=
   fun t => if h : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t
            then Classical.choose h
            else 0
 
-/-- The piece-wise definition of the Class KL candidate.
-    We isolate r = 0 to avoid evaluating η(0), which hits a singularity. -/
+/-- The Class KL candidate: `σ(r, s) = η⁻¹(η(r) + s)`, extended by `σ(0, s) = 0`
+    to avoid the singularity of η at the origin. -/
 noncomputable def ClassK.sigma (α : ClassK a b) (base r s : ℝ) : ℝ :=
   if r = 0 then 0 else α.etaInv base (α.eta base r + s)
 
+/-! ### Properties of η -/
 
-
--- η'(y) = -1/α(y), via FTC
--- FTC (right endpoint form) requires: the integrand is interval-integrable on [base,y],
--- and strongly measurable in a neighbourhood of y. Both follow from continuity on Ioo 0 a.
+/-- **FTC:** the derivative of `η_base` at `y ∈ (0, a)` is `−1/α(y)`.
+    Requires `1/α` to be interval-integrable and strongly measurable near `y`,
+    both of which follow from continuity of `1/α` on `(0, a)`. -/
 lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a) (hcont_inv : ContinuousOn (fun x => 1 / α.toFun x) (Ioo 0 a))
     {y : ℝ} (hy : y ∈ Ioo 0 a) :
@@ -83,8 +85,7 @@ lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
     convert this using 1
     ring
 
-
--- η is strictly decreasing: α > 0 makes η' = -1/α < 0 everywhere on (0, a).
+/-- η is strictly anti-monotone on `(0, a)`: `α > 0` implies `η' = −1/α < 0` throughout. -/
 lemma eta_strictAntiOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     (hpos : ∀ x ∈ Ioo 0 a, 0 < α.toFun x)
@@ -100,18 +101,15 @@ lemma eta_strictAntiOn (α : ClassK a b) (base : ℝ)
       rw [(eta_hasDerivAt α base hbase hcont_inv hx).deriv]
       exact div_neg_of_neg_of_pos (by norm_num) (hpos x hx)
 
-
+/-- η is continuous on `(0, a)` (differentiability at each point implies continuity). -/
 lemma eta_continuousOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     (hcont_inv : ContinuousOn (fun x => 1 / α.toFun x) (Ioo 0 a)) :
     ContinuousOn (α.eta base) (Ioo 0 a) := fun _ hy =>
     (eta_hasDerivAt α base hbase hcont_inv hy).continuousAt.continuousWithinAt
 
-
-
--- Existence of the shifted preimage: η(r) + s lies in the range of η on (0, a).
--- Strategy: EtaDiverges gives a small ε near 0 where η(ε) ≥ η(r)+s (upper bound).
--- η(r) ≤ η(r)+s (lower bound since s ≥ 0). IVT on [ε, r] produces the witness r'.
+/-- For `r ∈ (0, a)` and `s ≥ 0`, the value `η(r) + s` lies in the range of η on `(0, a)`.
+    `EtaDiverges` supplies `ε` near 0 with `η(ε) ≥ η(r) + s`; IVT on `[ε, r]` gives the witness. -/
 lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     (hdiv : α.EtaDiverges base)
@@ -133,22 +131,24 @@ lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
       ⟨le_add_of_nonneg_right hs, hε_large⟩
     exact ⟨r', ⟨lt_of_lt_of_le hε_ioo.1 hr'_icc.1, lt_of_le_of_lt hr'_icc.2 hr.2⟩, hr'_eq⟩
 
+/-! ### Properties of η⁻¹ -/
 
-
+/-- If `t` is in the range of η on `(0, a)`, then `η⁻¹(t) ∈ (0, a)`. -/
 lemma etaInv_mem_Ioo (α : ClassK a b) (base : ℝ)
     {t : ℝ} (ht : ∃ r ∈ Ioo 0 a, α.eta base r = t) :
     α.etaInv base t ∈ Ioo 0 a := by
   simp only [ClassK.etaInv, dif_pos ht]
   exact (Classical.choose_spec ht).1
 
+/-- Left inverse: `η(η⁻¹(t)) = t` whenever `t` is in the range of η. -/
 lemma eta_etaInv (α : ClassK a b) (base : ℝ)
     {t : ℝ} (ht : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t) :
     α.eta base (α.etaInv base t) = t := by
   simp only [ClassK.etaInv, dif_pos ht]
   exact (Classical.choose_spec ht).2
 
--- η⁻¹ inherits strict anti-monotonicity from η by contrapositive:
--- if η⁻¹(t₂) ≥ η⁻¹(t₁) then η(η⁻¹(t₂)) ≤ η(η⁻¹(t₁)), i.e. t₂ ≤ t₁, contradiction.
+/-- η⁻¹ is strictly anti-monotone on the range of η:
+    `t₁ < t₂` implies `η⁻¹(t₂) < η⁻¹(t₁)`, by contrapositive from anti-monotonicity of η. -/
 lemma etaInv_strictAntiOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (hpos : ∀ x ∈ Set.Ioo 0 a, 0 < α.toFun x)
@@ -175,10 +175,8 @@ lemma etaInv_strictAntiOn (α : ClassK a b) (base : ℝ)
       rw [heq₁, heq₂] at this
       linarith
 
-
--- η⁻¹(t) → 0 as t → +∞: large t forces the preimage into (0, δ) for any δ > 0,
--- because η is strictly decreasing and η(δ) is a finite threshold above which
--- η⁻¹(t) ≤ δ by anti-monotonicity.
+/-- `η⁻¹(t) → 0` as `t → +∞`: large `t` forces the preimage near 0, because η is
+    strictly decreasing and `η(δ)` is a finite threshold above which `η⁻¹(t) ≤ δ`. -/
 lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (hpos : ∀ x ∈ Set.Ioo 0 a, 0 < α.toFun x)
@@ -210,16 +208,15 @@ lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
       linarith
     · simp only [ClassK.etaInv, dif_neg hrange]; linarith
 
--- η⁻¹ is continuous at any t in the range of η.
--- Proof via order topology: for each one-sided bound on the output, use IVT on a compact
--- subinterval of (0, a) to find a t-neighbourhood mapping into the desired r-neighbourhood.
+/-- η⁻¹ is continuous at any point in the range of η.
+    Proved via the order topology: for each one-sided bound on the output, IVT on a compact
+    subinterval of `(0, a)` finds a `t`-neighbourhood mapping into the desired `r`-neighbourhood. -/
 lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (hpos : ∀ x ∈ Set.Ioo 0 a, 0 < α.toFun x)
     (hcont_inv : ContinuousOn (fun x => 1 / α.toFun x) (Set.Ioo 0 a))
     {t : ℝ} (ht : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t) :
-    ContinuousAt (α.etaInv base) t
-    := by
+    ContinuousAt (α.etaInv base) t := by
   have h_r_mem := etaInv_mem_Ioo α base ht
   have h_r_eq := eta_etaInv α base ht
   set r := α.etaInv base t
@@ -282,13 +279,10 @@ lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
     filter_upwards [h_IVT x₁ x₂ hx₁_mem hx₂_mem hx₁_lt_r hx₂_gt_r] with t' ht'
     linarith [ht'.2, show x₂ < z₂ by grind [min_le_right a z₂]]
 
+/-! ### The σ function is Class KL -/
 
-
-end OsgoodConstruction
-
-
-
-
+/-- **Osgood construction:** given `α : ClassK a b` satisfying the Osgood condition
+    (`EtaDiverges`), `σ(r, s) = η⁻¹(η(r) + s)` extended by `σ(0, s) = 0` is Class KL. -/
 theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (hcont_inv : ContinuousOn (fun x => 1 / α.toFun x) (Set.Ioo 0 a))
@@ -319,23 +313,22 @@ theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
               · exact ⟨Or.inl h1, h2⟩]
           rw [ContinuousWithinAt, nhdsWithin_union, Filter.tendsto_sup]
           constructor
-          · -- Case 1: The singleton {0} (Your existing logic)
+          · -- Case 1: The singleton {0}
             rw [nhdsWithin_singleton]
             simp only [Filter.Tendsto, Filter.map_pure, ClassK.sigma]
             exact pure_le_nhds 0
           · -- Case 2: The open interval Ioo 0 a
-
-            -- 1. Resolve t= limit target: prove α.sigma base 0 s = 0 and rewrite it
+            -- 1. Resolve limit target: prove α.sigma base 0 s = 0 and rewrite it
             have h_sigma_zero : α.sigma base 0 s = 0 := by
               simp only [ClassK.sigma]
               tauto
             rw [h_sigma_zero]
-            -- 2. Resolve the function body: prove they are locally equal
+            -- 2. Prove the function bodies are locally equal
             have h_eq : (fun r => α.sigma base r s) =ᶠ[nhdsWithin 0 (Set.Ioo 0 a)]
                         (fun r => α.etaInv base (α.eta base r + s)) := by
               filter_upwards [self_mem_nhdsWithin] with r hr
               simp only [ClassK.sigma, if_neg hr.1.ne']
-            -- 3. Re-establish your limits
+            -- 3. Chain the limit: η(r) → +∞, shift by s, then η⁻¹ → 0
             have h_eta_atTop : Filter.Tendsto (α.eta base) (nhdsWithin 0 (Set.Ioo 0 a))
                 Filter.atTop :=
               hdiv.mono_left (nhdsWithin_mono 0 Set.Ioo_subset_Ioi_self)
@@ -345,7 +338,6 @@ theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
               apply Filter.tendsto_atTop_mono (fun r => le_add_of_nonneg_right hs) h_eta_atTop
             have h_inv_zero : Filter.Tendsto (α.etaInv base) Filter.atTop (nhds 0)
               := etaInv_tendsto_zero α base hbase hpos hcont_inv
-            -- 4. The goal now perfectly matches your composition's type
             exact (h_inv_zero.comp h_add_atTop).congr' h_eq.symm
         · -- r > 0: sigma = etaInv(eta(·) + s), continuous composition
           apply ContinuousAt.continuousWithinAt
@@ -418,3 +410,5 @@ theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
               (fun b => ⟨b - α.eta base r, by linarith⟩)
           exact (etaInv_tendsto_zero α base hbase hpos hcont_inv).comp key
     }, ⟨fun r _ s _ => rfl, fun s _ => by simp [ClassK.sigma]⟩⟩
+
+end OsgoodConstruction
