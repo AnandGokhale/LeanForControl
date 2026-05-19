@@ -412,7 +412,7 @@ lemma V_limit_zero_of_compact
 -- If V(φ t) → 0, φ t stays in compact SublevelSet V c₀ ⊆ D, then φ t → x_eq.
 lemma tendsto_of_V_tendsto_zero_compact
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ}
-    (hcont : Continuous V) (hzero : V x_eq = 0)
+    (hcont : Continuous V)
     (hpos : ∀ x ∈ D, x ≠ x_eq → 0 < V x)
     {φ : ℝ → ℝⁿ} (_htraj : IsTrajectory φ f)
     {c₀ : ℝ} (hSub_compact : IsCompact (SublevelSet V c₀))
@@ -515,7 +515,7 @@ lemma tendsto_of_V_tendsto_zero
     {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
     (hV_tendsto : Filter.Tendsto (V ∘ φ) Filter.atTop (nhds 0)) :
     Filter.Tendsto φ Filter.atTop (nhds x_eq) :=
-  tendsto_of_V_tendsto_zero_compact hV.hcont hV.hzero
+  tendsto_of_V_tendsto_zero_compact hV.hcont
     (fun x _ hx => hV.hpos x hx)
     htraj
     (hV.hbounded_sublevel (V (φ 0)))
@@ -620,6 +620,6 @@ theorem lyapunov_local_asymptotic_stable
       hf_cont htraj hSub_sub_D hSub_compact le_rfl hanti hL_nonneg hVt_ge_L
   -- φ t → x_eq
   rw [hL_zero] at hVphi_tendsto
-  exact tendsto_of_V_tendsto_zero_compact hV.hcont hV.hzero
+  exact tendsto_of_V_tendsto_zero_compact hV.hcont
     (fun x hxD hx => hV.hpos x hxD hx)
     htraj hSub_compact hSub_sub_D hanti le_rfl hVphi_tendsto
