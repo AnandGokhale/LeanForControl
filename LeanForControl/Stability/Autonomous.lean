@@ -1,7 +1,6 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
-import LeanForControl.Lyapunov.Defs
-import Architect
+import LeanForControl.Stability.Defs
 
 variable {n : ℕ}
 
@@ -21,10 +20,8 @@ lemma hasDerivAt_V_comp_traj
 -- A trajectory is continuous.
 lemma trajectory_continuous
     {f : ℝⁿ → ℝⁿ} {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) :
-    Continuous φ := by
-  apply continuous_iff_continuousAt.mpr
-  intro t
-  exact (htraj t).differentiableAt.continuousAt
+    Continuous φ :=
+  continuous_iff_continuousAt.mpr fun t => (htraj t).differentiableAt.continuousAt
 
 -- The sphere Metric.sphere x_eq ε is nonempty when 0 < n and 0 < ε.
 lemma sphere_nonempty
@@ -53,8 +50,7 @@ lemma V_plus_linear_bound
     apply antitoneOn_of_deriv_nonpos (convex_Ici (0 : ℝ))
     · exact (hV_cont.comp_continuousOn (trajectory_continuous htraj).continuousOn).add
         (continuous_const.mul continuous_id).continuousOn
-    · intro t _
-      exact ((hasDerivAt_V_comp_traj hV_diff htraj t).add
+    · exact fun t _ => ((hasDerivAt_V_comp_traj hV_diff htraj t).add
         ((hasDerivAt_id t).const_mul γ)).differentiableAt.differentiableWithinAt
     · intro t ht
       rw [interior_Ici] at ht
@@ -82,8 +78,7 @@ lemma V_nonincreasing_on
     apply antitoneOn_of_deriv_nonpos (convex_Icc a b)
     · exact (hV.hcont.comp (trajectory_continuous htraj)).continuousOn
     · -- DifferentiableWithinAt ℝ (V ∘ φ) (interior (Icc a b)) t
-      intro t _
-      exact (hasDerivAt_V_comp_traj hV.hV_diff htraj t).differentiableAt
+      exact fun t _ => (hasDerivAt_V_comp_traj hV.hV_diff htraj t).differentiableAt
         |>.differentiableWithinAt
     · -- deriv (V ∘ φ) t ≤ 0 for t ∈ interior (Icc a b)
       intro t ht
@@ -138,8 +133,7 @@ lemma asymptotic_implies_strict
   hpos              := hV.hpos
   hequil            := hV.hequil
   hLie_neg          := hV.hLie_neg
-  hbounded_sublevel := fun c =>
-    isCompact_sublevel_set V hV.hcont hV.hradial c
+  hbounded_sublevel := isCompact_sublevel_set V hV.hcont hV.hradial
 
 -- IsStrictLocalLyapunovFunction → IsLocalLyapunovFunction (on the same D).
 lemma strict_local_implies_semidefinite
@@ -151,7 +145,7 @@ lemma strict_local_implies_semidefinite
   hcont       := hV.hcont
   hV_diff     := hV.hV_c1.differentiable (by norm_num)
   hzero       := hV.hzero
-  hpos        := fun x hxD hx => hV.hpos x hxD hx
+  hpos        := hV.hpos
   hLie_nonpos := fun x hxD => by
     by_cases hx : x = x_eq
     · simp only [hx, hV.hequil, map_zero, le_refl]
@@ -216,9 +210,8 @@ lemma sublevel_set_invariant
   -- Key: for s ∈ [0, T), φ stays in D on [0, s], so V_nonincreasing_on applies
   have hVs_le : ∀ s : ℝ, 0 ≤ s → s < T → V (φ s) ≤ V (φ 0) := by
     intro s hs_nonneg hs_lt
-    apply V_nonincreasing_on hV htraj hs_nonneg
-    intro r hr
-    exact hΩ_sub_D (le_of_lt (hlt_of_lt r hr.1 (lt_of_le_of_lt hr.2 hs_lt)))
+    exact V_nonincreasing_on hV htraj hs_nonneg fun r hr =>
+      hΩ_sub_D (le_of_lt (hlt_of_lt r hr.1 (lt_of_le_of_lt hr.2 hs_lt)))
   -- Now use continuity to get V(φ T) ≤ V(φ 0) < c, contradicting T ∈ S
   -- nhdsWithin T (Ico 0 T) is NeBot (equals nhdsWithin T (Iio T) which is NeBot since 0 < T)
   haveI hNeBot : (nhdsWithin T (Set.Ico 0 T)).NeBot := by
@@ -245,32 +238,6 @@ lemma sublevel_set_invariant
 -- (8) For t ∈ [0, T*], ‖φ t - x_eq‖ ≤ ε' ≤ ε₀ → φ t ∈ closedBall ε₀ ⊆ D.
 -- (9) V_nonincreasing_on on [0, T*] → V(φ(T*)) ≤ V(φ 0) < m.
 -- (10) φ(T*) ∈ sphere ε' → V(φ(T*)) ≥ m. Contradiction.
-/-- **Milestone (Lyapunov stability theorem).**
-
-If `V` is a local Lyapunov function for `ẋ = f(x)` at `x_eq` on an open
-domain `D`, then `x_eq` is Lyapunov stable. -/
-@[blueprint "thm:lyapunov-stable"
-  (statement := /-- Let $\dot{x} = f(x)$ have an equilibrium $x_{\mathrm{eq}}$.
-    If $V : \mathbb{R}^{n} \to \mathbb{R}$ is a local Lyapunov function for
-    $f$ at $x_{\mathrm{eq}}$ on an open domain $D \ni x_{\mathrm{eq}}$
-    (see \cref{def:isLocalLyapunovFunction}), then $x_{\mathrm{eq}}$ is
-    Lyapunov stable (see \cref{def:lyapunovStable}). -/)
-  (proof := /-- Pick $\varepsilon_{0} > 0$ small enough that the closed ball
-    of radius $\varepsilon_{0}$ around $x_{\mathrm{eq}}$ sits inside $D$. For
-    $\varepsilon \le \varepsilon_{0}$ let
-    $m = \min_{\|y - x_{\mathrm{eq}}\| = \varepsilon} V(y) > 0$ (compactness
-    of the sphere plus positive-definiteness of $V$). Continuity of $V$ at
-    $x_{\mathrm{eq}}$ with $V(x_{\mathrm{eq}}) = 0$ gives $\delta > 0$ with
-    $V(y) < m$ whenever $\|y - x_{\mathrm{eq}}\| < \delta$. Suppose for
-    contradiction some trajectory $\varphi$ with
-    $\|\varphi(0) - x_{\mathrm{eq}}\| < \delta$ has
-    $\|\varphi(t^{*}) - x_{\mathrm{eq}}\| \ge \varepsilon$ for some
-    $t^{*} \ge 0$. By IVT and minimality there is a first time $T^{*}$ where
-    $\|\varphi(T^{*}) - x_{\mathrm{eq}}\| = \varepsilon$; on $[0, T^{*}]$
-    the trajectory stays in $D$, so $V \circ \varphi$ is non-increasing
-    (Lie derivative $\le 0$), giving $V(\varphi(T^{*})) \le V(\varphi(0)) <
-    m$. But $\varphi(T^{*})$ lies on the sphere of radius $\varepsilon$ so
-    $V(\varphi(T^{*})) \ge m$. Contradiction. -/)]
 theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
@@ -302,12 +269,10 @@ theorem lyapunov_stable
       ((Metric.closedBall_subset_closedBall (by grind)).trans hcBall_sub_D)
   -- Step 3: sphere x_eq ε' is compact and nonempty
   -- Step 4: m = min V on sphere x_eq ε' > 0
-  have hV_cont_on : ContinuousOn V (Metric.sphere x_eq ε') :=
-    hV.hcont.continuousOn
   obtain ⟨x_min, hx_min_mem, hx_min_le⟩ :=
     (isCompact_sphere x_eq ε').exists_isMinOn
     (sphere_nonempty x_eq hn (by grind))
-    hV_cont_on
+    hV.hcont.continuousOn
   set m := V x_min
   have hm_pos : 0 < m := by
     apply hV.hpos x_min (hsphere'_sub_D hx_min_mem)
@@ -350,7 +315,6 @@ theorem lyapunov_stable
   -- T* = sInf Q ∈ Q
   set T := sInf Q
   have hT_mem : T ∈ Q := hQ_closed.csInf_mem ⟨t, ht, hge_ε'⟩ hQ_bddBelow
-  have hT_ge_ε' : ε' ≤ ‖φ T - x_eq‖ := hT_mem.2
   -- T > 0: ‖φ 0 - x_eq‖ < δ ≤ ε', so 0 ∉ Q
   have hphi0_lt_ε' : ‖φ 0 - x_eq‖ < ε' := hφ0.trans_le (by grind)
   have hT_pos : 0 < T := by
@@ -361,14 +325,13 @@ theorem lyapunov_stable
   -- For s ∈ [0, T): s ∉ Q → ‖φ s - x_eq‖ < ε'
   have hlt_ε' : ∀ s : ℝ, 0 ≤ s → s < T → ‖φ s - x_eq‖ < ε' := by
     intro s hs_nonneg hs_lt
-    by_contra h
-    push Not at h
+    by_contra h; push Not at h
     exact absurd (csInf_le hQ_bddBelow ⟨hs_nonneg, h⟩) (not_le.mpr hs_lt)
   -- IVT: ‖φ T - x_eq‖ = ε'
   -- At s=0: ‖φ 0 - x_eq‖ < ε', at s=T: ‖φ T - x_eq‖ ≥ ε'.
   -- IVT gives s₀ ∈ [0, T] with ‖φ s₀ - x_eq‖ = ε'. Minimality → s₀ ≥ T → s₀ = T.
   have hT_eq_ε' : ‖φ T - x_eq‖ = ε' := by
-    apply le_antisymm _ hT_ge_ε'
+    apply le_antisymm _ hT_mem.2
     by_contra hlt
     push Not at hlt
     obtain ⟨s₀, hs₀_mem, hs₀_val⟩ :=
@@ -562,24 +525,6 @@ lemma tendsto_of_V_tendsto_zero
     hV_tendsto
 
 -- Theorem 4.1, Parts 2 & 3: IsStrictLyapunovFunction → GlobalAsymptoticStable.
-/-- **Milestone (asymptotic stability via strict Lyapunov function).**
-
-A strict global Lyapunov function with continuous dynamics implies global
-asymptotic stability. -/
-@[blueprint "thm:lyapunov-asymptotic-stable"
-  (statement := /-- Let $\dot{x} = f(x)$ with $f$ continuous and let
-    $V : \mathbb{R}^{n} \to \mathbb{R}$ be a strict global Lyapunov function
-    for $f$ at $x_{\mathrm{eq}}$ (see \cref{def:isStrictLyapunovFunction}).
-    Then $x_{\mathrm{eq}}$ is globally asymptotically stable
-    (see \cref{def:globalAsymptoticStable}). -/)
-  (proof := /-- Lyapunov stability is \cref{thm:lyapunov-stable} applied to
-    the local-Lyapunov part of the strict hypothesis. For attractivity, fix
-    a trajectory $\varphi$. Compactness of every sublevel set
-    (see \cref{def:isStrictLyapunovFunction}) confines $\varphi$ to the
-    compact set $\{V \le V(\varphi(0))\}$, and $V \circ \varphi$ is
-    non-increasing, hence converges to some $L \ge 0$. A LaSalle-style
-    argument using the strict Lie-derivative inequality forces $L = 0$, and
-    a continuity argument then yields $\varphi(t) \to x_{\mathrm{eq}}$. -/)]
 theorem lyapunov_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLyapunovFunction f V x_eq)
@@ -594,22 +539,6 @@ theorem lyapunov_asymptotic_stable
     exact tendsto_of_V_tendsto_zero hV htraj hL_tendsto
 
 -- Corollary: IsAsymptoticLyapunovFunction → GAS (Khalil's classical form).
-/-- **Milestone (Khalil's classical form of GAS).**
-
-A radially unbounded, positive definite `C¹` Lyapunov function with strict
-negative-definite Lie derivative implies global asymptotic stability. -/
-@[blueprint "thm:lyapunov-global-asymptotic-stable"
-  (statement := /-- Let $\dot{x} = f(x)$ with $f$ continuous, and let
-    $V : \mathbb{R}^{n} \to \mathbb{R}$ be an asymptotic Lyapunov function
-    for $f$ at $x_{\mathrm{eq}}$
-    (see \cref{def:isAsymptoticLyapunovFunction}). Then $x_{\mathrm{eq}}$
-    is globally asymptotically stable
-    (see \cref{def:globalAsymptoticStable}). -/)
-  (proof := /-- Radial unboundedness combined with
-    \cref{lem:isCompact-sublevel-set} converts the asymptotic Lyapunov
-    function into a strict Lyapunov function in the sense of
-    \cref{def:isStrictLyapunovFunction}. The conclusion then follows from
-    \cref{thm:lyapunov-asymptotic-stable}. -/)]
 theorem lyapunov_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsAsymptoticLyapunovFunction f V x_eq)
@@ -628,25 +557,6 @@ theorem lyapunov_global_asymptotic_stable
 --     V_tendsto_limit (with compactness replacing radial unboundedness) gives V(φ t) → L ≥ 0.
 --     V_limit_zero on the compact Ωc₀ gives L = 0.
 --     tendsto_of_V_tendsto_zero (local version) gives φ t → x_eq.
-/-- **Milestone (local asymptotic stability).**
-
-A strict local Lyapunov function with a compact sublevel set inside the
-domain implies local asymptotic stability. -/
-@[blueprint "thm:lyapunov-local-asymptotic-stable"
-  (statement := /-- Let $\dot{x} = f(x)$ with $f$ continuous and let
-    $V : \mathbb{R}^{n} \to \mathbb{R}$ be a strict local Lyapunov function
-    for $f$ at $x_{\mathrm{eq}}$ on an open set $D \ni x_{\mathrm{eq}}$
-    (see \cref{def:isStrictLocalLyapunovFunction}). Then $x_{\mathrm{eq}}$
-    is locally asymptotically stable
-    (see \cref{def:localAsymptoticStable}). -/)
-  (proof := /-- Lyapunov stability is \cref{thm:lyapunov-stable} applied to
-    the local-Lyapunov part of the strict hypothesis. For the basin of
-    attraction take the compact sublevel set $\Omega_{c_{0}}(V) \subseteq D$
-    supplied by the hypothesis; trajectories starting in the interior of
-    $\Omega_{c_{0}}(V)$ stay inside (sublevel-set invariance), so $V \circ
-    \varphi$ converges to some $L \ge 0$. The strict Lie-derivative
-    inequality on the compact $\Omega_{c_{0}}(V)$ forces $L = 0$, and a
-    continuity argument then gives $\varphi(t) \to x_{\mathrm{eq}}$. -/)]
 theorem lyapunov_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLocalLyapunovFunction f V x_eq D)

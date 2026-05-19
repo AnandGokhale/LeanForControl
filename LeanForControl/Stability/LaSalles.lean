@@ -1,8 +1,8 @@
 import Mathlib.Dynamics.OmegaLimit
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
-import LeanForControl.Lyapunov.Defs
-import LeanForControl.Lyapunov.Autonomous
+import LeanForControl.Stability.Defs
+import LeanForControl.Stability.Autonomous
 
 variable {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
@@ -176,3 +176,66 @@ theorem lasalle_invariance_principle
       Filter.atTop (fun (t : ℝ) (_ : Unit) => φ t) Set.univ
       hΩ_compact hc₂ hW_open hω_sub_W
   exact hev.mono fun t ht => hWU (ht (Set.mem_univ ()))
+
+/-! ## Corollaries 4.1 and 4.2: Barbashin–Krasovskii theorems -/
+
+/-- Corollary 4.1 (Barbashin): local asymptotic stability via LaSalle.
+    V C¹ and positive definite on D, V̇ ≤ 0 on D, compact sublevel set Ωc ⊆ D,
+    every trajectory starting in Ωc has ω-limit set ⊆ {x_eq}. -/
+theorem lasalle_local_asymptotic_stable
+    {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
+    (hV_c1 : ContDiff ℝ 1 V)
+    (hV_local : IsLocalLyapunovFunction f V x_eq D)
+    {c : ℝ} (hc_pos : 0 < c)
+    (hΩ_sub_D : SublevelSet V c ⊆ D)
+    (hΩ_compact : IsCompact (SublevelSet V c))
+    (hΩ_inv : IsPositivelyInvariant (SublevelSet V c) f)
+    (hLasalle : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f →
+                  φ 0 ∈ SublevelSet V c → omegaLimitTraj φ ⊆ {x_eq}) :
+    LocalAsymptoticStable f x_eq := by
+  refine ⟨lyapunov_stable hn hV_local, ?_⟩
+  obtain ⟨δ, hδ_pos, hδ⟩ := Metric.continuousAt_iff.mp hV_local.hcont.continuousAt c hc_pos
+  refine ⟨δ, hδ_pos, fun φ htraj hφ0 => ?_⟩
+  have hV0 : V (φ 0) < c := by
+    have h := hδ (by rwa [dist_eq_norm])
+    rw [Real.dist_eq, hV_local.hzero, sub_zero] at h
+    exact (abs_lt.mp h).2
+  have hφ0_in : φ 0 ∈ SublevelSet V c := le_of_lt hV0
+  have hconv := lasalle_invariance_principle hΩ_compact hΩ_inv hV_c1
+    (fun x hx => hV_local.hLie_nonpos x (hΩ_sub_D hx))
+    htraj hφ0_in isClosed_singleton (hLasalle φ htraj hφ0_in)
+  rwa [nhdsSet_singleton] at hconv
+
+/-- Corollary 4.2 (Krasovskii): global asymptotic stability via LaSalle.
+    V C¹, positive definite, radially unbounded, V̇ ≤ 0 on ℝⁿ,
+    every trajectory has ω-limit set ⊆ {x_eq}. -/
+theorem lasalle_global_asymptotic_stable
+    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
+    (hV_c1 : ContDiff ℝ 1 V)
+    (hzero : V x_eq = 0)
+    (hpos : ∀ x : ℝⁿ, x ≠ x_eq → 0 < V x)
+    (hLie : ∀ x : ℝⁿ, fderiv ℝ V x (f x) ≤ 0)
+    (hradial : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop)
+    (hLasalle : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → omegaLimitTraj φ ⊆ {x_eq}) :
+    GlobalAsymptoticStable f x_eq := by
+  have hV_local : IsLocalLyapunovFunction f V x_eq Set.univ :=
+    { hD_open := isOpen_univ
+      hD_mem := Set.mem_univ _
+      hcont := hV_c1.continuous
+      hV_diff := hV_c1.differentiable (by norm_num)
+      hzero := hzero
+      hpos := fun x _ hx => hpos x hx
+      hLie_nonpos := fun x _ => hLie x }
+  refine ⟨lyapunov_stable hn hV_local, fun φ htraj => ?_⟩
+  set c := V (φ 0) with hc_def
+  have hΩ_compact : IsCompact (SublevelSet V c) :=
+    isCompact_sublevel_set V hV_c1.continuous hradial c
+  have hΩ_inv : IsPositivelyInvariant (SublevelSet V c) f := by
+    intro ξ hξ hξ0 t ht
+    have hanti := V_antitoneOn_lasalle hV_c1 (fun x _ => hLie x) hξ
+      (fun s _ => Set.mem_univ _)
+    exact (hanti (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht) ht).trans hξ0
+  have hφ0_in : φ 0 ∈ SublevelSet V c := by simp [SublevelSet, hc_def]
+  have hconv := lasalle_invariance_principle hΩ_compact hΩ_inv hV_c1
+    (fun x _ => hLie x) htraj hφ0_in isClosed_singleton (hLasalle φ htraj)
+  rwa [nhdsSet_singleton] at hconv
