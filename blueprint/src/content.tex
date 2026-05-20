@@ -5,7 +5,9 @@
 % Pull in the LaTeX nodes generated from `@[blueprint]`-tagged Lean
 % declarations. The library file is rebuilt by `lake build :blueprint`
 % and lives under .lake/build/blueprint/library/.
-\input{../../.lake/build/blueprint/library/LeanForControl}
+\IfFileExists{../../.lake/build/blueprint/library/LeanForControl.tex}{%
+  \input{../../.lake/build/blueprint/library/LeanForControl}%
+}{}
 
 \chapter{Linear systems}
 
