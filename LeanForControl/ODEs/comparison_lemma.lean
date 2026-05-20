@@ -22,7 +22,7 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
         (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
         (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
-def g_lambda (lam : ℝ) : ℝ → ℝ → ℝ := fun _ _ => lam
+def g_lambda (lam : ℝ) (_ _ : ℝ) : ℝ := lam
 
 /-! ### Auxiliary lemmas needed for the comparison proof -/
 
@@ -78,7 +78,6 @@ lemma comparison_claim_1
     hv_cont.continuousOn.sub (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
   obtain ⟨s, hs_mem, hs_eq⟩ := intermediate_value_Icc ht_bad_mem.1 h_cont_diff
     ⟨by simpa [diff, hz₀] using hv₀, le_of_lt (sub_pos.mpr h_bad_ineq)⟩
-
   -- Step 2: Define the set of points before t_bad where v(t) = z(t)
   -- Because v(t₀) ≤ z(t₀) and v(t_bad) > z(t_bad), they must cross.
   let S := { s ∈ Icc t₀ t_bad | v s = z s }
@@ -163,7 +162,6 @@ lemma comparison_claim_1
     apply div_le_div_of_nonneg_right
       (by rw [h_eq_a]; linarith [h_strict (a + h) ⟨by linarith, by linarith⟩])
       h_gt0.le
-
   have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 (f a (z a) + lam)) := by
     -- 1. Extract the right derivative specifically at 'a'
     have h_deriv_a := hz_deriv a ha_mem_Ico
@@ -186,7 +184,6 @@ lemma comparison_claim_1
     dsimp [q_z]
     have h_eq : a + h - a = h := by ring
     rw [slope_def_field, h_eq]
-
   have h_chain := calc f a (z a) + lam
       _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
       _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup
