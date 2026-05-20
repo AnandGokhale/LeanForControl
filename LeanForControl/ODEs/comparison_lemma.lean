@@ -272,7 +272,5 @@ theorem comparison_lemma
     have hz₀_bound : ‖u₀ - u₀‖ ≤ lam := by simp [hlam_pos.le]
     exact continuous_dependence_parameters (le_of_lt ht) hL hlam_pos hlam_cond
       hu_sol hz_sol hu_cont hz_cont hf_cont hg_cont hLip hg_bound hz₀_bound t ht_mem
-  have hzu : z t - u t ≤ ε / 2 := by
-    have h : |u t - z t| ≤ ε / 2 := by rwa [← Real.norm_eq_abs]
-    linarith [(abs_le.mp h).1]
-  linarith [half_lt_self hε]
+  linarith [half_lt_self hε,
+    (abs_le.mp (by rwa [← Real.norm_eq_abs] : |u t - z t| ≤ ε/2)).1]

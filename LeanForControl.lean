@@ -8,7 +8,6 @@ import LeanForControl.LinearSystems.Observability
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.comparison_lemma
 import LeanForControl.ODEs.gronwall_bellman
-import LeanForControl.ODEs.scratchpad
 import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.Defs
 import LeanForControl.Stability.LaSalles
