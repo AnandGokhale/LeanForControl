@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.Stability.Defs
+import Architect
 
 variable {n : ℕ}
 
@@ -252,6 +253,16 @@ Proof sketch:
 4. If `‖φ 0 − x_eq‖ < δ` and `‖φ t* − x_eq‖ ≥ ε` for some `t*`, let `T* = sInf Q`
    where `Q = {t ≥ 0 | ε' ≤ ‖φ t − x_eq‖}`.
 5. `V_nonincreasing_on` on `[0, T*]` gives `V(φ T*) ≤ V(φ 0) < m ≤ V(φ T*)`. Contradiction. -/
+@[blueprint "thm:lyapunov-stable"
+  (statement := /-- \textbf{Theorem 4.1, Part 1.}
+    If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
+    $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
+    is Lyapunov stable (\cref{def:lyapunovStable}). -/)
+  (proof := /-- Pick $\varepsilon_{0}$ so $\overline{B}(x_{\mathrm{eq}},\varepsilon_{0})
+    \subseteq D$. Let $m = \min_{S_{\varepsilon'}} V > 0$. Choose $\delta$ with
+    $V < m$ on $B(x_{\mathrm{eq}},\delta)$. If $\|\varphi(t^{*})-x_{\mathrm{eq}}\|
+    \ge \varepsilon$, monotonicity of $V$ gives $V(\varphi(t^{*})) \le V(\varphi(0))
+    < m \le V(\varphi(t^{*}))$, a contradiction. -/)]
 theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
@@ -515,6 +526,14 @@ lemma tendsto_of_V_tendsto_zero
     hV_tendsto
 
 /-- **Theorem 4.1, Parts 2 & 3.** `IsStrictLyapunovFunction` implies `GlobalAsymptoticStable`. -/
+@[blueprint "thm:lyapunov-asymptotic-stable"
+  (statement := /-- \textbf{Theorem 4.1, Parts 2 \& 3.}
+    If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
+    and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
+    (\cref{def:globalAsymptoticStable}). -/)
+  (proof := /-- Stability from \cref{thm:lyapunov-stable}. For convergence:
+    $V(\varphi(t)) \to L \ge 0$ by monotone convergence; $L = 0$ by a
+    LaSalle-type argument; $\varphi(t) \to x_{\mathrm{eq}}$ by coercivity. -/)]
 theorem lyapunov_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLyapunovFunction f V x_eq)
@@ -530,6 +549,15 @@ theorem lyapunov_asymptotic_stable
 
 /-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
     (the classical radially-unbounded form of Khalil's theorem). -/
+@[blueprint "thm:lyapunov-global-asymptotic-stable"
+  (statement := /-- \textbf{Corollary.}
+    If $V$ is a radially unbounded strict Lyapunov function
+    (\cref{def:isAsymptoticLyapunovFunction}) and $f$ is continuous, then
+    $x_{\mathrm{eq}}$ is globally asymptotically stable. -/)
+  (proof := /-- Radial unboundedness gives compact sublevel sets
+    (\cref{lem:isCompact-sublevel-set}), so $V$ satisfies
+    \cref{def:isStrictLyapunovFunction}; apply
+    \cref{thm:lyapunov-asymptotic-stable}. -/)]
 theorem lyapunov_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsAsymptoticLyapunovFunction f V x_eq)
@@ -548,6 +576,15 @@ Proof sketch:
    (`sublevel_set_invariant`). `V(φ t) → L ≥ 0` via monotone convergence.
    `V_limit_zero_of_compact` gives `L = 0`.
    `tendsto_of_V_tendsto_zero_compact` gives `φ t → x_eq`. -/
+@[blueprint "thm:lyapunov-local-asymptotic-stable"
+  (statement := /-- \textbf{Theorem 4.1 (local).}
+    If $V$ is a strict local Lyapunov function
+    (\cref{def:isStrictLocalLyapunovFunction}) and $f$ is continuous, then
+    $x_{\mathrm{eq}}$ is locally asymptotically stable
+    (\cref{def:localAsymptoticStable}). -/)
+  (proof := /-- The compact sublevel set $\Omega_{c_{0}} \subseteq D$ is
+    positively invariant. $V(\varphi(t)) \to L \ge 0$ by monotone convergence;
+    $L = 0$ by compactness; $\varphi(t) \to x_{\mathrm{eq}}$. -/)]
 theorem lyapunov_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLocalLyapunovFunction f V x_eq D)

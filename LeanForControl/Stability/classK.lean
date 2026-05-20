@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
+import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral
 
@@ -35,6 +36,11 @@ satisfying `f(0) = 0`. -/
 
 /-- A class K function on `[0,a)`: continuous, strictly increasing, zero at zero,
     together with a stored inverse that witnesses the bijection `[0,a) ↔ [0,b)`. -/
+@[blueprint "def:isClassK"
+  (statement := /-- A \emph{class $\mathcal{K}$} function on $[0,a)$ is a
+    continuous strictly increasing map $\alpha : [0,a) \to [0,b)$ with
+    $\alpha(0) = 0$. The structure records both $\alpha$ and its inverse
+    $\alpha^{-1} : [0,b) \to [0,a)$. -/)]
 structure ClassK (a b : ℝ) where
   ha : 0 < a
   hb : 0 < b
@@ -245,6 +251,10 @@ certificates and ISS bounds. -/
 
 /-- A class K∞ function: continuous, strictly increasing, `f(0) = 0`, radially unbounded
     (`f(r) → ∞`), all on `[0, ∞)`. -/
+@[blueprint "def:isClassKInfty"
+  (statement := /-- A \emph{class $\mathcal{K}_{\infty}$} function is a continuous
+    strictly increasing map $\alpha : [0,\infty) \to [0,\infty)$ with $\alpha(0) = 0$
+    and $\alpha(r) \to \infty$ as $r \to \infty$. -/)]
 structure ClassKInfty where
   /-- The forward function of a class K∞ function. -/
   toFun : ℝ → ℝ
@@ -430,6 +440,11 @@ It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖
 
 /-- A class KL function `β : [0,a) × [0,∞) → ℝ`:
     class K in the first argument, antitone and tending to 0 in the second. -/
+@[blueprint "def:isClassKL"
+  (statement := /-- A \emph{class $\mathcal{KL}$} function on $[0,a) \times [0,\infty)$
+    is continuous, class $\mathcal{K}$ in the first argument, and for each fixed $r > 0$
+    is strictly decreasing and tends to $0$ as $s \to \infty$. It arises as the bound
+    $\|x(t)\| \le \beta(\|x_0\|, t)$ in asymptotic stability estimates. -/)]
 structure ClassKL (a : ℝ) where
   ha : 0 < a
   /-- The forward function of a class KL function. -/

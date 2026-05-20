@@ -1,5 +1,6 @@
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Architect
 
 open MeasureTheory intervalIntegral Real Set Filter
 
@@ -91,6 +92,26 @@ then `y` is bounded by:
 -/
 
 
+/-- **Lemma A.1** (Gronwall--Bellman). If $\Lambda, \mu$ are continuous on $[a,b]$ with
+    $\mu \ge 0$, and $y$ is continuous satisfying
+    $y(t) \le \Lambda(t) + \int_{a}^{t} \mu(s)\, y(s)\, ds$, then
+    $y(t) \le \Lambda(t) + \int_{a}^{t} \Lambda(s)\,\mu(s)\,e^{\int_{s}^{t}\mu(\tau)\,d\tau}\,ds$.
+-/
+@[blueprint "thm:gronwall-bellman"
+  (statement := /-- \textbf{Gronwall--Bellman inequality.}
+    Let $\Lambda, \mu : [a,b] \to \mathbb{R}$ be continuous with $\mu \ge 0$, and let
+    $y : [a,b] \to \mathbb{R}$ be continuous satisfying
+    \[
+      y(t) \;\le\; \Lambda(t) + \int_{a}^{t} \mu(s)\,y(s)\,\mathrm{d}s
+      \qquad \forall\, t \in [a,b].
+    \]
+    Then
+    \[
+      y(t) \;\le\; \Lambda(t)
+        + \int_{a}^{t} \Lambda(s)\,\mu(s)\,
+            e^{\int_{s}^{t}\mu(\tau)\,\mathrm{d}\tau}\,\mathrm{d}s
+      \qquad \forall\, t \in [a,b].
+    \] -/)]
 theorem gronwall_bellman_inequality {a b : ℝ} {Λ μ y : ℝ → ℝ}
     (hΛ : ContinuousOn Λ (Icc a b))
     (hμ : ContinuousOn μ (Icc a b))

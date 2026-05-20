@@ -4,9 +4,8 @@ import Mathlib.Analysis.Calculus.ContDiff.Defs
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Topology.MetricSpace.Bounded
 import Mathlib.Analysis.Normed.Group.Bounded
-
-
 import Mathlib.Topology.Order.MonotoneContinuity
+import Architect
 
 variable {n : ℕ}
 
@@ -42,10 +41,19 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-- A global solution `φ : ℝ → ℝⁿ` of the autonomous ODE `ẋ = f(x)`,
     defined for all `t ∈ ℝ`. -/
+@[blueprint "def:isTrajectory"
+  (statement := /-- A \emph{trajectory} of the autonomous ODE $\dot{x} = f(x)$
+    is a globally defined map $\varphi : \mathbb{R} \to \mathbb{R}^{n}$ satisfying
+    \[
+      \dot{\varphi}(t) = f(\varphi(t)) \qquad \text{for every } t \in \mathbb{R}.
+    \] -/)]
 def IsTrajectory (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
   ∀ t : ℝ, HasDerivAt φ (f (φ t)) t
 
 /-- An equilibrium point `x_eq` of `ẋ = f(x)`: `f(x_eq) = 0`. -/
+@[blueprint "def:isEquilibrium"
+  (statement := /-- A point $x_{\mathrm{eq}} \in \mathbb{R}^{n}$ is an
+    \emph{equilibrium} of $\dot{x} = f(x)$ when $f(x_{\mathrm{eq}}) = 0$. -/)]
 def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   f x_eq = 0
 
@@ -53,18 +61,37 @@ def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 
 /-- Standard Lyapunov (ε-δ) stability: trajectories starting near `x_eq` remain near `x_eq`
     for all future time. -/
+@[blueprint "def:lyapunovStable"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{Lyapunov stable} when
+    \[
+      \forall \varepsilon > 0,\;\exists \delta > 0,\;\forall \varphi,\;
+        \mathrm{IsTrajectory}(\varphi,f)
+        \;\Rightarrow\; \|\varphi(0)-x_{\mathrm{eq}}\|<\delta
+        \;\Rightarrow\; \forall t\ge 0,\;\|\varphi(t)-x_{\mathrm{eq}}\|<\varepsilon.
+    \] -/)]
 def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ φ : ℝ → ℝⁿ,
     IsTrajectory φ f → ‖φ 0 - x_eq‖ < δ → ∀ t ≥ 0, ‖φ t - x_eq‖ < ε
 
 /-- Local asymptotic stability: Lyapunov stable, and trajectories starting sufficiently near
     `x_eq` also converge to `x_eq` as `t → ∞`. -/
+@[blueprint "def:localAsymptoticStable"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{locally asymptotically
+    stable} (LAS) when it is Lyapunov stable (\cref{def:lyapunovStable}) and there
+    exists $c > 0$ such that every trajectory $\varphi$ with
+    $\|\varphi(0) - x_{\mathrm{eq}}\| < c$ satisfies
+    $\varphi(t) \to x_{\mathrm{eq}}$ as $t \to \infty$. -/)]
 def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∃ c > 0, ∀ φ : ℝ → ℝⁿ,
     IsTrajectory φ f → ‖φ 0 - x_eq‖ < c → Filter.Tendsto φ Filter.atTop (nhds x_eq)
 
 /-- Global asymptotic stability: Lyapunov stable, and every trajectory converges to `x_eq`. -/
+@[blueprint "def:globalAsymptoticStable"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally asymptotically
+    stable} (GAS) when it is Lyapunov stable (\cref{def:lyapunovStable}) and every
+    trajectory $\varphi$ satisfies $\varphi(t) \to x_{\mathrm{eq}}$ as
+    $t \to \infty$. -/)]
 def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → Filter.Tendsto φ Filter.atTop (nhds x_eq)
@@ -72,6 +99,12 @@ def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 /-! ## Sublevel sets -/
 
 /-- The sublevel set `{x | V(x) ≤ c}` of `V` at level `c`. -/
+@[blueprint "def:sublevelSet"
+  (statement := /-- The \emph{sublevel set} of $V : \mathbb{R}^{n} \to \mathbb{R}$
+    at level $c \in \mathbb{R}$ is
+    \[
+      \Omega_{c}(V) \;=\; \{\, x \in \mathbb{R}^{n} \;:\; V(x) \le c \,\}.
+    \] -/)]
 def SublevelSet (V : ℝⁿ → ℝ) (c : ℝ) : Set ℝⁿ := {x | V x ≤ c}
 
 /-! ## Lyapunov function structures
@@ -96,6 +129,12 @@ The Lie derivative DV(x)[f(x)] = fderiv ℝ V x (f x). -/
 
     `D` is an open neighborhood of `x_eq`; `V` is globally smooth so that the chain rule
     and IVT arguments can be applied uniformly. -/
+@[blueprint "def:isLocalLyapunovFunction"
+  (statement := /-- A function $V : \mathbb{R}^{n} \to \mathbb{R}$ is a
+    \emph{local Lyapunov function} on an open domain $D \ni x_{\mathrm{eq}}$
+    when $V$ is smooth, $V(x_{\mathrm{eq}}) = 0$, $V > 0$ on
+    $D \setminus \{x_{\mathrm{eq}}\}$, and the Lie derivative satisfies
+    $\dot{V}(x) = \nabla V(x) \cdot f(x) \le 0$ for all $x \in D$. -/)]
 structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open     : IsOpen D
   hD_mem      : x_eq ∈ D
@@ -110,6 +149,12 @@ structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (
 
     `hcompact`: ∃ c > 0 with `{V ≤ c} ⊆ D` and `{V ≤ c}` compact. This replaces radial
     unboundedness and holds whenever `D` is bounded or `V` grows toward `∂D`. -/
+@[blueprint "def:isStrictLocalLyapunovFunction"
+  (statement := /-- A \emph{strict local Lyapunov function} on $D$ strengthens
+    \cref{def:isLocalLyapunovFunction}: the Lie derivative satisfies
+    $\dot{V}(x) < 0$ for all $x \in D \setminus \{x_{\mathrm{eq}}\}$, and
+    there exists $c > 0$ such that the compact sublevel set
+    $\Omega_{c}(V) \subseteq D$ (\cref{def:sublevelSet}). -/)]
 structure IsStrictLocalLyapunovFunction
     (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open   : IsOpen D
@@ -126,6 +171,12 @@ structure IsStrictLocalLyapunovFunction
     derivative on all of `ℝⁿ`, and all sublevel sets are compact (coercivity). Implies GAS.
 
     `hbounded_sublevel` encodes coercivity; in `ℝⁿ` this is equivalent to radial unboundedness. -/
+@[blueprint "def:isStrictLyapunovFunction"
+  (statement := /-- A \emph{global strict Lyapunov function} for $\dot{x} = f(x)$
+    at $x_{\mathrm{eq}}$ is a $C^{1}$ map $V : \mathbb{R}^{n} \to \mathbb{R}$
+    with $V(x_{\mathrm{eq}}) = 0$, $V > 0$ everywhere else,
+    $\dot{V}(x) < 0$ on $\mathbb{R}^{n} \setminus \{x_{\mathrm{eq}}\}$,
+    and all sublevel sets $\Omega_{c}(V)$ compact (coercivity). -/)]
 structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
   hcont             : Continuous V
   hV_c1             : ContDiff ℝ 1 V
@@ -138,6 +189,13 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
 /-- Classical GAS Lyapunov certificate: C¹, positive definite, strictly negative Lie derivative,
     and radially unbounded (`V(x) → ∞` as `‖x‖ → ∞`). Implies `IsStrictLyapunovFunction`
     via `isCompact_sublevel_set` in `Autonomous.lean`. -/
+@[blueprint "def:isAsymptoticLyapunovFunction"
+  (statement := /-- The classical GAS Lyapunov certificate: a $C^{1}$ map
+    $V : \mathbb{R}^{n} \to \mathbb{R}$ with $V(x_{\mathrm{eq}}) = 0$,
+    $V > 0$ elsewhere, $\dot{V} < 0$ on $\mathbb{R}^{n} \setminus \{x_{\mathrm{eq}}\}$,
+    and radially unbounded ($V(x) \to \infty$ as $\|x\| \to \infty$).
+    Implies \cref{def:isStrictLyapunovFunction} via
+    \cref{lem:isCompact-sublevel-set}. -/)]
 structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
   hcont    : Continuous V
   hV_c1    : ContDiff ℝ 1 V
@@ -151,6 +209,13 @@ structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → �
 
 /-- A set `S` is positively invariant for `ẋ = f(x)`: every trajectory starting in `S`
     remains in `S` for all `t ≥ 0`. -/
+@[blueprint "def:isPositivelyInvariant"
+  (statement := /-- A set $S \subseteq \mathbb{R}^{n}$ is \emph{positively invariant}
+    for $\dot{x} = f(x)$ when every trajectory $\varphi$ starting in $S$ remains
+    in $S$ for all future time:
+    \[
+      \varphi(0) \in S \;\Rightarrow\; \varphi(t) \in S \quad \forall\, t \ge 0.
+    \] -/)]
 def IsPositivelyInvariant (S : Set ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
   ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → φ 0 ∈ S → ∀ t ≥ 0, φ t ∈ S
 
@@ -160,6 +225,13 @@ Proof:
 1. Closed: `SublevelSet V c = V ⁻¹' (Iic c)`, closed by continuity.
 2. Bounded: coercivity gives `R` with `SublevelSet V c ⊆ closedBall 0 R`.
 3. Heine–Borel in `ℝⁿ`: closed + bounded = compact. -/
+@[blueprint "lem:isCompact-sublevel-set"
+  (statement := /-- If $V : \mathbb{R}^{n} \to \mathbb{R}$ is continuous and
+    radially unbounded ($V(x) \to \infty$ as $\|x\| \to \infty$), then every
+    sublevel set $\Omega_{c}(V)$ (\cref{def:sublevelSet}) is compact. -/)
+  (proof := /-- Closed: $\Omega_{c}(V) = V^{-1}((-\infty,c])$ by continuity.
+    Bounded: coercivity yields $R$ with $\Omega_{c}(V) \subseteq \overline{B}(0,R)$.
+    Compact: Heine--Borel in $\mathbb{R}^{n}$. -/)]
 lemma isCompact_sublevel_set
     (V : ℝⁿ → ℝ) (hcont : Continuous V)
     (hradial : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop)

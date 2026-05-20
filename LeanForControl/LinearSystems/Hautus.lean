@@ -210,7 +210,8 @@ eigenvector (or zero) of `A` with eigenvalue `μ` and is annihilated by `C`. -/
     \[
       H_{A, C}(\mu) \cdot v = 0
         \iff
-      \bigl(A\, v = \mu\, v \;\wedge\; C\, v = 0\bigr). -/)]
+      \bigl(A\, v = \mu\, v \;\wedge\; C\, v = 0\bigr).
+    \] -/)]
 lemma hautusObservabilityMatrix_mulVec_eq_zero_iff
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
     (μ : ℂ) (v : Fin n → ℂ) :

@@ -5,6 +5,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.ODE.Gronwall
 import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.ODEs.gronwall_bellman
+import Architect
 
 open MeasureTheory Metric Set Filter TopologicalSpace
 open scoped Real Interval
@@ -28,6 +29,13 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- An *integral solution* of `ẋ = F(t, x)` on `[t₀, t₁]` with initial value `x₀`:
     for every `t ∈ [t₀, t₁]`, `x(t) = x₀ + ∫_{t₀}^{t} F(s, x(s)) ds`. -/
+@[blueprint "def:isIntegralSolution"
+  (statement := /-- A function $x : [t_0, t_1] \to E$ is an \emph{integral solution}
+    of $\dot{x} = F(t,x)$ with initial value $x_0$ when
+    \[
+      x(t) \;=\; x_0 + \int_{t_0}^{t} F(s,\, x(s))\,\mathrm{d}s
+      \qquad \forall\, t \in [t_0, t_1].
+    \] -/)]
 def IsIntegralSolution (t₀ t₁ : ℝ) (x : ℝ → E) (x₀ : E) (F : ℝ → E → E) : Prop :=
   ∀ t ∈ Set.Icc t₀ t₁, x t = x₀ + ∫ s in t₀..t, F s (x s)
 
@@ -143,6 +151,14 @@ A uniform `ε`-bound: if `‖z₀ − y₀‖ ≤ α` and `‖g(t, x)‖ ≤ α`
 
 `λ`-dependence is modeled via the perturbation term `g` (i.e., `g t x = f_λ t x − f t x`).
 The `α`-condition plays the role of `δ` from the classical statement. -/
+@[blueprint "thm:continuous-dependence-parameters"
+  (statement := /-- \textbf{Theorem 3.5} (Continuous dependence on parameters).
+    If $y$ solves $\dot{y} = f(t,y)$ and $z$ solves $\dot{z} = f(t,z) + g(t,z)$
+    with $\|g(t,x)\| \le \alpha$ and $\|z_0 - y_0\| \le \alpha$, and
+    $\alpha(1 + 1/L)e^{L(t_1-t_0)} \le \varepsilon$, then
+    $\|y(t) - z(t)\| \le \varepsilon$ for all $t \in [t_0, t_1]$. -/)
+  (proof := /-- Reduce to \cref{thm:gronwall-bellman} applied to $\|y-z\|$,
+    using the $L$-Lipschitz bound on $f$ and the $\alpha$-bound on $g$. -/)]
 theorem continuous_dependence_parameters
     (ht : t₀ ≤ t₁)
     (hL : 0 < L)

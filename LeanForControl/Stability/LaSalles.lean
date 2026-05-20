@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.Stability.Defs
 import LeanForControl.Stability.Autonomous
+import Architect
 
 variable {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
@@ -166,6 +167,12 @@ Let Ω be compact and positively invariant for ẋ = f(x), V : ℝⁿ → ℝ a 
 with V̇(x) = DV(x)[f(x)] ≤ 0 on Ω, and M a closed set contained in Ω.
 If ω(φ) ⊆ M (which in the classical theorem follows from M being the largest invariant
 subset of E = {x ∈ Ω | V̇(x) = 0}, via ODE uniqueness), then φ(t) → M. -/
+@[blueprint "thm:lasalle-invariance-principle"
+  (statement := /-- \textbf{LaSalle's invariance principle.}
+    Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$,
+    $V \in C^{1}$ with $\dot{V}(x) \le 0$ on $\Omega$, and $M \subseteq \Omega$ closed.
+    If the $\omega$-limit set of any trajectory $\varphi$ starting in $\Omega$ satisfies
+    $\omega(\varphi) \subseteq M$, then $\varphi(t) \to M$ as $t \to \infty$. -/)]
 theorem lasalle_invariance_principle
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {Ω M : Set ℝⁿ}
     (hΩ_compact : IsCompact Ω)
@@ -206,6 +213,12 @@ theorem lasalle_invariance_principle
 /-- Corollary 4.1 (Barbashin): local asymptotic stability via LaSalle.
     V C¹ and positive definite on D, V̇ ≤ 0 on D, compact sublevel set Ωc ⊆ D,
     every trajectory starting in Ωc has ω-limit set ⊆ {x_eq}. -/
+@[blueprint "thm:lasalle-local-asymptotic-stable"
+  (statement := /-- \textbf{Corollary 4.1 (Barbashin).}
+    If $V \in C^1$ is positive definite on $D$, $\dot{V} \le 0$ on $D$, there exists a
+    compact sublevel set $\Omega_c \subseteq D$, and every trajectory starting in $\Omega_c$
+    has $\omega$-limit set $\subseteq \{x_{\mathrm{eq}}\}$, then $x_{\mathrm{eq}}$ is
+    locally asymptotically stable (\cref{def:localAsymptoticStable}). -/)]
 theorem lasalle_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV_c1 : ContDiff ℝ 1 V)
@@ -233,6 +246,12 @@ theorem lasalle_local_asymptotic_stable
 /-- Corollary 4.2 (Krasovskii): global asymptotic stability via LaSalle.
     V C¹, positive definite, radially unbounded, V̇ ≤ 0 on ℝⁿ,
     every trajectory has ω-limit set ⊆ {x_eq}. -/
+@[blueprint "thm:lasalle-global-asymptotic-stable"
+  (statement := /-- \textbf{Corollary 4.2 (Krasovskii).}
+    If $V \in C^1$ is positive definite, $\dot{V} \le 0$ on $\mathbb{R}^n$, radially
+    unbounded, and every trajectory has $\omega$-limit set $\subseteq \{x_{\mathrm{eq}}\}$,
+    then $x_{\mathrm{eq}}$ is globally asymptotically stable
+    (\cref{def:globalAsymptoticStable}). -/)]
 theorem lasalle_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV_c1 : ContDiff ℝ 1 V)

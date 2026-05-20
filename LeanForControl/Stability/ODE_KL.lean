@@ -1,6 +1,7 @@
 import LeanForControl.Stability.classK
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
+import Architect
 
 
 /-!
@@ -293,6 +294,13 @@ lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
 
 /-- **Osgood construction:** given `α : ClassK a b` satisfying the Osgood condition
     (`EtaDiverges`), `σ(r, s) = η⁻¹(η(r) + s)` extended by `σ(0, s) = 0` is Class KL. -/
+@[blueprint "thm:class-KL-osgood"
+  (statement := /-- \textbf{Osgood construction.}
+    Given a class $\mathcal{K}$ function $\alpha$ satisfying the Osgood condition
+    $\int_0^{\varepsilon} \frac{1}{\alpha(x)}\,dx = +\infty$,
+    the function $\sigma(r, s) = \eta^{-1}(\eta(r) + s)$, where
+    $\eta(y) = -\int_{\mathrm{base}}^{y} \frac{1}{\alpha(x)}\,dx$,
+    is a class $\mathcal{KL}$ function (\cref{def:isClassKL}). -/)]
 theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (hcont_inv : ContinuousOn (fun x => 1 / α.toFun x) (Set.Ioo 0 a))

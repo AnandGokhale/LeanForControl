@@ -2,6 +2,7 @@ import LeanForControl.Stability.classK
 import LeanForControl.axioms
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
+import Architect
 
 open Set Filter Topology MeasureTheory Metric
 
@@ -270,6 +271,19 @@ lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBa
     there exist class K functions `α₁`, `α₂` such that
 
       `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. -/
+@[blueprint "thm:lyapunov-class-K-bounds"
+  (statement := /-- \textbf{Lemma 4.3} (Khalil).
+    For any continuous positive-definite function $V : \mathbb{R}^{n} \to \mathbb{R}$
+    on $\overline{B}(0,r)$, there exist class $\mathcal{K}$ functions $\alpha_1, \alpha_2$
+    such that
+    \[
+      \alpha_1(\|x\|) \;\le\; V(x) \;\le\; \alpha_2(\|x\|)
+      \qquad \forall\, \|x\| \le r.
+    \] -/)
+  (proof := /-- Construct $\alpha_1$ from the infimum of $V$ on annuli (lower bound),
+    and $\alpha_2$ from the supremum of $V$ on balls (upper bound). Each is sandwiched
+    by a class $\mathcal{K}$ function via the axioms in
+    \texttt{LeanForControl.axioms}. -/)]
 theorem LyapunovClassKBounds [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂),

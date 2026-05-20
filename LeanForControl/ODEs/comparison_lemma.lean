@@ -6,6 +6,7 @@ import Mathlib.Analysis.Calculus.Deriv.Add
 import LeanForControl.ODEs.ODE_properties
 import Mathlib.Topology.Order.IntermediateValue
 import Mathlib.Topology.ContinuousOn
+import Architect
 
 /-!
 # `ODEs.ComparisonLemma`
@@ -223,6 +224,16 @@ Hypotheses:
 
 The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_dependence_parameters`
 (Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all `ε > 0`. -/
+@[blueprint "thm:comparison-lemma"
+  (statement := /-- \textbf{Comparison Lemma 3.4.}
+    If $u$ solves $\dot{u} = f(t,u)$ with $u(t_0) = u_0$, and $v$ is continuous with
+    $D^{+}v(t) \le f(t,v(t))$ and $v(t_0) \le u_0$, then $v(t) \le u(t)$ for all
+    $t \in [t_0, t_1]$. -/)
+  (proof := /-- For each $\lambda > 0$, the perturbed solution $z_\lambda$ of
+    $\dot{z} = f(t,z) + \lambda$ satisfies $v \le z_\lambda$ by
+    \cref{lem:comparison-claim-1}. By \cref{thm:continuous-dependence-parameters},
+    $\|u - z_\lambda\| \le \varepsilon/2$. Since $\varepsilon > 0$ is arbitrary,
+    $v(t) \le u(t)$. -/)]
 theorem comparison_lemma
     {f : ℝ → ℝ → ℝ} {u v : ℝ → ℝ} {t₀ t₁ u₀ : ℝ} {L : ℝ}
     (ht : t₀ < t₁)

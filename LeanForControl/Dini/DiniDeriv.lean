@@ -6,6 +6,7 @@ import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Topology.Order.Basic
 import Mathlib.Order.Filter.ENNReal
+import Architect
 
 /-!
 # Upper Right Dini Derivative
@@ -37,6 +38,13 @@ noncomputable section
 /-- The upper right Dini derivative of `f` at `t`:
 $$D^+ f(t) \;=\; \limsup_{h \to 0^+} \frac{f(t+h) - f(t)}{h}$$
 -/
+@[blueprint "def:diniDerivRight"
+  (statement := /-- The \emph{upper right Dini derivative} of $f : \mathbb{R} \to \mathbb{R}$
+    at $t$ is
+    \[
+      D^{+} f(t) \;=\; \limsup_{h \to 0^{+}} \frac{f(t+h)-f(t)}{h}.
+    \]
+    When $f$ is differentiable at $t$ this equals $f'(t)$. -/)]
 def diniDerivRight (f : ℝ → ℝ) (t : ℝ) : ℝ :=
   limsup (fun h => (f (t + h) - f t) / h) (𝓝[Ioi 0] 0)
 
