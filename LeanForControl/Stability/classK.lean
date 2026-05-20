@@ -38,7 +38,9 @@ satisfying `f(0) = 0`. -/
 structure ClassK (a b : ℝ) where
   ha : 0 < a
   hb : 0 < b
+  /-- The forward function of a class K function. -/
   toFun  : ℝ → ℝ
+  /-- The inverse function of a class K function. -/
   invFun : ℝ → ℝ
   map_zero    : toFun 0 = 0
   continuous  : ContinuousOn toFun (Set.Ico 0 a)
@@ -244,7 +246,9 @@ certificates and ISS bounds. -/
 /-- A class K∞ function: continuous, strictly increasing, `f(0) = 0`, radially unbounded
     (`f(r) → ∞`), all on `[0, ∞)`. -/
 structure ClassKInfty where
+  /-- The forward function of a class K∞ function. -/
   toFun : ℝ → ℝ
+  /-- The inverse function of a class K∞ function. -/
   invFun  : ℝ → ℝ
   map_zero      : toFun 0 = 0
   continuous    : ContinuousOn toFun (Ici 0)
@@ -428,6 +432,7 @@ It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖
     class K in the first argument, antitone and tending to 0 in the second. -/
 structure ClassKL (a : ℝ) where
   ha : 0 < a
+  /-- The forward function of a class KL function. -/
   toFun : ℝ → ℝ → ℝ
   map_zero      : ∀ s ≥ 0, toFun 0 s = 0
   continuous_r  : ∀ s ≥ 0, ContinuousOn (fun r => toFun r s) (Set.Ico 0 a)

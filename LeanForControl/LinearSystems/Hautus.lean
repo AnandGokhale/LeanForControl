@@ -233,11 +233,11 @@ lemma hautusObservabilityMatrix_mulVec_eq_zero_iff
     funext x
     cases x with
     | inl i =>
-      simp only [Matrix.fromRows, Matrix.of_apply, Sum.elim_inl, Pi.zero_apply]
+      simp only [Sum.elim_inl, Pi.zero_apply]
       rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, hAv]
       simp
     | inr j =>
-      simp only [Matrix.fromRows, Matrix.of_apply, Sum.elim_inr, Pi.zero_apply]
+      simp only [Sum.elim_inr, Pi.zero_apply]
       simpa using congrFun hCv j
 
 /-- **Failure direction of observability Hautus.** A non-observable system

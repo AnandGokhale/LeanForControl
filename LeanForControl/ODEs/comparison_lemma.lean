@@ -57,10 +57,6 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
         (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
         (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
-/-- Constant perturbation vector field `(t, x) ↦ λ`, used to form the perturbed system
-`ż = f(t, z) + λ` in the proof of `comparison_claim_1`. -/
-def g_lambda (lam : ℝ) (_ _ : ℝ) : ℝ := lam
-
 /-! ## Auxiliary lemmas -/
 
 /-- If `w(a) = 0` and `w` is eventually positive immediately to the right of `a`, and the
@@ -265,10 +261,9 @@ theorem comparison_lemma
     have hu_sol : IsIntegralSolution t₀ t₁ u u₀ f :=
       isIntegralSolution_of_hasDerivAt hu_deriv hu_cont hf_cont hu₀
     have hg_cont : Continuous (fun (_ : ℝ × ℝ) => lam) := continuous_const
-    have hg_bound : ∀ τ ∈ Icc t₀ t₁, ∀ x : ℝ, ‖g_lambda lam τ x‖ ≤ lam := by
+    have hg_bound : ∀ τ ∈ Icc t₀ t₁, ∀ x : ℝ, ‖lam‖ ≤ lam := by
       intro τ _ x
-      dsimp [g_lambda]
-      rw [abs_of_pos hlam_pos]
+      rw [Real.norm_eq_abs, abs_of_pos hlam_pos]
     have hz₀_bound : ‖u₀ - u₀‖ ≤ lam := by simp [hlam_pos.le]
     exact continuous_dependence_parameters (le_of_lt ht) hL hlam_pos hlam_cond
       hu_sol hz_sol hu_cont hz_cont hf_cont hg_cont hLip hg_bound hz₀_bound t ht_mem

@@ -1,4 +1,3 @@
-import LeanForControl.Basic
 import LeanForControl.Dini.DiniDeriv
 import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability

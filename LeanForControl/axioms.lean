@@ -2,7 +2,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 
 
--- ─── 4. Real Analysis Smoothing ───────────────────────────────────────────
+-- Real Analysis Smoothing
 
 /-- A monotonically non-decreasing positive function can be lower-bounded by a strictly monotonic
 continuous function. -/
