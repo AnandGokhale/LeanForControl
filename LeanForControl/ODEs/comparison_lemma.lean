@@ -5,11 +5,46 @@ import Mathlib.Order.Filter.Basic
 import Mathlib.Analysis.Calculus.Deriv.Add
 import LeanForControl.ODEs.ODE_properties
 import Mathlib.Topology.Order.IntermediateValue
+import Mathlib.Topology.ContinuousOn
+
+/-!
+# `ODEs.ComparisonLemma`
+
+Comparison Lemma 3.4 for scalar ODEs: if `u` is an exact solution of `u̇ = f(t, u)` with
+`u(t₀) = u₀`, and `v` is continuous with upper Dini derivative satisfying
+`D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤ u(t)` for all `t ∈ [t₀, t₁]`.
+
+## Proof strategy (Appendix C.2)
+
+* **Claim 1** (`comparison_claim_1`): For any perturbed solution `z` of `ż = f(t, z) + λ`
+  with `λ > 0`, we have `v(t) ≤ z(t)` on `[t₀, t₁]`. Proved by contradiction: assuming
+  the set `S = {s | v(s) = z(s)}` has a supremum `a < t_bad` (where `v(t_bad) > z(t_bad)`),
+  the Dini derivative inequality at `a` forces `f(a, z(a)) + λ ≤ f(a, v(a))`, contradicting
+  `v(a) = z(a)` and `λ > 0`.
+
+* **Claim 2** (`comparison_lemma`): `v(t) ≤ u(t)` follows by sending `λ → 0`. For each
+  `λ > 0`, `v(t) ≤ z_λ(t)` by Claim 1, and `z_λ(t) ≤ u(t) + ε/2` by the
+  continuous-dependence estimate (Theorem 3.5). Since `ε > 0` is arbitrary, `v(t) ≤ u(t)`.
+
+## Main declarations
+
+* `isIntegralSolution_of_hasDerivAt` — converts a pointwise derivative condition into an
+  integral solution.
+* `diniDerivRight_nonneg_of_eventually_pos` — shows `D⁺w(a) ≥ 0` when `w(a) = 0` and `w`
+  is immediately positive to the right of `a`.
+* `comparison_claim_1` — the perturbed comparison inequality `v ≤ z_λ` for `λ > 0`.
+* `comparison_lemma` — the full comparison inequality `v ≤ u`.
+-/
 
 open Set Filter Topology
 
+/-! ## Integral solution helper -/
 
+/-- Converts a classical (pointwise) ODE solution into an integral solution.
 
+If `u` has derivative `f(t, u(t))` at every interior point of `[t₀, t₁]`, is continuous on
+`[t₀, t₁]`, and satisfies `u(t₀) = u₀`, then `u` is an integral solution in the sense of
+`IsIntegralSolution`. -/
 lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → ℝ} {t₀ t₁ u₀ : ℝ}
     (hu_deriv : ∀ t ∈ Ioo t₀ t₁, HasDerivAt u (f t (u t)) t)
     (hu_cont : ContinuousOn u (Icc t₀ t₁))
@@ -22,15 +57,18 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
         (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
         (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
+/-- Constant perturbation vector field `(t, x) ↦ λ`, used to form the perturbed system
+`ż = f(t, z) + λ` in the proof of `comparison_claim_1`. -/
 def g_lambda (lam : ℝ) (_ _ : ℝ) : ℝ := lam
 
-/-! ### Auxiliary lemmas needed for the comparison proof -/
+/-! ## Auxiliary lemmas -/
 
-/-- If w(a) = 0 and w is immediately positive to the right, then D⁺w(a) ≥ 0 -/
+/-- If `w(a) = 0` and `w` is eventually positive immediately to the right of `a`, and the
+difference quotients `(w(a + h) - w(a)) / h` are bounded above near `h = 0⁺`, then the
+upper Dini derivative at `a` is nonneg: `D⁺w(a) ≥ 0`. -/
 lemma diniDerivRight_nonneg_of_eventually_pos {w : ℝ → ℝ} {a : ℝ}
     (hw0 : w a = 0)
     (hpos : ∀ᶠ h in 𝓝[>] 0, 0 < w (a + h))
-    -- need bounded ABOVE (not cobounded) for le_limsup_of_frequently_le
     (hbdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0)
                 (fun h => (w (a + h) - w a) / h)) :
     0 ≤ D⁺ w a := by
@@ -40,21 +78,17 @@ lemma diniDerivRight_nonneg_of_eventually_pos {w : ℝ → ℝ} {a : ℝ}
     simp only [hw0, sub_zero]
     exact le_of_lt (div_pos hwh hh)
 
+/-! ## Comparison Lemma 3.4 -/
 
-/-! ### Comparison Lemma 3.4 -/
+/-- **Claim 1** of the comparison lemma: the subsolution `v` lies below every perturbed
+solution `z` of `ż = f(t, z) + λ` when `λ > 0`.
 
-/-
-  Lemma 3.4 (Comparison Lemma).
-  If u solves u̇ = f(t,u) with u(t₀) = u₀,
-  and v is continuous with D⁺v(t) ≤ f(t,v(t)) and v(t₀) ≤ u₀,
-  then v(t) ≤ u(t) on [t₀,t₁].
-
-  Proof strategy (following Appendix C.2):
-    Step 1 (Claim 1): for any perturbed solution z of ż = f(t,z) + lam (lam > 0),
-                      v(t) ≤ z(t) by contradiction via D⁺ at the last crossing.
-    Step 2 (Claim 2): v(t) ≤ u(t) by taking lam → 0 via Theorem 3.5.
--/
-
+Proved by contradiction. If `v(t_bad) > z(t_bad)` for some `t_bad ∈ [t₀, t₁]`, then since
+`v(t₀) ≤ z(t₀) = u₀`, the intermediate value theorem gives a last crossing time
+`a = sup {s ∈ [t₀, t_bad] | v(s) = z(s)}`. At `a`, the difference quotients of `v - z`
+are eventually nonneg (because `v > z` on `(a, t_bad]`), so `D⁺v(a) ≥ ż(a)`. Combined with
+`D⁺v(a) ≤ f(a, v(a)) = f(a, z(a))`, this gives `f(a, z(a)) + λ ≤ f(a, z(a))`,
+contradicting `λ > 0`. -/
 lemma comparison_claim_1
     {f : ℝ → ℝ → ℝ} {v z : ℝ → ℝ} {t₀ t₁ u₀ lam : ℝ}
     (hlam : 0 < lam)
@@ -67,7 +101,6 @@ lemma comparison_claim_1
     (hv₀ : v t₀ ≤ u₀)
     (hv_bdd : ∀ t ∈ Ico t₀ t₁, IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (t + h) - v t) / h)) :
     ∀ t ∈ Icc t₀ t₁, v t ≤ z t := by
-  -- Proof by contradiction using le_diniDerivRight_iff
   by_contra h_not
   push Not at h_not
   obtain ⟨t_bad, ht_bad_mem, h_bad_ineq⟩ := h_not
@@ -78,16 +111,11 @@ lemma comparison_claim_1
     hv_cont.continuousOn.sub (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
   obtain ⟨s, hs_mem, hs_eq⟩ := intermediate_value_Icc ht_bad_mem.1 h_cont_diff
     ⟨by simpa [diff, hz₀] using hv₀, le_of_lt (sub_pos.mpr h_bad_ineq)⟩
-  -- Step 2: Define the set of points before t_bad where v(t) = z(t)
-  -- Because v(t₀) ≤ z(t₀) and v(t_bad) > z(t_bad), they must cross.
+  -- `S` is the set of crossing times before `t_bad`; it is nonempty and bounded above.
   let S := { s ∈ Icc t₀ t_bad | v s = z s }
   have hS_nonempty : S.Nonempty := ⟨s, hs_mem, sub_eq_zero.mp hs_eq⟩
-  -- Step 3: Extract the LAST time they cross before t_bad. Let's call it 'a'.
-  -- Since S is closed and bounded, it has a maximum.
-  have hS_bdd : BddAbove S := by
-      use t_bad
-      intro s hs
-      exact hs.1.2
+  have hS_bdd : BddAbove S :=  ⟨t_bad, fun s hs => hs.1.2⟩
+  -- `a` is the last crossing time.
   let a := sSup S
   have ha_lub : IsLUB S a := Real.isLUB_sSup hS_nonempty hS_bdd
   have ha_le_tbad : a ≤ t_bad := ha_lub.right (fun s hs => hs.1.2)
@@ -95,41 +123,37 @@ lemma comparison_claim_1
     rcases hS_nonempty with ⟨s, hs_mem⟩
     exact le_trans hs_mem.1.1 (ha_lub.left hs_mem)
   have ha_Icc : a ∈ Icc t₀ t_bad := ⟨ht₀_le_a, ha_le_tbad⟩
-  -- (Assuming you extract 'a' as the supremum of S, and prove a ∈ S)
+  -- The supremum is actually attained: `v(a) = z(a)`.
   have h_eq_a : v a = z a := by
-    let diff := fun s => v s - z s
-    have h_cont_diff : ContinuousOn diff (Icc t₀ t_bad) := by
-      have h_subset : Icc t₀ t_bad ⊆ Icc t₀ t₁ := Icc_subset_Icc_right ht_bad_mem.2
-      exact hv_cont.continuousOn.sub (hz_cont.mono h_subset)
-    have h_cont_a : ContinuousWithinAt diff (Icc t₀ t_bad) a := h_cont_diff a ha_Icc
-    by_contra h_neq
-    have h_pos : 0 < |diff a| := abs_pos.mpr (sub_ne_zero.mpr h_neq)
-    obtain ⟨δ, hδ_pos, hδ_bound⟩ := Metric.continuousWithinAt_iff.mp h_cont_a |diff a| h_pos
-    have not_upper : ¬ (∀ x ∈ S, x ≤ a - δ/2) := by
-      intro h_upper
-      -- Lean knows this is definitionally the same as `a - δ/2 ∈ upperBounds S`!
-      have h_least := ha_lub.right h_upper
-      linarith
-    push Not at not_upper
-    obtain ⟨s, hs_mem, hs_gt⟩ := not_upper
-    have h_diff_s : diff s = 0 := sub_eq_zero.mpr hs_mem.2
-    have hs_Icc : s ∈ Icc t₀ t_bad := hs_mem.1
-    have hs_le_a : s ≤ a := ha_lub.left hs_mem
-    have hs_dist : dist s a < δ := by
-      change |s - a| < δ
-      have h1 : s - a ≤ 0 := by linarith
-      rw [abs_of_nonpos h1]
-      linarith
-    have h_contra := hδ_bound hs_Icc hs_dist
-    change |diff s - diff a| < |diff a| at h_contra
-    rw [h_diff_s, zero_sub, abs_neg] at h_contra
-    linarith
+    have hS_compact : IsCompact S := by
+      haveI : CompactSpace ↥(Icc t₀ t_bad) := isCompact_iff_compactSpace.mp isCompact_Icc
+      have hcont' : Continuous (fun x : ↥(Icc t₀ t_bad) => diff x.val) :=
+        h_cont_diff.restrict
+      have hpre : IsClosed ((fun x : ↥(Icc t₀ t_bad) => diff x.val) ⁻¹' {0}) :=
+        isClosed_singleton.preimage hcont'
+      have hS_eq : S = Subtype.val '' ((fun x : ↥(Icc t₀ t_bad) => diff x.val) ⁻¹' {0}) := by
+        ext x
+        simp only [S, Set.mem_setOf_eq, Set.mem_image, Subtype.exists,
+                  Set.mem_preimage, Set.mem_singleton_iff, diff, sub_eq_zero]
+        exact ⟨fun ⟨hx, heq⟩ => ⟨x, hx, heq, rfl⟩,
+              fun ⟨_, hy, heq, hval⟩ => hval ▸ ⟨hy, heq⟩⟩
+      rw [hS_eq]
+      exact hpre.isCompact.image continuous_subtype_val
+    -- compact set in ℝ attains its maximum
+    obtain ⟨m, hm_mem, hm_max⟩ :=
+      hS_compact.exists_isMaxOn hS_nonempty continuousOn_id
+    -- m is an upper bound of S, so a ≤ m; m ∈ S so m ≤ a
+    have ha_eq : a = m := le_antisymm
+      (ha_lub.right (fun x hx => hm_max hx))
+      (ha_lub.left hm_mem)
+    exact ha_eq ▸ hm_mem.2
   have ha_lt_tbad : a < t_bad := by
     by_contra h_eq
     have ha_eq_tbad : a = t_bad := le_antisymm ha_le_tbad (not_lt.mp h_eq)
     rw [← ha_eq_tbad] at h_bad_ineq
     linarith
   have ha_mem_Ico : a ∈ Ico t₀ t₁ := ⟨ht₀_le_a, lt_of_lt_of_le ha_lt_tbad ht_bad_mem.2⟩
+  -- On `(a, t_bad]`, `v` is strictly above `z` (no further crossings by maximality of `a`).
   have h_strict : ∀ t ∈ Ioc a t_bad, z t < v t := by
     intro t ht
     by_contra h_not
@@ -151,10 +175,10 @@ lemma comparison_claim_1
     have hs_le_a : s ≤ a := ha_lub.left hs_in_S
     have ha_lt_s : a < s := lt_of_lt_of_le ht.1 hs_mem.1
     linarith
+  -- Compare the Dini derivative of `v` at `a` with the derivative of `z` at `a`.
   let q_v := fun h => (v (a + h) - v a) / h
   let q_z := fun h => (z (a + h) - z a) / h
   have h_eventual_le : ∀ᶠ h in 𝓝[>] 0, q_z h ≤ q_v h := by
-    -- The interval (0, t_bad - a) is a valid right-neighborhood of 0
     have h_nhds : Iio (t_bad - a) ∈ 𝓝 0 := Iio_mem_nhds (sub_pos.mpr ha_lt_tbad)
     filter_upwards [self_mem_nhdsWithin, (nhdsWithin_le_nhds h_nhds)] with h h_gt0 h_lt
     have : 0 < h := h_gt0
@@ -163,7 +187,6 @@ lemma comparison_claim_1
       (by rw [h_eq_a]; linarith [h_strict (a + h) ⟨by linarith, by linarith⟩])
       h_gt0.le
   have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 (f a (z a) + lam)) := by
-    -- 1. Extract the right derivative specifically at 'a'
     have h_deriv_a := hz_deriv a ha_mem_Ico
     rw [hasDerivWithinAt_iff_tendsto_slope] at h_deriv_a
     have h_shift : Tendsto (fun h => a + h) (𝓝[>] 0) (𝓝[Ici a \ {a}] a) := by
@@ -176,14 +199,13 @@ lemma comparison_claim_1
         rw [mem_Ioi] at hh
         simp only [mem_diff, mem_Ici, mem_singleton_iff]
         exact ⟨by linarith, by linarith⟩
-    -- 3. Compose the derivative slope with our shift map
     have h_comp := h_deriv_a.comp h_shift
-    -- 4. Clean up the denominator to perfectly match our q_z definition
     apply Tendsto.congr' _ h_comp
     filter_upwards with h
     dsimp [q_z]
     have h_eq : a + h - a = h := by ring
     rw [slope_def_field, h_eq]
+  -- The chain of inequalities yields the contradiction `λ ≤ 0`.
   have h_chain := calc f a (z a) + lam
       _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
       _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup
@@ -193,25 +215,31 @@ lemma comparison_claim_1
   rw [← h_eq_a] at h_chain
   linarith
 
+/-- **Comparison Lemma 3.4.**  If `u` solves `u̇ = f(t, u)` with `u(t₀) = u₀`, and `v` is
+continuous with `D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤ u(t)` on `[t₀, t₁]`.
 
+Hypotheses:
+* `f` is jointly continuous and globally Lipschitz in the state variable on `[t₀, t₁]`.
+* `u` solves the ODE classically (pointwise derivative).
+* `v` satisfies the Dini subsolution inequality and has bounded difference quotients.
+* For each `λ > 0`, a perturbed solution `z_λ` of `ż = f(t, z) + λ` exists on `[t₀, t₁]`
+  (the existence hypothesis `hz_exists`).
+
+The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_dependence_parameters`
+(Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all `ε > 0`. -/
 theorem comparison_lemma
     {f : ℝ → ℝ → ℝ} {u v : ℝ → ℝ} {t₀ t₁ u₀ : ℝ} {L : ℝ}
     (ht : t₀ < t₁)
     (hL : 0 < L)
-    -- f is continuous in t and Lipschitz in u (locally, here global on the interval)
     (hf_cont : Continuous (fun p : ℝ × ℝ => f p.1 p.2))
     (hLip     : ∀ t ∈ Icc t₀ t₁, LipschitzWith ⟨L, hL.le⟩ (f t))
-    -- u solves u̇ = f(t,u), u(t₀) = u₀
     (hu_deriv : ∀ t ∈ Ioo t₀ t₁, HasDerivAt u (f t (u t)) t)
     (hu_cont  : ContinuousOn u (Icc t₀ t₁))
     (hu₀      : u t₀ = u₀)
-    -- v is continuous with D⁺v(t) ≤ f(t,v(t))
     (hv_cont  : Continuous v)
     (hDv      : ∀ t ∈ Ico t₀ t₁, D⁺ v t ≤ f t (v t))
-    -- boundedness of v's difference quotients (needed for D⁺ machinery)
     (hv_bdd   : ∀ t ∈ Ico t₀ t₁,
         IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (t+h) - v t) / h))
-    -- initial condition
     (hv₀      : v t₀ ≤ u₀)
     (hz_exists : ∀ (lam : ℝ), 0 < lam →
         ∃ z : ℝ → ℝ, IsIntegralSolution t₀ t₁ z u₀ (fun s x => f s x + lam) ∧
@@ -234,17 +262,12 @@ theorem comparison_lemma
     comparison_claim_1 hlam_pos ht hz_sol hz_deriv hv_cont hz_cont
       hDv hv₀ hv_bdd t ht_mem
   have hz_close : ‖u t - z t‖ ≤ ε / 2 := by
-    -- u is (no perturbation) solution, z is IsIntegralSolution t₀ t₁ z u₀ (fun s x => f s x + lam)
-    -- Construct u from hu_deriv / hu_cont / hu₀:
     have hu_sol : IsIntegralSolution t₀ t₁ u u₀ f :=
       isIntegralSolution_of_hasDerivAt hu_deriv hu_cont hf_cont hu₀
-    -- have hg_cont : Continuous (fun p : ℝ × ℝ => g_lambda lam p.1 p.2) :=
-    --   continuous_const
     have hg_cont : Continuous (fun (_ : ℝ × ℝ) => lam) := continuous_const
     have hg_bound : ∀ τ ∈ Icc t₀ t₁, ∀ x : ℝ, ‖g_lambda lam τ x‖ ≤ lam := by
       intro τ _ x
       dsimp [g_lambda]
-      -- Since lam > 0, its norm is just itself
       rw [abs_of_pos hlam_pos]
     have hz₀_bound : ‖u₀ - u₀‖ ≤ lam := by simp [hlam_pos.le]
     exact continuous_dependence_parameters (le_of_lt ht) hL hlam_pos hlam_cond

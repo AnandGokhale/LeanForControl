@@ -5,16 +5,19 @@ import Mathlib.Topology.Order.IntermediateValue
 
 open Set Filter Topology MeasureTheory intervalIntegral
 
-/-! ## Class K, K∞, and KL Comparison Functions
+/-!
+# `Stability.classK`
+
+Class K, K∞, and KL comparison functions.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definitions 4.2–4.4.
 
 Comparison functions are the standard vocabulary for quantitative stability estimates
 (Lyapunov sandwich bounds, ISS gains, asymptotic decay rates, etc.).
 
-* `ClassK a b`  — strictly increasing continuous bijection `[0,a) → [0,b)`, zero at zero.
-* `ClassKInfty` — same but on all of `[0,∞)`, with `f(r) → ∞`.
-* `ClassKL a`   — class K in the first argument, decreasing to zero in the second.
+* `ClassK a b`  — strictly increasing continuous bijection `[0, a) → [0, b)`, zero at zero.
+* `ClassKInfty` — same but on all of `[0, ∞)`, with `f(r) → ∞` as `r → ∞`.
+* `ClassKL a`   — class K in the first argument, strictly decreasing to zero in the second.
 
 Each structure stores both `toFun` and its inverse `invFun` so that `symm` and `comp`
 never require re-proving the inverse properties.
@@ -51,9 +54,9 @@ instance {a b : ℝ} : CoeFun (ClassK a b) (fun _ => ℝ → ℝ) where
 
 -- ─── ClassK Construction ──────────────────────────────────────────────────────
 
--- The following two private lemmas derive the mapping and surjection properties
--- needed to build the inverse in `ClassK.of_strictMono`.
-
+/-- `f` maps `[0, a)` into `[0, b)` when `f(0) = 0`, `f(a) = b`, and `f` is strictly
+    monotone on `[0, a]`. Monotonicity from `0` gives `f(x) ≥ 0`; strict monotonicity
+    before `a` gives `f(x) < b`. -/
 private lemma ClassK.mapsTo_of_boundary {a b : ℝ} (ha : 0 < a)
     (f : ℝ → ℝ) (hf_zero : f 0 = 0) (hf_a : f a = b)
     (hf_mono : StrictMonoOn f (Set.Icc 0 a)) :
@@ -70,6 +73,9 @@ private lemma ClassK.mapsTo_of_boundary {a b : ℝ} (ha : 0 < a)
     have h_hi := hf_mono hx_icc ha_icc hx.2
     rwa [hf_a] at h_hi
 
+/-- `f` maps `[0, a)` surjectively onto `[0, b)` when `f(0) = 0`, `f(a) = b`, and `f` is
+    continuous on `[0, a]`. Given `y ∈ [0, b)`, IVT on `[0, a]` finds a preimage `x`;
+    strict monotonicity before `a` ensures `x < a`. -/
 private lemma ClassK.surjOn_of_boundary {a b : ℝ} (ha : 0 < a)
     (f : ℝ → ℝ) (hf_zero : f 0 = 0) (hf_a : f a = b)
     (hf_cont : ContinuousOn f (Set.Icc 0 a)) :
@@ -255,9 +261,8 @@ instance : CoeFun ClassKInfty (fun _ => ℝ → ℝ) where
 
 -- ─── ClassKInfty Construction ─────────────────────────────────────────────────
 
--- The following two private lemmas derive the mapping and surjection properties
--- needed to build the inverse in `ClassKInfty.of_strictMono`.
-
+/-- `f` maps `[0, ∞)` into `[0, ∞)` when `f(0) = 0` and `f` is strictly monotone on
+    `[0, ∞)`: either `x = 0` (giving `f(0) = 0`) or `x > 0` (giving `f(x) > f(0) = 0`). -/
 private lemma ClassKInfty.mapsTo_of_basic (f : ℝ → ℝ) (hf_zero : f 0 = 0)
     (hf_mono : StrictMonoOn f (Set.Ici 0)) : Set.MapsTo f (Set.Ici 0) (Set.Ici 0) := by
   intro x hx
@@ -268,6 +273,9 @@ private lemma ClassKInfty.mapsTo_of_basic (f : ℝ → ℝ) (hf_zero : f 0 = 0)
     have hfx_pos : f 0 < f x := hf_mono h0_mem hx hpos
     rw [hf_zero] at hfx_pos; exact hfx_pos.le
 
+/-- `f` maps `[0, ∞)` surjectively onto `[0, ∞)` when `f(0) = 0`, `f` is continuous on
+    `[0, ∞)`, and `f(x) → ∞`. Given `y ≥ 0`, coercivity provides `b` with `f(b) ≥ y`;
+    IVT on `[0, b]` then yields the preimage. -/
 private lemma ClassKInfty.surjOn_of_basic (f : ℝ → ℝ) (hf_zero : f 0 = 0)
     (hf_cont : ContinuousOn f (Set.Ici 0))
     (hf_tendsto : Filter.Tendsto f Filter.atTop Filter.atTop) :
@@ -308,8 +316,7 @@ noncomputable def ClassKInfty.of_strictMono (f : ℝ → ℝ)
 
 -- ─── ClassKInfty Operations ───────────────────────────────────────────────────
 
--- Private helpers used by `ClassKInfty.symm`
-
+/-- The inverse of a class K∞ function is strictly monotone on `[0, ∞)`. -/
 private lemma ClassKInfty.invFun_strictMono (α : ClassKInfty) :
     StrictMonoOn α.invFun (Set.Ici 0) := by
   intro y₁ hy₁ y₂ hy₂ hy_lt
@@ -321,6 +328,7 @@ private lemma ClassKInfty.invFun_strictMono (α : ClassKInfty) :
   · have h_apply := α.strict_mono (α.inv_maps_to hy₂) (α.inv_maps_to hy₁) h_gt
     rw [α.right_inv hy₂, α.right_inv hy₁] at h_apply; linarith
 
+/-- `invFun 0 = 0` for any class K∞ function: follows from `left_inv` at `0` and `map_zero`. -/
 private lemma ClassKInfty.invFun_zero (α : ClassKInfty) : α.invFun 0 = 0 := by
   have h0 : (0 : ℝ) ∈ Set.Ici 0 := self_mem_Ici
   have h_left := α.left_inv h0

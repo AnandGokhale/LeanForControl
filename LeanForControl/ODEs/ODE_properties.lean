@@ -9,19 +9,27 @@ import LeanForControl.ODEs.gronwall_bellman
 open MeasureTheory Metric Set Filter TopologicalSpace
 open scoped Real Interval
 
+/-!
+# `ODEs.ODE_properties`
 
+Core ODE definitions and continuous-dependence theorems used throughout the stability track.
 
+## Main declarations
 
+* `IsIntegralSolution` — integral formulation of an ODE solution on a time interval.
+* `IntervalIntegrable_of_lipschitz` — integrability of `s ↦ f(s, z(s))` from joint continuity.
+* `continuous_dependence_ODE` (Theorem 3.4) — quantitative bound on `‖y(t) − z(t)‖` when `y`
+  solves `ẏ = f` and `z` solves the perturbed system `ż = f + g`.
+* `continuous_dependence_parameters` (Theorem 3.5) — uniform `ε`-bound when both the initial
+  perturbation `‖z₀ − y₀‖` and the forcing `‖g‖` are bounded by `α`.
+-/
 
--- Let E be our Banach space (e.g., ℝⁿ)
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-
--- A single, generalized definition for an integral solution to an ODE
+/-- An *integral solution* of `ẋ = F(t, x)` on `[t₀, t₁]` with initial value `x₀`:
+    for every `t ∈ [t₀, t₁]`, `x(t) = x₀ + ∫_{t₀}^{t} F(s, x(s)) ds`. -/
 def IsIntegralSolution (t₀ t₁ : ℝ) (x : ℝ → E) (x₀ : E) (F : ℝ → E → E) : Prop :=
   ∀ t ∈ Set.Icc t₀ t₁, x t = x₀ + ∫ s in t₀..t, F s (x s)
-
-
 
 variable {t₀ t₁ : ℝ}
 variable {f g : ℝ → E → E}
@@ -29,23 +37,29 @@ variable {y z : ℝ → E}
 variable {y₀ z₀ : E}
 variable {L μ : ℝ}
 
-omit [NormedSpace ℝ E] in lemma
+omit [NormedSpace ℝ E] in
+/-- `s ↦ f(s, z(s))` is interval-integrable on `[t₀, t₁]` when `f` is jointly continuous
+    and `z` is continuous on `[t₀, t₁]`. -/
+lemma
 IntervalIntegrable_of_lipschitz {t₀ t₁ : ℝ} (hle : t₀ ≤ t₁)
 {f : ℝ → E → E} {z : ℝ → E}
-(hf_cont : Continuous (fun p : ℝ × E => f p.1 p.2))  -- f jointly continuous
+(hf_cont : Continuous (fun p : ℝ × E => f p.1 p.2))
   (hz : ContinuousOn z (Icc t₀ t₁)) :
   (IntervalIntegrable (fun s => f s (z s)) volume t₀ t₁)  := by
   rw [← Set.uIcc_of_le hle] at hz
   exact (hf_cont.comp_continuousOn
     (ContinuousOn.prodMk continuous_id.continuousOn hz)).intervalIntegrable
 
+/-- **Theorem 3.4** (Continuous dependence on initial states and parameters).
 
-/-
-  Theorem 3.4: Continuous dependence on initial states and parameters.
-  Note: We simplify the domain W ⊂ ℝⁿ to the whole space E for clarity,
-  assuming global Lipschitz and boundedness on the interval to avoid
-  excessive local extension boilerplate.
--/
+If `y` is an integral solution of `ẏ = f(t, y)` and `z` is an integral solution of
+`ż = f(t, z) + g(t, z)`, with `f` Lipschitz in the state with constant `L` and `g`
+uniformly bounded by `μ`, then for all `t ∈ [t₀, t₁]`:
+
+  `‖y(t) − z(t)‖ ≤ ‖y₀ − z₀‖ · exp(L(t−t₀)) + (μ/L) · (exp(L(t−t₀)) − 1)`.
+
+We work globally on `[t₀, t₁]` (rather than on a local domain `W ⊂ ℝⁿ`) to avoid
+local-extension boilerplate. -/
 theorem continuous_dependence_ODE
     (ht : t₀ ≤ t₁) (hL : 0 < L) (hμ : 0 < μ)
     (hy : IsIntegralSolution t₀ t₁ y y₀ f)
@@ -122,37 +136,31 @@ theorem continuous_dependence_ODE
   intro t ht
   linarith [hG t ht, hshift t ht, hineq_base t ht]
 
-/-
+/-- **Theorem 3.5** (Continuous dependence on parameters).
 
-  Theorem 3.5: Continuous dependence on parameters.
-  λ-dependence is modeled via the perturbation term g (i.e., g t x = f_λ t x - f_λ₀ t x).
-  Lipschitz is global, matching the simplification in Theorem 3.4.
-  The δ-condition is expressed as: both ‖z₀ - y₀‖ and ‖g t x‖ are bounded by α,
-  where α is chosen small enough (hαε) to keep the solution within ε of y.
--/
+A uniform `ε`-bound: if `‖z₀ − y₀‖ ≤ α` and `‖g(t, x)‖ ≤ α` for all `t, x`, and
+`α · (1 + 1/L) · exp(L(t₁−t₀)) ≤ ε`, then `‖y(t) − z(t)‖ ≤ ε` for all `t ∈ [t₀, t₁]`.
+
+`λ`-dependence is modeled via the perturbation term `g` (i.e., `g t x = f_λ t x − f t x`).
+The `α`-condition plays the role of `δ` from the classical statement. -/
 theorem continuous_dependence_parameters
     (ht : t₀ ≤ t₁)
     (hL : 0 < L)
     (hα : 0 < α)
-    -- the key δ-condition: α small enough ensures solution stays within ε
     (hαε : α * (1 + 1 / L) * Real.exp (L * (t₁ - t₀)) ≤ ε)
     (hy : IsIntegralSolution t₀ t₁ y y₀ f)
     (hz : IsIntegralSolution t₀ t₁ z z₀ (fun s x => f s x + g s x))
     (hy_cont : ContinuousOn y (Set.Icc t₀ t₁))
     (hz_cont : ContinuousOn z (Set.Icc t₀ t₁))
     (hf_cont : Continuous (fun p : ℝ × E => f p.1 p.2))
-    (hg_cont : Continuous (fun p : ℝ × E => g p.1 p.2))  -- g jointly continuous
+    (hg_cont : Continuous (fun p : ℝ × E => g p.1 p.2))
     (hLip : ∀ t ∈ Set.Icc t₀ t₁, LipschitzWith ⟨L, hL.le⟩ (f t))
-    -- both perturbation sources bounded by α (plays the role of δ in the book)
     (hg   : ∀ t ∈ Set.Icc t₀ t₁, ∀ x : E, ‖g t x‖ ≤ α)
     (hz₀  : ‖z₀ - y₀‖ ≤ α) :
     ∀ t ∈ Set.Icc t₀ t₁, ‖y t - z t‖ ≤ ε := by
-  -- derive integrability of g∘z from joint continuity
   intro t ht_mem
-  -- apply Theorem 3.4 with μ = α
   have key := continuous_dependence_ODE ht hL hα hy hz hy_cont hz_cont
     hf_cont (IntervalIntegrable_of_lipschitz ht hg_cont hz_cont) hLip hg t ht_mem
-  -- key : ‖y t - z t‖ ≤ ‖y₀ - z₀‖ * exp(L*(t-t₀)) + (α/L)*(exp(L*(t-t₀)) - 1)
   have hyz₀ : ‖y₀ - z₀‖ ≤ α := by rwa [norm_sub_rev]
   have hexp_mono : Real.exp (L * (t - t₀)) ≤ Real.exp (L * (t₁ - t₀)) := by
     gcongr; linarith [ht_mem.2]

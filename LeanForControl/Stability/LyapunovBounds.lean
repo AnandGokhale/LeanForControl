@@ -5,23 +5,30 @@ import Mathlib.Topology.MetricSpace.Basic
 
 open Set Filter Topology MeasureTheory Metric
 
-/-! ## Lemma 4.3 — Class K Sandwich Bounds for Positive-Definite Functions
+/-!
+# `Stability.LyapunovBounds`
+
+Class K sandwich bounds for continuous positive-definite functions.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 / Appendix C.4.
 
-**Statement.** Let `V : ℝⁿ → ℝ` be continuous on `B(0, r)` with `V(0) = 0`
-and `V(x) > 0` for `x ≠ 0`.  Then there exist class K functions `α₁, α₂` such that
+## Main result
 
-  `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x ∈ B(0, r)`.
+**Lemma 4.3** (`LyapunovClassKBounds`): Let `V : ℝⁿ → ℝ` be continuous on `B(0, r)` with
+`V(0) = 0` and `V(x) > 0` for `x ≠ 0`. Then there exist class K functions `α₁, α₂` on
+`[0, r]` such that `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `‖x‖ ≤ r`.
 
-**Proof sketch.**
-1. Define `ψ(s) = inf_{s ≤ ‖x‖ ≤ r} V(x)` and `φ(s) = sup_{‖x‖ ≤ s} V(x)`.
-2. Prove that `ψ` and `φ` sandwich `V`: `ψ(‖x‖) ≤ V(x) ≤ φ(‖x‖)`.
-3. Establish the key analytic properties of `ψ` (zero at 0, positive away from 0,
-   monotone) and `φ` (zero at 0, monotone).
-4. Apply the smoothing axioms (see `LeanForControl.axioms`) to obtain strictly
-   monotone continuous functions below `ψ` and above `φ`.
-5. Package these via `ClassK.of_strictMono` to obtain the class K bounds `α₁`, `α₂`.
+## Proof sketch
+
+1. Define `ψ(s) = inf_{s ≤ ‖x‖ ≤ r} V(x)` (`psi_fn`) and `φ(s) = sup_{‖x‖ ≤ s} V(x)`
+   (`phi_fn`).
+2. Show `ψ(‖x‖) ≤ V(x) ≤ φ(‖x‖)` (`V_ge_psi`, `V_le_phi`).
+3. Establish that `ψ` is zero at 0, positive away from 0, and monotone (`psi_fn_zero`,
+   `psi_fn_pos`, `psi_fn_mono`); similarly for `φ` (`phi_fn_zero`, `phi_fn_mono`).
+4. Apply the smoothing axioms from `LeanForControl.axioms` to obtain strictly monotone
+   continuous functions `f ≤ ψ` and `φ ≤ g`.
+5. Package via `ClassK.of_strictMono` to get the class K bounds `α₁ ≤ ψ ≤ V` and
+   `V ≤ φ ≤ α₂`.
 -/
 
 variable {n : ℕ}

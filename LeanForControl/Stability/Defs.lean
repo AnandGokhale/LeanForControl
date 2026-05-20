@@ -10,6 +10,29 @@ import Mathlib.Topology.Order.MonotoneContinuity
 
 variable {n : ℕ}
 
+/-!
+# `Stability.Defs`
+
+Core definitions for the stability theory of autonomous ODEs `ẋ = f(x)` on `ℝⁿ`.
+
+## Notation
+
+`ℝⁿ` denotes `EuclideanSpace ℝ (Fin n)` throughout this file and all files that import it.
+
+## Contents
+
+* **Trajectories and equilibria** (`IsTrajectory`, `IsEquilibrium`).
+* **Stability predicates** (`LyapunovStable`, `LocalAsymptoticStable`,
+  `GlobalAsymptoticStable`).
+* **Sublevel sets** (`SublevelSet`).
+* **Lyapunov function structures**, forming the hierarchy:
+  - `IsLocalLyapunovFunction` → `LyapunovStable`
+  - `IsStrictLocalLyapunovFunction` → `LocalAsymptoticStable`
+  - `IsStrictLyapunovFunction` → `GlobalAsymptoticStable`
+  - `IsAsymptoticLyapunovFunction` → `GlobalAsymptoticStable` (classical radially-unbounded form)
+* **Positive invariance** (`IsPositivelyInvariant`).
+* **Compact sublevel sets** (`isCompact_sublevel_set`).
+-/
 
 open Set Filter Topology
 
@@ -17,34 +40,38 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-! ## System primitives -/
 
--- φ is a global solution of ẋ = f(x), defined for all t ∈ ℝ.
+/-- A global solution `φ : ℝ → ℝⁿ` of the autonomous ODE `ẋ = f(x)`,
+    defined for all `t ∈ ℝ`. -/
 def IsTrajectory (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
   ∀ t : ℝ, HasDerivAt φ (f (φ t)) t
 
--- x_eq is an equilibrium point: f(x_eq) = 0.
+/-- An equilibrium point `x_eq` of `ẋ = f(x)`: `f(x_eq) = 0`. -/
 def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   f x_eq = 0
 
 /-! ## Stability predicates -/
 
--- Standard ε-δ Lyapunov stability.
+/-- Standard Lyapunov (ε-δ) stability: trajectories starting near `x_eq` remain near `x_eq`
+    for all future time. -/
 def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ φ : ℝ → ℝⁿ,
     IsTrajectory φ f → ‖φ 0 - x_eq‖ < δ → ∀ t ≥ 0, ‖φ t - x_eq‖ < ε
 
--- Lyapunov stable and trajectories starting near x_eq converge to x_eq.
+/-- Local asymptotic stability: Lyapunov stable, and trajectories starting sufficiently near
+    `x_eq` also converge to `x_eq` as `t → ∞`. -/
 def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∃ c > 0, ∀ φ : ℝ → ℝⁿ,
     IsTrajectory φ f → ‖φ 0 - x_eq‖ < c → Filter.Tendsto φ Filter.atTop (nhds x_eq)
 
--- Lyapunov stable and every trajectory converges to x_eq.
+/-- Global asymptotic stability: Lyapunov stable, and every trajectory converges to `x_eq`. -/
 def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → Filter.Tendsto φ Filter.atTop (nhds x_eq)
 
 /-! ## Sublevel sets -/
 
+/-- The sublevel set `{x | V(x) ≤ c}` of `V` at level `c`. -/
 def SublevelSet (V : ℝⁿ → ℝ) (c : ℝ) : Set ℝⁿ := {x | V x ≤ c}
 
 /-! ## Lyapunov function structures
@@ -64,8 +91,11 @@ agreeing with the original on a neighborhood of x_eq.
 
 The Lie derivative DV(x)[f(x)] = fderiv ℝ V x (f x). -/
 
--- Local stability: V positive definite on D, Lie derivative ≤ 0 on D.
--- D is an open neighborhood of x_eq; V is globally smooth (for chain rule).
+/-- Local Lyapunov certificate: `V` is positive definite on `D` and has nonpositive Lie
+    derivative on `D`. Implies `LyapunovStable`.
+
+    `D` is an open neighborhood of `x_eq`; `V` is globally smooth so that the chain rule
+    and IVT arguments can be applied uniformly. -/
 structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open     : IsOpen D
   hD_mem      : x_eq ∈ D
@@ -75,9 +105,11 @@ structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (
   hpos        : ∀ x ∈ D, x ≠ x_eq → 0 < V x
   hLie_nonpos : ∀ x ∈ D, fderiv ℝ V x (f x) ≤ 0
 
--- Local asymptotic stability: strict Lie derivative on D, compact sublevel set inside D.
--- hcompact: ∃ c > 0 with Ωc ⊆ D and Ωc compact. This replaces radial unboundedness
--- and is satisfied whenever D is bounded or V grows toward the boundary of D.
+/-- Strict local Lyapunov certificate: `V` has strictly negative Lie derivative on `D`
+    and a compact sublevel set `{V ≤ c} ⊆ D`. Implies `LocalAsymptoticStable`.
+
+    `hcompact`: ∃ c > 0 with `{V ≤ c} ⊆ D` and `{V ≤ c}` compact. This replaces radial
+    unboundedness and holds whenever `D` is bounded or `V` grows toward `∂D`. -/
 structure IsStrictLocalLyapunovFunction
     (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open   : IsOpen D
@@ -90,25 +122,10 @@ structure IsStrictLocalLyapunovFunction
   hLie_neg  : ∀ x ∈ D, x ≠ x_eq → fderiv ℝ V x (f x) < 0
   hcompact  : ∃ c > 0, SublevelSet V c ⊆ D ∧ IsCompact (SublevelSet V c)
 
+/-- Global strict Lyapunov certificate: `V` is C¹, positive definite, with strictly negative Lie
+    derivative on all of `ℝⁿ`, and all sublevel sets are compact (coercivity). Implies GAS.
 
--- structure IsLocalChetaevFunction
---     (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
---   hD_open   : IsOpen D
---   hD_mem    : x_eq ∈ D
---   hcont     : Continuous V
---   hV_c1     : ContDiff ℝ 1 V
---   hzero     : V x_eq = 0
-
-
-
-
---   hpos      : ∀ x ∈ D, x ≠ x_eq → 0 < V x
---   hequil    : f x_eq = 0
---   hLie_neg  : ∀ x ∈ D, x ≠ x_eq → fderiv ℝ V x (f x) < 0
---   hcompact  : ∃ c > 0, SublevelSet V c ⊆ D ∧ IsCompact (SublevelSet V c)
-
--- Global stability: strict Lie derivative + compact sublevel sets everywhere → GAS.
--- hbounded_sublevel encodes coercivity; in ℝⁿ this is equivalent to radial unboundedness.
+    `hbounded_sublevel` encodes coercivity; in `ℝⁿ` this is equivalent to radial unboundedness. -/
 structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
   hcont             : Continuous V
   hV_c1             : ContDiff ℝ 1 V
@@ -118,10 +135,9 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
   hLie_neg          : ∀ x : ℝⁿ, x ≠ x_eq → fderiv ℝ V x (f x) < 0
   hbounded_sublevel : ∀ c : ℝ, IsCompact {x : ℝⁿ | V x ≤ c}
 
-
-
--- Classical formulation for GAS: C¹, positive definite, strict Lie derivative, radially unbounded.
--- This implies IsStrictLyapunovFunction (via isCompact_sublevel_set in Autonomous.lean).
+/-- Classical GAS Lyapunov certificate: C¹, positive definite, strictly negative Lie derivative,
+    and radially unbounded (`V(x) → ∞` as `‖x‖ → ∞`). Implies `IsStrictLyapunovFunction`
+    via `isCompact_sublevel_set` in `Autonomous.lean`. -/
 structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
   hcont    : Continuous V
   hV_c1    : ContDiff ℝ 1 V
@@ -131,15 +147,19 @@ structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → �
   hLie_neg : ∀ x : ℝⁿ, x ≠ x_eq → fderiv ℝ V x (f x) < 0
   hradial  : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop
 
--- A set S is positively invariant: trajectories starting in S stay in S for t ≥ 0.
+/-! ## Positive invariance -/
+
+/-- A set `S` is positively invariant for `ẋ = f(x)`: every trajectory starting in `S`
+    remains in `S` for all `t ≥ 0`. -/
 def IsPositivelyInvariant (S : Set ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
   ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → φ 0 ∈ S → ∀ t ≥ 0, φ t ∈ S
 
--- Sublevel sets of a radially unbounded continuous function are compact.
--- Proof:
---   (1) Closed: V ⁻¹' (Set.Iic c).
---   (2) Bounded: coercivity gives R with SublevelSet V c ⊆ closedBall 0 R.
---   (3) Heine-Borel in ℝⁿ: closed + bounded = compact.
+/-- Sublevel sets of a radially unbounded continuous function are compact.
+
+Proof:
+1. Closed: `SublevelSet V c = V ⁻¹' (Iic c)`, closed by continuity.
+2. Bounded: coercivity gives `R` with `SublevelSet V c ⊆ closedBall 0 R`.
+3. Heine–Borel in `ℝⁿ`: closed + bounded = compact. -/
 lemma isCompact_sublevel_set
     (V : ℝⁿ → ℝ) (hcont : Continuous V)
     (hradial : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop)

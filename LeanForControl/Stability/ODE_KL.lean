@@ -3,25 +3,36 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 
 
-/-! ## Lemma 4.4 — Class KL bound via the Osgood construction
+/-!
+# `Stability.ODE_KL`
 
-Given a Class K function `α : ClassK a b` satisfying the **Osgood condition**
-(`EtaDiverges`), the flow of `ẏ = −α(y)` starting at `r ∈ (0, a)` is well-defined
-for all time and yields a Class KL bound.
+Class KL bound via the Osgood construction.
 
-**Construction.** Define the *time-to-go* integral
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4 / Appendix C.6.
 
-    η(y) = −∫_{base}^y 1/α(x) dx,
+## Main result
 
+**Lemma 4.4** (`ClassK.sigma_isClassKL`): Given a class K function `α : ClassK a b`
+satisfying the Osgood condition (`ClassK.EtaDiverges`), the function
+`σ(r, s) = η⁻¹(η(r) + s)` (extended by `σ(0, s) = 0`) is class KL.
+
+## Construction
+
+Define the *time-to-go* integral `η_base(y) = −∫_{base}^y 1/α(x) dx` (`ClassK.eta`),
 which is strictly decreasing on `(0, a)` (since `α > 0`), with `η(y) → +∞` as `y → 0⁺`
-(the Osgood condition). The Class KL candidate is then
+(the Osgood condition `ClassK.EtaDiverges`). The class KL candidate is then:
 
-    σ(r, s) = η⁻¹(η(r) + s),     σ(0, s) = 0.
+  `σ(r, s) = η⁻¹(η(r) + s)`,    `σ(0, s) = 0`.
 
 Increasing `s` shifts the argument of `η⁻¹` toward `+∞`, driving the output toward `0`.
 Increasing `r` decreases `η(r)`, and since `η⁻¹` is anti-monotone, the output grows.
 
-Reference: Khalil, *Nonlinear Systems* 3rd ed., Lemma 4.4 / Appendix C.6.
+## Key lemmas
+
+* `eta_hasDerivAt` — FTC derivative of η.
+* `eta_strictAntiOn` — η is strictly decreasing.
+* `etaInv_tendsto_zero` — η⁻¹(t) → 0 as t → +∞ (key for the KL decay condition).
+* `etaInv_continuousAt` — continuity of η⁻¹ via the order-topology IVT criterion.
 -/
 
 open Set Filter Topology MeasureTheory intervalIntegral

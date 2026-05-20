@@ -7,6 +7,29 @@ import LeanForControl.Stability.Autonomous
 variable {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
+/-!
+# `Stability.LaSalles`
+
+LaSalle's invariance principle and its corollaries (Barbashin–Krasovskii theorems).
+
+## Main results
+
+* `lasalle_invariance_principle` — if `Ω` is compact and positively invariant, `V` is C¹ with
+  `V̇ ≤ 0` on `Ω`, and `ω(φ) ⊆ M` for a closed set `M`, then `φ(t) → M`.
+* `lasalle_local_asymptotic_stable` (Corollary 4.1 / Barbashin) — local asymptotic stability
+  via a compact sublevel set and LaSalle.
+* `lasalle_global_asymptotic_stable` (Corollary 4.2 / Krasovskii) — global asymptotic stability
+  when `V` is radially unbounded and `V̇ ≤ 0` everywhere.
+
+## Proof strategy
+
+1. `V_antitoneOn_lasalle`: `V ∘ φ` is antitone on `[0, ∞)` (Lie derivative ≤ 0 on Ω).
+2. `lasalle_V_tendsto`: `V(φ t) → L` via monotone convergence on the compact orbit.
+3. `V_const_on_omegaLimit`: `V = L` on `ω(φ)` (cluster-point argument).
+4. `omegaLimit_subset_of_invariant`: `ω(φ) ⊆ Ω` since `Ω` is closed and φ stays in `Ω`.
+5. The main theorem combines these to show `φ t → M` via the open-neighborhood criterion.
+-/
+
 open Filter Set Topology
 
 /-- ω-limit set of trajectory φ, using Mathlib's omegaLimit with the trivial flow. -/
@@ -15,7 +38,8 @@ noncomputable def omegaLimitTraj (φ : ℝ → ℝⁿ) : Set ℝⁿ :=
 
 /-! ## Lemma 1: V antitone on [0,∞) along trajectories -/
 
--- V(φ t) is antitone on [0,∞) when the Lie derivative ≤ 0 on Ω and φ stays in Ω.
+/-- `V(φ t)` is antitone on `[0, ∞)` when the Lie derivative `V̇ ≤ 0` on `Ω` and `φ` stays
+    in `Ω`. -/
 lemma V_antitoneOn_lasalle
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {Ω : Set ℝⁿ}
     (hV_c1 : ContDiff ℝ 1 V)
@@ -36,8 +60,8 @@ lemma V_antitoneOn_lasalle
 
 /-! ## Lemma 2: V(φ t) converges to its infimum -/
 
--- If Ω is compact and positively invariant and the Lie derivative ≤ 0 on Ω,
--- then V(φ t) converges to some limit L.
+/-- If `Ω` is compact and positively invariant and the Lie derivative `V̇ ≤ 0` on `Ω`,
+    then `V(φ t)` converges to some limit `L` as `t → ∞`. -/
 lemma lasalle_V_tendsto
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {Ω : Set ℝⁿ}
     (hV_c1 : ContDiff ℝ 1 V)
@@ -72,7 +96,7 @@ lemma lasalle_V_tendsto
 
 /-! ## Lemma 3: V is constant on omegaLimitTraj(φ) -/
 
--- If V(φ t) → L, then V = L on omegaLimitTraj(φ).
+/-- If `V(φ t) → L`, then `V(y) = L` for every `y ∈ ω(φ)`. -/
 lemma V_const_on_omegaLimit
     {V : ℝⁿ → ℝ} {φ : ℝ → ℝⁿ} {L : ℝ}
     (hV_cont : Continuous V)
@@ -107,7 +131,7 @@ lemma V_const_on_omegaLimit
 
 /-! ## Lemma 4: omegaLimitTraj(φ) ⊆ Ω when Ω is compact and positively invariant -/
 
--- If Ω is compact and positively invariant and φ 0 ∈ Ω, then omegaLimitTraj(φ) ⊆ Ω.
+/-- If `Ω` is compact, positively invariant, and `φ 0 ∈ Ω`, then `ω(φ) ⊆ Ω`. -/
 lemma omegaLimit_subset_of_invariant
     {f : ℝⁿ → ℝⁿ} {Ω : Set ℝⁿ}
     (hΩ_compact : IsCompact Ω)
