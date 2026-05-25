@@ -52,11 +52,11 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
     (hf_cont : Continuous (fun p : ℝ × ℝ => f p.1 p.2))
     (hu₀      : u t₀ = u₀) :
     IsIntegralSolution t₀ t₁ u u₀ f := by
-      intro s hs
-      have h := hu_cont.mono (Icc_subset_Icc_right hs.2)
-      linarith [hu₀, intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1 h
-        (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
-        (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
+  intro s hs
+  have h := hu_cont.mono (Icc_subset_Icc_right hs.2)
+  linarith [hu₀, intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1 h
+    (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
+    (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
 /-! ## Auxiliary lemmas -/
 
