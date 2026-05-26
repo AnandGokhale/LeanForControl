@@ -96,23 +96,34 @@ lemma tendsto_halfWindow_average_zero {f : ℝ → ℝ}
     Filter.Tendsto (fun η => (2 / η) * ∫ s in (η / 2)..η, f s) Filter.atTop (nhds 0) := by
   -- Squeeze the average between 0 and f(η / 2)
   apply tendsto_of_tendsto_of_tendsto_of_le_of_le'
-    tendsto_const_nhds
-    (hf_tendsto.comp (tendsto_id.atTop_div_const zero_lt_two))
-  · filter_upwards [Filter.eventually_gt_atTop 0] with η hη
-    exact mul_nonneg (div_nonneg zero_le_two hη.le)
-      (integral_nonneg (half_le_self hη.le) fun s hs =>
-        hf_nonneg s ((half_pos hη).trans_le hs.1))
-  · filter_upwards [Filter.eventually_gt_atTop 0] with η hη
+    (g := fun _ => 0) (h := fun η => f (η / 2))
+  · -- Subgoal 1: Limit of the lower bound (0) is 0
+    exact tendsto_const_nhds
+  · -- Subgoal 2: Limit of the upper bound f(η / 2) is 0
+    have h_half_atTop : Filter.Tendsto (fun η : ℝ => η / 2) Filter.atTop Filter.atTop :=
+      tendsto_id.atTop_div_const zero_lt_two
+    exact hf_tendsto.comp h_half_atTop
+  · -- Subgoal 3: Lower bound (0 ≤ Average)
+    filter_upwards [Filter.Ioi_mem_atTop 0] with η hη
     have h_half_pos : 0 < η / 2 := half_pos hη
+    refine mul_nonneg (div_nonneg zero_le_two hη.le)
+      (integral_nonneg (half_le_self hη.le) fun s hs => ?_)
+    exact hf_nonneg s (h_half_pos.trans_le hs.1)
+  · -- Subgoal 4: Upper bound (Average ≤ f(η / 2))
+    filter_upwards [Filter.Ioi_mem_atTop 0] with η hη
+    have h_half_pos : 0 < η / 2 := half_pos hη
+    have h_le : η / 2 ≤ η := half_le_self hη.le
+    -- Bound the integral by replacing f(s) with its maximum value f(η/2)
+    have h_int_le : ∫ s in (η / 2)..η, f s ≤ ∫ s in (η / 2)..η, f (η / 2) := by
+      refine integral_mono_on h_le (hf_int (η / 2) η h_half_pos hη)
+        intervalIntegral.intervalIntegrable_const fun s hs => ?_
+      exact hf_anti h_half_pos (h_half_pos.trans_le hs.1) hs.1
+    have hη_pos : 0 < η := Set.mem_Ioi.mp hη
     calc (2 / η) * ∫ s in (η / 2)..η, f s
-        ≤ (2 / η) * ∫ s in (η / 2)..η, f (η / 2) := by
-          gcongr
-          exact integral_mono_on (half_le_self hη.le) (hf_int _ _ h_half_pos hη)
-            intervalIntegrable_const fun s hs =>
-            hf_anti h_half_pos (h_half_pos.trans_le hs.1) hs.1
-      _ = f (η / 2) := by
-          rw [intervalIntegral.integral_const, smul_eq_mul]
-          field_simp [hη.ne']; ring
+        ≤ (2 / η) * ∫ s in (η / 2)..η, f (η / 2) := by gcongr
+      _ = (2 / η) * ((η / 2) * f (η / 2)) := by
+          rw [intervalIntegral.integral_const, smul_eq_mul]; ring_nf
+      _ = f (η / 2) := by field_simp [hη_pos.ne']
 
 /-! ## Antitone function inverses -/
 
@@ -346,18 +357,17 @@ private lemma W_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     0 < W_fn f x_eq r η := by
   have h_int_Tbar := Tbar_intervalIntegrable f x_eq hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)
   have h_int_sum : IntervalIntegrable (fun s => Tbar_fn f x_eq s r + r / η) volume (η / 2) η :=
-    h_int_Tbar.add intervalIntegrable_const
-  have h_r2_le : r / 2 ≤ ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η :=
-        calc r / 2 = ∫ s in (η / 2)..η, r / η := by
-                  rw [intervalIntegral.integral_const, smul_eq_mul]
-                  field_simp [hη.ne']; ring
-      _ ≤ _ := intervalIntegral.integral_mono_on (by linarith) intervalIntegrable_const h_int_sum
-                fun s hs => by
-                  linarith [Tbar_nonneg_of f x_eq hconv ((half_pos hη).trans_le hs.1) hr]
+    h_int_Tbar.add intervalIntegral.intervalIntegrable_const
+  have h_bound : ∫ s in (η / 2)..η, r / η ≤ ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η := by
+    refine intervalIntegral.integral_mono_on (by linarith)
+      intervalIntegral.intervalIntegrable_const h_int_sum (fun s hs => ?_)
+    linarith [Tbar_nonneg_of f x_eq hconv (by linarith [hs.1] : 0 < s) hr]
+  have h_const_int : ∫ s in (η / 2)..η, r / η = r / 2 := by
+    rw [intervalIntegral.integral_const, smul_eq_mul]; field_simp [hη.ne']; ring
   calc (0 : ℝ) < r / η := div_pos hr.1 hη
-    _ = (2 / η) * (r / 2) := by ring;
+    _ = (2 / η) * (r / 2) := by ring
     _ ≤ (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η := by
-        gcongr
+        gcongr; linarith [h_bound, h_const_int]
 
 private lemma W_ge_Tbar (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
@@ -367,19 +377,20 @@ private lemma W_ge_Tbar (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     Tbar_fn f x_eq η r + r / η ≤ W_fn f x_eq r η := by
   have h_int_Tbar := Tbar_intervalIntegrable f x_eq hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)
   have h_int_sum : IntervalIntegrable (fun s => Tbar_fn f x_eq s r + r / η) volume (η / 2) η :=
-    h_int_Tbar.add intervalIntegrable_const
+    h_int_Tbar.add intervalIntegral.intervalIntegrable_const
+  have h_anti := Tbar_antitone f x_eq hconv hr
   have h_integral_bound :
       ∫ s in (η / 2)..η, Tbar_fn f x_eq η r + r / η ≤
       ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η := by
-    refine intervalIntegral.integral_mono_on (by linarith) intervalIntegrable_const h_int_sum
+    refine intervalIntegral.integral_mono_on (by linarith) intervalIntegral.intervalIntegrable_const h_int_sum
       (fun s hs => ?_)
     have hs_pos : 0 < s := by linarith [hs.1]
-    linarith [Tbar_antitone f x_eq hconv hr (Set.mem_Ioi.mpr hs_pos) (Set.mem_Ioi.mpr hη) hs.2]
-  dsimp [W_fn]
+    linarith [h_anti (Set.mem_Ioi.mpr hs_pos) (Set.mem_Ioi.mpr hη) hs.2]
   have h_const_int :
       ∫ s in (η / 2)..η, Tbar_fn f x_eq η r + r / η =
       (η / 2) * (Tbar_fn f x_eq η r + r / η) := by
     rw [intervalIntegral.integral_const, smul_eq_mul]; ring
+  dsimp [W_fn]
   calc Tbar_fn f x_eq η r + r / η
       = (2 / η) * ((η / 2) * (Tbar_fn f x_eq η r + r / η)) := by
         rw [← mul_assoc, show (2 / η) * (η / 2) = 1 from by field_simp, one_mul]
@@ -406,10 +417,10 @@ private lemma W_fn_eq (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
   simp only [W_fn]
   rw [intervalIntegral.integral_add
     (Tbar_intervalIntegrable f x_eq hconv hr (le_of_lt (half_lt_self hη)) (half_pos hη))
-    intervalIntegrable_const,
+    intervalIntegral.intervalIntegrable_const,
     intervalIntegral.integral_const, smul_eq_mul]
-  field_simp; ring;
-
+  have h_const : (η - η / 2) * (r / η) = r / 2 := by field_simp; ring
+  rw [h_const]; field_simp [hη_ne]
 
 lemma W_fn_continuousOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
