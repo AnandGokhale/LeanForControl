@@ -1,5 +1,5 @@
 import LeanForControl.Stability.DefsNonAutonomous
-import LeanForControl.Stability.NA_axioms
+import LeanForControl.Stability.AsymptoticStabilityTools
 import LeanForControl.Stability.classK
 import LeanForControl.axioms
 
@@ -7,6 +7,7 @@ import Architect
 
 
 open MeasureTheory
+
 
 
 
@@ -137,150 +138,6 @@ theorem uniformlyStableNA_iff_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
     linarith [hα t₀ ht₀ φ hφ (h_init.trans hδ_a) t ht, h_mono, (abs_lt.mp h_alpha).2]
 
 
-/-! ### T̄ — optimal convergence-time function -/
-
-/-- `validTSet f x_eq η r` is the set of times `T ≥ 0` such that every trajectory starting
-    within `r` of `x_eq` reaches within `η` of `x_eq` after time `T`. -/
-private noncomputable def validTSet (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (η r : ℝ) : Set ℝ :=
-  {T | 0 ≤ T ∧ ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-    IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < r → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η}
-
-/-- `Tbar_fn f x_eq η r` is the infimum of valid convergence times from the `r`-ball to the
-    `η`-ball: the smallest `T` that works for all trajectories simultaneously. -/
-private noncomputable def Tbar_fn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (η r : ℝ) : ℝ :=
-  sInf (validTSet f x_eq η r)
-
-private lemma validTSet_bddBelow (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (η r : ℝ) :
-    BddBelow (validTSet f x_eq η r) :=
-  ⟨0, fun _ hT => hT.1⟩
-
-private lemma validTSet_nonempty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {η : ℝ} (hη : 0 < η) {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
-    (validTSet f x_eq η r).Nonempty := by
-  obtain ⟨T, hT_pos, hT_prop⟩ := hconv η hη
-  exact ⟨T, hT_pos.le, fun t₀ ht₀ φ hφ h_init t ht =>
-    hT_prop t₀ ht₀ φ hφ (h_init.trans_le hr.2) t ht⟩
-
-private lemma Tbar_nonneg_of (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {η : ℝ} (hη : 0 < η) {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
-    0 ≤ Tbar_fn f x_eq η r :=
-  le_csInf (validTSet_nonempty f x_eq hconv hη hr) (fun _ hT => hT.1)
-
-private lemma Tbar_antitone (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
-    AntitoneOn (fun η => Tbar_fn f x_eq η r) (Set.Ioi 0) := by
-  intro η₁ hη₁ η₂ hη₂ h_le
-  apply csInf_le_csInf (validTSet_bddBelow f x_eq η₂ r)
-    (validTSet_nonempty f x_eq hconv hη₁ hr)
-  rintro T ⟨hT_nn, hT_prop⟩
-  exact ⟨hT_nn, fun t₀ ht₀ φ hφ h_init t ht => (hT_prop t₀ ht₀ φ hφ h_init t ht).trans_le h_le⟩
-
-private lemma Tbar_monotone (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {η : ℝ} (hη : 0 < η) :
-    MonotoneOn (fun r => Tbar_fn f x_eq η r) (Set.Ioc 0 c) := by
-  intro r₁ hr₁ r₂ hr₂ h_le
-  apply csInf_le_csInf (validTSet_bddBelow f x_eq η r₁)
-    (validTSet_nonempty f x_eq hconv hη hr₂)
-  rintro T ⟨hT_nn, hT_prop⟩
-  exact ⟨hT_nn, fun t₀ ht₀ φ hφ h_init t ht =>
-    hT_prop t₀ ht₀ φ hφ (h_init.trans_le h_le) t ht⟩
-
-/-! ### W — Sontag averaging function -/
-
-/-- `W_fn f x_eq r η = (2/η) ∫_{η/2}^{η} [T̄(s,r) + r/η] ds`
-    (Sontag 1998). Strictly decreasing in `η`, strictly increasing in `r`. -/
-private noncomputable def W_fn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (r η : ℝ) : ℝ :=
-  (2 / η) * ∫ s in (η / 2)..η, (Tbar_fn f x_eq s r + r / η)
-
-/-- Integrability of `s ↦ T̄(s, r)` on `[a, b]` (antitone → measurable → integrable).
-    TODO: prove using `AntitoneOn.integrableOn` or a Lebesgue measurability argument. -/
-private lemma Tbar_intervalIntegrable (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {a b : ℝ} (hab : a ≤ b) (ha : 0 < a) :
-    IntervalIntegrable (fun s => Tbar_fn f x_eq s r) MeasureTheory.volume a b := by
-  apply AntitoneOn.intervalIntegrable
-  apply (Tbar_antitone f x_eq hconv hr).mono
-  intro s hs
-  rw [Set.uIcc_of_le hab] at hs
-  exact Set.mem_Ioi.mpr (ha.trans_le hs.1)
-
-private lemma W_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {η : ℝ} (hη : 0 < η) :
-    0 < W_fn f x_eq r η := by
-  have h_int_Tbar := Tbar_intervalIntegrable f x_eq hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)
-  have h_int_sum : IntervalIntegrable (fun s => Tbar_fn f x_eq s r + r / η) volume (η / 2) η :=
-    h_int_Tbar.add intervalIntegrable_const
-  have h_bound : ∫ s in (η / 2)..η, r / η ≤ ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η := by
-    refine intervalIntegral.integral_mono_on (by linarith) intervalIntegrable_const h_int_sum
-      (fun s hs => ?_)
-    linarith [Tbar_nonneg_of f x_eq hconv (by linarith [hs.1] : 0 < s) hr]
-  have h_const_int : ∫ s in (η / 2)..η, r / η = r / 2 := by
-    simp only [intervalIntegral.integral_const, smul_eq_mul]
-    rw [show η - η / 2 = η / 2 from by ring]; field_simp
-  calc (0 : ℝ) < r / η := div_pos hr.1 hη
-    _ = (2 / η) * (r / 2) := by ring
-    _ ≤ (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η :=
-        mul_le_mul_of_nonneg_left (by linarith [h_bound, h_const_int]) (by positivity)
-
-private lemma W_ge_Tbar (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
-    {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {η : ℝ} (hη : 0 < η) :
-    Tbar_fn f x_eq η r + r / η ≤ W_fn f x_eq r η := by
-  have h_int_Tbar := Tbar_intervalIntegrable f x_eq hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)
-  have h_int_sum : IntervalIntegrable (fun s => Tbar_fn f x_eq s r + r / η) volume (η / 2) η :=
-    h_int_Tbar.add intervalIntegrable_const
-  have h_anti := Tbar_antitone f x_eq hconv hr
-  have h_integral_bound :
-      ∫ s in (η / 2)..η, Tbar_fn f x_eq η r + r / η ≤
-      ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η := by
-    refine intervalIntegral.integral_mono_on (by linarith) intervalIntegrable_const h_int_sum
-      (fun s hs => ?_)
-    have hs_pos : 0 < s := by linarith [hs.1]
-    linarith [h_anti (Set.mem_Ioi.mpr hs_pos) (Set.mem_Ioi.mpr hη) hs.2]
-  have h_const_int :
-      ∫ s in (η / 2)..η, Tbar_fn f x_eq η r + r / η =
-      (η / 2) * (Tbar_fn f x_eq η r + r / η) := by
-    rw [intervalIntegral.integral_const]
-    change (η - η / 2) * _ = (η / 2) * _; ring
-  dsimp [W_fn]
-  calc Tbar_fn f x_eq η r + r / η
-      = (2 / η) * ((η / 2) * (Tbar_fn f x_eq η r + r / η)) := by
-        rw [← mul_assoc, show (2 / η) * (η / 2) = 1 from by field_simp, one_mul]
-    _ ≤ (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r + r / η := by
-        rw [← h_const_int]
-        exact mul_le_mul_of_nonneg_left h_integral_bound (by positivity)
-
-/-- Unpacking the infimum: If s > Tbar(η, r), then the trajectory has already reached the η-ball. -/
-private lemma norm_le_of_Tbar_lt {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {η r s t₀ t : ℝ} {φ : ℝ → ℝⁿ}
-  (hne : (validTSet f x_eq η r).Nonempty)
-  (hlt : Tbar_fn f x_eq η r < s) (ht₀ : 0 ≤ t₀)
-  (hφ : IsTrajectoryNA φ f) (h_init : ‖φ t₀ - x_eq‖ < r)
-  (ht : t₀ + s ≤ t) :
-  ‖φ t - x_eq‖ ≤ η := by
-  -- sInf(validTSet) < s and validTSet nonempty ⇒ ∃ T ∈ validTSet, T < s ⇒ t₀ + T ≤ t
-  obtain ⟨T, ⟨_, hT_prop⟩, hT_lt⟩ := exists_lt_of_csInf_lt hne hlt
-  exact (hT_prop t₀ ht₀ φ hφ h_init t (by linarith)).le
-
-
 /-! ### UAS → ClassKL (forward direction, Sontag 1998) -/
 lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hUAS : UniformlyAsymptoticStableNA f x_eq) :
@@ -295,142 +152,26 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
   have ha_le_aα2 : a ≤ a_α / 2 := min_le_left _ _
   have ha_le_c   : a ≤ c        := min_le_right _ _
   have ha_lt_aα  : a < a_α      := ha_le_aα2.trans_lt (half_lt_self ha_α)
-  -- T̄(η, r) = 0 when the ClassK bound α already puts us inside B_η
-  have hTbar_zero : ∀ r ∈ Set.Ioc 0 a, ∀ η, α.toFun r ≤ η → Tbar_fn f x_eq η r = 0 := by
-    intro r hr η h_le
-    have hr_lt_aα : r < a_α := hr.2.trans_lt ha_lt_aα
-    have hr_Ico : r ∈ Set.Ico 0 a_α := ⟨hr.1.le, hr_lt_aα⟩
-    have h_alpha_pos : 0 < α.toFun r :=
-      α.map_zero ▸ α.strict_mono ⟨le_refl 0, ha_α⟩ hr_Ico hr.1
-    have hη_pos : 0 < η := h_alpha_pos.trans_le h_le
-    refine le_antisymm (csInf_le (validTSet_bddBelow f x_eq η r) ⟨le_refl 0, ?_⟩)
-      (le_csInf (validTSet_nonempty f x_eq hconv hη_pos ⟨hr.1, hr.2.trans ha_le_c⟩)
-        (fun _ hT => hT.1))
-    intro t₀ ht₀ φ hφ h_init t ht
-    have h_stab := hα_bound t₀ ht₀ φ hφ (h_init.trans hr_lt_aα) t (by linarith)
-    have h_strict := α.strict_mono ⟨norm_nonneg _, h_init.trans hr_lt_aα⟩ hr_Ico h_init
-    exact (h_stab.trans_lt h_strict).trans_le h_le
-  -- W and its properties
-  have hW_pos : ∀ r ∈ Set.Ioc 0 c, ∀ η > 0, 0 < W_fn f x_eq r η :=
-    fun r hr η hη => W_pos f x_eq hconv hr hη
-  have hW_ge_Tbar : ∀ r ∈ Set.Ioc 0 c, ∀ η > 0, Tbar_fn f x_eq η r + r / η ≤ W_fn f x_eq r η :=
-    fun r hr η hη => W_ge_Tbar f x_eq hconv hr hη
-  have hTbar_II : ∀ r ∈ Set.Ioc 0 c, ∀ a b : ℝ, 0 < a → 0 < b →
-      IntervalIntegrable (fun s => Tbar_fn f x_eq s r) volume a b := by
-    intro r hr a b ha hb
-    rcases le_total a b with hab | hab
-    · exact Tbar_intervalIntegrable f x_eq hconv hr hab ha
-    · exact (Tbar_intervalIntegrable f x_eq hconv hr hab hb).symm
-  have hW_eq : ∀ r ∈ Set.Ioc 0 c, ∀ η ∈ Set.Ioi 0,
-      W_fn f x_eq r η = (2 / η) * (∫ s in (η / 2)..η, Tbar_fn f x_eq s r) + r / η := by
-    intro r hr η hη
-    have hη_ne : η ≠ 0 := ne_of_gt hη
-    simp only [W_fn]
-    rw [intervalIntegral.integral_add
-      (Tbar_intervalIntegrable f x_eq hconv hr (le_of_lt (half_lt_self hη)) (half_pos hη))
-      intervalIntegrable_const,
-      intervalIntegral.integral_const, smul_eq_mul]
-    have h_const : (η - η / 2) * (r / η) = r / 2 := by field_simp; ring
-    rw [h_const]; field_simp [hη_ne]
-  have hW_cont : ∀ r ∈ Set.Ioc 0 c, ContinuousOn (W_fn f x_eq r) (Set.Ioi 0) := by
-    intro r hr
-    have h_int_cont : ContinuousOn (fun η => ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
-      (Set.Ioi 0) := continuousOn_halfWindow_integral (hTbar_II r hr)
-    apply ContinuousOn.congr
-      (f := fun η => (2 / η) * (∫ s in (η / 2)..η, Tbar_fn f x_eq s r) + r / η)
-    · refine ContinuousOn.add (ContinuousOn.mul ?_ h_int_cont) ?_ <;>
-        exact fun η hη =>
-          (continuousAt_const.div continuousAt_id (Set.mem_Ioi.mp hη).ne').continuousWithinAt
-    · exact hW_eq r hr
-  have hW_strict_anti : ∀ r ∈ Set.Ioc 0 c, StrictAntiOn (W_fn f x_eq r) (Set.Ioi 0) := by
-    intro r hr
-    have h_avg_anti : AntitoneOn (fun η => (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
-      (Set.Ioi 0) :=
-      antitoneOn_halfWindow_average (Tbar_antitone f x_eq hconv hr) (hTbar_II r hr)
-    have h_r_div_strict : StrictAntiOn (fun η => r / η) (Set.Ioi 0) := fun η₁ hη₁ η₂ hη₂ h_lt =>
-      (div_lt_div_iff₀ hη₂ hη₁).mpr (mul_lt_mul_of_pos_left h_lt hr.1)
-    intro η₁ hη₁ η₂ hη₂ h_lt
-    rw [hW_eq r hr η₁ hη₁, hW_eq r hr η₂ hη₂]
-    linarith [h_avg_anti hη₁ hη₂ h_lt.le, h_r_div_strict hη₁ hη₂ h_lt]
-  have hW_tendsto : ∀ r ∈ Set.Ioc 0 a, Filter.Tendsto (W_fn f x_eq r) Filter.atTop (nhds 0) := by
-    intro r hr
-    have hr_c : r ∈ Set.Ioc 0 c := ⟨hr.1, hr.2.trans ha_le_c⟩
-    have h_avg : Filter.Tendsto (fun η => (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
-      Filter.atTop (nhds 0) := by
-      apply tendsto_halfWindow_average_zero
-      · exact fun s hs => Tbar_nonneg_of f x_eq hconv hs hr_c
-      · exact Tbar_antitone f x_eq hconv hr_c
-      · exact hTbar_II r hr_c
-      · -- For large enough η, every trajectory starting within r is already within η
-        -- (the class K bound α(r) is a finite ceiling), so Tbar = 0 eventually.
-        have h_eventually_zero : ∀ᶠ η in Filter.atTop, Tbar_fn f x_eq η r = 0 := by
-          filter_upwards [Filter.eventually_ge_atTop (α.toFun r)] with η hη
-          exact hTbar_zero r hr η hη
-        exact tendsto_const_nhds.congr' (h_eventually_zero.mono (fun _ h => h.symm))
-    have h_rdiv : Filter.Tendsto (fun η => r / η) Filter.atTop (nhds 0) := by
-      simpa [div_eq_mul_inv] using Filter.Tendsto.const_mul r tendsto_inv_atTop_zero
-    have h_sum := h_avg.add h_rdiv
-    simp only [add_zero] at h_sum
-    refine h_sum.congr' ?_
-    filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with η hη
-    exact (hW_eq r hr_c η hη).symm
-  -- U = W⁻¹ (functional inverse on (0,∞))
-  have hW_tendsto_top : ∀ r ∈ Set.Ioc 0 c, Filter.Tendsto (W_fn f x_eq r) (𝓝[>] 0)
-    Filter.atTop := by
-    intro r hr
-    have h_r_pos : 0 < r := hr.1
-    -- W(η) is bounded below by r / η
-    have h_lower_bound : ∀ᶠ η in 𝓝[>] (0 : ℝ), r / η ≤ W_fn f x_eq r η := by
-      filter_upwards [self_mem_nhdsWithin] with η hη
-      have h_ge := hW_ge_Tbar r hr η hη
-      linarith [Tbar_nonneg_of f x_eq hconv hη ⟨hr.1, hr.2⟩]
-    -- The limit of r * (1/η) as η → 0⁺ is ∞; squeeze theorem pushes W(η) to ∞
-    have h_r_div : Filter.Tendsto (fun η : ℝ => r / η) (𝓝[>] 0) Filter.atTop := by
-      simpa [div_eq_mul_inv] using Filter.Tendsto.const_mul_atTop h_r_pos tendsto_inv_nhdsGT_zero
-    exact tendsto_atTop_mono' (𝓝[>] 0) h_lower_bound h_r_div
-  let U (r s : ℝ) : ℝ := Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) s
-  have hU_bound : ∀ r ∈ Set.Ioc 0 a,
-      ∀ t₀ ≥ 0, ∀ φ, IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < r →
-      ∀ t > t₀, ‖φ t - x_eq‖ ≤ U r (t - t₀) := by
-    intro r hr t₀ ht₀ φ hφ h_init t ht
-    let s := t - t₀
-    have hs_nonneg : 0 ≤ s := sub_nonneg.mpr ht.le
-    have hr_c : r ∈ Set.Ioc 0 c := ⟨hr.1, hr.2.trans ha_le_c⟩
-    -- Fact 1: U maps into (0, ∞), so the radius is strictly positive
-    have hU_pos : 0 < U r s :=
-      invFunOn_pos (hW_cont r hr_c) (hW_tendsto r hr) (hW_tendsto_top r hr_c) (sub_pos.mpr ht)
-    -- Fact 2: U is the right-inverse of W, so W(U(s)) = s
-    have h_WU : W_fn f x_eq r (U r s) = s :=
-      apply_invFunOn_eq (hW_cont r hr_c) (hW_tendsto r hr) (hW_tendsto_top r hr_c) (sub_pos.mpr ht)
-    -- Use hW_ge_Tbar to show s > Tbar
-    have h_W_ge := hW_ge_Tbar r hr_c (U r s) hU_pos
-    have h_Tbar_lt_s : Tbar_fn f x_eq (U r s) r < s := by
-      calc Tbar_fn f x_eq (U r s) r
-        _ < Tbar_fn f x_eq (U r s) r + r / (U r s) := lt_add_of_pos_right _ (div_pos hr.1 hU_pos)
-        _ ≤ W_fn f x_eq r (U r s)                  := h_W_ge
-        _ = s                                      := h_WU
-    -- Because s > Tbar (the infimum of valid times), s is a valid time!
-    have ht_eq : t₀ + s ≤ t := by change t₀ + (t - t₀) ≤ t; linarith
-    have hne : (validTSet f x_eq (U r s) r).Nonempty :=
-      validTSet_nonempty f x_eq hconv hU_pos hr_c
-    exact norm_le_of_Tbar_lt hne h_Tbar_lt_s ht₀ hφ h_init ht_eq
   have ha_c : a ∈ Set.Ioc 0 c := ⟨ha, ha_le_c⟩
   have ha_a : a ∈ Set.Ioc 0 a := ⟨ha, le_refl a⟩
-  have hU_strict_anti : StrictAntiOn (U a) (Set.Ioi 0) :=
-    strictAntiOn_invFunOn (hW_cont a ha_c) (hW_strict_anti a ha_c) (hW_tendsto a ha_a)
-      (hW_tendsto_top a ha_c)
-  -- Old axiom had `s ≥ 0`; new lemma requires `s > 0` (s = 0 is a junk value case)
-  have hU_pos : ∀ s > 0, 0 < U a s := fun _ hs =>
-    invFunOn_pos (hW_cont a ha_c) (hW_tendsto a ha_a) (hW_tendsto_top a ha_c) hs
-  have hU_tendsto : Filter.Tendsto (U a) Filter.atTop (nhds 0) :=
-    invFunOn_tendsto_zero (hW_cont a ha_c) (hW_strict_anti a ha_c) (hW_tendsto a ha_a)
-      (hW_tendsto_top a ha_c)
+  have hU_strict_anti : StrictAntiOn (Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0)) (Set.Ioi 0) :=
+    strictAntiOn_invFunOn (W_fn_continuousOn f x_eq hconv ha_c)
+      (W_fn_strictAntiOn f x_eq hconv ha_c)
+      (W_fn_tendsto_atTop f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα ha_a)
+      (W_fn_tendsto_nhdsGT f x_eq hconv ha_c)
+  have hU_pos : ∀ s > 0, 0 < Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0) s := fun _ hs =>
+    invFunOn_pos (W_fn_continuousOn f x_eq hconv ha_c)
+      (W_fn_tendsto_atTop f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα ha_a)
+      (W_fn_tendsto_nhdsGT f x_eq hconv ha_c) hs
+  have hU_tendsto : Filter.Tendsto (Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0))
+      Filter.atTop (nhds 0) :=
+    invFunOn_tendsto_zero (W_fn_continuousOn f x_eq hconv ha_c)
+      (W_fn_strictAntiOn f x_eq hconv ha_c)
+      (W_fn_tendsto_atTop f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα ha_a)
+      (W_fn_tendsto_nhdsGT f x_eq hconv ha_c)
   let β_fun (r s : ℝ) : ℝ :=
     if h : s = 0 then α.toFun r
-    else min (α.toFun r) (Real.sqrt (α.toFun r * U a s))
-  -- let β_fun (r s : ℝ) : ℝ :=
-  --   if h : s = 0 then α.toFun r
-  --   else min (α.toFun r) (Real.sqrt (α.toFun r * U a s)) * (1 / (1 + s))
+    else min (α.toFun r) (Real.sqrt (α.toFun r * Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0) s))
   refine ⟨a, ha, {
     ha       := ha
     toFun    := β_fun
@@ -482,14 +223,17 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
       dsimp [β_fun]
       have h_α : 0 ≤ α.toFun r := (α.maps_to ⟨hr.1, hr.2.trans ha_lt_aα⟩).1
       have h_eq : (fun s ↦ if s = 0 then α.toFun r
-        else min (α.toFun r) √(α.toFun r * U a s)) =ᶠ[atTop]
-        (fun s ↦ min (α.toFun r) √(α.toFun r * U a s)) := by
+        else min (α.toFun r) √(α.toFun r * Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0) s))
+        =ᶠ[atTop]
+        (fun s ↦ min (α.toFun r)
+          √(α.toFun r * Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0) s)) := by
         filter_upwards [Filter.eventually_ne_atTop 0] with s hs
         exact if_neg hs
       apply Filter.Tendsto.congr' h_eq.symm
       refine squeeze_zero (fun s => le_min h_α (Real.sqrt_nonneg _))
         (fun s => min_le_right _ _) ?_
-      have h_inner : Tendsto (fun s ↦ α.toFun r * U a s) atTop (𝓝 0) := by
+      have h_inner : Tendsto (fun s ↦ α.toFun r * Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0) s)
+          atTop (𝓝 0) := by
         simpa using Filter.Tendsto.const_mul (α.toFun r) hU_tendsto
       have h_sqrt : Tendsto (fun x : ℝ ↦ Real.sqrt x) (𝓝 0) (𝓝 0) := by
         simpa [Real.sqrt_zero] using Real.continuous_sqrt.tendsto 0
@@ -503,8 +247,8 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
   · have h_sub_ne : t - t₀ ≠ 0 := ne_of_gt (sub_pos.mpr ht_strict)
     dsimp [β_fun]
     simp only [if_neg h_sub_ne]
-    have h_U : ‖φ t - x_eq‖ ≤ U a (t - t₀) :=
-      hU_bound a ⟨ha, le_refl a⟩ t₀ ht₀ φ hφ h_init t ht_strict
+    have h_U : ‖φ t - x_eq‖ ≤ Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0) (t - t₀) :=
+      U_decay_bound f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα ha_a ht₀ hφ h_init ht_strict
     refine le_min h_α ?_
     rw [← Real.sqrt_sq (norm_nonneg _)]
     exact Real.sqrt_le_sqrt (by nlinarith [norm_nonneg (φ t - x_eq), h_α, h_U])
@@ -523,7 +267,7 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
       \|\varphi(t) - x_{\mathrm{eq}}\| \le \beta(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|,\, t - t_{0})
       \quad \forall\, t \ge t_{0} \ge 0,\; \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c.
     \] -/)]
-theorem uniformlyAsymptoticStableNA_iff_classKL_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
+theorem uniformlyAsymptoticStableNA_iff_classKL(f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
     UniformlyAsymptoticStableNA f x_eq ↔
     ∃ (a : ℝ) (_ : 0 < a) (β : ClassKL a),
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
@@ -590,16 +334,295 @@ theorem uniformlyAsymptoticStableNA_iff_classKL_iff_classKL (f : ℝ → ℝⁿ 
 --       \quad \forall\, t \ge t_{0} \ge 0,
 --     \]
 --     with no restriction on the initial state $\varphi(t_{0})$. -/)]
--- theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
---     GloballyUniformlyAsymptoticStableNA f x_eq ↔
---     ∃ β : ℝ → ℝ → ℝ,
---       (∀ s ≥ 0, β 0 s = 0) ∧
---       (∀ s ≥ 0, StrictMonoOn (fun r => β r s) (Set.Ici 0)) ∧
---       (∀ r ≥ 0, AntitoneOn (fun s => β r s) (Set.Ici 0)) ∧
---       (∀ r ≥ 0, Filter.Tendsto (fun s => β r s) Filter.atTop (nhds 0)) ∧
---       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
---         IsTrajectoryNA φ f →
---         ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ β (‖φ t₀ - x_eq‖) (t - t₀) := by
---   constructor
---   · sorry
---   · sorry
+theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
+    GloballyUniformlyAsymptoticStableNA f x_eq ↔
+    ∃ β : ℝ → ℝ → ℝ,
+      (∀ s ≥ 0, β 0 s = 0) ∧
+      (∀ s ≥ 0, ContinuousOn (fun r => β r s) (Set.Ici 0)) ∧
+      (∀ s ≥ 0, StrictMonoOn (fun r => β r s) (Set.Ici 0)) ∧
+      (Filter.Tendsto (fun r => β r 0) Filter.atTop Filter.atTop) ∧
+      (∀ r ≥ 0, AntitoneOn (fun s => β r s) (Set.Ici 0)) ∧
+      (∀ r ≥ 0, Filter.Tendsto (fun s => β r s) Filter.atTop (nhds 0)) ∧
+      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
+        IsTrajectoryNA φ f →
+        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ β (‖φ t₀ - x_eq‖) (t - t₀) := by
+  constructor
+  · intro hGUAS
+    obtain ⟨hGUS, hGUC⟩ := hGUAS
+    let reachable (r : ℝ) : Set ℝ :=
+      {d | ∃ (φ : ℝ → ℝⁿ) (t₀ t : ℝ), 0 ≤ t₀ ∧ t₀ ≤ t ∧ IsTrajectoryNA φ f ∧
+           ‖φ t₀ - x_eq‖ ≤ r ∧ d = ‖φ t - x_eq‖}
+    let ω (r : ℝ) : ℝ := sSup (reachable r)
+    -- 2. Global Uniform Stability bounds the reachable set
+    -- (This is where you use your δ(ε) → ∞ inverse argument)
+    have h_gus_bound : ∀ r ≥ 0, ∃ M, ∀ φ : ℝ → ℝⁿ, ∀ t₀ t : ℝ, 0 ≤ t₀ → t₀ ≤ t →
+      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ ≤ r → ‖φ t - x_eq‖ ≤ M := by
+      intro r _
+      obtain ⟨δ, hδ_pos, hδ_top, hδ_stab⟩ := hGUS
+      -- δ(ε) → ∞, so eventually there exists some M > 0 where δ(M) > r
+      have h_eventual : ∀ᶠ ε in Filter.atTop, 0 < ε ∧ r < δ ε :=
+        (Filter.eventually_gt_atTop 0).and (hδ_top (Filter.Ioi_mem_atTop r))
+      obtain ⟨M, hM_pos, hM_gt_r⟩ := h_eventual.exists
+      refine ⟨M, fun φ t₀ t ht₀ ht hφ h_init => ?_⟩
+      have h_init_lt : ‖φ t₀ - x_eq‖ < δ M := (by linarith)
+      exact (hδ_stab M hM_pos t₀ ht₀ φ hφ h_init_lt t ht).le
+    -- 3. Strict stability at the origin (starting at x_eq means staying at x_eq)
+    have h_gus_zero : ∀ φ : ℝ → ℝⁿ, ∀ t₀ t : ℝ, 0 ≤ t₀ → t₀ ≤ t →
+      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ = 0 → ‖φ t - x_eq‖ = 0 := by
+      intro φ t₀ t ht₀ ht hφ h_init
+      obtain ⟨δ, hδ_pos, _, hδ_stab⟩ := hGUS
+      apply le_antisymm _ (norm_nonneg _)
+      -- ‖φ t - x_eq‖ < ε for every ε > 0, so it must be 0
+      apply le_of_forall_pos_lt_add
+      intro ε hε
+      simp only [zero_add]
+      have h_init_lt : ‖φ t₀ - x_eq‖ < δ ε := h_init.symm ▸ hδ_pos ε hε
+      exact hδ_stab ε hε t₀ ht₀ φ hφ h_init_lt t ht
+    have hbdd_of_le : ∀ r ≥ 0, BddAbove (reachable r) := fun r hr => by
+      obtain ⟨M, hM⟩ := h_gus_bound r hr
+      exact ⟨M, fun _ ⟨φ, t₀, t, ht₀, ht, hφ, h_init, heq⟩ => heq ▸ hM φ t₀ t ht₀ ht hφ h_init⟩
+    have hω_zero : ω 0 = 0 := by
+      dsimp [ω]
+      by_cases h_empty : reachable 0 = ∅
+      · rw [h_empty, Real.sSup_empty]
+      · have h_nonempty : (reachable 0).Nonempty := Set.nonempty_iff_ne_empty.mpr h_empty
+        have h_reach_zero : reachable 0 = {0} := by
+          ext d
+          constructor
+          · rintro ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
+            exact h_gus_zero φ t₀ t ht₀ ht hφ (le_antisymm h_init (norm_nonneg _))
+          · rintro rfl
+            obtain ⟨_, φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := h_nonempty
+            exact ⟨φ, t₀, t, ht₀, ht, hφ, h_init, (h_gus_zero φ t₀ t ht₀ ht hφ
+              (le_antisymm h_init (norm_nonneg _))).symm⟩
+        rw [h_reach_zero, csSup_singleton]
+    have hω_mono : MonotoneOn ω (Set.Ici 0) := by
+      intro r₁ hr₁ r₂ hr₂ h_le
+      dsimp [ω]
+      by_cases h_empty : reachable r₁ = ∅
+      · rw [h_empty, Real.sSup_empty]
+        by_cases h_empty2 : reachable r₂ = ∅
+        · rw [h_empty2, Real.sSup_empty]
+        · have h_nonempty2 : (reachable r₂).Nonempty := Set.nonempty_iff_ne_empty.mpr h_empty2
+          obtain ⟨d, hd⟩ := h_nonempty2
+          obtain ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := hd
+          have hd_mem : ‖φ t - x_eq‖ ∈ reachable r₂ := ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
+          exact (norm_nonneg _).trans (le_csSup (hbdd_of_le r₂ hr₂) hd_mem)
+      · exact csSup_le_csSup (hbdd_of_le r₂ hr₂) (Set.nonempty_iff_ne_empty.mpr h_empty)
+          fun d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, heq⟩ =>
+            ⟨φ, t₀, t, ht₀, ht, hφ, h_init.trans h_le, heq⟩
+    obtain ⟨α, hα_bound⟩ := exists_classKInfty_upper_bound ω hω_zero hω_mono
+    have h_global_α_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
+        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖ := by
+      intro t₀ ht₀ φ hφ t ht
+      have h_in_reach : ‖φ t - x_eq‖ ∈ reachable (‖φ t₀ - x_eq‖) := by
+        dsimp [reachable]; exact ⟨φ, t₀, t, ht₀, ht, hφ, le_rfl, rfl⟩
+      exact (le_csSup (hbdd_of_le _ (norm_nonneg _)) h_in_reach).trans
+        (hα_bound _ (Set.mem_Ici.mpr (norm_nonneg _)))
+    have hU_strict_anti : ∀ r > 0, StrictAntiOn (Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0))
+        (Set.Ioi 0) :=
+      fun r hr => guas_invFunOn_strictAntiOn f x_eq α hGUC h_global_α_bound hr
+    have hU_pos : ∀ r > 0, ∀ s > 0, 0 < Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) s :=
+      fun r hr s hs => guas_invFunOn_pos f x_eq α hGUC h_global_α_bound hr hs
+    have hU_tendsto : ∀ r > 0, Filter.Tendsto (Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0))
+        Filter.atTop (nhds 0) :=
+      fun r hr => guas_invFunOn_tendsto_zero f x_eq α hGUC h_global_α_bound hr
+    have hU_decay : ∀ r > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
+        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < r → ∀ t > t₀,
+        ‖φ t - x_eq‖ ≤ Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) (t - t₀) :=
+      fun r hr t₀ ht₀ φ hφ h_init t ht =>
+        guas_U_decay_bound f x_eq α hGUC h_global_α_bound hr ht₀ hφ h_init ht
+    have hU_mono_r : ∀ s > 0, MonotoneOn (fun r => Function.invFunOn (W_fn f x_eq (r + 1))
+        (Set.Ioi 0) s) (Set.Ici 0) :=
+      fun s hs => guas_invFunOn_mono_r f x_eq α hGUC h_global_α_bound hs
+    let ψ (r s : ℝ) : ℝ :=
+      if h : s = 0 then α.toFun r
+      else min (α.toFun r) (Real.sqrt (α.toFun r * Function.invFunOn
+        (W_fn f x_eq (r + 1)) (Set.Ioi 0) s))
+    have hψ_nonneg : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ ψ r s := by
+      intro r hr s hs
+      dsimp [ψ]
+      split_ifs
+      · exact α.maps_to hr
+      · exact le_min (α.maps_to hr) (Real.sqrt_nonneg _)
+    have hψ_zero : ∀ s ≥ 0, ψ 0 s = 0 := by
+      intro s _
+      dsimp [ψ]
+      split_ifs with h_zero
+      · exact α.map_zero
+      · rw [α.map_zero, zero_mul, Real.sqrt_zero, min_self]
+    have hψ_mono : ∀ s ≥ 0, MonotoneOn (fun r => ψ r s) (Set.Ici 0) := by
+      intro s hs r₁ hr₁ r₂ hr₂ h_le
+      dsimp [ψ]
+      rcases eq_or_lt_of_le h_le with rfl | h_lt
+      · exact le_rfl
+      · have h_α_le : α.toFun r₁ ≤ α.toFun r₂ := le_of_lt (α.strict_mono hr₁ hr₂ h_lt)
+        by_cases h_zero : s = 0
+        · simp [if_pos h_zero, h_α_le]
+        · simp only [if_neg h_zero]
+          have hs_pos : 0 < s := lt_of_le_of_ne hs (Ne.symm h_zero)
+          -- Apply our new global helper
+          have h_U_le : Function.invFunOn (W_fn f x_eq (r₁ + 1)) (Set.Ioi 0) s ≤ Function.invFunOn
+            (W_fn f x_eq (r₂ + 1)) (Set.Ioi 0) s :=
+            hU_mono_r s hs_pos hr₁ hr₂ h_le
+          refine min_le_min h_α_le ?_
+          -- Branch to protect r₁ = 0
+          rcases (Set.mem_Ici.mp hr₁).eq_or_lt with rfl | hr₁_pos
+          · rw [α.map_zero, zero_mul, Real.sqrt_zero]
+            exact Real.sqrt_nonneg _
+          · -- When everything is strictly positive, nlinarith crushes the multiplication bound
+            have h_U_nonneg : 0 ≤ Function.invFunOn (W_fn f x_eq (r₁ + 1)) (Set.Ioi 0) s :=
+            le_of_lt (hU_pos (r₁ + 1) (by positivity) s hs_pos)
+            -- Explicitly construct the A * B ≤ C * D bound
+            apply Real.sqrt_le_sqrt
+            gcongr
+            exact α.maps_to (hr₂)
+    have hψ_rtendsto : Filter.Tendsto (fun r => ψ r 0) Filter.atTop Filter.atTop := by
+      have h_eq : (fun r => ψ r 0) = α.toFun := by ext r; dsimp [ψ]; simp
+      rw [h_eq]
+      exact α.tendsto_atTop
+    have hψ_anti : ∀ r ≥ 0, AntitoneOn (fun s => ψ r s) (Set.Ici 0) := by
+      intro r hr s₁ hs₁ s₂ hs₂ h_le
+      dsimp [ψ]
+      rcases eq_or_lt_of_le hr with rfl | hr_pos
+      · simp [α.map_zero]
+      · have h_α_pos : 0 < α.toFun r := by
+          calc 0 = α.toFun 0 := α.map_zero.symm
+            _ < α.toFun r := α.strict_mono (Set.mem_Ici.mpr (le_refl 0)) hr hr_pos
+        rcases (Set.mem_Ici.mp hs₁).eq_or_lt with rfl | hs₁_pos
+        · rcases (Set.mem_Ici.mp hs₂).eq_or_lt with rfl | hs₂_pos
+          · exact le_refl _
+          · simp [if_neg (ne_of_gt hs₂_pos)]
+        · rcases (Set.mem_Ici.mp hs₂).eq_or_lt with rfl | hs₂_pos
+          · linarith
+          · simp only [if_neg (ne_of_gt hs₁_pos), if_neg (ne_of_gt hs₂_pos)]
+            gcongr
+            exact (hU_strict_anti (r + 1) (by positivity)).antitoneOn hs₁_pos hs₂_pos h_le
+    have hψ_tendsto : ∀ r ≥ 0, Filter.Tendsto (fun s => ψ r s) Filter.atTop (nhds 0) := by
+      intro r hr
+      dsimp [ψ]
+      rcases eq_or_lt_of_le hr with rfl | hr_pos
+      · -- r = 0 case
+        simp [α.map_zero]
+      · -- r > 0 case
+        have h_α : 0 ≤ α.toFun r := by
+          exact α.maps_to (hr)
+        have h_eq : (fun s ↦ if s = 0 then α.toFun r
+          else min (α.toFun r) √(α.toFun r * Function.invFunOn (W_fn f x_eq (r + 1)) (Set.Ioi 0) s))
+          =ᶠ[Filter.atTop]
+          (fun s ↦ min (α.toFun r) √(α.toFun r * Function.invFunOn (W_fn f x_eq (r + 1))
+            (Set.Ioi 0) s)) := by
+          filter_upwards [Filter.eventually_ne_atTop 0] with s hs
+          exact if_neg hs
+        apply Filter.Tendsto.congr' h_eq.symm
+        refine squeeze_zero (fun s => le_min h_α (Real.sqrt_nonneg _))
+          (fun s => min_le_right _ _) ?_
+        have h_inner : Filter.Tendsto (fun s ↦ α.toFun r * Function.invFunOn (W_fn f x_eq (r + 1))
+          (Set.Ioi 0) s) Filter.atTop (nhds 0) := by
+          simpa using Filter.Tendsto.const_mul (α.toFun r) (hU_tendsto (r + 1) (by positivity))
+        have h_sqrt : Filter.Tendsto (fun x : ℝ ↦ Real.sqrt x) (nhds 0) (nhds 0) := by
+          simpa [Real.sqrt_zero] using Real.continuous_sqrt.tendsto 0
+        exact h_sqrt.comp h_inner
+    -- 3. PIPE IT THROUGH THE SMOOTHING AXIOM
+    have hψ_cont : ContinuousWithinAt (fun r => ψ r 0) (Set.Ici 0) 0 := by
+      have h : (fun r => ψ r 0) = α.toFun := funext fun r => by
+        dsimp [ψ]; split_ifs with h
+        · rfl
+        · exact absurd rfl h
+      rw [h]; exact α.continuous.continuousWithinAt (Set.mem_Ici.mpr le_rfl)
+    obtain ⟨β, hβ_upper_bound⟩ :=
+      exists_classKL_upper_bound ψ hψ_nonneg hψ_zero hψ_mono hψ_anti hψ_tendsto
+        hψ_cont
+    -- K∞ in r propagates: ψ(r,0) ≤ β(r,0) and ψ(·,0) → ∞ forces β(·,0) → ∞
+    have hβ_rtendsto : Filter.Tendsto (fun r => β.toFun r 0) Filter.atTop Filter.atTop := by
+      rw [Filter.tendsto_atTop]
+      intro b
+      have h := Filter.tendsto_atTop.mp hψ_rtendsto b
+      filter_upwards [h, Filter.eventually_ge_atTop 0] with r hr h0r
+      exact hr.trans (hβ_upper_bound r h0r 0 le_rfl)
+    refine ⟨β.toFun, β.map_zero, β.continuous_r, β.strict_mono_r, hβ_rtendsto, β.anti_s,
+            β.tendsto_zero, ?_⟩
+    intro t₀ ht₀ φ hφ t ht
+    have h_traj_ψ : ‖φ t - x_eq‖ ≤ ψ (‖φ t₀ - x_eq‖) (t - t₀) := by
+      have h_α : ‖φ t - x_eq‖ ≤ α.toFun (‖φ t₀ - x_eq‖) := by
+        have h_in_reach : ‖φ t - x_eq‖ ∈ reachable (‖φ t₀ - x_eq‖) := by
+          dsimp [reachable]
+          refine ⟨φ, t₀, t, ht₀, ht, hφ, le_rfl, rfl⟩
+        have h_le_ω : ‖φ t - x_eq‖ ≤ ω (‖φ t₀ - x_eq‖) :=
+          le_csSup (hbdd_of_le _ (norm_nonneg _)) h_in_reach
+        exact h_le_ω.trans (hα_bound _ (norm_nonneg _))
+      rcases ht.eq_or_lt with rfl | ht_strict
+      · simp [ψ, h_α]
+      · have h_sub_ne : t - t₀ ≠ 0 := ne_of_gt (sub_pos.mpr ht_strict)
+        dsimp [ψ]
+        simp only [if_neg h_sub_ne]
+        rcases (norm_nonneg (φ t₀ - x_eq)).eq_or_lt with hr_zero | hr_pos
+        · -- r = 0 case: The state never left the equilibrium!
+          have hr_eq_zero : ‖φ t₀ - x_eq‖ = 0 := hr_zero.symm
+          have h_α_zero : α.toFun (‖φ t₀ - x_eq‖) = 0 := by rw [hr_eq_zero, α.map_zero]
+          have h_t_zero : ‖φ t - x_eq‖ = 0 := by linarith [h_α, h_α_zero, norm_nonneg (φ t - x_eq)]
+          rw [h_t_zero]
+          exact le_min (α.maps_to (Set.mem_Ici.mpr (norm_nonneg _))) ((Real.sqrt_nonneg _))
+        · -- r > 0 case: The state decays! Apply the global decay helper.
+          have h_U : ‖φ t - x_eq‖ ≤ Function.invFunOn (W_fn f x_eq (‖φ t₀ - x_eq‖ + 1))
+            (Set.Ioi 0) (t - t₀) :=
+            hU_decay (‖φ t₀ - x_eq‖ + 1) (by positivity) t₀ ht₀ φ hφ (by linarith) t ht_strict
+          refine le_min h_α ?_
+          rw [← Real.sqrt_sq (norm_nonneg _)]
+          exact Real.sqrt_le_sqrt (by nlinarith [norm_nonneg (φ t - x_eq), h_α, h_U])
+    exact h_traj_ψ.trans (hβ_upper_bound (‖φ t₀ - x_eq‖) (Set.mem_Ici.mpr (norm_nonneg _))
+      (t - t₀) (Set.mem_Ici.mpr (sub_nonneg.mpr ht)))
+  · -- Backward: ∃ Global ClassKL bound → GUAS
+    rintro ⟨β, hβ_zero, hβ_cont, hβ_mono, hβ_rtendsto, hβ_anti, hβ_stendsto, hβ_bound⟩
+    let α : ClassKInfty := ClassKInfty.of_strictMono (fun r => β r 0)
+      (hβ_zero 0 le_rfl) (hβ_cont 0 le_rfl) (hβ_mono 0 le_rfl) hβ_rtendsto
+    refine ⟨?_, ?_⟩ -- Split into Uniform Stability and Global Uniform Convergence
+    · -- Global Uniform Stability (∃ δ, ...)
+      -- We use α.invFun as our δ function!
+      refine ⟨α.invFun, ?_, α.symm.tendsto_atTop, ?_⟩
+      · -- Prove δ(ε) > 0 for ε > 0
+        intro ε hε
+        have h_zero : α.symm.toFun 0 = 0 := α.symm.map_zero
+        have h_mono := α.symm.strict_mono (Set.mem_Ici.mpr (le_refl 0))
+          (Set.mem_Ici.mpr (le_of_lt hε)) hε
+        rwa [h_zero] at h_mono
+      · -- Prove the trajectory stays within ε
+        intro ε hε t₀ ht₀ φ hφ h_init t ht
+        have ht_sub : 0 ≤ t - t₀ := sub_nonneg.mpr ht
+        -- Decay over time: β(‖x₀‖, t - t₀) ≤ β(‖x₀‖, 0)
+        have h_decay : β ‖φ t₀ - x_eq‖ (t - t₀) ≤ β ‖φ t₀ - x_eq‖ 0 :=
+          hβ_anti ‖φ t₀ - x_eq‖ (Set.mem_Ici.mpr (norm_nonneg _))
+            (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht_sub) ht_sub
+        -- Monotonicity in space: β(‖x₀‖, 0) = α(‖x₀‖) < α(δ(ε)) = ε
+        have h_alpha_mono : α ‖φ t₀ - x_eq‖ < α (α.invFun ε) :=
+          α.strict_mono (Set.mem_Ici.mpr (norm_nonneg _))
+            (α.symm.maps_to (Set.mem_Ici.mpr (le_of_lt hε))) h_init
+        -- By definition of inverse, α(α.invFun(ε)) = ε
+        have h_inv : α (α.invFun ε) = ε :=
+          α.right_inv (Set.mem_Ici.mpr (le_of_lt hε))
+        have h_traj := hβ_bound t₀ ht₀ φ hφ t ht
+        calc ‖φ t - x_eq‖
+          _ ≤ β ‖φ t₀ - x_eq‖ (t - t₀) := h_traj
+          _ ≤ β ‖φ t₀ - x_eq‖ 0        := h_decay
+          _ = α.toFun ‖φ t₀ - x_eq‖    := rfl
+          _ < α.toFun (α.invFun ε)     := h_alpha_mono
+          _ = ε                        := h_inv
+    · -- Global Uniform Convergence
+      intro η hη r hr_pos
+      have hr_ici : r ∈ Set.Ici 0 := Set.mem_Ici.mpr hr_pos.le
+      obtain ⟨T, hT⟩ := Filter.eventually_atTop.mp
+        (hβ_stendsto r hr_ici (Iio_mem_nhds hη))
+      refine ⟨max T 0 + 1, by linarith [le_max_right T (0:ℝ)], ?_⟩
+      intro t₀ ht₀ φ hφ h_init t ht
+      have ht_sub : 0 ≤ t - t₀ := by linarith [le_max_right T (0:ℝ)]
+      have h_init_ici : ‖φ t₀ - x_eq‖ ∈ Set.Ici 0 := Set.mem_Ici.mpr (norm_nonneg _)
+      have h1 := hβ_bound t₀ ht₀ φ hφ t (by linarith)
+      -- Monotonicity bounds the initial state by r
+      have h2 : β ‖φ t₀ - x_eq‖ (t - t₀) < β r (t - t₀) :=
+        hβ_mono (t - t₀) ht_sub h_init_ici hr_ici h_init
+      -- Decay over time ensures we fall below η
+      have h3 : β r (t - t₀) ≤ β r (max T 0) :=
+        hβ_anti r hr_ici (Set.mem_Ici.mpr (le_max_right T 0)) (Set.mem_Ici.mpr ht_sub)
+        (by linarith [le_max_right T (0:ℝ)])
+      have h4 : β r (max T 0) < η := hT (max T 0) (le_max_left T 0)
+      linarith

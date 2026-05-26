@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
+import LeanForControl.axioms
 import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral
@@ -59,6 +60,12 @@ structure ClassK (a b : ℝ) where
 /-- Allows writing `α x` instead of `α.toFun x`. -/
 instance {a b : ℝ} : CoeFun (ClassK a b) (fun _ => ℝ → ℝ) where
   coe α := α.toFun
+
+
+@[fun_prop]
+theorem ClassK.continuousOn {a b : ℝ} (α : ClassK a b) :
+    ContinuousOn α.toFun (Set.Ico 0 a) := α.continuous
+
 
 -- ─── ClassK Construction ──────────────────────────────────────────────────────
 
@@ -273,6 +280,12 @@ structure ClassKInfty where
 instance : CoeFun ClassKInfty (fun _ => ℝ → ℝ) where
   coe α := α.toFun
 
+
+@[fun_prop]
+theorem ClassKInfty.continuousOn (α : ClassKInfty) :
+    ContinuousOn α.toFun (Set.Ici 0) := α.continuous
+
+
 -- ─── ClassKInfty Construction ─────────────────────────────────────────────────
 
 /-- `f` maps `[0, ∞)` into `[0, ∞)` when `f(0) = 0` and `f` is strictly monotone on
@@ -457,6 +470,11 @@ structure ClassKL (a : ℝ) where
   tendsto_zero  : ∀ r ∈ Set.Ico 0 a,
       Filter.Tendsto (fun s => toFun r s) Filter.atTop (nhds 0)
 
+
+@[fun_prop]
+theorem ClassKL.continuousOn_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s) :
+    ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a) := β.continuous_r s hs
+
 /-- Post-composing a class KL function with a class K∞ function yields class KL.
     (Applies `α` to the output of `β`.) -/
 def ClassKL.comp_left {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : ClassKL a where
@@ -496,7 +514,83 @@ def ClassKL.comp_right {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL 
   anti_s r hr        := β.anti_s (α.toFun r) (α.maps_to hr)
   tendsto_zero r hr  := β.tendsto_zero (α.toFun r) (α.maps_to hr)
 
+-- ─── Class KL Global ─────────────────────────────────────────────────────────
+
+/-! ### Class KL Global
+
+A *global class KL* function `β(r, s)` is like `ClassKL` but defined on all of
+`[0, ∞) × [0, ∞)`: class K∞ in the first argument (continuous, strictly increasing,
+zero at zero, radially unbounded), antitone and tending to 0 in the second. -/
+
+/-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K∞ in the first argument,
+    antitone and tending to 0 in the second. -/
+@[blueprint "def:isClassKLGlobal"
+  (statement := /-- A \emph{global class $\mathcal{KL}$} function is a map
+    $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is class
+    $\mathcal{K}_{\infty}$ in the first argument (continuous, strictly increasing,
+    zero at zero, radially unbounded) and, for each fixed $r \ge 0$, is antitone
+    and tends to $0$ as $s \to \infty$. -/)]
+structure ClassKLGlobal where
+  /-- The forward function. -/
+  toFun         : ℝ → ℝ → ℝ
+  map_zero      : ∀ s ≥ 0, toFun 0 s = 0
+  continuous_r  : ∀ s ≥ 0, ContinuousOn (fun r => toFun r s) (Set.Ici 0)
+  strict_mono_r : ∀ s ≥ 0, StrictMonoOn (fun r => toFun r s) (Set.Ici 0)
+  nonneg        : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ toFun r s
+  anti_s        : ∀ r ≥ 0, AntitoneOn (fun s => toFun r s) (Set.Ici 0)
+  tendsto_zero  : ∀ r ≥ 0, Filter.Tendsto (fun s => toFun r s) Filter.atTop (nhds 0)
+  --tendsto_atTop : Filter.Tendsto (fun r => toFun r 0) Filter.atTop Filter.atTop
+
+@[fun_prop]
+theorem ClassKLGlobal.continuousOn_r (β : ClassKLGlobal) {s : ℝ} (hs : 0 ≤ s) :
+    ContinuousOn (fun r => β.toFun r s) (Set.Ici 0) := β.continuous_r s hs
+
+/-- Post-composing a global class KL function with a class K∞ function yields global class KL.
+    (Applies `α` to the output of `β`.) -/
+def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
+  toFun r s     := α.toFun (β.toFun r s)
+  map_zero s hs := by simp only [β.map_zero s hs, α.map_zero]
+  continuous_r s hs :=
+    α.continuous.comp (β.continuous_r s hs) (fun r hr => β.nonneg r hr s hs)
+  strict_mono_r s hs x hx y hy hxy :=
+    α.strict_mono (β.nonneg x hx s hs) (β.nonneg y hy s hs)
+      (β.strict_mono_r s hs hx hy hxy)
+  nonneg r hr s hs := α.maps_to (β.nonneg r hr s hs)
+  anti_s r hr s₁ hs₁ s₂ hs₂ hs :=
+    α.strict_mono.monotoneOn (β.nonneg r hr s₂ hs₂) (β.nonneg r hr s₁ hs₁)
+      (β.anti_s r hr hs₁ hs₂ hs)
+  tendsto_zero r hr := by
+    have hβ := β.tendsto_zero r hr
+    have hβ_ici : ∀ᶠ s in Filter.atTop, β.toFun r s ∈ Set.Ici 0 := by
+      filter_upwards [eventually_ge_atTop 0] with s hs
+      exact β.nonneg r hr s hs
+    have hβ_within := tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+      (fun s => β.toFun r s) hβ hβ_ici
+    have hα_cont := α.continuous.continuousWithinAt self_mem_Ici
+    have h := hα_cont.tendsto.comp hβ_within
+    rwa [α.map_zero] at h
+  -- tendsto_atTop := by
+  --   have h_eq : (fun r => α.toFun (β.toFun r 0)) = α.toFun ∘ (fun r => β.toFun r 0) := rfl
+  --   rw [h_eq]; exact α.tendsto_atTop.comp β.tendsto_atTop
+
+/-- Pre-composing a global class KL function with a class K∞ function yields global class KL.
+    (Applies `α` to the first argument of `β`.) -/
+def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
+  toFun r s     := β.toFun (α.toFun r) s
+  map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]
+  continuous_r s hs := (β.continuous_r s hs).comp α.continuous α.maps_to
+  strict_mono_r s hs x hx y hy hxy :=
+    β.strict_mono_r s hs (α.maps_to hx) (α.maps_to hy) (α.strict_mono hx hy hxy)
+  nonneg r hr s hs := β.nonneg (α.toFun r) (α.maps_to hr) s hs
+  anti_s r hr        := β.anti_s (α.toFun r) (α.maps_to hr)
+  tendsto_zero r hr  := β.tendsto_zero (α.toFun r) (α.maps_to hr)
+  -- tendsto_atTop      := β.tendsto_atTop.comp α.tendsto_atTop
+
 -- ─── Predicate and Stability Structure ────────────────────────────────────────
+
+
+
+
 
 /-- Predicate: `f` is the forward map of some `ClassKInfty` instance. -/
 def IsClassKInfty (f : ℝ → ℝ) : Prop := ∃ α : ClassKInfty, α.toFun = f
@@ -511,3 +605,57 @@ structure IsGlobalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
   halphas     : ∃ α₁ α₂ : ℝ → ℝ, IsClassKInfty α₁ ∧ IsClassKInfty α₂ ∧
                   ∀ x : ℝⁿ, α₁ ‖x - x_eq‖ ≤ V x ∧ V x ≤ α₂ ‖x - x_eq‖
   hLie_nonpos : ∀ x : ℝⁿ, fderiv ℝ V x (f x) ≤ 0
+
+-- A compendium of comparison function results, Christopher M. Kellett (2014) Lemma 9
+-- Global version on ℝ≥0 × ℝ≥0, matching the paper's exact hypotheses.
+
+axiom exists_classKLGlobal_of_stability_properties
+    (φ : ℝ → ℝ → ℝ)
+    (h_convergence : ∀ r > 0, ∀ ε > 0, ∃ T > 0,
+        ∀ s, 0 ≤ s → s ≤ r → ∀ t ≥ T, φ s t < ε)
+    (h_uniform_stability : ∀ ε > 0, ∃ δ > 0,
+        ∀ s, 0 ≤ s → s ≤ δ → ∀ t ≥ 0, φ s t ≤ ε) :
+    ∃ β : ClassKLGlobal, ∀ r ≥ 0, ∀ s ≥ 0, φ r s ≤ β.toFun r s
+
+
+lemma exists_classKInfty_upper_bound (ω : ℝ → ℝ)
+    (hω_zero : ω 0 = 0)
+    (hω_mono : MonotoneOn ω (Set.Ici 0)) :
+    ∃ α : ClassKInfty, ∀ r ≥ 0, ω r ≤ α.toFun r := by
+  obtain ⟨f, hf_zero, hf_cont, hf_mono, hf_top, hf_bound⟩ :=
+    exists_strictMono_upper_bound_global ω hω_zero hω_mono
+  exact ⟨ClassKInfty.of_strictMono f hf_zero hf_cont hf_mono hf_top,
+         fun r hr => hf_bound r hr⟩
+
+
+
+
+lemma exists_classKL_upper_bound (ψ : ℝ → ℝ → ℝ)
+    (hψ_nonneg : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ ψ r s)
+    (hψ_zero : ∀ s ≥ 0, ψ 0 s = 0)
+    (hψ_mono : ∀ s ≥ 0, MonotoneOn (fun r => ψ r s) (Set.Ici 0))
+    (hψ_anti : ∀ r ≥ 0, AntitoneOn (fun s => ψ r s) (Set.Ici 0))
+    (hψ_tendsto : ∀ r ≥ 0, Filter.Tendsto (fun s => ψ r s) Filter.atTop (nhds 0))
+    (hψ_cont : ContinuousWithinAt (fun r => ψ r 0) (Set.Ici 0) 0) :
+    ∃ β : ClassKLGlobal, ∀ r ≥ 0, ∀ s ≥ 0, ψ r s ≤ β.toFun r s := by
+  apply exists_classKLGlobal_of_stability_properties
+  · -- h_convergence: ψ(r,·) → 0 gives T; monotonicity in r bounds ψ(s,t) ≤ ψ(r,t)
+    intro r hr ε hε
+    obtain ⟨T, hT⟩ := Filter.eventually_atTop.mp (hψ_tendsto r hr.le (Iio_mem_nhds hε))
+    refine ⟨max T 0 + 1, by linarith [le_max_right T (0:ℝ)],
+            fun s hs_nn hs_le t ht => ?_⟩
+    have ht_nn : 0 ≤ t := by linarith [le_max_right T (0:ℝ)]
+    exact (hψ_mono t ht_nn (Set.mem_Ici.mpr hs_nn) (Set.mem_Ici.mpr hr.le) hs_le).trans_lt
+      (Set.mem_Iio.mp (hT t (by linarith [le_max_left T (0:ℝ)])))
+  · -- h_uniform_stability: continuity of ψ(·,0) at 0 + antitone in s
+    intro ε hε
+    rw [Metric.continuousWithinAt_iff] at hψ_cont
+    obtain ⟨δ, hδ_pos, hδ⟩ := hψ_cont ε hε
+    refine ⟨δ / 2, half_pos hδ_pos, fun s hs_nn hs_le t ht => ?_⟩
+    have hs_dist : dist s 0 < δ := by
+      rw [Real.dist_eq, sub_zero, abs_of_nonneg hs_nn]
+      exact hs_le.trans_lt (half_lt_self hδ_pos)
+    have h_ψs0 := hδ (Set.mem_Ici.mpr hs_nn) hs_dist
+    rw [hψ_zero 0 le_rfl, Real.dist_eq, sub_zero,
+        abs_of_nonneg (hψ_nonneg s hs_nn 0 le_rfl)] at h_ψs0
+    exact (hψ_anti s hs_nn (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht) ht).trans h_ψs0.le
