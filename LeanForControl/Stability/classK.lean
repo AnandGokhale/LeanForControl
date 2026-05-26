@@ -606,9 +606,12 @@ structure IsGlobalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
                   ∀ x : ℝⁿ, α₁ ‖x - x_eq‖ ≤ V x ∧ V x ≤ α₂ ‖x - x_eq‖
   hLie_nonpos : ∀ x : ℝⁿ, fderiv ℝ V x (f x) ≤ 0
 
--- A compendium of comparison function results, Christopher M. Kellett (2014) Lemma 9
--- Global version on ℝ≥0 × ℝ≥0, matching the paper's exact hypotheses.
+/-- Given `φ : ℝ≥0 × ℝ≥0 → ℝ` satisfying uniform convergence to zero in the first argument
+    and uniform stability near zero, there exists a global class KL function `β` with
+    `φ r s ≤ β r s` for all `r s ≥ 0`.
 
+    This is the global analogue of Lemma 9 in Kellett, *A compendium of comparison function
+    results* (2014), stated on `ℝ≥0 × ℝ≥0` with the paper's exact hypotheses. -/
 axiom exists_classKLGlobal_of_stability_properties
     (φ : ℝ → ℝ → ℝ)
     (h_convergence : ∀ r > 0, ∀ ε > 0, ∃ T > 0,
