@@ -11,14 +11,19 @@ lake exe cache get          # download mathlib's prebuilt artifacts
 lake build                  # builds the project (~minutes the first time)
 ```
 
-`lake build` green is the source of truth. No `sorry`, `admit`, or `axiom`.
+`lake build` green is the source of truth. No `sorry` or `admit`. A small number of
+custom `axiom`s are used for real-analysis constructions and ODE existence/uniqueness
+results that are standard but not yet in Mathlib (e.g. Picard–Lindelöf existence,
+smoothing a monotone bound into a strictly monotone continuous one) — see
+`LeanForControl/axioms.lean` and `LeanForControl/Comparison/Axioms.lean` for the full list.
 
 ## Three ways to look at the project
 
 ### 1. Lean source — the proofs themselves
 
-`LeanForControl/LinearSystems/` is the active development area. Open in
-VS Code with the Lean 4 extension; you get inline proof states.
+`LeanForControl/Stability/` and `LeanForControl/Comparison/` are the active development
+area (Lyapunov stability theory, autonomous and non-autonomous). Open in VS Code with the
+Lean 4 extension; you get inline proof states.
 
 ### 2. Blueprint — readable theorem statements + dependency graph
 
@@ -63,9 +68,15 @@ keep it tight and faithful; trust the Lean source if they ever drift.
 
 ```
 LeanForControl/                          ← Lean source
-├── Basic.lean
-├── LinearSystems/                       ← active: matrices, observability, controllability, Hautus
-└── (Dini, ODEs, Lyapunov, …)            ← legacy
+├── axioms.lean                          ← top-level custom axioms (real-analysis smoothing)
+├── Stability/                           ← active: Lyapunov stability, LaSalle, non-autonomous
+│                                           (Khalil-style) stability theory; see Stability/plan.md
+├── Comparison/                          ← active: class K / K∞ / KL / L comparison-function library
+├── ODEs/                                ← active: comparison lemma, Gronwall–Bellman, ODE existence
+├── Dini/                                ← active: Dini derivatives (used by the comparison lemma)
+├── Analysis/                            ← active: supporting real-analysis lemmas
+└── LinearSystems/                       ← matrices, observability, controllability, Hautus
+                                            (not under active development right now)
 blueprint/src/                           ← .tex sources (run leanblueprint web to render)
 docbuild/                                ← nested project for doc-gen4
 home_page/                               ← Jekyll scaffold for the project's home page

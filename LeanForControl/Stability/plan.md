@@ -1,23 +1,59 @@
-# Plan: Khalil Chapter 4 — Lyapunov Stability
+# Plan: Lyapunov Stability Theory
 
-## Status
+## Status: Autonomous systems (`ẋ = f(x)`)
 
-| Theorem | Lean name | File | Status |
+| Result | Lean name | File | Status |
 |---|---|---|---|
-| 4.1 Part 1 — Lyapunov stability | `lyapunov_stable` | `Autonomous.lean` | ✅ done |
-| 4.1 Part 2/3 — GAS via strict Lyapunov | `lyapunov_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| 4.2 — GAS via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| 4.3 — Chetaev instability | — | — | planned |
-| 4.4 — LaSalle's invariance principle | `lasalle_invariance_principle` | `LaSalles.lean` | ✅ done |
-| 4.5 — LaSalle corollary (GAS) | — | — | planned |
-| 4.6 — Linearization (indirect method) | — | — | planned |
+| Lyapunov stability | `lyapunov_stable` | `Autonomous.lean` | ✅ done |
+| Global asymptotic stability via strict Lyapunov function | `lyapunov_asymptotic_stable` | `Autonomous.lean` | ✅ done |
+| Global asymptotic stability via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Autonomous.lean` | ✅ done |
+| Local asymptotic stability via strict local Lyapunov function | `lyapunov_local_asymptotic_stable` | `Autonomous.lean` | ✅ done |
+| Chetaev's instability theorem | — | — | planned |
+| LaSalle's invariance principle | `lasalle_invariance_principle` | `LaSalle.lean` | ✅ done |
+| Barbashin's theorem (local asymptotic stability via LaSalle) | `lasalle_local_asymptotic_stable` | `LaSalle.lean` | ✅ done |
+| Krasovskii's theorem (global asymptotic stability via LaSalle) | `lasalle_global_asymptotic_stable` | `LaSalle.lean` | ✅ done |
+| Linearization (indirect Lyapunov method) | — | — | planned |
 
 Files:
-- `Lyapunov/Defs.lean` — definitions, fully populated
-- `Lyapunov/Autonomous.lean` — Thm 4.1/4.2 fully proved
-- `Lyapunov/LaSalles.lean` — Thm 4.4 fully proved (ω-limit set + convergence)
+- `DefsAutonomous.lean` — definitions, fully populated
+- `Autonomous.lean` — Lyapunov stability / GAS / LAS, fully proved
+- `LaSalle.lean` — invariance principle + Barbashin/Krasovskii corollaries, fully proved
 
-Infrastructure already in place:
+## Status: Non-autonomous systems (`ẋ = f(t, x)`)
+
+| Result | Lean name | File | Status |
+|---|---|---|---|
+| Trajectories, equilibria, stability predicates | — | `DefsNonAutonomous.lean` | ✅ done |
+| Picard–Lindelöf existence/uniqueness | `exists_unique_trajectory` (axiom) | `DefsNonAutonomous.lean` | ✅ axiomatized |
+| Class-K sandwich bounds for positive-definite functions | `LyapunovClassKBounds` | `LyapunovBounds.lean` | ✅ done |
+| Class-KL bound from the scalar decay ODE (Osgood construction) | `ClassK.sigma_isClassKL` | `ClassKDecay.lean` | ✅ done |
+| Class-K characterization of uniform stability | `uniformlyStableNA_iff_classK` | `KLCharacterization.lean` | ✅ done |
+| Class-KL characterization of uniform asymptotic stability | `uniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
+| Class-KL characterization of global uniform asymptotic stability | `globallyUniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
+| Lyapunov's uniform stability theorem (non-autonomous) | `lyapunov_uniformly_stable_NA` | `NonAutonomous.lean` | ✅ done |
+| Lyapunov's uniform asymptotic stability theorem (non-autonomous, via comparison lemma) | `lyapunov_uniformly_asymptotic_stable_NA` | `NonAutonomous.lean` | ✅ done |
+
+Files:
+- `DefsNonAutonomous.lean` — trajectories, equilibria, the six stability predicates
+  (stable, uniformly stable, unstable, asymptotically stable, uniformly asymptotically
+  stable, globally uniformly asymptotically stable, exponentially stable), and the
+  Picard–Lindelöf existence axiom
+- `LyapunovBounds.lean` — class-K sandwich bounds for continuous positive-definite
+  functions (`ψ`/`φ` construction + smoothing)
+- `ClassKDecay.lean` — class-KL bound from the scalar decay ODE `ẏ = -α(y)`, plus the
+  comparison-based decay bound `classK_dini_bound`
+- `KLCharacterizationTools.lean` — supporting machinery for the KL characterizations
+- `KLCharacterization.lean` — class-K / class-KL characterizations of the stability
+  predicates in `DefsNonAutonomous.lean`
+- `NonAutonomous.lean` — the two main Lyapunov theorems for non-autonomous systems
+
+Comparison-function library (`LeanForControl/Comparison/`):
+- `ClassK.lean`, `ClassKInfty.lean`, `ClassKL.lean`, `ClassL.lean` — the class K, K∞, KL,
+  and L function structures and their algebra (composition, inverse, restriction)
+- `Axioms.lean` — smoothing axioms used to turn monotone bounds into class K functions
+- `ComparisonFunctions.lean` — shared comparison-function infrastructure
+
+Infrastructure already in place (autonomous side):
 - `hasDerivAt_V_comp_traj` (chain rule)
 - `V_nonincreasing`, `V_le_initial`, `V_nonneg`
 - `V_tendsto_limit` (via `tendsto_atTop_ciInf`)
@@ -32,7 +68,7 @@ Infrastructure already in place:
 
 ---
 
-## Next: Theorem 4.3 — Chetaev's Instability Theorem
+## Next: Chetaev's Instability Theorem
 
 ### Statement
 
@@ -43,7 +79,7 @@ set D₁ ⊂ D with x_eq ∈ ∂D₁ ∩ D such that:
 
 Then x_eq is **unstable** (i.e., ¬ LyapunovStable f x_eq).
 
-### Required definitions (new in `Defs.lean`)
+### Required definitions (new in `DefsAutonomous.lean`)
 
 ```lean
 -- IsChetaevFunction: all the hypotheses of Chetaev's theorem packaged together
@@ -91,45 +127,7 @@ Key Lean lemmas needed:
 
 ---
 
-## ✅ Theorem 4.4 — LaSalle's Invariance Principle (done)
-
-File: `Lyapunov/LaSalles.lean`. Compiles with zero sorry.
-
-### What was proved
-
-`lasalle_invariance_principle`: Ω compact positively invariant, V C¹ with V̇ ≤ 0 on Ω,
-M closed, `hω_sub_M : omegaLimitTraj φ ⊆ M` → `Filter.Tendsto φ atTop (𝓝ˢ M)`.
-
-`omegaLimitTraj φ` wraps Mathlib's `omegaLimit atTop (fun t () => φ t) univ`.
-
-### What `hω_sub_M` covers (ODE uniqueness gap)
-
-In the classical proof, ω(φ) ⊆ M because:
-1. V(φ t) → L (proved: `lasalle_V_tendsto`)
-2. V = L on ω(φ) (proved: `V_const_on_omegaLimit`)
-3. ω(φ) is forward-invariant (requires Picard-Lindelöf uniqueness, not yet in library)
-4. So ω(φ) ⊆ {V̇ = 0} ∩ Ω ⊆ M
-
-Steps 1–2 are proved. Step 3 is taken as hypothesis. Future work: add
-`hf_lip : LocallyLipschitz f` and prove forward invariance of ω(φ).
-
----
-
-## Next: Theorem 4.5 / Corollary — LaSalle gives GAS
-
-### Statement
-
-Corollary: Under the hypotheses of LaSalle's principle, if M = {x_eq} (the only invariant
-subset of E is the equilibrium), then x_eq is globally asymptotically stable on Ω.
-
-This follows immediately from the LaSalle theorem once we know M = {x_eq}, since
-convergence to a singleton means convergence to x_eq.
-
-No additional proof infrastructure needed beyond the LaSalle theorem.
-
----
-
-## Next: Theorem 4.6 — Linearization (Indirect Lyapunov Method)
+## Next: Linearization (Indirect Lyapunov Method)
 
 ### Statement
 
@@ -152,7 +150,7 @@ This theorem needs substantial external infrastructure:
 - **Linearization error bound**: f(x) = Ax + g(x) where ‖g(x)‖/‖x‖ → 0 as x → x_eq.
   Lean path: Taylor's theorem / `HasFDerivAt` remainder bound.
 
-### Proof strategy for Part 1
+### Proof strategy
 
 Given P satisfying PA + AᵀP = -I:
 1. Define V(x) = ‖x - x_eq‖²_P = (x - x_eq)ᵀ P (x - x_eq) (quadratic Lyapunov function).
@@ -167,33 +165,32 @@ Given P satisfying PA + AᵀP = -I:
 
 ### Priority assessment
 
-Theorem 4.6 is low priority for immediate Lean work because:
+Linearization is low priority for immediate Lean work because:
 - It requires substantial eigenvalue/Hurwitz infrastructure not yet in the library.
 - The LinearSystems files have this sketched but all sorry.
 - Proving the Lyapunov equation existence (Sylvester-type) is a significant standalone project.
 
-Suggested order: prove Thm 4.3 and Thm 4.4 first, then revisit 4.6.
+Suggested order: prove Chetaev's theorem first, then revisit linearization.
 
 ---
 
 ## Recommended execution order
 
-1. **Theorem 4.3 (Chetaev)** — new file `Lyapunov/Instability.lean`.
+1. **Chetaev's instability theorem** — new file `Stability/Instability.lean`.
    Self-contained, mirrors the stability proof structure.
    Difficulty: medium. Estimated effort: 1–2 sessions.
 
-2. ~~**Theorem 4.4 (LaSalle)**~~ — ✅ done in `Lyapunov/LaSalles.lean`.
+2. ~~**LaSalle's invariance principle**~~ — ✅ done in `LaSalle.lean`.
 
-3. **LaSalle corollary (Theorem 4.5)** — append to `LaSalles.lean`.
-   Trivial once LaSalle is done (M = {x_eq} → singleton nhdsSet = nhds x_eq).
+3. ~~**Barbashin/Krasovskii corollaries**~~ — ✅ done in `LaSalle.lean`.
 
-4. **Theorem 4.6 (Linearization)** — new file `Lyapunov/Linearization.lean`.
+4. **Linearization (indirect method)** — new file `Stability/Linearization.lean`.
    Blocked on eigenvalue / Lyapunov equation infrastructure.
    Estimated effort: 4+ sessions after unblocking.
 
 ---
 
-## Lessons from Theorem 4.1/4.2
+## Lessons from the Lyapunov stability proofs
 
 - **Pointwise Lie derivative** (`∀ x, fderiv ℝ V x (f x) ≤ 0`) cleaner than trajectory-based
   (`∀ φ t, HasDerivAt (V ∘ φ) ... t`). The chain rule bridge lemma `hasDerivAt_V_comp_traj`
@@ -214,3 +211,10 @@ Suggested order: prove Thm 4.3 and Thm 4.4 first, then revisit 4.6.
 - **`hf_cont : Continuous f`** is needed as a theorem hypothesis (not in the Lyapunov struct)
   for `V_limit_zero`, because continuity of `x ↦ fderiv ℝ V x (f x)` requires it.
   Carry this pattern forward.
+
+- **Non-autonomous work reuses the comparison-function library** (`Comparison/ClassK.lean`
+  etc.) rather than the autonomous Lyapunov-function structs directly: stability notions are
+  characterized via class-K / class-KL bounds (`KLCharacterization.lean`), and the main
+  theorems in `NonAutonomous.lean` are built from those bounds plus the Dini-derivative
+  comparison lemma (`ClassKDecay.lean`), not from the `IsLocalLyapunovFunction`-style
+  structs used for autonomous systems.

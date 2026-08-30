@@ -137,7 +137,7 @@ private lemma NA_ball_invariant
   linarith [hV_lb T₁ (ht₀.trans hT₁_ico.1) (φ T₁) hT₁_lt_r.le, hV_T₁_dec]
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Main theorem  (Khalil Theorem 4.8)
+-- Main theorem: Lyapunov's uniform stability theorem (non-autonomous)
 -- ─────────────────────────────────────────────────────────────────────────────
 
 theorem lyapunov_uniformly_stable_NA [NeZero n]
@@ -155,7 +155,7 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
     (hLie_nonpos : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
         fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ 0) :
     UniformlyStableNA f 0 := by
-  -- ── Step 1: Lemma 4.3 — class K lower bound on W₁ ───────────────────────
+  -- ── Step 1: class K lower bound on W₁ (via LyapunovClassKBounds) ────────
   -- We only need α₁ as a lower bound; W₂ is handled via continuity directly.
   obtain ⟨b1_lower, b1_upper, α1, α1_upper, hW1_bounds⟩ :=
       LyapunovClassKBounds hr hW₁_cont hW₁_zero hW₁_pos
@@ -267,7 +267,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       · simp [hx0, hW₃_zero]
       · exact (hW₃_pos x (mem_closedBall_zero_iff.mpr hx) hx0).le
     linarith [hLie_bound t ht x hx]
-  -- ── Step 3: The Comparison Lemma (Lemma 4.4) ──────────────────────────────
+  -- ── Step 3: The Comparison Lemma ───────────────────────────────────────────
   -- Since V̇ ≤ -W₃(x) ≤ -α₃(α₂⁻¹(V)), standard comparison theory yields a Class KL function σ.
   obtain ⟨b3_lower, b3_upper, α3, α3_upper, hW3_bounds⟩ :=
       LyapunovClassKBounds hr hW₃_cont hW₃_zero hW₃_pos

@@ -15,11 +15,12 @@ open Set Filter Topology MeasureTheory Metric
 
 Class K sandwich bounds for continuous positive-definite functions.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 / Appendix C.4.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
 ## Main result
 
-**Lemma 4.3** (`LyapunovClassKBounds`): Let `V : ℝⁿ → ℝ` be continuous on `B(0, r)` with
+**Class K sandwich bounds** (`LyapunovClassKBounds`): Let `V : ℝⁿ → ℝ` be continuous on
+`B(0, r)` with
 `V(0) = 0` and `V(x) > 0` for `x ≠ 0`. Then there exist class K functions `α₁, α₂` on
 `[0, r]` such that `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `‖x‖ ≤ r`.
 
@@ -271,12 +272,12 @@ lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBa
 
 -- ─── 7. Main Theorem ──────────────────────────────────────────────────────────
 
-/-- **Lemma 4.3** (Khalil): For any continuous positive-definite `V` on `B(0, r)`,
+/-- **Class K sandwich bounds**: For any continuous positive-definite `V` on `B(0, r)`,
     there exist class K functions `α₁`, `α₂` such that
 
       `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. -/
 @[blueprint "thm:lyapunov-class-K-bounds"
-  (statement := /-- \textbf{Lemma 4.3} (Khalil).
+  (statement := /-- \textbf{Class K sandwich bounds.}
     For any continuous positive-definite function $V : \mathbb{R}^{n} \to \mathbb{R}$
     on $\overline{B}(0,r)$, there exist class $\mathcal{K}$ functions $\alpha_1, \alpha_2$
     such that

@@ -20,22 +20,24 @@ variable {n : ℕ}
 
 Class K / KL characterisations of uniform stability for non-autonomous ODEs `ẋ = f(t, x)`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
 ## Main results
 
-* **Lemma 4.5 (i)** (`uniformlyStableNA_iff_classK`): `UniformlyStableNA` iff there exist
-  a class K function `α` and `c > 0` (independent of `t₀`) such that
-  `‖x(t) - x_eq‖ ≤ α(‖x(t₀) - x_eq‖)` for all `t ≥ t₀ ≥ 0`, `‖x(t₀) - x_eq‖ < c`. (4.19)
+* **Class-K characterization of uniform stability** (`uniformlyStableNA_iff_classK`):
+  `UniformlyStableNA` iff there exist a class K function `α` and `c > 0` (independent of
+  `t₀`) such that `‖x(t) - x_eq‖ ≤ α(‖x(t₀) - x_eq‖)` for all `t ≥ t₀ ≥ 0`,
+  `‖x(t₀) - x_eq‖ < c`.
 
-* **Lemma 4.5 (ii)** (`uniformlyAsymptoticStableNA_iff_classKL`): `UniformlyAsymptoticStableNA`
-  iff there exist a class KL function `β` and `c > 0` (independent of `t₀`) such that
+* **Class-KL characterization of uniform asymptotic stability**
+  (`uniformlyAsymptoticStableNA_iff_classKL`): `UniformlyAsymptoticStableNA` iff there exist
+  a class KL function `β` and `c > 0` (independent of `t₀`) such that
   `‖x(t) - x_eq‖ ≤ β(‖x(t₀) - x_eq‖, t − t₀)` for all `t ≥ t₀ ≥ 0`, `‖x(t₀) - x_eq‖ < c`.
-  (4.20)
 
-* **Lemma 4.5 (iii)** (`globallyUniformlyAsymptoticStableNA_iff_classKL`):
-  `GloballyUniformlyAsymptoticStableNA` iff the class KL bound (4.20) holds for every
-  initial state (no restriction on `‖x(t₀) - x_eq‖`).
+* **Class-KL characterization of global uniform asymptotic stability**
+  (`globallyUniformlyAsymptoticStableNA_iff_classKL`): `GloballyUniformlyAsymptoticStableNA`
+  iff the same class-KL bound holds for every initial state (no restriction on
+  `‖x(t₀) - x_eq‖`).
 -/
 
 open Set Filter Topology
@@ -156,7 +158,8 @@ lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ
       ⟨φ, t₀, t, ht₀, ht, hφ, le_rfl, rfl⟩).trans
     (hα_bound _ (Set.mem_Ici.mpr (norm_nonneg _)))⟩
 
-/-- **Lemma 4.5 (i)**: The equilibrium `x_eq` is uniformly stable if and only if there exist
+/-- **Class-K characterization of uniform stability**: The equilibrium `x_eq` is uniformly
+    stable if and only if there exist
     a class K function `α` on `[0, c)` and a constant `c > 0` (independent of `t₀`) such that
     every trajectory with `‖φ t₀ - x_eq‖ < c` satisfies
     `‖φ t - x_eq‖ ≤ α(‖φ t₀ - x_eq‖)` for all `t ≥ t₀ ≥ 0`. -/
@@ -227,7 +230,8 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
     exact Real.sqrt_le_sqrt (by nlinarith [norm_nonneg (φ t - x_eq), h_α, h_U])
 
 
-/-- **Lemma 4.5 (ii)**: The equilibrium `x_eq` is uniformly asymptotically stable if and only
+/-- **Class-KL characterization of uniform asymptotic stability**: The equilibrium `x_eq`
+    is uniformly asymptotically stable if and only
     if there exist a class KL function `β` on `[0, c)` and a constant `c > 0` (independent of
     `t₀`) such that every trajectory with `‖φ t₀ - x_eq‖ < c` satisfies
     `‖φ t - x_eq‖ ≤ β(‖φ t₀ - x_eq‖, t − t₀)` for all `t ≥ t₀ ≥ 0`. -/
@@ -291,7 +295,8 @@ theorem uniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) 
 
 
 
--- /-- **Lemma 4.5 (iii)**: The equilibrium `x_eq` is globally uniformly asymptotically stable
+-- /-- **Class-KL characterization of global uniform asymptotic stability**: The equilibrium
+--     `x_eq` is globally uniformly asymptotically stable
 --     if and only if there exists a function `β : ℝ≥0 × ℝ≥0 → ℝ≥0` that is class K in the
 --     first argument and decays to zero in the second (a global class KL bound), such that
 --     `‖φ t - x_eq‖ ≤ β(‖φ t₀ - x_eq‖, t − t₀)` holds for **every** trajectory and every

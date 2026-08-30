@@ -17,9 +17,9 @@ LaSalle's invariance principle and its corollaries (Barbashin–Krasovskii theor
 
 * `lasalle_invariance_principle` — if `Ω` is compact and positively invariant, `V` is C¹ with
   `V̇ ≤ 0` on `Ω`, and `ω(φ) ⊆ M` for a closed set `M`, then `φ(t) → M`.
-* `lasalle_local_asymptotic_stable` (Corollary 4.1 / Barbashin) — local asymptotic stability
+* `lasalle_local_asymptotic_stable` (Barbashin's theorem) — local asymptotic stability
   via a compact sublevel set and LaSalle.
-* `lasalle_global_asymptotic_stable` (Corollary 4.2 / Krasovskii) — global asymptotic stability
+* `lasalle_global_asymptotic_stable` (Krasovskii's theorem) — global asymptotic stability
   when `V` is radially unbounded and `V̇ ≤ 0` everywhere.
 
 ## Proof strategy
@@ -208,13 +208,13 @@ theorem lasalle_invariance_principle
       hΩ_compact hc₂ hW_open hω_sub_W
   exact hev.mono fun t ht => hWU (ht (Set.mem_univ ()))
 
-/-! ## Corollaries 4.1 and 4.2: Barbashin–Krasovskii theorems -/
+/-! ## Barbashin–Krasovskii theorems -/
 
-/-- Corollary 4.1 (Barbashin): local asymptotic stability via LaSalle.
+/-- Barbashin's theorem: local asymptotic stability via LaSalle.
     V C¹ and positive definite on D, V̇ ≤ 0 on D, compact sublevel set Ωc ⊆ D,
     every trajectory starting in Ωc has ω-limit set ⊆ {x_eq}. -/
 @[blueprint "thm:lasalle-local-asymptotic-stable"
-  (statement := /-- \textbf{Corollary 4.1 (Barbashin).}
+  (statement := /-- \textbf{Barbashin's theorem.}
     If $V \in C^1$ is positive definite on $D$, $\dot{V} \le 0$ on $D$, there exists a
     compact sublevel set $\Omega_c \subseteq D$, and every trajectory starting in $\Omega_c$
     has $\omega$-limit set $\subseteq \{x_{\mathrm{eq}}\}$, then $x_{\mathrm{eq}}$ is
@@ -243,11 +243,11 @@ theorem lasalle_local_asymptotic_stable
     htraj hφ0_in isClosed_singleton (hLasalle φ htraj hφ0_in)
   rwa [nhdsSet_singleton] at hconv
 
-/-- Corollary 4.2 (Krasovskii): global asymptotic stability via LaSalle.
+/-- Krasovskii's theorem: global asymptotic stability via LaSalle.
     V C¹, positive definite, radially unbounded, V̇ ≤ 0 on ℝⁿ,
     every trajectory has ω-limit set ⊆ {x_eq}. -/
 @[blueprint "thm:lasalle-global-asymptotic-stable"
-  (statement := /-- \textbf{Corollary 4.2 (Krasovskii).}
+  (statement := /-- \textbf{Krasovskii's theorem.}
     If $V \in C^1$ is positive definite, $\dot{V} \le 0$ on $\mathbb{R}^n$, radially
     unbounded, and every trajectory has $\omega$-limit set $\subseteq \{x_{\mathrm{eq}}\}$,
     then $x_{\mathrm{eq}}$ is globally asymptotically stable

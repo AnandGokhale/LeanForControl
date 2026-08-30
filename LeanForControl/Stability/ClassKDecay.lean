@@ -15,11 +15,11 @@ import Architect
 
 Class KL bound from the scalar decay ODE `ẏ = -α(y)` with `α ∈ ClassK`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4 / Appendix C.6.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
 ## Main result
 
-**Lemma 4.4** (`ClassK.sigma_isClassKL`): Given a class K function `α : ClassK a b`
+**Osgood's construction** (`ClassK.sigma_isClassKL`): Given a class K function `α : ClassK a b`
 satisfying the Osgood condition (`ClassK.EtaDiverges`), the solution `σ(r, s)` of
 `ẏ = -α(y)` with `y(0) = r` is class KL in `(r, s)`.
 
@@ -519,8 +519,8 @@ end OsgoodConstruction
     `D⁺v(s) ≤ −α(v(s))`, starting and remaining in `[0, a)`, satisfies
     `v(t) ≤ σ(v(t₀), t − t₀)`.
 
-    The class K decay ODE `ẏ = −α(y)` determines σ; the comparison lemma (Lemma 3.4)
-    supplies the bound. All ODE infrastructure (Lipschitz minorant, Osgood construction,
+    The class K decay ODE `ẏ = −α(y)` determines σ; the comparison lemma supplies the
+    bound. All ODE infrastructure (Lipschitz minorant, Osgood construction,
     Picard–Lindelöf) is hidden inside. -/
 lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,

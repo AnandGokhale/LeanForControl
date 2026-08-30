@@ -12,7 +12,7 @@ open Set Filter Topology MeasureTheory intervalIntegral
 
 Class K, K∞, and KL comparison functions.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definitions 4.2–4.4.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
 Comparison functions are the standard vocabulary for quantitative stability estimates
 (Lyapunov sandwich bounds, ISS gains, asymptotic decay rates, etc.).

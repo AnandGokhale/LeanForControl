@@ -14,18 +14,19 @@ Lyapunov stability theorems for autonomous ODEs `ẋ = f(x)` on `ℝⁿ`.
 
 ## Main results
 
-* **Theorem 4.1, Part 1** (`lyapunov_stable`): `IsLocalLyapunovFunction` implies
+* **Lyapunov's stability theorem** (`lyapunov_stable`): `IsLocalLyapunovFunction` implies
   `LyapunovStable`.
-* **Theorem 4.1, Parts 2 & 3** (`lyapunov_asymptotic_stable`): `IsStrictLyapunovFunction`
-  implies `GlobalAsymptoticStable`.
+* **Lyapunov's global asymptotic stability theorem** (`lyapunov_asymptotic_stable`):
+  `IsStrictLyapunovFunction` implies `GlobalAsymptoticStable`.
 * **Corollary** (`lyapunov_global_asymptotic_stable`): `IsAsymptoticLyapunovFunction` implies
   `GlobalAsymptoticStable` (the classical radially-unbounded form of the theorem).
-* **Theorem 4.1 (local)** (`lyapunov_local_asymptotic_stable`):
+* **Lyapunov's local asymptotic stability theorem** (`lyapunov_local_asymptotic_stable`):
   `IsStrictLocalLyapunovFunction` implies `LocalAsymptoticStable`.
 
 ## Proof strategy
 
-The proofs follow the textbook structure (Khalil, Chapter 4):
+The proofs follow the classical Lyapunov stability arguments (Khalil, *Nonlinear Systems*,
+3rd ed.):
 1. **Lyapunov stability**: first-exit-time argument using monotonicity of `V ∘ φ` on `[0, T*]`
    and a minimum-on-sphere lower bound.
 2. **GAS**: monotone convergence `V(φ t) → L`, then `L = 0` via a compact-sublevel-set
@@ -241,10 +242,10 @@ lemma sublevel_set_invariant
   have hVT_le : V (φ T) ≤ V (φ 0) := le_of_tendsto hcont.continuousWithinAt hVs_bound
   linarith
 
-/-! ## Theorem 4.1, Part 1: Lyapunov stability -/
+/-! ## Lyapunov stability -/
 
-/-- **Theorem 4.1, Part 1.** If `V` is a local Lyapunov function on `D`, then `x_eq` is
-    Lyapunov stable.
+/-- **Lyapunov's stability theorem.** If `V` is a local Lyapunov function on `D`, then
+    `x_eq` is Lyapunov stable.
 
 Proof sketch:
 1. `D` open + `x_eq ∈ D` → `closedBall x_eq ε₀ ⊆ D` for some `ε₀ > 0`.
@@ -254,7 +255,7 @@ Proof sketch:
    where `Q = {t ≥ 0 | ε' ≤ ‖φ t − x_eq‖}`.
 5. `V_nonincreasing_on` on `[0, T*]` gives `V(φ T*) ≤ V(φ 0) < m ≤ V(φ T*)`. Contradiction. -/
 @[blueprint "thm:lyapunov-stable"
-  (statement := /-- \textbf{Theorem 4.1, Part 1.}
+  (statement := /-- \textbf{Lyapunov's stability theorem.}
     If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
     $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
     is Lyapunov stable (\cref{def:lyapunovStable}). -/)
@@ -464,7 +465,7 @@ lemma tendsto_of_V_tendsto_zero_compact
       push Not at hcontra
       exact absurd hVt_lt_min (not_lt.mpr (hx_min_le ⟨hVt_le, hcontra⟩))⟩
 
-/-! ## Theorem 4.1, Parts 2 & 3: Global asymptotic stability -/
+/-! ## Global asymptotic stability -/
 
 /-- `V(φ t) ≥ 0` for all `t`, when `V` is a strict Lyapunov function. -/
 lemma V_nonneg
@@ -525,9 +526,10 @@ lemma tendsto_of_V_tendsto_zero
     le_rfl
     hV_tendsto
 
-/-- **Theorem 4.1, Parts 2 & 3.** `IsStrictLyapunovFunction` implies `GlobalAsymptoticStable`. -/
+/-- **Lyapunov's global asymptotic stability theorem.** `IsStrictLyapunovFunction` implies
+    `GlobalAsymptoticStable`. -/
 @[blueprint "thm:lyapunov-asymptotic-stable"
-  (statement := /-- \textbf{Theorem 4.1, Parts 2 \& 3.}
+  (statement := /-- \textbf{Lyapunov's global asymptotic stability theorem.}
     If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
     and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
     (\cref{def:globalAsymptoticStable}). -/)
@@ -548,7 +550,7 @@ theorem lyapunov_asymptotic_stable
     exact tendsto_of_V_tendsto_zero hV htraj hL_tendsto
 
 /-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
-    (the classical radially-unbounded form of Khalil's theorem). -/
+    (the classical radially-unbounded form of the theorem). -/
 @[blueprint "thm:lyapunov-global-asymptotic-stable"
   (statement := /-- \textbf{Corollary.}
     If $V$ is a radially unbounded strict Lyapunov function
@@ -567,7 +569,8 @@ theorem lyapunov_global_asymptotic_stable
 
 /-! ## Local asymptotic stability (IsStrictLocalLyapunovFunction) -/
 
-/-- **Theorem 4.1 (local).** `IsStrictLocalLyapunovFunction` implies `LocalAsymptoticStable`.
+/-- **Lyapunov's local asymptotic stability theorem.** `IsStrictLocalLyapunovFunction` implies
+    `LocalAsymptoticStable`.
 
 Proof sketch:
 1. `hcompact` gives `c₀ > 0` with `{V ≤ c₀} ⊆ D` compact.
@@ -577,7 +580,7 @@ Proof sketch:
    `V_limit_zero_of_compact` gives `L = 0`.
    `tendsto_of_V_tendsto_zero_compact` gives `φ t → x_eq`. -/
 @[blueprint "thm:lyapunov-local-asymptotic-stable"
-  (statement := /-- \textbf{Theorem 4.1 (local).}
+  (statement := /-- \textbf{Lyapunov's local asymptotic stability theorem.}
     If $V$ is a strict local Lyapunov function
     (\cref{def:isStrictLocalLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is locally asymptotically stable

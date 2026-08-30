@@ -14,7 +14,7 @@ variable {n : ℕ}
 
 Core definitions for the stability theory of non-autonomous ODEs `ẋ = f(t, x)` on `ℝⁿ`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
 ## Notation
 
@@ -157,7 +157,7 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
     the exponential bound `‖φ(t) - x_eq‖ ≤ k ‖φ(t₀) - x_eq‖ · exp(-λ(t - t₀))`
     for all `t ≥ t₀`.
 
-    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5. -/
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.). -/
 @[blueprint "def:exponentiallyStableNA"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{exponentially stable}
     when there exist positive constants $c$, $k$, and $\lambda$ such that
