@@ -18,6 +18,9 @@ axiom exists_classKLGlobal_of_stability_properties
     ∃ β : ClassKLGlobal, ∀ r ≥ 0, ∀ s ≥ 0, φ r s ≤ β.toFun r s
 
 
+/-- Any class K function `α` on `[0, a)` has a class K minorant `β ≤ α` that is globally
+Lipschitz on a neighbourhood of `0`. The Lipschitz extension `β_ext` agrees with `β` on `[0, a)`
+and satisfies `β(x) ≤ L·x` near the base point. -/
 axiom exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a) :
     ∃ (β : ClassK a b) (β_ext : ℝ → ℝ) (L : ℝ) (hL_pos : 0 < L),
@@ -27,6 +30,8 @@ axiom exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) (base : ℝ
       Continuous β_ext ∧
       LipschitzWith ⟨L, hL_pos.le⟩ β_ext
 
+/-- Every class K function `α` on `[0, a)` extends to a continuous, monotone function on all
+of `ℝ` that agrees with `α` on `[0, a)`. -/
 axiom ClassK.exists_global_extension {a b : ℝ} (α : ClassK a b) :
     ∃ (α_ext : ℝ → ℝ),
       Continuous α_ext ∧

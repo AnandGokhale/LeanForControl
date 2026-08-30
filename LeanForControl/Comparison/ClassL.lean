@@ -41,6 +41,9 @@ it is continuous, positive, antitone, tends to `0` at `+∞`, and blows up near 
 This arises naturally as the inverse of the sliding-window function `W_fn` in
 the KL characterization of asymptotic stability. -/
 
+/-- A *singular class L* function is continuous, positive, and antitone on `(0, ∞)`,
+tends to `0` at `+∞`, and is allowed to blow up near `0`. Arises as the inverse of
+the sliding-window function in the KL characterization of asymptotic stability. -/
 structure ClassLSingular where
   /-- The forward function, defined on `(0, ∞)`. -/
   toFun : ℝ → ℝ

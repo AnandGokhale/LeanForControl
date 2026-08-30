@@ -185,6 +185,8 @@ noncomputable def ClassK.of_strictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
   left_inv    := Set.InjOn.leftInvOn_invFunOn
     (hf_mono.mono Set.Ico_subset_Icc_self).injOn
 
+/-- Restrict a class K function `α : [0, a) → [0, b)` to the smaller domain `[0, c)`,
+producing a class K function `[0, c) → [0, α(c))`. -/
 noncomputable def ClassK.restrict {a b : ℝ} (α : ClassK a b) {c : ℝ}
     (hc_pos : 0 < c) (hc_lt : c < a) : ClassK c (α.toFun c) := by
   have hd_pos : 0 < α.toFun c := by
@@ -194,6 +196,8 @@ noncomputable def ClassK.restrict {a b : ℝ} (α : ClassK a b) {c : ℝ}
   exact ClassK.of_strictMono hc_pos hd_pos α.toFun α.map_zero rfl
     (α.continuous.mono h_sub) (α.strict_mono.mono h_sub)
 
+/-- Variant of `ClassK.restrict` where the upper bound `e` is given explicitly via a proof
+that `α(c) = e`, avoiding a type-level `Eq.rec`. -/
 noncomputable def ClassK.restrictTo {a b : ℝ} (α : ClassK a b) {c e : ℝ}
     (hc_pos : 0 < c) (hc_lt : c < a) (h_eq : α.toFun c = e) : ClassK c e :=
   h_eq ▸ α.restrict hc_pos hc_lt
