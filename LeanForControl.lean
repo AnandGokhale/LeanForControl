@@ -1,6 +1,12 @@
 import LeanForControl.Analysis.Continuity
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.MonotoneFunctions
+import LeanForControl.Comparison.Axioms
+import LeanForControl.Comparison.ClassK
+import LeanForControl.Comparison.ClassKInfty
+import LeanForControl.Comparison.ClassKL
+import LeanForControl.Comparison.ClassL
+import LeanForControl.Comparison.ComparisonFunctions
 import LeanForControl.Dini.DiniDeriv
 import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability
@@ -18,5 +24,5 @@ import LeanForControl.Stability.LaSalle
 import LeanForControl.Stability.LyapunovBounds
 import LeanForControl.Stability.KLCharacterization
 import LeanForControl.Stability.ClassKDecay
-import LeanForControl.Stability.ComparisonFunctions
+import LeanForControl.Stability.NonAutonomous
 import LeanForControl.axioms
