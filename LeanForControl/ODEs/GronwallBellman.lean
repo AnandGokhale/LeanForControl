@@ -1,5 +1,6 @@
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import LeanForControl.Analysis.Integrals
 import Architect
 
 open MeasureTheory intervalIntegral Real Set Filter
@@ -63,14 +64,6 @@ lemma continuousOn_integral_Icc {a t : ℝ} {f : ℝ → ℝ} (h : a ≤ t)
   exact intervalIntegral.continuousOn_primitive_interval hf_int
 
 
-
-private lemma interval_diff {a t : ℝ} {μ : ℝ → ℝ} {s : ℝ}
-    (hμ_t : ContinuousOn μ (Icc a t))
-    (hs : s ∈ Icc a t) :
-    (∫ τ in a..t, μ τ) - ∫ τ in a..s, μ τ = ∫ τ in s..t, μ τ := by
-  linarith [intervalIntegral.integral_add_adjacent_intervals (μ := volume)
-    ((hμ_t.mono (Icc_subset_Icc_right hs.2)).intervalIntegrable_of_Icc hs.1)
-    ((hμ_t.mono (Icc_subset_Icc_left hs.1)).intervalIntegrable_of_Icc hs.2)]
 
 
 /-! ## General form -/
@@ -155,7 +148,7 @@ theorem gronwall_bellman_inequality {a b : ℝ} {Λ μ y : ℝ → ℝ}
           have := hineq s (by grind : s ∈ Icc a b)
           nlinarith
   have h_interval_diff : ∀ s ∈ Icc a t, M t - M s = ∫ τ in s..t, μ τ :=
-    fun s hs => interval_diff hμ_t hs
+    fun s hs => hμ_t.integral_sub_adjacent_intervals hs
   -- ── Multiply by exp(M t) ────────────────────────────────────────
   have hzt_bound : z t ≤ ∫ s in a..t, Λ s * μ s * exp (∫ τ in s..t, μ τ) := by
     calc
@@ -193,7 +186,7 @@ theorem gronwall_const_lambda
   have hM_cont : ContinuousOn M (Icc a t) :=
     continuousOn_integral_Icc ht.1 (hμ_t.integrableOn_compact isCompact_Icc)
   have h_interval_diff : ∀ s ∈ Icc a t, M t - M s = ∫ τ in s..t, μ τ :=
-    fun s hs => interval_diff (hμ.mono (Icc_subset_Icc_right ht.2)) hs
+    fun s hs => (hμ.mono (Icc_subset_Icc_right ht.2)).integral_sub_adjacent_intervals hs
   have h_int_eval : ∫ s in a..t, C * μ s * rexp (∫ τ in s..t, μ τ) = C * rexp (M t) - C := by
     have h_antideriv : ∀ s ∈ Ioo a t,
         HasDerivAt (fun s ↦ -C * rexp (M t - M s)) (C * μ s * rexp (M t - M s)) s := by

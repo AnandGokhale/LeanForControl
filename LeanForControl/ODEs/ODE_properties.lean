@@ -4,7 +4,8 @@ import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.ODE.Gronwall
 import Mathlib.Order.Interval.Set.UnorderedInterval
-import LeanForControl.ODEs.gronwall_bellman
+import LeanForControl.ODEs.GronwallBellman
+import LeanForControl.Analysis.Integrals
 import Architect
 
 open MeasureTheory Metric Set Filter TopologicalSpace
@@ -48,8 +49,7 @@ variable {L μ : ℝ}
 omit [NormedSpace ℝ E] in
 /-- `s ↦ f(s, z(s))` is interval-integrable on `[t₀, t₁]` when `f` is jointly continuous
     and `z` is continuous on `[t₀, t₁]`. -/
-lemma
-IntervalIntegrable_of_lipschitz {t₀ t₁ : ℝ} (hle : t₀ ≤ t₁)
+lemma IntervalIntegrable_of_lipschitz {t₀ t₁ : ℝ} (hle : t₀ ≤ t₁)
 {f : ℝ → E → E} {z : ℝ → E}
 (hf_cont : Continuous (fun p : ℝ × E => f p.1 p.2))
   (hz : ContinuousOn z (Icc t₀ t₁)) :
@@ -69,7 +69,7 @@ uniformly bounded by `μ`, then for all `t ∈ [t₀, t₁]`:
 We work globally on `[t₀, t₁]` (rather than on a local domain `W ⊂ ℝⁿ`) to avoid
 local-extension boilerplate. -/
 theorem continuous_dependence_ODE
-    (ht : t₀ ≤ t₁) (hL : 0 < L) (hμ : 0 < μ)
+    (ht : t₀ ≤ t₁) (hL : 0 < L)
     (hy : IsIntegralSolution t₀ t₁ y y₀ f)
     (hz : IsIntegralSolution t₀ t₁ z z₀ (fun s x => f s x + g s x))
     (hy_cont : ContinuousOn y (Icc t₀ t₁))
@@ -80,66 +80,54 @@ theorem continuous_dependence_ODE
     (hg : ∀ t ∈ Icc t₀ t₁, ∀ x : E, ‖g t x‖ ≤ μ) :
     ∀ t ∈ Icc t₀ t₁,
     ‖y t - z t‖ ≤ ‖y₀ - z₀‖ * rexp (L * (t - t₀)) + (μ / L) * (rexp (L * (t - t₀)) - 1) := by
-  -- ── Continuity and integrability of ‖y - z‖ ──────────────────────────
-  have hyz_cont : ContinuousOn (fun s => ‖y s - z s‖) (Icc t₀ t₁) := by fun_prop
-  have hyz_int : IntervalIntegrable (fun s => ‖y s - z s‖) volume t₀ t₁ :=
-    hyz_cont.intervalIntegrable_of_Icc ht
-  have hfyz : IntervalIntegrable (fun s => ‖f s (y s) - f s (z s)‖) volume t₀ t₁ :=
-    ((hf_cont.comp_continuousOn (continuousOn_id.prodMk hy_cont)).sub
-    (hf_cont.comp_continuousOn (continuousOn_id.prodMk hz_cont))).norm
-    |>.intervalIntegrable_of_Icc ht
-  -- ── Step 1: basic norm inequality for every τ ─────────────────────────
-  -- ‖y τ - z τ‖ ≤ ‖y₀ - z₀‖ + μ*(τ - t₀) + L * ∫_{t₀}^{τ} ‖y s - z s‖
-  have hineq_base : ∀ τ ∈ Icc t₀ t₁,
-      ‖y τ - z τ‖ ≤ ‖y₀ - z₀‖ + μ * (τ - t₀) +
-                    L * ∫ s in t₀..τ, ‖y s - z s‖ := by
+  -- ── 1. Global Integrability Setup ─────────────────────────────────────────
+  have hy_int := hf_cont.intervalIntegrable_comp ht hy_cont
+  have hz_int := hf_cont.intervalIntegrable_comp ht hz_cont
+  have hyz_int := (hy_cont.sub hz_cont).norm.intervalIntegrable_of_Icc (μ := volume) ht
+  have hfyz_int := ((hf_cont.comp_continuousOn (continuousOn_id.prodMk hy_cont)).sub
+                   (hf_cont.comp_continuousOn (continuousOn_id.prodMk hz_cont))).norm.intervalIntegrable_of_Icc
+                   (μ := volume) ht
+  -- ── 2. Base Inequality for every τ ────────────────────────────────────────
+  have hineq_base : ∀ τ ∈ Icc t₀ t₁, ‖y τ - z τ‖ ≤ ‖y₀ - z₀‖ + μ * (τ - t₀)
+    + L * ∫ s in t₀..τ, ‖y s - z s‖ := by
     intro τ hτ
-    have hfy_τ := (IntervalIntegrable_of_lipschitz ht hf_cont hy_cont).mono_set
-      (Set.uIcc_subset_uIcc_left (Set.Icc_subset_uIcc hτ))
-    have hfz_τ := (IntervalIntegrable_of_lipschitz ht hf_cont hz_cont).mono_set
-      (Set.uIcc_subset_uIcc_left (Set.Icc_subset_uIcc hτ))
-    have hgz_τ := hgz.mono_set (Set.uIcc_subset_uIcc_left (Set.Icc_subset_uIcc hτ))
-    have hyz_τ := hyz_int.mono_set (Set.uIcc_subset_uIcc_left (Set.Icc_subset_uIcc hτ))
-    have hfyz_τ := hfyz.mono_set (Set.uIcc_subset_uIcc_left (Set.Icc_subset_uIcc hτ))
-    have h_diff : y τ - z τ = (y₀ - z₀) + (∫ s in t₀..τ, f s (y s) - f s (z s))
-                - ∫ s in t₀..τ, g s (z s) := by
-      simp [hy τ hτ, hz τ hτ, intervalIntegral.integral_add hfz_τ hgz_τ,
-            intervalIntegral.integral_sub hfy_τ hfz_τ]; abel
-    have h_g : ‖∫ s in t₀..τ, g s (z s)‖ ≤ μ * (τ - t₀) := by
-      have := intervalIntegral.norm_integral_le_of_norm_le_const
-        (fun s hs => hg s (mem_Icc.mpr ⟨(uIoc_of_le hτ.1 ▸ hs).1.le,
-                                        (uIoc_of_le hτ.1 ▸ hs).2.trans hτ.2⟩) (z s))
-      simpa [abs_of_nonneg (sub_nonneg.mpr hτ.1)] using this
-    have h_lip : ‖∫ s in t₀..τ, (f s (y s) - f s (z s))‖ ≤ L * ∫ s in t₀..τ, ‖y s - z s‖ :=
-    (intervalIntegral.norm_integral_le_integral_norm hτ.1).trans <| by
-      simp only [← intervalIntegral.integral_const_mul]
-      exact intervalIntegral.integral_mono_on hτ.1 hfyz_τ (hyz_τ.const_mul L)
-        fun s hs => by simpa [dist_eq_norm] using
-          (hLip s ⟨hs.1, hs.2.trans hτ.2⟩).dist_le_mul (y s) (z s)
-    have h_norm : ‖y τ - z τ‖ ≤ ‖y₀ - z₀‖
-        + ‖∫ s in t₀..τ, (f s (y s) - f s (z s))‖
-        + ‖∫ s in t₀..τ, g s (z s)‖ := h_diff ▸ by
-      refine (norm_sub_le _ _).trans ?_
-      linarith [norm_add_le (y₀ - z₀) (∫ s in t₀..τ, (f s (y s) - f s (z s)))]
-    linarith
-  have hshift : ∀ τ ∈ Icc t₀ t₁,
-      (‖y τ - z τ‖ + μ / L) ≤ (‖y₀ - z₀‖ + μ / L) +
-        ∫ s in t₀..τ, L * (‖y s - z s‖ + μ / L) := by
-      intro τ hτ
-      have hyz_τ : IntervalIntegrable (fun s => ‖y s - z s‖) volume t₀ τ := by
-        exact hyz_int.mono_set (Set.uIcc_subset_uIcc_left (Set.Icc_subset_uIcc hτ))
-      have hint : ∫ s in t₀..τ, L * (‖y s - z s‖ + μ / L) =
-        (L * ∫ s in t₀..τ, ‖y s - z s‖) + μ * (τ - t₀) := by
-        simp_rw [show ∀ s, L * (‖y s - z s‖ + μ / L) = L * ‖y s - z s‖ + μ
-          from fun s => by field_simp]
-        rw [intervalIntegral.integral_add (hyz_τ.const_mul L) intervalIntegrable_const,
-            intervalIntegral.integral_const_mul,
-            intervalIntegral.integral_const,
-            smul_eq_mul]
-        field_simp
-      linarith [hineq_base τ hτ]
+    have hu_sub : uIcc t₀ τ ⊆ uIcc t₀ t₁ := uIcc_subset_uIcc_left (Icc_subset_uIcc hτ)
+    have hy_sub := hy_int.mono_set hu_sub
+    have hz_sub := hz_int.mono_set hu_sub
+    have h_diff : y τ - z τ = (y₀ - z₀) +
+      (∫ s in t₀..τ, f s (y s) - f s (z s)) - ∫ s in t₀..τ, g s (z s) := by
+      rw [hy τ hτ, hz τ hτ, intervalIntegral.integral_add hz_sub (hgz.mono_set hu_sub),
+          intervalIntegral.integral_sub hy_sub hz_sub]
+      abel
+    have h_g_bound : ‖∫ s in t₀..τ, g s (z s)‖ ≤ μ * (τ - t₀) :=
+      intervalIntegral.norm_integral_le_const_mul hτ.1 fun s hs =>
+        hg s (Icc_subset_Icc_right hτ.2 hs) (z s)
+    have h_lip_bound : ‖∫ s in t₀..τ, f s (y s) - f s (z s)‖ ≤ L * ∫ s in t₀..τ, ‖y s - z s‖ :=
+      intervalIntegral.norm_integral_le_of_norm_le_mul hτ.1
+        (hfyz_int.mono_set hu_sub)
+        (hyz_int.mono_set hu_sub)
+        (fun s hs => by simpa [dist_eq_norm] using
+          (hLip s (Icc_subset_Icc_right hτ.2 hs)).dist_le_mul (y s) (z s))
+    have h_tri1 := norm_sub_le ((y₀ - z₀) + ∫ s in t₀..τ, f s (y s) - f s (z s))
+                                (∫ s in t₀..τ, g s (z s))
+    have h_tri2 := norm_add_le (y₀ - z₀) (∫ s in t₀..τ, f s (y s) - f s (z s))
+    rw [h_diff]
+    linarith [h_tri1, h_tri2, h_lip_bound, h_g_bound]
+  -- ── 3. Shift into Gronwall Form ───────────────────────────────────────────
+  have hshift : ∀ τ ∈ Icc t₀ t₁, (‖y τ - z τ‖ + μ / L) ≤ (‖y₀ - z₀‖ + μ / L)
+    + ∫ s in t₀..τ, L * (‖y s - z s‖ + μ / L) := by
+    intro τ hτ
+    have hz_sub := hyz_int.mono_set (uIcc_subset_uIcc_left (Icc_subset_uIcc hτ))
+    have h_int_eq : ∫ s in t₀..τ, L * (‖y s - z s‖ + μ / L) = (L * ∫ s in t₀..τ, ‖y s - z s‖)
+      + μ * (τ - t₀) := by
+      simp_rw [mul_add, mul_div_cancel₀ _ hL.ne']
+      rw [intervalIntegral.integral_add (hz_sub.const_mul L) intervalIntegrable_const]
+      rw [intervalIntegral.integral_const_mul, intervalIntegral.integral_const_eq]
+      ring
+    linarith [hineq_base τ hτ]
+  -- ── 4. Apply Gronwall-Bellman ─────────────────────────────────────────────
   have hw_cont : ContinuousOn (fun τ => ‖y τ - z τ‖ + μ / L) (Icc t₀ t₁) :=
-    hyz_cont.add continuousOn_const
+    (hy_cont.sub hz_cont).norm.add continuousOn_const
   have hG := gronwall_const hL.le hw_cont hshift
   intro t ht
   linarith [hG t ht, hshift t ht, hineq_base t ht]
@@ -175,7 +163,7 @@ theorem continuous_dependence_parameters
     (hz₀  : ‖z₀ - y₀‖ ≤ α) :
     ∀ t ∈ Set.Icc t₀ t₁, ‖y t - z t‖ ≤ ε := by
   intro t ht_mem
-  have key := continuous_dependence_ODE ht hL hα hy hz hy_cont hz_cont
+  have key := continuous_dependence_ODE ht hL hy hz hy_cont hz_cont
     hf_cont (IntervalIntegrable_of_lipschitz ht hg_cont hz_cont) hLip hg t ht_mem
   have hyz₀ : ‖y₀ - z₀‖ ≤ α := by rwa [norm_sub_rev]
   have hexp_mono : Real.exp (L * (t - t₀)) ≤ Real.exp (L * (t₁ - t₀)) := by
@@ -193,3 +181,22 @@ theorem continuous_dependence_parameters
     _ ≤ α * (1 + 1 / L) * Real.exp (L * (t₁ - t₀)) := by
           linarith [div_nonneg hα.le hL.le]
     _ ≤ ε := hαε
+
+/-- **Picard-Lindelöf for scalar ODEs on compact intervals**.
+
+    For a jointly continuous right-hand side `g : ℝ → ℝ → ℝ` that is globally
+    Lipschitz in the state variable (uniformly in time), for any compact interval
+    `[t₀, t₁]` and initial value `x₀ : ℝ`, there exists an integral solution `z`
+    that is continuous and has right derivatives matching `g` on `[t₀, t₁)`.
+
+    This is the scalar, compact-interval instance of the Picard-Lindelöf theorem,
+    which holds because globally Lipschitz continuity prevents finite-time blowup. -/
+axiom scalar_ode_exists_interval
+    (g : ℝ → ℝ → ℝ) (L : ℝ) (hL : 0 < L)
+    (hg_cont : Continuous (Function.uncurry g))
+    (hg_lip : ∀ t : ℝ, LipschitzWith ⟨L, hL.le⟩ (g t))
+    {t₀ t₁ x₀ : ℝ} (ht : t₀ ≤ t₁) :
+    ∃ z : ℝ → ℝ,
+      IsIntegralSolution t₀ t₁ z x₀ g ∧
+      ContinuousOn z (Set.Icc t₀ t₁) ∧
+      ∀ s ∈ Set.Ico t₀ t₁, HasDerivWithinAt z (g s (z s)) (Set.Ici s) s

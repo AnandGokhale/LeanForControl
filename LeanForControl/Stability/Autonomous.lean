@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
-import LeanForControl.Stability.Defs
+import LeanForControl.Stability.DefsAutonomous
 import Architect
 
 variable {n : ℕ}

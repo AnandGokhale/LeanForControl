@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this library in your research, please cite it as below."
+title: "LeanForControl: A Formal Library for Nonlinear Control Theory in Lean 4"
+version: 0.1.0
+date-released: 2026-04-18
+license: Apache-2.0
+repository-code: https://github.com/AnandGokhale/LeanForControl
+url: https://anandgokhale.github.io/LeanForControl/
+abstract: >
+  LeanForControl is a Lean 4 / Mathlib library providing machine-checked
+  formalizations of core results in nonlinear control theory. It covers
+  comparison functions (class K, K∞, KL), Lyapunov stability theory for
+  autonomous and non-autonomous systems, LaSalle's invariance principle,
+  input-to-state stability building blocks, and related ODE results.
+authors:
+  - family-names: Gokhale
+    given-names: Anand Uday
+    email: anand.u.gokhale@gmail.com
+    orcid: ""
+keywords:
+  - lean4
+  - formal verification
+  - control theory
+  - Lyapunov stability
+  - comparison functions
+  - nonlinear systems
+  - interactive theorem proving
+  - mathlib
+preferred-citation:
+  type: software
+  title: "LeanForControl: A Formal Library for Nonlinear Control Theory in Lean 4"
+  authors:
+    - family-names: Gokhale
+      given-names: Anand Uday
+      email: anand.u.gokhale@gmail.com
+  version: 0.1.0
+  date-released: 2026-04-18
+  license: Apache-2.0
+  repository-code: https://github.com/AnandGokhale/LeanForControl
+  url: https://anandgokhale.github.io/LeanForControl/

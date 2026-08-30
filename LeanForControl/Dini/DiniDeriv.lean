@@ -410,4 +410,47 @@ theorem neg_diniDerivRight_neg_le (f : ℝ → ℝ) (t : ℝ)
     linarith
 
 
+
+lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b d_z : ℝ}
+    (hab : a < b)
+    (h_eq : z a = v a)
+    (h_strict : ∀ t ∈ Ioc a b, z t < v t)
+    (hz_deriv : HasDerivWithinAt z d_z (Ici a) a)
+    (hv_bdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (a + h) - v a) / h)) :
+    d_z ≤ D⁺ v a := by
+  let q_v := fun h => (v (a + h) - v a) / h
+  let q_z := fun h => (z (a + h) - z a) / h
+  have h_eventual_le : ∀ᶠ h in 𝓝[>] 0, q_z h ≤ q_v h := by
+    have h_nhds : Iio (b - a) ∈ 𝓝 0 := Iio_mem_nhds (sub_pos.mpr hab)
+    filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds h_nhds] with h h_gt0 h_lt
+    -- Expose the inequalities explicitly so `linarith` can see them
+    have h1 : 0 < h := h_gt0
+    have h2 : h < b - a := h_lt
+    apply div_le_div_of_nonneg_right _ h1.le
+    rw [h_eq]
+    -- Now linarith has the ammo it needs
+    have h_in_Ioc : a + h ∈ Ioc a b := ⟨by linarith, by linarith⟩
+    have h_str := h_strict (a + h) h_in_Ioc
+    linarith
+  have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 d_z) := by
+    rw [hasDerivWithinAt_iff_tendsto_slope] at hz_deriv
+    have h_shift : Tendsto (fun h => a + h) (𝓝[>] 0) (𝓝[Ici a \ {a}] a) := by
+      apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+      · exact (continuous_const.add continuous_id).tendsto' 0 a (add_zero a) |>.mono_left nhdsWithin_le_nhds
+      · filter_upwards [self_mem_nhdsWithin] with h hh
+        -- Expose the inequality here too
+        have h1 : 0 < h := hh
+        simp only [mem_diff, mem_Ici, mem_singleton_iff]
+        exact ⟨by linarith, by linarith⟩
+    apply Tendsto.congr' _ (hz_deriv.comp h_shift)
+    filter_upwards with h
+    dsimp [q_z, slope]
+    rw [show a + h - a = h by ring]
+    rw [div_eq_mul_inv]
+    ring_nf
+  calc d_z
+    _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
+    _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le hv_bdd
+    _ = D⁺ v a              := rfl
+
 end

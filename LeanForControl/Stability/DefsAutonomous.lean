@@ -10,7 +10,7 @@ import Architect
 variable {n : ℕ}
 
 /-!
-# `Stability.Defs`
+# `Stability.DefsAutonomous`
 
 Core definitions for the stability theory of autonomous ODEs `ẋ = f(x)` on `ℝⁿ`.
 

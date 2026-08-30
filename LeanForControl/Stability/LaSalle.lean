@@ -1,7 +1,7 @@
 import Mathlib.Dynamics.OmegaLimit
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
-import LeanForControl.Stability.Defs
+import LeanForControl.Stability.DefsAutonomous
 import LeanForControl.Stability.Autonomous
 import Architect
 
@@ -9,7 +9,7 @@ variable {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-!
-# `Stability.LaSalles`
+# `Stability.LaSalle`
 
 LaSalle's invariance principle and its corollaries (Barbashin–Krasovskii theorems).
 

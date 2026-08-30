@@ -151,3 +151,61 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < δ ε → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ < ε) ∧
   ∀ η > 0, ∀ c > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
     IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η
+
+/-- The equilibrium `x_eq` is **exponentially stable**: there exist positive constants
+    `c`, `k`, and `λ` such that every trajectory starting within `c` of `x_eq` satisfies
+    the exponential bound `‖φ(t) - x_eq‖ ≤ k ‖φ(t₀) - x_eq‖ · exp(-λ(t - t₀))`
+    for all `t ≥ t₀`.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5. -/
+@[blueprint "def:exponentiallyStableNA"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{exponentially stable}
+    when there exist positive constants $c$, $k$, and $\lambda$ such that
+    \[
+      \|\varphi(t) - x_{\mathrm{eq}}\| \le k\,\|\varphi(t_{0}) - x_{\mathrm{eq}}\|\,
+      e^{-\lambda(t - t_{0})}
+    \]
+    for all $t \ge t_{0} \ge 0$ and all trajectories $\varphi$ with
+    $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$. -/)]
+def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  ∃ c > 0, ∃ k > 0, ∃ γ > 0,
+    ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
+      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c →
+        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
+
+/-- The equilibrium `x_eq` is **globally exponentially stable**: the exponential bound
+    holds for any initial state, with no restriction on `‖φ(t₀) - x_eq‖`. -/
+@[blueprint "def:globallyExponentiallyStableNA"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally exponentially
+    stable} when the bound in \cref{def:exponentiallyStableNA} holds for every initial
+    state $\varphi(t_{0}) \in \mathbb{R}^{n}$, i.e., $c = \infty$. -/)]
+def GloballyExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  ∃ k > 0, ∃ γ > 0,
+    ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
+      IsTrajectoryNA φ f →
+        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
+
+/-! ## Existence of trajectories (Picard-Lindelöf) -/
+
+/-- **Picard-Lindelöf / Lindelöf-Picard (global existence and uniqueness)**.
+
+    For a jointly continuous vector field `f : ℝ → ℝⁿ → ℝⁿ` that is locally
+    Lipschitz in the state variable, uniformly on compact time sets, through every
+    initial condition `(t₀, x₀)` there passes a **unique** global trajectory
+    satisfying `ẋ = f(t, x)`.
+
+    **Remark on global existence**: local Lipschitz continuity yields existence on a
+    maximal interval `[t₀, t_max)`.  To guarantee `t_max = +∞` (no finite-time blowup)
+    one needs an additional condition such as:
+    - linear growth `‖f(t, x)‖ ≤ C · (1 + ‖x‖)`, or
+    - a forward-invariant compact set containing the trajectory.
+
+    This axiom packages both conditions under the assumption that solutions are
+    complete; the user must verify that for any concrete `f`, e.g., by exhibiting a
+    Lyapunov bound that prevents blowup. -/
+axiom exists_unique_trajectory
+    (f : ℝ → ℝⁿ → ℝⁿ)
+    (hf_cont : Continuous (Function.uncurry f))
+    (hf_lip : ∀ K : Set ℝ, IsCompact K → ∃ L : NNReal, ∀ t ∈ K, LipschitzWith L (f t))
+    (t₀ : ℝ) (x₀ : ℝⁿ) :
+    ∃! φ : ℝ → ℝⁿ, IsTrajectoryNA φ f ∧ φ t₀ = x₀

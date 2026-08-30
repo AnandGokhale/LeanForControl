@@ -6,6 +6,7 @@ import Mathlib.Analysis.Calculus.Deriv.Add
 import LeanForControl.ODEs.ODE_properties
 import Mathlib.Topology.Order.IntermediateValue
 import Mathlib.Topology.ContinuousOn
+import LeanForControl.Analysis.Continuity
 import Architect
 
 /-!
@@ -58,23 +59,6 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
     (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
     (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
-/-! ## Auxiliary lemmas -/
-
-/-- If `w(a) = 0` and `w` is eventually positive immediately to the right of `a`, and the
-difference quotients `(w(a + h) - w(a)) / h` are bounded above near `h = 0⁺`, then the
-upper Dini derivative at `a` is nonneg: `D⁺w(a) ≥ 0`. -/
-lemma diniDerivRight_nonneg_of_eventually_pos {w : ℝ → ℝ} {a : ℝ}
-    (hw0 : w a = 0)
-    (hpos : ∀ᶠ h in 𝓝[>] 0, 0 < w (a + h))
-    (hbdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0)
-                (fun h => (w (a + h) - w a) / h)) :
-    0 ≤ D⁺ w a := by
-  unfold diniDerivRight
-  apply le_limsup_of_frequently_le _ hbdd
-  exact (hpos.and self_mem_nhdsWithin).frequently.mono fun h ⟨hwh, hh⟩ => by
-    simp only [hw0, sub_zero]
-    exact le_of_lt (div_pos hwh hh)
-
 /-! ## Comparison Lemma 3.4 -/
 
 /-- **Claim 1** of the comparison lemma: the subsolution `v` lies below every perturbed
@@ -86,7 +70,7 @@ Proved by contradiction. If `v(t_bad) > z(t_bad)` for some `t_bad ∈ [t₀, t�
 are eventually nonneg (because `v > z` on `(a, t_bad]`), so `D⁺v(a) ≥ ż(a)`. Combined with
 `D⁺v(a) ≤ f(a, v(a)) = f(a, z(a))`, this gives `f(a, z(a)) + λ ≤ f(a, z(a))`,
 contradicting `λ > 0`. -/
-lemma comparison_claim_1
+private lemma comparison_claim_1
     {f : ℝ → ℝ → ℝ} {v z : ℝ → ℝ} {t₀ t₁ u₀ lam : ℝ}
     (hlam : 0 < lam)
     (ht : t₀ < t₁)
@@ -106,110 +90,22 @@ lemma comparison_claim_1
   let diff s := v s - z s
   have h_cont_diff : ContinuousOn diff (Icc t₀ t_bad) :=
     hv_cont.continuousOn.sub (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
-  obtain ⟨s, hs_mem, hs_eq⟩ := intermediate_value_Icc ht_bad_mem.1 h_cont_diff
-    ⟨by simpa [diff, hz₀] using hv₀, le_of_lt (sub_pos.mpr h_bad_ineq)⟩
-  -- `S` is the set of crossing times before `t_bad`; it is nonempty and bounded above.
-  let S := { s ∈ Icc t₀ t_bad | v s = z s }
-  have hS_nonempty : S.Nonempty := ⟨s, hs_mem, sub_eq_zero.mp hs_eq⟩
-  have hS_bdd : BddAbove S :=  ⟨t_bad, fun s hs => hs.1.2⟩
-  -- `a` is the last crossing time.
-  let a := sSup S
-  have ha_lub : IsLUB S a := Real.isLUB_sSup hS_nonempty hS_bdd
-  have ha_le_tbad : a ≤ t_bad := ha_lub.right (fun s hs => hs.1.2)
-  have ht₀_le_a : t₀ ≤ a := by
-    rcases hS_nonempty with ⟨s, hs_mem⟩
-    exact le_trans hs_mem.1.1 (ha_lub.left hs_mem)
-  have ha_Icc : a ∈ Icc t₀ t_bad := ⟨ht₀_le_a, ha_le_tbad⟩
-  -- The supremum is actually attained: `v(a) = z(a)`.
-  have h_eq_a : v a = z a := by
-    have hS_compact : IsCompact S := by
-      haveI : CompactSpace ↥(Icc t₀ t_bad) := isCompact_iff_compactSpace.mp isCompact_Icc
-      have hcont' : Continuous (fun x : ↥(Icc t₀ t_bad) => diff x.val) :=
-        h_cont_diff.restrict
-      have hpre : IsClosed ((fun x : ↥(Icc t₀ t_bad) => diff x.val) ⁻¹' {0}) :=
-        isClosed_singleton.preimage hcont'
-      have hS_eq : S = Subtype.val '' ((fun x : ↥(Icc t₀ t_bad) => diff x.val) ⁻¹' {0}) := by
-        ext x
-        simp only [S, Set.mem_setOf_eq, Set.mem_image, Subtype.exists,
-                  Set.mem_preimage, Set.mem_singleton_iff, diff, sub_eq_zero]
-        exact ⟨fun ⟨hx, heq⟩ => ⟨x, hx, heq, rfl⟩,
-              fun ⟨_, hy, heq, hval⟩ => hval ▸ ⟨hy, heq⟩⟩
-      rw [hS_eq]
-      exact hpre.isCompact.image continuous_subtype_val
-    -- compact set in ℝ attains its maximum
-    obtain ⟨m, hm_mem, hm_max⟩ :=
-      hS_compact.exists_isMaxOn hS_nonempty continuousOn_id
-    -- m is an upper bound of S, so a ≤ m; m ∈ S so m ≤ a
-    have ha_eq : a = m := le_antisymm
-      (ha_lub.right (fun x hx => hm_max hx))
-      (ha_lub.left hm_mem)
-    exact ha_eq ▸ hm_mem.2
-  have ha_lt_tbad : a < t_bad := by
-    by_contra h_eq
-    have ha_eq_tbad : a = t_bad := le_antisymm ha_le_tbad (not_lt.mp h_eq)
-    rw [← ha_eq_tbad] at h_bad_ineq
-    linarith
-  have ha_mem_Ico : a ∈ Ico t₀ t₁ := ⟨ht₀_le_a, lt_of_lt_of_le ha_lt_tbad ht_bad_mem.2⟩
-  -- On `(a, t_bad]`, `v` is strictly above `z` (no further crossings by maximality of `a`).
-  have h_strict : ∀ t ∈ Ioc a t_bad, z t < v t := by
-    intro t ht
-    by_contra h_not
-    push Not at h_not
-    let diff := fun s => v s - z s
-    have h_cont_diff : ContinuousOn diff (Icc t t_bad) := by
-      have h_subset : Icc t t_bad ⊆ Icc t₀ t₁ := by
-        intro x hx
-        exact ⟨le_trans ht₀_le_a (le_trans (le_of_lt ht.1) hx.1), le_trans hx.2 ht_bad_mem.2⟩
-      exact hv_cont.continuousOn.sub (hz_cont.mono h_subset)
-    have h_zero_mem : (0 : ℝ) ∈ Icc (diff t) (diff t_bad) :=
-      ⟨(sub_nonpos.mpr h_not), (le_of_lt (sub_pos.mpr h_bad_ineq))⟩
-    have h_ivt := intermediate_value_Icc ht.2 h_cont_diff h_zero_mem
-    obtain ⟨s, hs_mem, hs_eq_zero⟩ := h_ivt
-    have hs_in_S : s ∈ S := by
-      simp only [S, mem_setOf_eq]
-      refine ⟨⟨le_trans ht₀_le_a (le_trans (le_of_lt ht.1) hs_mem.1), hs_mem.2⟩,
-        sub_eq_zero.mp hs_eq_zero⟩
-    have hs_le_a : s ≤ a := ha_lub.left hs_in_S
-    have ha_lt_s : a < s := lt_of_lt_of_le ht.1 hs_mem.1
-    linarith
-  -- Compare the Dini derivative of `v` at `a` with the derivative of `z` at `a`.
-  let q_v := fun h => (v (a + h) - v a) / h
-  let q_z := fun h => (z (a + h) - z a) / h
-  have h_eventual_le : ∀ᶠ h in 𝓝[>] 0, q_z h ≤ q_v h := by
-    have h_nhds : Iio (t_bad - a) ∈ 𝓝 0 := Iio_mem_nhds (sub_pos.mpr ha_lt_tbad)
-    filter_upwards [self_mem_nhdsWithin, (nhdsWithin_le_nhds h_nhds)] with h h_gt0 h_lt
-    have : 0 < h := h_gt0
-    have : h < t_bad - a := h_lt
-    apply div_le_div_of_nonneg_right
-      (by rw [h_eq_a]; linarith [h_strict (a + h) ⟨by linarith, by linarith⟩])
-      h_gt0.le
-  have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 (f a (z a) + lam)) := by
-    have h_deriv_a := hz_deriv a ha_mem_Ico
-    rw [hasDerivWithinAt_iff_tendsto_slope] at h_deriv_a
-    have h_shift : Tendsto (fun h => a + h) (𝓝[>] 0) (𝓝[Ici a \ {a}] a) := by
-      apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      · have h_cont : Continuous (fun h => a + h) := continuous_const.add continuous_id
-        have h_tendsto_0 := h_cont.tendsto 0
-        rw [add_zero] at h_tendsto_0
-        exact h_tendsto_0.mono_left nhdsWithin_le_nhds
-      · filter_upwards [self_mem_nhdsWithin] with h hh
-        rw [mem_Ioi] at hh
-        simp only [mem_diff, mem_Ici, mem_singleton_iff]
-        exact ⟨by linarith, by linarith⟩
-    have h_comp := h_deriv_a.comp h_shift
-    apply Tendsto.congr' _ h_comp
-    filter_upwards with h
-    dsimp [q_z]
-    have h_eq : a + h - a = h := by ring
-    rw [slope_def_field, h_eq]
-  -- The chain of inequalities yields the contradiction `λ ≤ 0`.
+  have h_start : diff t₀ ≤ 0 := by simpa [diff, hz₀] using hv₀
+  have h_end : 0 < diff t_bad := sub_pos.mpr h_bad_ineq
+  have ht_lt : t₀ < t_bad := lt_of_le_of_ne ht_bad_mem.1 <| by
+    rintro rfl; linarith
+  obtain ⟨a, ha_mem, ha_eq_zero, h_strict⟩ :=
+    h_cont_diff.exists_greatest_zero_of_nonpos_of_pos ht_lt h_start h_end
+  have h_eq_a : z a = v a := sub_eq_zero.mp ha_eq_zero |>.symm
+  have ha_strict_v : ∀ t ∈ Ioc a t_bad, z t < v t :=
+    fun t ht_mem => sub_pos.mp (h_strict t ht_mem)
+  have ha_Ico : a ∈ Ico t₀ t₁ := ⟨ha_mem.1, ha_mem.2.trans_le ht_bad_mem.2⟩
+  have h_dini_le := (hz_deriv a ha_Ico).le_diniDerivRight_of_upper_bound
+    ha_mem.2 h_eq_a ha_strict_v (hv_bdd a ha_Ico)
   have h_chain := calc f a (z a) + lam
-      _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
-      _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup
-        h_eventual_le hz_lim.isCoboundedUnder_le (hv_bdd a ha_mem_Ico)
-      _ = D⁺ v a              := rfl
-      _ ≤ f a (v a)           := hDv a ha_mem_Ico
-  rw [← h_eq_a] at h_chain
+      _ ≤ D⁺ v a    := h_dini_le
+      _ ≤ f a (v a) := hDv a ha_Ico
+  rw [h_eq_a] at h_chain
   linarith
 
 /-- **Comparison Lemma 3.4.**  If `u` solves `u̇ = f(t, u)` with `u(t₀) = u₀`, and `v` is

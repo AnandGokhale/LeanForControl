@@ -1,8 +1,12 @@
-import LeanForControl.Stability.classK
 import LeanForControl.axioms
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
+
+import LeanForControl.Comparison.ClassK
+import LeanForControl.Comparison.ClassKInfty
+import LeanForControl.Comparison.ClassKL
+
 
 open Set Filter Topology MeasureTheory Metric
 
@@ -287,12 +291,12 @@ lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBa
 theorem LyapunovClassKBounds [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂),
-      ∀ x : ℝⁿ, ‖x‖ ≤ r → α₁.toFun ‖x‖ ≤ V x ∧ V x ≤ α₂.toFun ‖x‖ := by
+      ∀ x : ℝⁿ, ‖x‖ < r → α₁.toFun ‖x‖ ≤ V x ∧ V x ≤ α₂.toFun ‖x‖ := by
   obtain ⟨b₁, α₁, hα₁_le_psi⟩ := exists_classK_lower_bound hr hV_cont hV_zero hV_pos
   obtain ⟨b₂, α₂, hphi_le_α₂⟩ := exists_classK_upper_bound hr hV_cont hV_zero
   refine ⟨b₁, b₂, α₁, α₂, ?_⟩
   intro x hx
   have h_norm_pos : 0 ≤ ‖x‖ := norm_nonneg x
   -- Chain both inequalities: α₁ ≤ ψ ≤ V and V ≤ φ ≤ α₂
-  exact ⟨le_trans (hα₁_le_psi ‖x‖ h_norm_pos hx) (V_ge_psi hV_zero hV_pos hx),
-         le_trans (V_le_phi hV_cont hx) (hphi_le_α₂ ‖x‖ h_norm_pos hx)⟩
+  exact ⟨le_trans (hα₁_le_psi ‖x‖ h_norm_pos hx.le) (V_ge_psi hV_zero hV_pos hx.le),
+         le_trans (V_le_phi hV_cont hx.le) (hphi_le_α₂ ‖x‖ h_norm_pos hx.le)⟩
