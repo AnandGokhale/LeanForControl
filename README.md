@@ -21,9 +21,8 @@ smoothing a monotone bound into a strictly monotone continuous one) — see
 
 ### 1. Lean source — the proofs themselves
 
-`LeanForControl/Stability/` and `LeanForControl/Comparison/` are the active development
-area (Lyapunov stability theory, autonomous and non-autonomous). Open in VS Code with the
-Lean 4 extension; you get inline proof states.
+Open `LeanForControl/` in VS Code with the Lean 4 extension; you get inline proof states.
+See "Repo layout" below for what lives where, and "What's next" for the current roadmap.
 
 ### 2. Blueprint — readable theorem statements + dependency graph
 
@@ -69,19 +68,31 @@ keep it tight and faithful; trust the Lean source if they ever drift.
 ```
 LeanForControl/                          ← Lean source
 ├── axioms.lean                          ← top-level custom axioms (real-analysis smoothing)
-├── Stability/                           ← active: Lyapunov stability, LaSalle, non-autonomous
-│                                           (Khalil-style) stability theory; see Stability/plan.md
-├── Comparison/                          ← active: class K / K∞ / KL / L comparison-function library
-├── ODEs/                                ← active: comparison lemma, Gronwall–Bellman, ODE existence
-├── Dini/                                ← active: Dini derivatives (used by the comparison lemma)
-├── Analysis/                            ← active: supporting real-analysis lemmas
+├── Stability/                           ← Lyapunov stability, LaSalle, non-autonomous stability theory
+├── Comparison/                          ← class K / K∞ / KL / L comparison-function library
+├── ODEs/                                ← comparison lemma, Gronwall–Bellman, ODE existence
+├── Dini/                                ← Dini derivatives (used by the comparison lemma)
+├── Analysis/                            ← supporting real-analysis lemmas
 └── LinearSystems/                       ← matrices, observability, controllability, Hautus
-                                            (not under active development right now)
 blueprint/src/                           ← .tex sources (run leanblueprint web to render)
 docbuild/                                ← nested project for doc-gen4
 home_page/                               ← Jekyll scaffold for the project's home page
 .github/workflows/                       ← lean-action CI + blueprint deploy CI
 ```
+
+## What's next
+
+`LeanForControl/Stability/plan.md` is the maintained roadmap for the stability corner of
+the library (Lyapunov theory, LaSalle, non-autonomous systems) — status table, what's
+proved, and what's planned next (Chetaev's instability theorem, linearization). The other
+directories don't have a written roadmap yet; check `git log <dir>` for recent activity if
+you want a sense of what's currently being worked on.
+
+## Contributing
+
+See `CONTRIBUTING.md` for the CI-enforced rules (no `sorry`/`admit`, docstrings, axiom
+policy) and the design conventions the library follows (file organization, naming,
+citation style, blueprint annotations).
 
 ## When something breaks
 
