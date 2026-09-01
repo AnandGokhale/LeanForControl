@@ -56,6 +56,18 @@ and the codebase less consistent.
   theory, so both the autonomous and non-autonomous stability work can reuse it. If
   you're building something reusable across subject areas, it belongs in its own
   directory, not buried inside the file that first needed it.
+- **One lemma, one fact.** Each lemma should state and prove exactly one clean,
+  reusable mathematical claim, rather than one monolithic proof term that inlines every
+  sub-argument — the Lean equivalent of "a function should do one thing and do it well."
+  `Autonomous.lean` is the model: `hasDerivAt_V_comp_traj` (just the chain rule),
+  `trajectory_continuous`, `V_nonincreasing_on`, and `V_limit_zero_of_compact` are each
+  one fact, and the top-level theorems (`lyapunov_stable`, `lyapunov_asymptotic_stable`)
+  are just those pieces composed together. The payoff: a small lemma is independently
+  reusable (`V_limit_zero_of_compact` is used by both the local and global stability
+  proofs) and a change only breaks its direct callers instead of one giant proof. Don't
+  over-split, either — if a "sub-lemma" only ever gets used once and needs its own name,
+  hypotheses, and doc comment to say less than the `have` block it replaced would have,
+  inline it instead.
 - **Prefer pointwise hypotheses over trajectory-quantified ones** when formalizing a
   classical condition — e.g. `∀ x, fderiv ℝ V x (f x) ≤ 0` is easier to consume than
   `∀ φ t, HasDerivAt (V ∘ φ) ... t`. Write one chain-rule bridge lemma once
