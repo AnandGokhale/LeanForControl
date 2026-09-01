@@ -23,3 +23,14 @@ docbuild/.lake/
 
 # macOS Finder metadata.
 .DS_Store
+
+# latexmk bookkeeping alongside the blueprint sources.
+blueprint/src/*.fls
+blueprint/src/*.fdb_latexmk
+blueprint/src/*.synctex.gz
+
+# Stray pdflatex output from a run outside blueprint/.
+texput.log
+
+# Browser "Save Page As" dumps.
+*_files/
