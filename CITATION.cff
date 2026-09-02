@@ -14,7 +14,7 @@ abstract: >
   input-to-state stability building blocks, and related ODE results.
 authors:
   - family-names: Gokhale
-    given-names: Anand Uday
+    given-names: Anand
     email: anand_gokhale@ucsb.edu
     orcid: ""
   - family-names: Bullo
@@ -35,7 +35,7 @@ preferred-citation:
   title: "LeanForControl: A Formal Library for Nonlinear Control Theory in Lean 4"
   authors:
     - family-names: Gokhale
-      given-names: Anand Uday
+      given-names: Anand
       email: anand_gokhale@ucsb.edu
     - family-names: Bullo
       given-names: Francesco
