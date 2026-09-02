@@ -94,6 +94,10 @@ See `CONTRIBUTING.md` for the CI-enforced rules (no `sorry`/`admit`, docstrings,
 policy) and the design conventions the library follows (file organization, naming,
 citation style, blueprint annotations).
 
+## Acknowledgments
+
+Thanks to Titus Quah for useful discussions.
+
 ## When something breaks
 
 - `lake build` fails with `failed to fetch cache` after `lake update`?

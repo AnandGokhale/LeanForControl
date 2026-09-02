@@ -15,7 +15,11 @@ abstract: >
 authors:
   - family-names: Gokhale
     given-names: Anand Uday
-    email: anand.u.gokhale@gmail.com
+    email: anand_gokhale@ucsb.edu
+    orcid: ""
+  - family-names: Bullo
+    given-names: Francesco
+    email: bullo@ucsb.edu
     orcid: ""
 keywords:
   - lean4
@@ -32,7 +36,10 @@ preferred-citation:
   authors:
     - family-names: Gokhale
       given-names: Anand Uday
-      email: anand.u.gokhale@gmail.com
+      email: anand_gokhale@ucsb.edu
+    - family-names: Bullo
+      given-names: Francesco
+      email: bullo@ucsb.edu
   version: 0.1.0
   date-released: 2026-04-18
   license: Apache-2.0
