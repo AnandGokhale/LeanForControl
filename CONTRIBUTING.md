@@ -10,24 +10,20 @@ See `README.md` for how to build the project and the three ways to browse it
 
 ## Non-negotiables (CI-enforced)
 
-1. **`lake build` must be green**, including the linter (CI runs with `lint: true` and
-   `mk_all-check: true`). Run it locally before opening a PR:
+1. **`lake build` must be green.** `blueprint.yml` (push to `main`) explicitly runs with
+   `lint: true` and `mk_all-check: true`. `lean_action_ci.yml` (every push/PR) doesn't set
+   either input, and `mk_all-check` defaults to `false` in `lean-action` when unset — so
+   `mk_all-check` is only actually checked on pushes to `main`, not on every PR. Run the
+   full thing locally before opening a PR either way:
    ```bash
    lake exe cache get   # first time only
    lake build
    ```
 2. **No `sorry`, no `admit`.** A proof that doesn't go through isn't done.
 3. **Every public declaration needs a docstring** — the `docBlame` linter enforces this
-   and will fail CI otherwise.
-4. **Every new theorem or lemma must state where it came from.** Add a `Reference:` line
-   to its doc comment (or the module docstring, if it covers the whole file) naming the
-   textbook, paper, or standard result it formalizes — e.g. `Reference: Khalil,
-   *Nonlinear Systems* (3rd ed.)` (see "Citing a textbook" below for the citation style
-   itself: name only, no edition-specific numbers). If the result is original to this
-   repo rather than taken from a source, say that explicitly (`Original.` or a one-line
-   note on why it's needed) instead of leaving the provenance unstated. Repeat the source
-   in the PR description too, so it's visible in review without opening every file.
-5. **New custom axioms must be justified and registered, not scattered inline.**
+   and will fail CI otherwise. (It only checks that a docstring exists, not what's in it —
+   see the `Reference:` convention below, which is not currently linted.)
+4. **New custom axioms must be justified and registered, not scattered inline.**
    - Only add an axiom for a standard, well-established mathematical result that isn't
      (yet) in Mathlib — e.g. Picard–Lindelöf existence, or a real-analysis smoothing
      lemma. Don't axiomatize the thing you're actually trying to prove.
@@ -38,7 +34,7 @@ See `README.md` for how to build the project and the three ways to browse it
      file, so the full list of assumptions stays auditable in one place.
    - Say so explicitly in the PR description: which axiom, why it's needed, why it's
      standard.
-6. **If you touch a file with `@[blueprint ...]` annotations, keep `leanblueprint
+5. **If you touch a file with `@[blueprint ...]` annotations, keep `leanblueprint
    checkdecls` passing** — it checks that blueprint labels still point at real Lean
    declarations.
 
@@ -86,6 +82,17 @@ and the codebase less consistent.
   that exact edition. Refer to results by their descriptive or eponymous name instead
   (`Barbashin's theorem`, `class-K sandwich bounds`, `Osgood's construction`), the way
   the rest of the file names its own lemmas.
+- **State where every new theorem or lemma came from.** Add a `Reference:` line to its
+  doc comment (or the module docstring, if it covers the whole file) naming the textbook,
+  paper, or standard result it formalizes, using the citation style above. If the result
+  is original to this repo, say so explicitly (`Original.` or a one-line note on why it's
+  needed) instead of leaving the provenance unstated — and repeat the source in the PR
+  description too, so it's visible in review without opening every file. **This is a
+  convention, not yet a CI check** — the `docBlame` linter only verifies a docstring
+  exists, not what it says, so nothing currently fails a build over a missing
+  `Reference:` line. Most of the existing source predates this convention and doesn't
+  have one yet; treat it as required for new/changed theorems going forward, not as a
+  claim that the whole codebase already complies.
 - **Blueprint annotations** (`@[blueprint "label" (statement := ...) (proof := ...)]`)
   go on definitions and named/main theorems worth exposing in the readable blueprint —
   not on every internal helper lemma (roughly a third of declarations carry one; that's
@@ -104,6 +111,6 @@ and the codebase less consistent.
 - `lake build` green locally first (the Mathlib cache from `lake exe cache get` makes
   this fast after the first run).
 - State the source of any new theorem in the PR description (textbook/paper/original) —
-  see item 4 above.
+  see "State where every new theorem or lemma came from" above.
 - If you're introducing a new subject-area directory meant for ongoing work, add a
   `plan.md` alongside it.
