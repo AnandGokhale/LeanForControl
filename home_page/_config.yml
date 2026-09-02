@@ -20,7 +20,7 @@
 
 title: LeanForControl
 #email: your-email@example.com
-description: by Anand Gokhale and Francesco Bullo and Claude Code
+description: by Anand Gokhale and Francesco Bullo
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://AnandGokhale.github.io/LeanForControl" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username:
