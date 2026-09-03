@@ -1,20 +1,18 @@
-import LeanForControl.LinearSystems.Basic
-import Mathlib.Analysis.Complex.Basic
+import LeanForControl.LinearSystems.DefsHurwitz
 import Architect
 
 /-!
-# Hurwitz matrices
+# Basic theorems for Hurwitz matrices
 
-This file defines continuous-time Hurwitz stability for real square matrices through
-eigenpairs of their complexification.  The eigenpair formulation matches the concrete
-matrix-vector equations used by the Hautus development and avoids choosing an enumeration
-of eigenvalues.
+This file establishes the basic reusable API for the Hurwitz predicates defined in
+`LeanForControl.LinearSystems.DefsHurwitz`.
 
-The definition intentionally allows zero-dimensional matrices.  In dimension zero there
+The definition intentionally allows zero-dimensional matrices. In dimension zero there
 are no nonzero eigenvectors, so every matrix is Hurwitz with every rate; the theorem
 `isHurwitzWithRate_fin_zero` records this convention explicitly.
 
-Reference: standard continuous-time linear systems terminology.
+Reference: standard continuous-time spectral-shift properties; the remaining compatibility
+lemmas are original infrastructure for this library.
 -/
 
 namespace LinearSystems
@@ -22,35 +20,6 @@ namespace LinearSystems
 open Matrix
 
 variable {n : ℕ}
-
-/-- The entrywise complexification of a real matrix. -/
-noncomputable def complexification (A : Matrix (Fin n) (Fin n) ℝ) :
-    Matrix (Fin n) (Fin n) ℂ :=
-  A.map (algebraMap ℝ ℂ)
-
-/-- A real matrix is Hurwitz with decay rate `α` when every complex eigenvalue `μ`
-satisfies `μ.re < -α`.
-
-This is stated using nonzero eigenvectors rather than an eigenvalue enumeration so it can
-be used directly with PBH/Hautus arguments.
-
-Reference: standard continuous-time linear systems terminology. -/
-@[blueprint "def:isHurwitzWithRate"
-  (statement := /-- A real square matrix $A$ is \emph{Hurwitz with decay rate}
-    $\alpha$ when every complex eigenpair $(\mu,v)$ with $v \ne 0$ satisfies
-    $\operatorname{Re}(\mu) < -\alpha$. -/)]
-def IsHurwitzWithRate (α : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  ∀ (μ : ℂ) (v : Fin n → ℂ), v ≠ 0 →
-    complexification A *ᵥ v = μ • v → μ.re < -α
-
-/-- A real matrix is Hurwitz when all of its complex eigenvalues have negative real part.
-
-Reference: standard continuous-time linear systems terminology. -/
-@[blueprint "def:isHurwitz"
-  (statement := /-- A real square matrix is \emph{Hurwitz} when every complex
-    eigenvalue has strictly negative real part. -/)]
-abbrev IsHurwitz (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  IsHurwitzWithRate 0 A
 
 /-- Ordinary Hurwitz stability is exactly Hurwitz stability with rate zero.
 

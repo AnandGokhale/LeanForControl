@@ -10,6 +10,7 @@ import LeanForControl.Comparison.ComparisonFunctions
 import LeanForControl.Dini.DiniDeriv
 import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability
+import LeanForControl.LinearSystems.DefsHurwitz
 import LeanForControl.LinearSystems.Hautus
 import LeanForControl.LinearSystems.Hurwitz
 import LeanForControl.LinearSystems.MatrixLemmas
