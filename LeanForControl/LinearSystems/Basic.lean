@@ -23,6 +23,5 @@ This keeps `Aᵏ` available as `A ^ (k : ℕ)` for `k : Fin n` without going
 through `Fin.val` extraction in every lemma.
 
 This file holds *only* shared imports and documentation. Definitions and proofs
-live in `LinearSystems.Controllability`, `LinearSystems.Observability`,
-and `LinearSystems.MatrixLemmas`.
+live in the sibling modules under `LeanForControl/LinearSystems`.
 -/

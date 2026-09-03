@@ -140,12 +140,13 @@ Let f : ℝⁿ → ℝⁿ be C¹ with f(x_eq) = 0. Let A = fderiv ℝ f x_eq (th
 
 This theorem needs substantial external infrastructure:
 
-- **Hurwitz matrices**: `IsHurwitz A ↔ ∀ λ ∈ A.eigenvalues ℂ, λ.re < 0`
-  (partially developed in `Lyapunov_old/LinearSystems.lean`)
+- **Hurwitz matrices (Phase 1 foundation)**: ✅ `LinearSystems/DefsHurwitz.lean` defines
+  `IsHurwitzWithRate` through complex eigenpairs; `LinearSystems/Hurwitz.lean` provides
+  rate weakening, spectral shifting, and explicit zero-dimensional behavior.
 
 - **Lyapunov equation for Hurwitz matrices**: If A is Hurwitz, then for any Q ≻ 0 there exists
   a unique P ≻ 0 satisfying PA + AᵀP = -Q. Use Q = I for simplicity.
-  (sketched in `Lyapunov_old/LinearSystems.lean`, all sorry)
+  This is not yet implemented.
 
 - **Linearization error bound**: f(x) = Ax + g(x) where ‖g(x)‖/‖x‖ → 0 as x → x_eq.
   Lean path: Taylor's theorem / `HasFDerivAt` remainder bound.
@@ -166,8 +167,8 @@ Given P satisfying PA + AᵀP = -I:
 ### Priority assessment
 
 Linearization is low priority for immediate Lean work because:
-- It requires substantial eigenvalue/Hurwitz infrastructure not yet in the library.
-- The LinearSystems files have this sketched but all sorry.
+- It still requires Lyapunov-equation and linearization-remainder infrastructure.
+- Positive-definite matrix Lyapunov-equation existence is not yet formalized.
 - Proving the Lyapunov equation existence (Sylvester-type) is a significant standalone project.
 
 Suggested order: prove Chetaev's theorem first, then revisit linearization.
@@ -185,7 +186,7 @@ Suggested order: prove Chetaev's theorem first, then revisit linearization.
 3. ~~**Barbashin/Krasovskii corollaries**~~ — ✅ done in `LaSalle.lean`.
 
 4. **Linearization (indirect method)** — new file `Stability/Linearization.lean`.
-   Blocked on eigenvalue / Lyapunov equation infrastructure.
+   Blocked on Lyapunov-equation, linearization-remainder, and unstable-branch infrastructure.
    Estimated effort: 4+ sessions after unblocking.
 
 ---

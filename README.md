@@ -73,7 +73,7 @@ LeanForControl/                          ← Lean source
 ├── ODEs/                                ← comparison lemma, Gronwall–Bellman, ODE existence
 ├── Dini/                                ← Dini derivatives (used by the comparison lemma)
 ├── Analysis/                            ← supporting real-analysis lemmas
-└── LinearSystems/                       ← matrices, observability, controllability, Hautus
+└── LinearSystems/                       ← matrices, observability, controllability, Hautus, Hurwitz
 blueprint/src/                           ← .tex sources (run leanblueprint web to render)
 docbuild/                                ← nested project for doc-gen4
 home_page/                               ← Jekyll scaffold for the project's home page
