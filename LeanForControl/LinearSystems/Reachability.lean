@@ -11,6 +11,8 @@ This file packages the column span of the finite-horizon controllability
 matrix as a subspace.  The definition therefore agrees definitionally with
 the textbook horizon `0, ..., n - 1`, while the invariance proof explicitly
 closes the `A ^ n` boundary term with Cayley--Hamilton.
+
+Reference: Kailath, *Linear Systems*.
 -/
 
 namespace LinearSystems

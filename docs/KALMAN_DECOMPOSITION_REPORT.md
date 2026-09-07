@@ -1,19 +1,10 @@
-# Kalman Decomposition Formalization Report
+# Finite-dimensional Kalman decomposition
 
-## Scope and reproducibility baseline
-
-This development extends
-[`AnandGokhale/LeanForControl`](https://github.com/AnandGokhale/LeanForControl)
-from upstream commit `c5cedca904fe7b8168643c428b5cf5fd8b6ebf6d`
-(`fixed license and citation`, 2026-09-01).  Work was performed on branch
-`feature/kalman-decomposition` in the fork
-[`dongxuelian2/LeanForControl`](https://github.com/dongxuelian2/LeanForControl).
-The pinned environment is Lean `v4.30.0-rc2` and mathlib `v4.30.0-rc2`.
-
-The formalization is dimension-generic in the state, input, and output
-dimensions `n`, `m`, and `p`.  It includes the zero-dimensional edge cases.
-It follows the existing project convention of complex matrices indexed by
-`Fin n`, rather than introducing a second, incompatible abstract system type.
+This note describes the finite-dimensional Kalman decomposition formalized in
+the linear-systems development.  The construction is dimension-generic in the
+state, input, and output dimensions and includes zero-dimensional cases.  It
+uses the project's existing convention of complex matrices indexed by
+`Fin n`.
 
 ## Mathematical statement
 
@@ -26,8 +17,8 @@ C : Matrix (Fin p) (Fin n) ℂ,
 ```
 
 let `R(A,B)` be the range of the finite controllability matrix and let
-`N(A,C)` be the existing finite-horizon unobservable subspace.  The theorem
-constructs four subspaces, in the order
+`N(A,C)` be the finite-horizon unobservable subspace.  The construction
+chooses four subspaces, in the order
 
 ```text
 X_cūo, X_co, X_ūcūo, X_ūco,
@@ -43,10 +34,9 @@ R ⊕ X_ūcūo = R + N,
 (R + N) ⊕ X_ūco = ℂⁿ.
 ```
 
-Addition therefore induces an adapted linear equivalence from the nested
-product of the four components to `Fin n → ℂ`.  After choosing arbitrary
-bases of the components, the matrices of the transported state, input, and
-output maps have the entrywise forced-zero form
+Addition gives a linear equivalence from the nested product of the four
+components to `Fin n → ℂ`.  After choosing bases of the components, the
+transported state, input, and output maps have the forced-zero form
 
 ```text
      [ *  *  *  * ]        [ * ]
@@ -55,195 +45,79 @@ A' = [ 0  *  0  * ]   B' = [ * ]   C' = [ 0  *  0  * ].
      [ 0  0  0  * ]        [ 0 ]
 ```
 
-Every displayed zero is a proved equality for every row and column index.
-The starred entries are deliberately unconstrained.  The identities
+Every displayed zero is proved entrywise.  The starred entries are
+unconstrained.  The identities
 `stateMatrix_eq_toMatrix_adapted`, `inputMatrix_eq_toMatrix_adapted`, and
-`outputMatrix_eq_toMatrix_adapted` show that these are exactly the original
-maps `A`, `B`, and `C` in the adapted state basis, not merely analogous
-coordinate maps.
+`outputMatrix_eq_toMatrix_adapted` identify these matrices with the original
+maps `A`, `B`, and `C` in the adapted basis.
 
-## Definitions and theorem inventory
+## Reachability
 
-### Reachability
+`LeanForControl/LinearSystems/Reachability.lean` defines
+`reachableSubspace A B` as the range of `controllabilityMatrix A B`.  It proves:
 
-`LeanForControl/LinearSystems/Reachability.lean` adds:
+- the existential characterization of membership in the range;
+- the finite-horizon block-column multiplication identity;
+- membership of each response `(A ^ k * B) *ᵥ u`;
+- equality with the supremum of the ranges of `A ^ k * B` for `k : Fin n`;
+- inclusion of the range of `B`;
+- equivalence between a top reachable subspace and controllability; and
+- invariance under the state matrix `A`.
 
-- `reachableSubspace`: the range of `controllabilityMatrix A B` as a
-  submodule;
-- `mem_reachableSubspace_iff`: the expected existential matrix-vector
-  characterization;
-- `controllabilityMatrix_mulVec_eq_sum`: the public finite-horizon bridge;
-- `pow_mul_B_mulVec_mem_reachableSubspace`;
-- `reachableSubspace_eq_iSup_range`: equality with the supremum of the ranges
-  of `A^k B` for `k : Fin n`;
-- `range_B_le_reachableSubspace`;
-- `reachableSubspace_eq_top_iff_isControllable`;
-- `reachableSubspace_invariant`.
-
-The difficult boundary in `reachableSubspace_invariant` is the `A^n B`
-term.  It is not hidden under an unproved closure claim: the private lemma
+The invariance proof explicitly handles the only boundary term outside the
+finite horizon.  The private lemma
 `aPowN_mul_B_mulVec_mem_reachableSubspace` expands the characteristic
-polynomial, uses Cayley--Hamilton, isolates the monic leading term, and
-expresses the remaining lower powers as reachable vectors.  This also treats
-`n = 0` without a nonempty-index assumption.
+polynomial, applies Cayley--Hamilton, isolates its monic leading coefficient,
+and expresses the remaining powers as reachable vectors.  Thus reachability
+remains tied to the existing finite controllability matrix rather than being
+defined as an invariant closure.
 
-### Four-way decomposition and coordinates
+## Four-way decomposition and coordinates
 
-`LeanForControl/LinearSystems/KalmanDecomposition.lean` adds:
+`LeanForControl/LinearSystems/KalmanDecomposition.lean` defines
+`KalmanDecomposition`, recording the four subspaces and the direct-sum
+relationships used by the coordinate construction.  The theorem
+`exists_kalmanDecomposition` obtains the components from relative complements
+in the modular lattice of submodules.
 
-- `KalmanDecomposition`, which records the four subspaces and the exact
-  direct-sum lattice relationships;
-- `exists_kalmanDecomposition`, using relative complements in the modular
-  lattice of submodules;
-- `KalmanDecomposition.linearEquiv`, the change of coordinates obtained by
-  composing three direct-sum equivalences;
-- `linearEquiv_mem_reachable_iff` and
-  `linearEquiv_mem_unobservable_iff`, exact coordinate characterizations of
-  `R` and `N`;
-- `stateMap`, `inputMap`, and `outputMap`, the transported system maps;
-- `stateMap_cuo_zero_pattern`, `stateMap_co_zero_pattern`,
-  `stateMap_uuo_zero_pattern`, `inputMap_zero_pattern`,
-  `outputMap_cuo_eq_zero`, and `outputMap_uuo_eq_zero`;
-- `coordinateBasis` and `adaptedBasis`;
-- `stateMatrix`, `inputMatrix`, and `outputMatrix`, plus their equality to
-  the corresponding `LinearMap.toMatrix` expressions in the adapted basis;
-- seven entrywise state-matrix zero theorems, two input-matrix zero theorems,
-  and two output-matrix zero theorems;
-- `kalman_block_matrix_zero_pattern`, which bundles all eleven zero-block
-  families into the displayed classical form.
+The component semantics are exact:
 
-The component names have precise coordinate semantics.  Reachability is
-equivalent to the vanishing of the last two coordinates; unobservability is
-equivalent to the vanishing of the second and fourth coordinates.  Thus the
-first/second components are exactly the reachable part, and the first/third
-components are exactly the unobservable part.  The remaining components are
-complementary in the recorded direct-sum sense.
+- reachable states are precisely those whose `uuo` and `uo` coordinates
+  vanish;
+- unobservable states are precisely those whose `co` and `uo` coordinates
+  vanish.
 
-## Dependency graph
+The definition `KalmanDecomposition.linearEquiv` composes three direct-sum
+equivalences to obtain the change of coordinates.  The transported maps
+`stateMap`, `inputMap`, and `outputMap` are then used to prove the component
+zero patterns.  In particular, reachable-subspace invariance gives the
+forced state and input zeros associated with uncontrollable coordinates, while
+unobservable-subspace invariance gives the remaining state zeros.  The zeroth
+observability condition gives the output zeros.
 
-```text
-Controllability.controllabilityMatrix
-                │
-                ▼
-       reachableSubspace ── finite-horizon range bridge
-                │
-                ├── Cayley–Hamilton ──► reachableSubspace_invariant
-                │
-                └────────────────────────────────────────┐
-                                                         │
-Hautus.unobservableSubspace ── Cayley–Hamilton invariance ┤
-                                                         ▼
-                              modular-lattice complements
-                                                         │
-                                                         ▼
-                                      KalmanDecomposition
-                                                         │
-                              product direct-sum equivalences
-                                                         │
-                                                         ▼
-                                  adapted coordinates/basis
-                                                         │
-                     reachable and unobservable membership iff lemmas
-                                                         │
-                                                         ▼
-                              A/B/C component zero patterns
-                                                         │
-                                                         ▼
-                             entrywise block-matrix theorem
-```
+The definitions `coordinateBasis` and `adaptedBasis` transport arbitrary
+bases of the four components to the original state space.  The entrywise
+matrix theorems and `kalman_block_matrix_zero_pattern` package the component
+results into the displayed block form.
 
-## Design choices and difficult points
+## Design notes and limitations
 
-1. **Finite horizon versus invariant closure.**  Defining reachability as an
-   arbitrary invariant span would make invariance easy but would weaken the
-   connection to the project's controllability matrix.  The development
-   instead uses the exact finite-horizon range and proves closure using
-   Cayley--Hamilton.
-2. **No invariant complements are assumed.**  Arbitrary vector-space
-   complements need not be `A`-invariant.  The proof derives only the zeros
-   forced by invariance of `R` and `N`.  This is why the starred blocks remain
-   unconstrained, and why the theorem does not falsely advertise each chosen
-   complement as a standalone invariant subsystem.
-3. **Relative direct sums.**  Mathlib directly supplies a product equivalence
-   for globally complementary submodules.  A small private helper packages
-   addition as an equivalence onto a relative supremum, allowing the three
-   complement choices to compose without quotient detours.
-4. **Basis transport.**  The block result is first proved for transported
-   linear maps because component projections are transparent there.  The
-   three `*_eq_toMatrix_adapted` theorems then identify those matrices with
-   `A`, `B`, and `C` in the mapped basis by definitional basis-transport
-   identities.
+- The complements are noncanonical vector-space complements.  No chosen
+  complement is claimed to be individually `A`-invariant.
+- Only zeros forced by invariance of the reachable and unobservable subspaces
+  are asserted; the starred blocks remain unrestricted.
+- The scalar field is `ℂ`, matching the existing Hautus and unobservable
+  subspace development.  The reachable-subspace file itself is polymorphic
+  over an arbitrary field.
+- The result concerns LTI triples `(A, B, C)` and does not include a
+  feedthrough matrix `D`.
+- The adapted basis is an existence construction using classical choices; the
+  theorem does not claim a numerical decomposition algorithm.
 
-## Regression coverage
+## Regression examples
 
-`LeanForControl/LinearSystems/KalmanDecompositionExamples.lean` contains a
-concrete two-state, one-input, one-output zero system.  It proves that its
-reachable subspace is bottom, its unobservable subspace is top, and the
-general four-way decomposition specializes to it.  A separate example checks
-that the existential theorem elaborates uniformly for state dimension zero
-and arbitrary input/output dimensions.
-
-## Novelty and prior-art audit
-
-This is a bounded, reproducible audit, not a claim of absolute global
-priority.
-
-- The named comparison library,
-  [`mcdoll/DynamicalSystems`](https://github.com/mcdoll/DynamicalSystems), was
-  inspected on 2026-09-07.  Its public umbrella imports autonomous and
-  nonautonomous dynamics, input/output notions, stability, Lyapunov theory,
-  and ODE support; its recursive source tree contained no paths matching
-  `Kalman`, `Controll`, `Observ`, or `LinearSystem`.  No reusable Kalman
-  decomposition was found there.
-- Authenticated GitHub code searches on 2026-09-07 returned zero results for
-  [`"Kalman decomposition" language:Lean`](https://github.com/search?q=%22Kalman+decomposition%22+language%3ALean&type=code),
-  [`KalmanDecomposition language:Lean`](https://github.com/search?q=KalmanDecomposition+language%3ALean&type=code),
-  and
-  [`reachableSubspace language:Lean`](https://github.com/search?q=reachableSubspace+language%3ALean&type=code).
-  Search indexing and private repositories limit what this establishes.
-- Broader searches for Isabelle/HOL and Coq formalizations did not locate a
-  machine-checked four-way finite-dimensional Kalman decomposition.  Related
-  theorem-proving work such as
-  [*Formal Verification of Control Systems Properties with Theorem Proving*](https://arxiv.org/abs/1405.7615)
-  concerns deductive verification of modeled control-system properties in
-  Why3, rather than the structural linear-algebra theorem proved here.
-
-What is certainly new relative to the audited upstream commit is the complete
-chain from finite-horizon reachable subspace, through its rigorous invariant
-proof, to a four-way adapted basis and entrywise A/B/C block form.  Existing
-upstream work on the unobservable subspace and its Cayley--Hamilton invariance
-is reused directly.  Standard mathlib infrastructure for submodule ranges,
-modular-lattice complements, product bases, linear equivalences, and matrix
-conversion is also reused rather than reimplemented.
-
-## Trust and limitations
-
-- The new files contain no `sorry`, `admit`, `unsafe` declarations, or custom
-  axioms.
-- Noncomputability comes only from classical complement and basis choices.
-- The scalar field is `ℂ`, matching the upstream Hautus development.  The
-  reachability file itself is polymorphic over an arbitrary field.
-- The theorem treats LTI triples `(A,B,C)` and does not add a feedthrough
-  matrix `D`.
-- Complements and the adapted basis are noncanonical.  The result proves
-  existence and exact structure, not a numerically stable decomposition
-  algorithm.
-- The theorem states the block form as quantified entrywise zeros.  This is
-  dimension-generic even when component dimensions are zero and avoids
-  artificial casts between dependent block sizes.
-
-## Validation protocol
-
-The final validation is performed with the repository-pinned toolchain:
-
-```text
-lake clean
-lake exe cache get
-lake build
-```
-
-The proof audit additionally searches the changed source for forbidden proof
-holes and runs `#print axioms` on the principal reachability, decomposition,
-coordinate-equivalence, and matrix-block theorems.  Final command outcomes
-and commit identifiers are recorded in the branch history and delivery
-summary.
+`LeanForControl/LinearSystems/KalmanDecompositionExamples.lean` exercises the
+public API on a two-state zero system.  It verifies that the reachable
+subspace is bottom, the unobservable subspace is top, and the general
+existence theorem specializes to the example.  A separate example checks the
+state-dimension-zero case with arbitrary input and output dimensions.

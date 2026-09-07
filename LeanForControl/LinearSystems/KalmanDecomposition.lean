@@ -32,6 +32,8 @@ zero pattern
 
 The choices of complements, and hence the adapted basis, are deliberately not
 claimed to be canonical.
+
+Reference: Kailath, *Linear Systems*.
 -/
 
 namespace LinearSystems
