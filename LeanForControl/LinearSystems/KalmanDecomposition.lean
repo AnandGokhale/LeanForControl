@@ -94,9 +94,13 @@ together form the whole state space. -/
 structure KalmanDecomposition
     (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ)
     (C : Matrix (Fin p) (Fin n) ℂ) where
+  /-- The controllable-unobservable component. -/
   cuo : Submodule ℂ (Fin n → ℂ)
+  /-- A complement of `cuo` inside the reachable subspace. -/
   co : Submodule ℂ (Fin n → ℂ)
+  /-- A complement of `cuo` inside the unobservable subspace. -/
   uuo : Submodule ℂ (Fin n → ℂ)
+  /-- A complement of the sum of the reachable and unobservable subspaces. -/
   uo : Submodule ℂ (Fin n → ℂ)
   cuo_eq : cuo = reachableSubspace A B ⊓ unobservableSubspace A C
   disjoint_cuo_co : Disjoint cuo co
@@ -259,13 +263,11 @@ noncomputable def outputMap (d : KalmanDecomposition A B C) :
     d.Coordinates →ₗ[ℂ] (Fin p → ℂ) :=
   C.mulVecLin.comp d.linearEquiv.toLinearMap
 
-@[simp]
 theorem linearEquiv_stateMap_apply (d : KalmanDecomposition A B C)
     (x : d.Coordinates) :
     d.linearEquiv (d.stateMap x) = A *ᵥ d.linearEquiv x := by
   simp [stateMap]
 
-@[simp]
 theorem linearEquiv_inputMap_apply (d : KalmanDecomposition A B C)
     (u : Fin m → ℂ) :
     d.linearEquiv (d.inputMap u) = B *ᵥ u := by
