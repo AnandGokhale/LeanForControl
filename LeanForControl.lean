@@ -11,6 +11,8 @@ import LeanForControl.Dini.DiniDeriv
 import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability
 import LeanForControl.LinearSystems.Hautus
+import LeanForControl.LinearSystems.KalmanDecomposition
+import LeanForControl.LinearSystems.KalmanDecompositionExamples
 import LeanForControl.LinearSystems.MatrixLemmas
 import LeanForControl.LinearSystems.Observability
 import LeanForControl.LinearSystems.Reachability

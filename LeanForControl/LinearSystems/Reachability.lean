@@ -67,11 +67,11 @@ lemma pow_mul_B_mulVec_mem_reachableSubspace
   refine ⟨fun kj => if kj.1 = k then u kj.2 else 0, ?_⟩
   rw [controllabilityMatrix_mulVec_eq_sum]
   rw [Fintype.sum_eq_single k]
-  simp
-  intro k' hk'
-  simp only [hk', if_false]
-  change (A ^ (k' : ℕ) * B) *ᵥ (0 : Fin m → 𝕜) = 0
-  exact Matrix.mulVec_zero _
+  · simp
+  · intro k' hk'
+    simp only [hk', if_false]
+    change (A ^ (k' : ℕ) * B) *ᵥ (0 : Fin m → 𝕜) = 0
+    exact Matrix.mulVec_zero _
 
 /-- The reachable subspace is exactly the supremum of the ranges of the
 finite-horizon maps `A^k B`. -/
