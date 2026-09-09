@@ -1,18 +1,19 @@
-import LeanForControl.LinearSystems.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.DefsHurwitz
 import Architect
 
 /-!
 # Basic theorems for Hurwitz matrices
 
 This file establishes the basic reusable API for the Hurwitz predicates defined in
-`LeanForControl.LinearSystems.DefsHurwitz`.
+`LeanForControl.LinearSystems.Stability.DefsHurwitz`.
 
 The definition intentionally allows zero-dimensional matrices. In dimension zero there
 are no nonzero eigenvectors, so every matrix is Hurwitz with every rate; the theorem
 `isHurwitzWithRate_fin_zero` records this convention explicitly.
 
-Reference: standard continuous-time spectral-shift properties; the remaining compatibility
-lemmas are original infrastructure for this library.
+Reference: João P. Hespanha, *Linear Systems Theory* (2nd ed.), continuous-time
+stability. The rate and shift results below are elementary consequences of the eigenpair
+criterion; the zero-dimensional convention is specific to this formalization.
 -/
 
 namespace LinearSystems
@@ -54,11 +55,11 @@ theorem isHurwitzWithRate_fin_zero (α : ℝ) (A : Matrix (Fin 0) (Fin 0) ℝ) :
 complex scalar multiple of that vector.
 
 Original: bridge used by the spectral-shift characterization. -/
-lemma complexification_add_smul_one_mulVec
+lemma map_add_smul_one_mulVec
     (A : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) (v : Fin n → ℂ) :
-    complexification (A + α • (1 : Matrix (Fin n) (Fin n) ℝ)) *ᵥ v =
-      complexification A *ᵥ v + (α : ℂ) • v := by
-  simp [complexification, Matrix.map_add, Matrix.map_smul', Matrix.add_mulVec,
+    (A + α • (1 : Matrix (Fin n) (Fin n) ℝ)).map (algebraMap ℝ ℂ) *ᵥ v =
+      A.map (algebraMap ℝ ℂ) *ᵥ v + (α : ℂ) • v := by
+  simp [Matrix.map_add, Matrix.map_smul', Matrix.add_mulVec,
     Matrix.smul_mulVec]
 
 /-- A matrix has decay rate `α` exactly when shifting it by `α I` makes it Hurwitz.
@@ -66,7 +67,8 @@ lemma complexification_add_smul_one_mulVec
 The sign is positive: an eigenvalue `μ` of `A` becomes `μ + α` for `A + α I`, so
 `Re μ < -α` is equivalent to `Re (μ + α) < 0`.
 
-Reference: the standard spectral-shift property for scalar multiples of the identity. -/
+Reference: João P. Hespanha, *Linear Systems Theory* (2nd ed.), continuous-time
+stability criterion. This spectral-shift corollary is proved directly from eigenpairs. -/
 @[blueprint "thm:isHurwitzWithRate-iff-spectral-shift"
   (statement := /-- A real matrix $A$ is Hurwitz with decay rate $\alpha$ if and only if
     the spectrally shifted matrix $A + \alpha I$ is Hurwitz. -/)
@@ -78,17 +80,17 @@ theorem isHurwitzWithRate_iff_add_smul_one
     IsHurwitzWithRate α A ↔ IsHurwitz (A + α • (1 : Matrix (Fin n) (Fin n) ℝ)) := by
   constructor
   · intro hA μ v hv hshift
-    have hbase : complexification A *ᵥ v = (μ - α) • v := by
-      rw [complexification_add_smul_one_mulVec] at hshift
+    have hbase : A.map (algebraMap ℝ ℂ) *ᵥ v = (μ - α) • v := by
+      rw [map_add_smul_one_mulVec] at hshift
       rw [sub_smul]
       exact eq_sub_of_add_eq hshift
     have hμ := hA (μ - α) v hv hbase
     simp only [Complex.sub_re, Complex.ofReal_re] at hμ
     linarith
   · intro hshift μ v hv hbase
-    have heig : complexification (A + α • (1 : Matrix (Fin n) (Fin n) ℝ)) *ᵥ v =
+    have heig : (A + α • (1 : Matrix (Fin n) (Fin n) ℝ)).map (algebraMap ℝ ℂ) *ᵥ v =
         (μ + α) • v := by
-      rw [complexification_add_smul_one_mulVec, hbase]
+      rw [map_add_smul_one_mulVec, hbase]
       simp [add_smul]
     have hμ := hshift (μ + α) v hv heig
     simp only [Complex.add_re, Complex.ofReal_re] at hμ
@@ -110,7 +112,7 @@ theorem isHurwitzWithRate_neg_one_by_one {α γ : ℝ} (hαγ : α < γ) :
   have heig := congrFun hAv 0
   have hμ : μ = (-γ : ℝ) := by
     apply mul_right_cancel₀ hv0
-    simpa [complexification, Matrix.mulVec, dotProduct] using heig.symm
+    simpa [Matrix.mulVec, dotProduct] using heig.symm
   rw [hμ]
   simp only [Complex.ofReal_re]
   linarith

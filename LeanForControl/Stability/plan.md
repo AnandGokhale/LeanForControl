@@ -140,8 +140,8 @@ Let f : ℝⁿ → ℝⁿ be C¹ with f(x_eq) = 0. Let A = fderiv ℝ f x_eq (th
 
 This theorem needs substantial external infrastructure:
 
-- **Hurwitz matrices (Phase 1 foundation)**: ✅ `LinearSystems/DefsHurwitz.lean` defines
-  `IsHurwitzWithRate` through complex eigenpairs; `LinearSystems/Hurwitz.lean` provides
+- **Hurwitz matrices (Phase 1 foundation)**: ✅ `LinearSystems/Stability/DefsHurwitz.lean` defines
+  `IsHurwitzWithRate` through complex eigenpairs; `LinearSystems/Stability/Hurwitz.lean` provides
   rate weakening, spectral shifting, and explicit zero-dimensional behavior.
 
 - **Lyapunov equation for Hurwitz matrices**: If A is Hurwitz, then for any Q ≻ 0 there exists

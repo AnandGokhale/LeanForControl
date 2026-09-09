@@ -84,7 +84,8 @@ home_page/                               ← Jekyll scaffold for the project's h
 
 `LeanForControl/Stability/plan.md` is the maintained roadmap for the stability corner of
 the library (Lyapunov theory, LaSalle, non-autonomous systems) — status table, what's
-proved, and what's planned next (Chetaev's instability theorem, linearization). The other
+proved, and what's planned next (Chetaev's instability theorem, linearization).
+`LeanForControl/LinearSystems/Stability/plan.md` tracks the Hurwitz foundation. The other
 directories don't have a written roadmap yet; check `git log <dir>` for recent activity if
 you want a sense of what's currently being worked on.
 
