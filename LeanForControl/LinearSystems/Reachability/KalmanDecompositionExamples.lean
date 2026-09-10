@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.KalmanDecomposition
+import LeanForControl.LinearSystems.Reachability.KalmanDecomposition
 
 /-!
 # Regression examples for the Kalman decomposition

@@ -10,12 +10,13 @@ import LeanForControl.Comparison.ComparisonFunctions
 import LeanForControl.Dini.DiniDeriv
 import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability
-import LeanForControl.LinearSystems.DefsKalmanDecomposition
 import LeanForControl.LinearSystems.Hautus
-import LeanForControl.LinearSystems.KalmanDecomposition
 import LeanForControl.LinearSystems.MatrixLemmas
 import LeanForControl.LinearSystems.Observability
-import LeanForControl.LinearSystems.Reachability
+import LeanForControl.LinearSystems.Reachability.DefsKalmanDecomposition
+import LeanForControl.LinearSystems.Reachability.DefsReachability
+import LeanForControl.LinearSystems.Reachability.KalmanDecomposition
+import LeanForControl.LinearSystems.Reachability.Reachability
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties

@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Controllability
+import LeanForControl.LinearSystems.Reachability.DefsReachability
 import Mathlib.Algebra.Module.Submodule.Invariant
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
@@ -7,12 +7,16 @@ import Architect
 /-!
 # Reachable subspaces of finite-dimensional linear systems
 
-This file packages the column span of the finite-horizon controllability
-matrix as a subspace.  The definition therefore agrees definitionally with
-the textbook horizon `0, ..., n - 1`, while the invariance proof explicitly
-closes the `A ^ n` boundary term with Cayley--Hamilton.
+This file characterizes the reachable subspace through the finite-horizon
+controllability matrix and proves its invariance under the state matrix. The
+`A ^ n` boundary term in the invariance proof is closed by Cayley--Hamilton.
 
-Reference: Kailath, *Linear Systems*.
+References:
+* João P. Hespanha, *Linear Systems Theory*.
+* R. E. Kalman, “Mathematical Description of Linear Dynamical Systems,”
+  *Journal of the Society for Industrial and Applied Mathematics, Series A:
+  Control* 1(2), 152–192, 1963. DOI: 10.1137/0301010.
+* Kailath, *Linear Systems*.
 -/
 
 namespace LinearSystems
@@ -22,26 +26,24 @@ open Matrix
 variable {𝕜 : Type*} [Field 𝕜]
 variable {n m : ℕ}
 
-/-- The reachable subspace of `(A, B)`, defined as the range of the
-finite-horizon controllability matrix.
-
-Reference: Kailath, *Linear Systems*. -/
-@[blueprint "def:reachableSubspace"
-  (statement := /-- The reachable subspace of a pair $(A,B)$ is the column
-    span of its controllability matrix:
-    \[
-      \mathcal R(A,B)=\operatorname{range}\mathcal C(A,B).
-    \]
-    Thus it is exactly the span of $B,AB,\ldots,A^{n-1}B$. -/)]
-noncomputable def reachableSubspace
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
-    Submodule 𝕜 (Fin n → 𝕜) :=
-  LinearMap.range (controllabilityMatrix A B).mulVecLin
-
-/-- Membership in the reachable subspace is witnessed by a finite-horizon
-input vector.
+/-- A state vector `x` belongs to `reachableSubspace A B` exactly when it is
+the product of `controllabilityMatrix A B` with a vector indexed by
+`Fin n × Fin m`.
 
 Original: formalization infrastructure for LeanForControl. -/
+@[blueprint "lem:mem-reachableSubspace-iff"
+  (statement := /-- Let $A\in\mathbb{F}^{n\times n}$ and
+    $B\in\mathbb{F}^{n\times m}$, and let
+    $\mathcal C(A,B)\in\mathbb{F}^{n\times(nm)}$ be their controllability
+    matrix. For $x\in\mathbb{F}^n$,
+    \[
+      x\in\mathcal R(A,B)
+      \quad\Longleftrightarrow\quad
+      \exists u:\operatorname{Fin}(n)\times\operatorname{Fin}(m)
+        \to\mathbb{F},\qquad \mathcal C(A,B)u=x.
+    \]
+    Here $\mathcal R(A,B)=\operatorname{range}\mathcal C(A,B)$ is the
+    reachable subspace. -/)]
 lemma mem_reachableSubspace_iff
     {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
     (x : Fin n → 𝕜) :
@@ -70,7 +72,7 @@ lemma controllabilityMatrix_mulVec_eq_sum
 subspace.
 
 Original: formalization infrastructure for LeanForControl. -/
-lemma pow_mul_B_mulVec_mem_reachableSubspace
+lemma finiteHorizonResponse_mem_reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (k : Fin n) (u : Fin m → 𝕜) :
     (A ^ (k : ℕ) * B) *ᵥ u ∈ reachableSubspace A B := by
@@ -103,11 +105,11 @@ theorem reachableSubspace_eq_iSup_range
     exact ⟨fun j => u (k, j), rfl⟩
   · refine iSup_le fun k => ?_
     rintro x ⟨u, rfl⟩
-    exact pow_mul_B_mulVec_mem_reachableSubspace A B k u
+    exact finiteHorizonResponse_mem_reachableSubspace A B k u
 
 /-- The image of the input matrix is contained in the reachable subspace.
 
-Reference: Kailath, *Linear Systems*. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 theorem range_B_le_reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     LinearMap.range B.mulVecLin ≤ reachableSubspace A B := by
@@ -120,12 +122,12 @@ theorem range_B_le_reachableSubspace
     exact Submodule.zero_mem _
   · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
     simpa using
-      pow_mul_B_mulVec_mem_reachableSubspace A B (⟨0, hnpos⟩ : Fin n) u
+      finiteHorizonResponse_mem_reachableSubspace A B (⟨0, hnpos⟩ : Fin n) u
 
 /-- The system is controllable exactly when its reachable subspace is the
 whole state space.
 
-Reference: Kailath, *Linear Systems*. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "thm:reachableSubspace-eq-top-iff-controllable"
   (statement := /-- A pair $(A,B)$ is controllable if and only if its
     reachable subspace is the whole state space. -/)]
@@ -141,7 +143,7 @@ theorem reachableSubspace_eq_top_iff_isControllable
 
 /-- Cayley--Hamilton closes the single boundary term needed for reachable
 subspace invariance. -/
-private lemma aPowN_mul_B_mulVec_mem_reachableSubspace
+private lemma cayleyHamilton_boundary_mem_reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (u : Fin m → 𝕜) :
     (A ^ n * B) *ᵥ u ∈ reachableSubspace A B := by
@@ -164,7 +166,7 @@ private lemma aPowN_mul_B_mulVec_mem_reachableSubspace
     rw [Finset.mem_range] at hi
     rw [Matrix.smul_mul, Matrix.smul_mulVec]
     exact Submodule.smul_mem _ _
-      (pow_mul_B_mulVec_mem_reachableSubspace A B ⟨i, hi⟩ u)
+      (finiteHorizonResponse_mem_reachableSubspace A B ⟨i, hi⟩ u)
   have htarget :
       (A ^ n * B) *ᵥ u =
         -(((∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i) * B) *ᵥ u) := by
@@ -175,7 +177,7 @@ private lemma aPowN_mul_B_mulVec_mem_reachableSubspace
 /-- The finite-horizon reachable subspace is invariant under the state
 matrix.  The highest-power case is discharged by Cayley--Hamilton.
 
-Reference: Kailath, *Linear Systems*. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "lem:reachableSubspace-invariant"
   (statement := /-- The reachable subspace is $A$-invariant:
     $A\mathcal R(A,B)\subseteq\mathcal R(A,B)$. -/)]
@@ -190,11 +192,11 @@ theorem reachableSubspace_invariant
   refine Submodule.sum_mem _ fun k _ => ?_
   rw [Matrix.mulVecLin_apply, Matrix.mulVec_mulVec, ← Matrix.mul_assoc, ← pow_succ']
   by_cases hk : k.val + 1 < n
-  · exact pow_mul_B_mulVec_mem_reachableSubspace A B ⟨k.val + 1, hk⟩
+  · exact finiteHorizonResponse_mem_reachableSubspace A B ⟨k.val + 1, hk⟩
       (fun j => u (k, j))
   · push Not at hk
     have heq : k.val + 1 = n := by omega
     rw [heq]
-    exact aPowN_mul_B_mulVec_mem_reachableSubspace A B (fun j => u (k, j))
+    exact cayleyHamilton_boundary_mem_reachableSubspace A B (fun j => u (k, j))
 
 end LinearSystems

@@ -1,5 +1,5 @@
 import LeanForControl.LinearSystems.Hautus
-import LeanForControl.LinearSystems.Reachability
+import LeanForControl.LinearSystems.Reachability.Reachability
 import Architect
 
 /-!
@@ -10,7 +10,7 @@ unobservable subspaces of a complex finite-dimensional state-space system.
 The chosen complements are noncanonical vector-space complements and are not
 individually claimed to be invariant under the state matrix.
 
-Reference: Kailath, *Linear Systems*.
+References: Hespanha, *Linear Systems Theory*; Kailath, *Linear Systems*.
 
 Original: the bundled API is formalization infrastructure for LeanForControl.
 -/
@@ -27,7 +27,7 @@ The fields record the exact lattice relationships used later; in particular,
 together form the whole state space. No chosen complement is asserted to be
 individually invariant under the state matrix.
 
-Reference: Kailath, *Linear Systems*.
+References: Hespanha, *Linear Systems Theory*; Kailath, *Linear Systems*.
 
 Original: this structure packages the data for the LeanForControl API. -/
 @[blueprint "def:kalman-decomposition"

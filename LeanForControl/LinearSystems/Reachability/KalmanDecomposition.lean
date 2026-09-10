@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.DefsKalmanDecomposition
+import LeanForControl.LinearSystems.Reachability.DefsKalmanDecomposition
 import Mathlib.Algebra.Module.Submodule.Range
 import Mathlib.LinearAlgebra.Basis.Prod
 import Mathlib.LinearAlgebra.Matrix.ToLin
@@ -32,11 +32,16 @@ zero pattern
 The sectors are adapted to the reachable and unobservable subspaces. The
 chosen complements, and hence the adapted basis, are noncanonical and are not
 individually claimed to be invariant under the state matrix. Only the forced
-zero blocks displayed above are proved; starred blocks are unrestricted. The
-formalization is over `ℂ`, has no feedthrough matrix `D`, and does not claim a
-numerical decomposition algorithm.
+zero blocks displayed above are proved; the theorem imposes no zero constraint
+on the starred blocks. The formalization is over `ℂ`, has no feedthrough
+matrix `D`, and does not claim a numerical decomposition algorithm.
 
-Reference: Kailath, *Linear Systems*.
+References:
+* João P. Hespanha, *Linear Systems Theory*.
+* R. E. Kalman, “Mathematical Description of Linear Dynamical Systems,”
+  *Journal of the Society for Industrial and Applied Mathematics, Series A:
+  Control* 1(2), 152–192, 1963. DOI: 10.1137/0301010.
+* Kailath, *Linear Systems*.
 -/
 
 namespace LinearSystems
@@ -89,7 +94,7 @@ end RelativeDirectSum
 /-- The four Kalman coordinate sectors always exist over `ℂ`. Only vector-space
 complements are used; no semisimplicity or spectral hypothesis is assumed.
 
-Reference: Kailath, *Linear Systems*. -/
+References: Hespanha, *Linear Systems Theory*; Kailath, *Linear Systems*. -/
 @[blueprint "thm:kalman-subspaces-exist"
   (statement := /-- Every finite-dimensional complex state-space system has
     four coordinate sectors adapted to its reachable and unobservable
@@ -715,11 +720,12 @@ the component order `cuo, co, uuo, uo`:
 `A = [* * * *; 0 * 0 *; 0 0 * *; 0 0 0 *]`,
 `B = [*; *; 0; 0]`, and `C = [0 * 0 *]`.
 
-Entries denoted by `*` are intentionally unconstrained. The named summands are
-coordinate sectors; the chosen complements are not individually asserted to
-be invariant under `A`.
+No vanishing claim is made for entries denoted by `*`. The named summands
+are coordinate sectors; the chosen complements are not individually asserted
+to be invariant under `A`.
 
-Reference: Kailath, *Linear Systems*. -/
+References: Hespanha, *Linear Systems Theory*; Kalman, “Mathematical
+Description of Linear Dynamical Systems” (1963); Kailath, *Linear Systems*. -/
 @[blueprint "thm:kalman-block-matrix-zero-pattern"
   (statement := /-- In a basis adapted to the four Kalman coordinate sectors, ordered
     as controllable-unobservable, controllable-observable,
@@ -730,8 +736,8 @@ Reference: Kailath, *Linear Systems*. -/
       \qquad B'=\begin{bmatrix}*\\*\\0\\0\end{bmatrix},
       \qquad C'=\begin{bmatrix}0&*&0&*\end{bmatrix}.
     \]
-    Every displayed zero is asserted entrywise; starred blocks are
-    unconstrained. The chosen complement sectors are not individually
+    Every displayed zero is asserted entrywise; no vanishing claim is made
+    for the starred blocks. The chosen complement sectors are not individually
     asserted to be invariant under $A$. -/)
   (proof := /-- Reachable-subspace invariance forces the lower-left state and
     input zeros, unobservable-subspace invariance forces the remaining state
