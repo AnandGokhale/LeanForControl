@@ -1,5 +1,4 @@
-import LeanForControl.LinearSystems.Hautus
-import LeanForControl.LinearSystems.Reachability
+import LeanForControl.LinearSystems.DefsKalmanDecomposition
 import Mathlib.Algebra.Module.Submodule.Range
 import Mathlib.LinearAlgebra.Basis.Prod
 import Mathlib.LinearAlgebra.Matrix.ToLin
@@ -12,7 +11,7 @@ import Architect
 # The finite-dimensional Kalman decomposition
 
 For a complex finite-dimensional state-space system `(A, B, C)`, this file
-constructs four (noncanonical) subspaces in the order
+constructs four coordinate sectors in the order
 
 1. controllable-unobservable (`cuo`),
 2. controllable-observable (`co`),
@@ -30,8 +29,12 @@ zero pattern
 [ 0  0  0  * ]
 ```
 
-The choices of complements, and hence the adapted basis, are deliberately not
-claimed to be canonical.
+The sectors are adapted to the reachable and unobservable subspaces. The
+chosen complements, and hence the adapted basis, are noncanonical and are not
+individually claimed to be invariant under the state matrix. Only the forced
+zero blocks displayed above are proved; starred blocks are unrestricted. The
+formalization is over `ℂ`, has no feedthrough matrix `D`, and does not claim a
+numerical decomposition algorithm.
 
 Reference: Kailath, *Linear Systems*.
 -/
@@ -83,45 +86,15 @@ private lemma prodEquivOfDisjointSupEq_apply
 
 end RelativeDirectSum
 
-/-- A noncanonical choice of the four Kalman subspaces.
+/-- The four Kalman coordinate sectors always exist over `ℂ`. Only vector-space
+complements are used; no semisimplicity or spectral hypothesis is assumed.
 
-The fields record the exact lattice relationships used later; in particular,
-`cuo ⊔ co` is reachable, `cuo ⊔ uuo` is unobservable, and the four spaces
-together form the whole state space. -/
-@[blueprint "def:kalman-decomposition"
-  (statement := /-- A Kalman decomposition of $(A,B,C)$ records four
-    subspaces $X_{c\bar o},X_{co},X_{\bar c\bar o},X_{\bar c o}$ whose direct
-    sums recover the reachable and unobservable subspaces and the full state
-    space.  The complements are noncanonical. -/)]
-structure KalmanDecomposition
-    (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ)
-    (C : Matrix (Fin p) (Fin n) ℂ) where
-  /-- The controllable-unobservable component. -/
-  cuo : Submodule ℂ (Fin n → ℂ)
-  /-- A complement of `cuo` inside the reachable subspace. -/
-  co : Submodule ℂ (Fin n → ℂ)
-  /-- A complement of `cuo` inside the unobservable subspace. -/
-  uuo : Submodule ℂ (Fin n → ℂ)
-  /-- A complement of the sum of the reachable and unobservable subspaces. -/
-  uo : Submodule ℂ (Fin n → ℂ)
-  cuo_eq : cuo = reachableSubspace A B ⊓ unobservableSubspace A C
-  disjoint_cuo_co : Disjoint cuo co
-  cuo_sup_co : cuo ⊔ co = reachableSubspace A B
-  disjoint_reachable_uuo : Disjoint (reachableSubspace A B) uuo
-  reachable_sup_uuo : reachableSubspace A B ⊔ uuo =
-    reachableSubspace A B ⊔ unobservableSubspace A C
-  uuo_le_unobservable : uuo ≤ unobservableSubspace A C
-  cuo_sup_uuo : cuo ⊔ uuo = unobservableSubspace A C
-  isCompl_uo : IsCompl
-    (reachableSubspace A B ⊔ unobservableSubspace A C) uo
-
-/-- The four Kalman subspaces always exist over `ℂ`.  Only vector-space
-complements are used; no semisimplicity or spectral hypothesis is assumed. -/
+Reference: Kailath, *Linear Systems*. -/
 @[blueprint "thm:kalman-subspaces-exist"
   (statement := /-- Every finite-dimensional complex state-space system has
-    a noncanonical four-way decomposition into controllable/observable,
-    controllable/unobservable, uncontrollable/observable, and
-    uncontrollable/unobservable components. -/)]
+    four coordinate sectors adapted to its reachable and unobservable
+    subspaces. The complements are noncanonical vector-space complements and
+    are not individually asserted to be invariant under $A$. -/)]
 theorem exists_kalmanDecomposition
     (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ)
     (C : Matrix (Fin p) (Fin n) ℂ) :
@@ -171,18 +144,22 @@ variable {A : Matrix (Fin n) (Fin n) ℂ} {B : Matrix (Fin n) (Fin m) ℂ}
   {C : Matrix (Fin p) (Fin n) ℂ}
 
 /-- The nested product of the four component spaces, in the documented order
-`cuo, co, uuo, uo`. -/
+`cuo, co, uuo, uo`.
+
+Original: formalization infrastructure for LeanForControl. -/
 abbrev Coordinates (d : KalmanDecomposition A B C) :=
   (((d.cuo × d.co) × d.uuo) × d.uo)
 
 /-- The adapted linear equivalence from four-component coordinates to the
-original state space. -/
+original state space.
+
+Original: formalization infrastructure for LeanForControl. -/
 @[blueprint "def:kalman-adapted-equivalence"
-  (statement := /-- Addition of the four Kalman components defines a linear
+  (statement := /-- Addition of the four Kalman coordinate sectors defines a linear
     equivalence
     $X_{c\bar o}\times X_{co}\times X_{\bar c\bar o}\times X_{\bar c o}
       \simeq \mathbb{C}^{n}$.
-    Choosing component bases therefore gives an adapted basis of the original
+    Choosing sector bases therefore gives an adapted basis of the original
     state space. -/)]
 noncomputable def linearEquiv (d : KalmanDecomposition A B C) :
     d.Coordinates ≃ₗ[ℂ] (Fin n → ℂ) := by
@@ -196,13 +173,19 @@ noncomputable def linearEquiv (d : KalmanDecomposition A B C) :
       (LinearEquiv.refl ℂ d.uo)).trans
       (Submodule.prodEquivOfIsCompl _ _ d.isCompl_uo)
 
+/-- The adapted equivalence reconstructs a state by adding its four sector
+components.
+
+Original: formalization infrastructure for LeanForControl. -/
 @[simp]
 theorem linearEquiv_apply (d : KalmanDecomposition A B C) (x : d.Coordinates) :
     d.linearEquiv x = ((x.1.1.1 : Fin n → ℂ) + x.1.1.2) + x.1.2 + x.2 := by
   rfl
 
 /-- In adapted coordinates, a vector is reachable exactly when its two
-uncontrollable coordinates vanish. -/
+uncontrollable coordinates vanish.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem linearEquiv_mem_reachable_iff
     (d : KalmanDecomposition A B C) (x : d.Coordinates) :
     d.linearEquiv x ∈ reachableSubspace A B ↔ x.1.2 = 0 ∧ x.2 = 0 := by
@@ -226,7 +209,9 @@ theorem linearEquiv_mem_reachable_iff
     simpa using Submodule.add_mem_sup x.1.1.1.2 x.1.1.2.2
 
 /-- In adapted coordinates, a vector is unobservable exactly when its two
-observable coordinates vanish. -/
+observable coordinates vanish.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem linearEquiv_mem_unobservable_iff
     (d : KalmanDecomposition A B C) (x : d.Coordinates) :
     d.linearEquiv x ∈ unobservableSubspace A C ↔ x.1.1.2 = 0 ∧ x.2 = 0 := by
@@ -249,39 +234,59 @@ theorem linearEquiv_mem_unobservable_iff
     rw [← d.cuo_sup_uuo]
     simpa using Submodule.add_mem_sup x.1.1.1.2 x.1.2.2
 
-/-- The state endomorphism transported to the four adapted components. -/
+/-- The state endomorphism transported to the four adapted components.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def stateMap (d : KalmanDecomposition A B C) :
     Module.End ℂ d.Coordinates :=
   d.linearEquiv.symm.toLinearMap.comp
     (A.mulVecLin.comp d.linearEquiv.toLinearMap)
 
-/-- The input map transported to the four adapted components. -/
+/-- The input map transported to the four adapted components.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def inputMap (d : KalmanDecomposition A B C) :
     (Fin m → ℂ) →ₗ[ℂ] d.Coordinates :=
   d.linearEquiv.symm.toLinearMap.comp B.mulVecLin
 
-/-- The output map expressed on the four adapted components. -/
+/-- The output map expressed on the four adapted components.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def outputMap (d : KalmanDecomposition A B C) :
     d.Coordinates →ₗ[ℂ] (Fin p → ℂ) :=
   C.mulVecLin.comp d.linearEquiv.toLinearMap
 
+/-- Transporting `stateMap` back to the state space recovers multiplication by
+`A`.
+
+Original: formalization infrastructure for LeanForControl. -/
 theorem linearEquiv_stateMap_apply (d : KalmanDecomposition A B C)
     (x : d.Coordinates) :
     d.linearEquiv (d.stateMap x) = A *ᵥ d.linearEquiv x := by
   simp [stateMap]
 
+/-- Transporting `inputMap` back to the state space recovers multiplication by
+`B`.
+
+Original: formalization infrastructure for LeanForControl. -/
 theorem linearEquiv_inputMap_apply (d : KalmanDecomposition A B C)
     (u : Fin m → ℂ) :
     d.linearEquiv (d.inputMap u) = B *ᵥ u := by
   simp [inputMap]
 
+/-- Evaluating the transported output map is multiplication by `C` after the
+adapted equivalence.
+
+Original: formalization infrastructure for LeanForControl. -/
 @[simp]
 theorem outputMap_apply (d : KalmanDecomposition A B C) (x : d.Coordinates) :
     d.outputMap x = C *ᵥ d.linearEquiv x := by
   rfl
 
 /-- Reading the zeroth finite-horizon condition shows that `C` kills every
-unobservable state, including the zero-dimensional edge case. -/
+unobservable state, including the zero-dimensional edge case.
+
+Original: this bridges the finite-horizon definition to the output map. -/
 theorem C_mulVec_eq_zero_of_mem_unobservableSubspace
     (v : Fin n → ℂ) (hv : v ∈ unobservableSubspace A C) :
     C *ᵥ v = 0 := by
@@ -293,7 +298,9 @@ theorem C_mulVec_eq_zero_of_mem_unobservableSubspace
     simpa using h0
 
 /-- A vector in the controllable-unobservable component stays in that
-component under `A`. -/
+component under `A`.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMap_cuo_zero_pattern (d : KalmanDecomposition A B C) (x : d.cuo) :
     let z := d.stateMap (((x, 0), 0), 0)
     z.1.1.2 = 0 ∧ z.1.2 = 0 ∧ z.2 = 0 := by
@@ -323,7 +330,9 @@ theorem stateMap_cuo_zero_pattern (d : KalmanDecomposition A B C) (x : d.cuo) :
   exact ⟨hnz.1, hrz.1, hrz.2⟩
 
 /-- A vector in the controllable-observable component can acquire only
-reachable coordinates under `A`. -/
+reachable coordinates under `A`.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMap_co_zero_pattern (d : KalmanDecomposition A B C) (x : d.co) :
     let z := d.stateMap (((0, x), 0), 0)
     z.1.2 = 0 ∧ z.2 = 0 := by
@@ -336,7 +345,9 @@ theorem stateMap_co_zero_pattern (d : KalmanDecomposition A B C) (x : d.co) :
   simpa using reachableSubspace_invariant A B hxR
 
 /-- A vector in the uncontrollable-unobservable component can acquire only
-unobservable coordinates under `A`. -/
+unobservable coordinates under `A`.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMap_uuo_zero_pattern (d : KalmanDecomposition A B C) (x : d.uuo) :
     let z := d.stateMap (((0, 0), x), 0)
     z.1.1.2 = 0 ∧ z.2 = 0 := by
@@ -346,14 +357,18 @@ theorem stateMap_uuo_zero_pattern (d : KalmanDecomposition A B C) (x : d.uuo) :
   simpa using
     A_mulVec_mem_unobservableSubspace_of_mem (d.uuo_le_unobservable x.2)
 
-/-- The last two component rows of the adapted input map vanish. -/
+/-- The last two component rows of the adapted input map vanish.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem inputMap_zero_pattern (d : KalmanDecomposition A B C) (u : Fin m → ℂ) :
     (d.inputMap u).1.2 = 0 ∧ (d.inputMap u).2 = 0 := by
   apply (d.linearEquiv_mem_reachable_iff _).mp
   rw [linearEquiv_inputMap_apply]
   exact range_B_le_reachableSubspace A B ⟨u, rfl⟩
 
-/-- The output map vanishes on the controllable-unobservable component. -/
+/-- The output map vanishes on the controllable-unobservable component.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem outputMap_cuo_eq_zero (d : KalmanDecomposition A B C) (x : d.cuo) :
     d.outputMap (((x, 0), 0), 0) = 0 := by
   rw [outputMap_apply, linearEquiv_apply]
@@ -364,7 +379,9 @@ theorem outputMap_cuo_eq_zero (d : KalmanDecomposition A B C) (x : d.cuo) :
     exact x.2
   simpa using hxI.2
 
-/-- The output map vanishes on the uncontrollable-unobservable component. -/
+/-- The output map vanishes on the uncontrollable-unobservable component.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem outputMap_uuo_eq_zero (d : KalmanDecomposition A B C) (x : d.uuo) :
     d.outputMap (((0, 0), x), 0) = 0 := by
   rw [outputMap_apply, linearEquiv_apply]
@@ -377,7 +394,9 @@ open Module
 
 variable {ιcuo ιco ιuuo ιuo : Type*}
 
-/-- The product basis on the four component-coordinate space. -/
+/-- The product basis on the four component-coordinate space.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def coordinateBasis (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -385,7 +404,9 @@ noncomputable def coordinateBasis (d : KalmanDecomposition A B C)
   ((bcuo.prod bco).prod buuo).prod buo
 
 /-- The basis of the original state space obtained from bases of the four
-Kalman components. -/
+Kalman components.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def adaptedBasis (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -393,7 +414,7 @@ noncomputable def adaptedBasis (d : KalmanDecomposition A B C)
   (d.coordinateBasis bcuo bco buuo buo).map d.linearEquiv
 
 @[simp]
-theorem coordinateBasis_apply_cuo (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_apply_cuo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) (i : ιcuo) :
     d.coordinateBasis bcuo bco buuo buo (Sum.inl (Sum.inl (Sum.inl i))) =
@@ -401,7 +422,7 @@ theorem coordinateBasis_apply_cuo (d : KalmanDecomposition A B C)
   simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_apply_co (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_apply_co (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) (i : ιco) :
     d.coordinateBasis bcuo bco buuo buo (Sum.inl (Sum.inl (Sum.inr i))) =
@@ -409,7 +430,7 @@ theorem coordinateBasis_apply_co (d : KalmanDecomposition A B C)
   simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_apply_uuo (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_apply_uuo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) (i : ιuuo) :
     d.coordinateBasis bcuo bco buuo buo (Sum.inl (Sum.inr i)) =
@@ -417,7 +438,7 @@ theorem coordinateBasis_apply_uuo (d : KalmanDecomposition A B C)
   ext <;> simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_apply_uo (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_apply_uo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) (i : ιuo) :
     d.coordinateBasis bcuo bco buuo buo (Sum.inr i) =
@@ -425,7 +446,7 @@ theorem coordinateBasis_apply_uo (d : KalmanDecomposition A B C)
   ext <;> simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_repr_cuo (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_repr_cuo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
     (x : d.Coordinates) (i : ιcuo) :
@@ -434,7 +455,7 @@ theorem coordinateBasis_repr_cuo (d : KalmanDecomposition A B C)
   simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_repr_co (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_repr_co (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
     (x : d.Coordinates) (i : ιco) :
@@ -443,7 +464,7 @@ theorem coordinateBasis_repr_co (d : KalmanDecomposition A B C)
   simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_repr_uuo (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_repr_uuo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
     (x : d.Coordinates) (i : ιuuo) :
@@ -452,7 +473,7 @@ theorem coordinateBasis_repr_uuo (d : KalmanDecomposition A B C)
   simp [coordinateBasis]
 
 @[simp]
-theorem coordinateBasis_repr_uo (d : KalmanDecomposition A B C)
+private theorem coordinateBasis_repr_uo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
     (x : d.Coordinates) (i : ιuo) :
@@ -465,7 +486,9 @@ variable [Fintype ιcuo] [DecidableEq ιcuo]
   [Fintype ιuuo] [DecidableEq ιuuo]
   [Fintype ιuo] [DecidableEq ιuo]
 
-/-- The state matrix in the four-component product basis. -/
+/-- The state matrix in the four-component product basis.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def stateMatrix (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -475,7 +498,9 @@ noncomputable def stateMatrix (d : KalmanDecomposition A B C)
     (d.coordinateBasis bcuo bco buuo buo) d.stateMap
 
 /-- The input matrix in the adapted state basis and the standard input
-basis. -/
+basis.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def inputMatrix (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -484,7 +509,9 @@ noncomputable def inputMatrix (d : KalmanDecomposition A B C)
     (d.coordinateBasis bcuo bco buuo buo) d.inputMap
 
 /-- The output matrix in the standard output basis and the adapted state
-basis. -/
+basis.
+
+Original: formalization infrastructure for LeanForControl. -/
 noncomputable def outputMatrix (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -493,7 +520,9 @@ noncomputable def outputMatrix (d : KalmanDecomposition A B C)
     (Pi.basisFun ℂ (Fin p)) d.outputMap
 
 /-- The coordinate definition of the state matrix is exactly the matrix of
-`A` in the corresponding adapted basis of the original state space. -/
+`A` in the corresponding adapted basis of the original state space.
+
+Original: formalization infrastructure for LeanForControl. -/
 theorem stateMatrix_eq_toMatrix_adapted (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -505,7 +534,9 @@ theorem stateMatrix_eq_toMatrix_adapted (d : KalmanDecomposition A B C)
 omit [DecidableEq ιcuo] [DecidableEq ιco] [DecidableEq ιuuo]
   [DecidableEq ιuo] in
 /-- The coordinate definition of the input matrix is exactly the matrix of
-`B` from the standard input basis to the adapted state basis. -/
+`B` from the standard input basis to the adapted state basis.
+
+Original: formalization infrastructure for LeanForControl. -/
 theorem inputMatrix_eq_toMatrix_adapted (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -515,7 +546,9 @@ theorem inputMatrix_eq_toMatrix_adapted (d : KalmanDecomposition A B C)
   rfl
 
 /-- The coordinate definition of the output matrix is exactly the matrix of
-`C` from the adapted state basis to the standard output basis. -/
+`C` from the adapted state basis to the standard output basis.
+
+Original: formalization infrastructure for LeanForControl. -/
 theorem outputMatrix_eq_toMatrix_adapted (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
@@ -524,6 +557,9 @@ theorem outputMatrix_eq_toMatrix_adapted (d : KalmanDecomposition A B C)
         (Pi.basisFun ℂ (Fin p)) C.mulVecLin := by
   rfl
 
+/-- The `co, cuo` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_co_cuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -536,6 +572,9 @@ theorem stateMatrix_co_cuo_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.co => bco.repr x i)
     (d.stateMap_cuo_zero_pattern (bcuo j)).1
 
+/-- The `uuo, cuo` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_uuo_cuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -547,6 +586,9 @@ theorem stateMatrix_uuo_cuo_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.uuo => buuo.repr x i)
     (d.stateMap_cuo_zero_pattern (bcuo j)).2.1
 
+/-- The `uo, cuo` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_uo_cuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -558,6 +600,9 @@ theorem stateMatrix_uo_cuo_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.uo => buo.repr x i)
     (d.stateMap_cuo_zero_pattern (bcuo j)).2.2
 
+/-- The `uuo, co` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_uuo_co_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -569,6 +614,9 @@ theorem stateMatrix_uuo_co_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.uuo => buuo.repr x i)
     (d.stateMap_co_zero_pattern (bco j)).1
 
+/-- The `uo, co` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_uo_co_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -580,6 +628,9 @@ theorem stateMatrix_uo_co_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.uo => buo.repr x i)
     (d.stateMap_co_zero_pattern (bco j)).2
 
+/-- The `co, uuo` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_co_uuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -591,6 +642,9 @@ theorem stateMatrix_co_uuo_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.co => bco.repr x i)
     (d.stateMap_uuo_zero_pattern (buuo j)).1
 
+/-- The `uo, uuo` block of the adapted state matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem stateMatrix_uo_uuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -604,6 +658,9 @@ theorem stateMatrix_uo_uuo_eq_zero (d : KalmanDecomposition A B C)
 
 omit [DecidableEq ιcuo] [DecidableEq ιco] [DecidableEq ιuuo]
   [DecidableEq ιuo] in
+/-- The `uuo` row block of the adapted input matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem inputMatrix_uuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -615,6 +672,9 @@ theorem inputMatrix_uuo_eq_zero (d : KalmanDecomposition A B C)
 
 omit [DecidableEq ιcuo] [DecidableEq ιco] [DecidableEq ιuuo]
   [DecidableEq ιuo] in
+/-- The `uo` row block of the adapted input matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem inputMatrix_uo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -624,6 +684,9 @@ theorem inputMatrix_uo_eq_zero (d : KalmanDecomposition A B C)
   simpa using congrArg (fun x : d.uo => buo.repr x i)
     (d.inputMap_zero_pattern ((Pi.basisFun ℂ (Fin m)) j)).2
 
+/-- The `cuo` column block of the adapted output matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem outputMatrix_cuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -634,6 +697,9 @@ theorem outputMatrix_cuo_eq_zero (d : KalmanDecomposition A B C)
     Pi.basisFun_repr]
   simpa using congrFun (d.outputMap_cuo_eq_zero (bcuo j)) i
 
+/-- The `uuo` column block of the adapted output matrix is zero.
+
+Reference: Kailath, *Linear Systems*. -/
 theorem outputMatrix_uuo_eq_zero (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
     (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo)
@@ -649,9 +715,13 @@ the component order `cuo, co, uuo, uo`:
 `A = [* * * *; 0 * 0 *; 0 0 * *; 0 0 0 *]`,
 `B = [*; *; 0; 0]`, and `C = [0 * 0 *]`.
 
-Entries denoted by `*` are intentionally unconstrained. -/
+Entries denoted by `*` are intentionally unconstrained. The named summands are
+coordinate sectors; the chosen complements are not individually asserted to
+be invariant under `A`.
+
+Reference: Kailath, *Linear Systems*. -/
 @[blueprint "thm:kalman-block-matrix-zero-pattern"
-  (statement := /-- In a basis adapted to the four Kalman components, ordered
+  (statement := /-- In a basis adapted to the four Kalman coordinate sectors, ordered
     as controllable-unobservable, controllable-observable,
     uncontrollable-unobservable, uncontrollable-observable, the system has
     the forced-zero pattern
@@ -661,7 +731,8 @@ Entries denoted by `*` are intentionally unconstrained. -/
       \qquad C'=\begin{bmatrix}0&*&0&*\end{bmatrix}.
     \]
     Every displayed zero is asserted entrywise; starred blocks are
-    unconstrained. -/)
+    unconstrained. The chosen complement sectors are not individually
+    asserted to be invariant under $A$. -/)
   (proof := /-- Reachable-subspace invariance forces the lower-left state and
     input zeros, unobservable-subspace invariance forces the remaining state
     zeros, and the zeroth observability condition forces the output zeros.

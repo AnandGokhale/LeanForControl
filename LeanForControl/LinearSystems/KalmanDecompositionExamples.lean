@@ -7,6 +7,8 @@ These small systems exercise both degenerate edges of the dimension-generic
 development and a concrete two-state decomposition.  They intentionally use
 the public API rather than unfolding implementation details of the chosen
 complements.
+
+Original: regression examples for LeanForControl.
 -/
 
 namespace LinearSystems.KalmanDecompositionExamples
