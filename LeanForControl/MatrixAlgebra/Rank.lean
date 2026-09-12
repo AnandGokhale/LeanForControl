@@ -11,8 +11,8 @@ Reusable matrix-level facts that bridge
 * and the `Matrix.rank` / full-column-rank formulation.
 
 This file has no system semantics — it is generic matrix-algebra
-infrastructure, consumed by `LinearSystems.Structure.Observability` and
-`LinearSystems.Structure.Controllability`. It carries no `@[blueprint]`
+infrastructure, consumed by `LinearSystems.Observability.Observability` and
+`LinearSystems.Controllability.Controllability`. It carries no `@[blueprint]`
 annotations and intentionally exposes no LaTeX nodes — control-level
 statements belong in those two files.
 

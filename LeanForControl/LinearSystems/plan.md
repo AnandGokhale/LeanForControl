@@ -22,13 +22,22 @@ LeanForControl/
     Basic.lean                  shared conventions and index-type choices
     Defs.lean                   the system object (A, B, C, D) — time-agnostic data
 
-    Structure/                  identical in discrete and continuous time — no split
-      DefsReachability.lean     reachable / controllable subspace
+    Controllability/             identical in discrete and continuous time — no split
       Controllability.lean      controllability matrix and rank test
-      Observability.lean        observability matrix, unobservable subspace
-      Hautus.lean               PBH / eigenvector tests, duality
-      Decomposition.lean        controllable, observable, Kalman decompositions
-      MinimalRealization.lean   minimality and realization theory (planned)
+      DefsReachability.lean     reachable subspace
+      Reachability.lean         reachable-subspace characterizations, A-invariance
+      Hautus.lean               controllability PBH test, via duality with Observability
+      Decomposition.lean        standalone controllable decomposition (planned)
+
+    Observability/
+      Observability.lean        observability matrix, rank/kernel forms
+      Hautus.lean               unobservable subspace, observability PBH test
+      Decomposition.lean        standalone observable decomposition (planned)
+
+    KalmanDecomposition/         needs both Controllability/ and Observability/
+      DefsDecomposition.lean    the four coordinate sectors and their lattice relations
+      Decomposition.lean        existence, adapted coordinates, forced block-zero pattern
+      DecompositionExamples.lean
 
     Solutions/
       Continuous.lean           e^{At}, variation of constants
@@ -72,20 +81,37 @@ PR is opened rather than during review.
    terms of the system matrices belongs in `LinearSystems/`. A theorem whose hypothesis is
    about `A` and whose conclusion is about `f` is a bridge, and bridges live in
    `Stability/` — there should be very few of them.
-3. **Which topic is it?** Pick the topic directory first: structure, solutions, stability,
-   Gramians.
+3. **Which topic is it?** Pick the topic directory first: `Controllability/`,
+   `Observability/`, `KalmanDecomposition/`, `Solutions/`, `Stability/`, `Gramians/`. Within
+   the structural theory, controllability-only results go in `Controllability/`,
+   observability-only results go in `Observability/`, and a result needing both (the Kalman
+   decomposition; eventually minimal realizations) goes in its own directory rather than
+   into either single-subject one.
 4. **Does time enter the statement?** If the result is the same sentence in discrete and
    continuous time, it goes directly in the topic directory. Otherwise it goes in that
    directory's `Continuous` or `Discrete` half — as a subdirectory where that half has
    several files, as a single `Continuous.lean` / `Discrete.lean` where it does not.
 
-### Why the time split is per-topic
+### Why the time split is per-topic, and controllability/observability are split apart
 
 The structural theory is genuinely time-agnostic: the controllability matrix
 `[B  A B  ⋯  Aⁿ⁻¹B]`, its rank test, the reachable subspace, the unobservable subspace,
 the PBH test, duality, and the Kalman decomposition are the same statements with the same
-proofs in both settings. `Structure/` therefore has no split at all, and splitting at the
-top of the track would have forced an arbitrary home for the bulk of the existing work.
+proofs in both settings, so none of `Controllability/`, `Observability/`, or
+`KalmanDecomposition/` splits by time. Splitting at the top of the track would have forced
+an arbitrary home for the bulk of the existing work.
+
+`Controllability/` and `Observability/` are separate directories, not one `Structure/`
+holding both — controllability and observability are dual but distinct properties, each
+with its own definition, matrix, and PBH test, and Hespanha gives them separate parts of
+the book (Part III and Part IV) for the same reason. `Hautus.lean` exists once in each
+directory: the observability-side file builds the PBH test from an eigenvector argument
+on the unobservable subspace, and the controllability-side file is a short duality
+corollary that imports it (`IsControllable A B ↔ IsObservable Aᵀ Bᵀ`) rather than
+repeating the argument. A result needing both subspaces at once — the Kalman decomposition
+today, minimal realizations eventually — gets its own directory instead of being folded
+into either side, so that "controllable decomposition" (in `Controllability/`) and "the
+Kalman decomposition" (in `KalmanDecomposition/`) stay visibly different results.
 
 What actually differs is a short list: the solution formula (`e^{At}` vs `Aᵏ`), the
 stability region (`Re λ < 0` vs `|λ| < 1`), the Gramians (integral vs sum), and the
@@ -116,23 +142,24 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Controllability matrix | `controllabilityMatrix` | `Controllability.lean` | ✅ done |
-| Controllability ⟺ full row rank | `isControllable_iff_controllabilityMatrix_rank_eq` | `Controllability.lean` | ✅ done |
-| Observability matrix | `observabilityMatrix` | `Observability.lean` | ✅ done |
-| Observability ⟺ trivial kernel | `isObservable_iff_observabilityMatrix_ker_trivial` | `Observability.lean` | ✅ done |
-| Observability ⟺ full column rank | `isObservable_iff_observabilityMatrix_rank_eq` | `Observability.lean` | ✅ done |
-| Unobservable subspace, `A`-invariance | `unobservableSubspace` | `Hautus.lean` | ✅ done |
-| PBH test for observability | `isObservable_iff_hautus` | `Hautus.lean` | ✅ done |
-| PBH test for controllability | `isControllable_iff_hautus` | `Hautus.lean` | ✅ done |
-| Controllability/observability duality | `isControllable_iff_isObservable_transpose` | `Hautus.lean` | ✅ done |
-| Reachable subspace | `reachableSubspace` | `DefsReachability.lean` | ✅ done |
-| Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `Reachability.lean` | ✅ done |
-| Kalman decomposition | `exists_kalmanDecomposition` | `Decomposition.lean` | ✅ done |
-| Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `Decomposition.lean` | ✅ done |
-| Controllable decomposition (standalone) | — | `Decomposition.lean` | planned |
-| Observable decomposition (standalone) | — | `Decomposition.lean` | planned |
-| Stabilizability / detectability | — | `Hautus.lean` | planned |
-| Minimal realizations | — | `MinimalRealization.lean` | planned |
+| Controllability matrix | `controllabilityMatrix` | `Controllability/Controllability.lean` | ✅ done |
+| Controllability ⟺ full row rank | `isControllable_iff_controllabilityMatrix_rank_eq` | `Controllability/Controllability.lean` | ✅ done |
+| Reachable subspace | `reachableSubspace` | `Controllability/DefsReachability.lean` | ✅ done |
+| Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `Controllability/Reachability.lean` | ✅ done |
+| PBH test for controllability | `isControllable_iff_hautus` | `Controllability/Hautus.lean` | ✅ done |
+| Controllability/observability duality | `isControllable_iff_isObservable_transpose` | `Controllability/Hautus.lean` | ✅ done |
+| Controllable decomposition (standalone) | — | `Controllability/Decomposition.lean` | planned |
+| Stabilizability | — | `Controllability/Hautus.lean` | planned |
+| Observability matrix | `observabilityMatrix` | `Observability/Observability.lean` | ✅ done |
+| Observability ⟺ trivial kernel | `isObservable_iff_observabilityMatrix_ker_trivial` | `Observability/Observability.lean` | ✅ done |
+| Observability ⟺ full column rank | `isObservable_iff_observabilityMatrix_rank_eq` | `Observability/Observability.lean` | ✅ done |
+| Unobservable subspace, `A`-invariance | `unobservableSubspace` | `Observability/Hautus.lean` | ✅ done |
+| PBH test for observability | `isObservable_iff_hautus` | `Observability/Hautus.lean` | ✅ done |
+| Observable decomposition (standalone) | — | `Observability/Decomposition.lean` | planned |
+| Detectability | — | `Observability/Hautus.lean` | planned |
+| Kalman decomposition | `exists_kalmanDecomposition` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
+| Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
+| Minimal realizations | — | — | planned, no directory settled (needs both — see open questions) |
 
 ## Status: solutions
 
@@ -167,11 +194,11 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 ## Migration map
 
-**Done.** #13 and #14 merged, then one housekeeping commit moved everything into the
-structure above — the five pre-existing files plus both PRs' new files landed in the same
-pass, so nothing was moved twice.
+**First pass, done.** #13 and #14 merged, then one housekeeping commit moved everything
+into a single time-agnostic `Structure/` directory — the five pre-existing files plus both
+PRs' new files landed in the same pass, so nothing was moved twice.
 
-| Original location | Landed at |
+| Original location | Landed at (first pass) |
 |---|---|
 | `LinearSystems/MatrixLemmas.lean` | `MatrixAlgebra/Rank.lean` |
 | `LinearSystems/Controllability.lean` | `LinearSystems/Structure/Controllability.lean` |
@@ -185,19 +212,47 @@ pass, so nothing was moved twice.
 | PR #14: `LinearSystems/Reachability/KalmanDecomposition.lean` | `LinearSystems/Structure/Decomposition.lean` |
 | PR #14: `LinearSystems/Reachability/KalmanDecompositionExamples.lean` | `LinearSystems/Structure/DecompositionExamples.lean` |
 
-Two deliberate renames rode along with the move, disclosed here rather than left implicit:
-
-- `MatrixLemmas`'s namespace changed from `LinearSystems.MatrixLemmas` to bare
-  `MatrixAlgebra`, matching the rule that this file has no system semantics and shouldn't
-  carry the `LinearSystems` prefix. Four call sites updated accordingly.
-- The Kalman-decomposition files dropped the `Kalman` prefix (`DefsDecomposition.lean`,
-  `Decomposition.lean`, `DecompositionExamples.lean`) since `Decomposition.lean` is also
-  where the standalone controllable/observable decompositions belong once written — see
-  the structural-theory table above.
+One deliberate rename rode along with the first pass: `MatrixLemmas`'s namespace changed
+from `LinearSystems.MatrixLemmas` to bare `MatrixAlgebra`, matching the rule that this file
+has no system semantics and shouldn't carry the `LinearSystems` prefix. Four call sites
+updated accordingly.
 
 `LinearSystems/Reachability/plan.md` and `LinearSystems/Stability/plan.md` (added by
 PR #14 and PR #13 respectively) were folded into this file and deleted, rather than kept
 as a third and fourth roadmap for the same track.
+
+**Second pass, done.** `Structure/` was itself judged too generic a name — a bare English
+word that also shadows Lean's `structure` keyword — and, more substantively, too coarse a
+bucket: it merged two dual-but-distinct properties (controllability, observability) with
+the one result that genuinely needs both (the Kalman decomposition). Split into three
+directories:
+
+| First pass | Landed at (second pass) |
+|---|---|
+| `Structure/Controllability.lean` | `Controllability/Controllability.lean` |
+| `Structure/DefsReachability.lean` | `Controllability/DefsReachability.lean` |
+| `Structure/Reachability.lean` | `Controllability/Reachability.lean` |
+| `Structure/Observability.lean` | `Observability/Observability.lean` |
+| `Structure/DefsDecomposition.lean` | `KalmanDecomposition/DefsDecomposition.lean` |
+| `Structure/Decomposition.lean` | `KalmanDecomposition/Decomposition.lean` |
+| `Structure/DecompositionExamples.lean` | `KalmanDecomposition/DecompositionExamples.lean` |
+| `Structure/Hautus.lean` | split in two — see below |
+
+`Structure/Hautus.lean` did not move as a unit: it already had an internal divider
+(`## Hautus controllability via duality`) separating an observability-side eigenvector
+argument from a controllability-side duality corollary, so it was split at that existing
+boundary rather than arbitrarily:
+
+- Lines before the divider (`unobservableSubspace` through `isObservable_iff_hautus`) →
+  `Observability/Hautus.lean`.
+- Lines after the divider (`controllabilityMatrix_transpose` through
+  `isControllable_iff_hautus`) → `Controllability/Hautus.lean`, which imports
+  `Observability/Hautus.lean` for the duality argument.
+
+Both directories deliberately keep the filename `Hautus.lean` — the directory
+(`Controllability.` vs `Observability.`) disambiguates the fully qualified module path,
+and a shared name for the same underlying technique (the PBH test) in its two dual forms
+reads as consistent rather than confusing.
 
 **Still pending:** PR #15 branched before #13's review landed, so it carries a stale copy
 of the Hurwitz foundation — see the ordering note below. Its own migration happens when it
@@ -221,10 +276,10 @@ reconciling two versions in review.
 ## Open questions
 
 - **Scalar generality.** `Controllability.lean` and `Observability.lean` are stated over a
-  `Semiring` with a `Field`-scoped section for the rank forms; `Hautus.lean` is `ℂ`-only
-  because eigenvalues live in `ℂ`; the Hurwitz work is `ℝ`-with-complexification. Settle
-  whether `Structure/` should be uniformly `Field`-generic with `ℂ` specializations, or
-  whether the current per-file choice is the right trade.
+  `Semiring` with a `Field`-scoped section for the rank forms; both `Hautus.lean` files are
+  `ℂ`-only because eigenvalues live in `ℂ`; the Hurwitz work is `ℝ`-with-complexification.
+  Settle whether `Controllability/` and `Observability/` should be uniformly `Field`-generic
+  with `ℂ` specializations, or whether the current per-file choice is the right trade.
 - **Does `Defs.lean` carry a `D` matrix?** Nothing currently needs feedthrough, but adding
   it later is a breaking change to every consumer. Decide before the first system object
   lands.
@@ -235,6 +290,11 @@ reconciling two versions in review.
 - **Index types.** `Basic.lean` fixes the `Fin n × Fin m` convention for block matrices.
   Confirm this survives contact with the Gramians and the decomposition work before
   treating it as settled.
+- **Where do minimal realizations live?** Minimality means controllable *and* observable,
+  so — like the Kalman decomposition — it needs both `Controllability/` and
+  `Observability/`. Decide when the first file is written whether it joins
+  `KalmanDecomposition/`, gets its own directory, or is named accordingly (`Realization/`,
+  say) rather than defaulting silently into whichever directory is convenient at the time.
 
 ## Lessons learned
 

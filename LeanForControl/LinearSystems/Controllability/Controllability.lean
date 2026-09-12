@@ -103,7 +103,7 @@ variable {𝕜 : Type*} [Field 𝕜] {n m : ℕ}
 indexed by `Fin n × Fin m` rewrites as a sum of per-power matrix-vector
 products with curried inputs. Bridge between the assembled-matrix form and
 the matrix-power-sum form of `IsControllable`, and reused by the reachable-
-subspace development in `LinearSystems.Structure.Reachability`. -/
+subspace development in `LinearSystems.Controllability.Reachability`. -/
 lemma controllabilityMatrix_mulVec_eq_sum
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (u : Fin n × Fin m → 𝕜) :

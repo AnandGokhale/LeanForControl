@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Structure.Decomposition
+import LeanForControl.LinearSystems.KalmanDecomposition.Decomposition
 
 /-!
 # Regression examples for the Kalman decomposition

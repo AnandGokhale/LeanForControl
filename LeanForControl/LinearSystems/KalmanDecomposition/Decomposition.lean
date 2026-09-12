@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Structure.DefsDecomposition
+import LeanForControl.LinearSystems.KalmanDecomposition.DefsDecomposition
 import Mathlib.Algebra.Module.Submodule.Range
 import Mathlib.LinearAlgebra.Basis.Prod
 import Mathlib.LinearAlgebra.Matrix.ToLin

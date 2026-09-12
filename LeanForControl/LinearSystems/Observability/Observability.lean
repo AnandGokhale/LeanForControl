@@ -170,7 +170,7 @@ attacking either Hautus or the rank-based reformulations:
   than matrix powers.
 
 These belong in `MatrixAlgebra.Rank` (matrix-level facts) and a future
-`LinearSystems.Structure.Hautus` (control-level facts) once needed.
+`LinearSystems.Observability.Hautus` (control-level facts) once needed.
 -/
 
 end LinearSystems

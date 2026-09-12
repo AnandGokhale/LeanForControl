@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Structure.DefsReachability
+import LeanForControl.LinearSystems.Controllability.DefsReachability
 import Mathlib.Algebra.Module.Submodule.Invariant
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
