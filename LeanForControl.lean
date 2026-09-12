@@ -13,6 +13,8 @@ import LeanForControl.LinearSystems.Controllability
 import LeanForControl.LinearSystems.Hautus
 import LeanForControl.LinearSystems.MatrixLemmas
 import LeanForControl.LinearSystems.Observability
+import LeanForControl.LinearSystems.Stability.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.Hurwitz
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties
