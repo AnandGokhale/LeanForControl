@@ -2,7 +2,7 @@ import Mathlib.LinearAlgebra.Matrix.ToLin
 import Mathlib.LinearAlgebra.Matrix.Rank
 
 /-!
-# `LinearSystems.MatrixLemmas`
+# `MatrixAlgebra.Rank`
 
 Reusable matrix-level facts that bridge
 
@@ -10,16 +10,17 @@ Reusable matrix-level facts that bridge
 * the linear-map-`ker = ⊥` formulation,
 * and the `Matrix.rank` / full-column-rank formulation.
 
-This file is project-internal plumbing for `LinearSystems.Observability` and
-`LinearSystems.Controllability`. It carries no `@[blueprint]` annotations and
-intentionally exposes no LaTeX nodes — control-level statements belong in the
-two `Observability` / `Controllability` files.
+This file has no system semantics — it is generic matrix-algebra
+infrastructure, consumed by `LinearSystems.Structure.Observability` and
+`LinearSystems.Structure.Controllability`. It carries no `@[blueprint]`
+annotations and intentionally exposes no LaTeX nodes — control-level
+statements belong in those two files.
 
 The file is `Field`-scoped: `Matrix.rank` requires `[CommRing 𝕜]`, and the
 column or row independence bridges to `rank = card ...` need `[Field 𝕜]`.
 -/
 
-namespace LinearSystems.MatrixLemmas
+namespace MatrixAlgebra
 
 open Matrix
 
@@ -69,4 +70,4 @@ lemma mulVec_range_top_iff_rank_eq_card_rows
 
 end Field
 
-end LinearSystems.MatrixLemmas
+end MatrixAlgebra

@@ -1,5 +1,5 @@
 import LeanForControl.LinearSystems.Basic
-import LeanForControl.LinearSystems.MatrixLemmas
+import LeanForControl.MatrixAlgebra.Rank
 import Architect
 
 /-!
@@ -103,7 +103,7 @@ variable {𝕜 : Type*} [Field 𝕜] {n m : ℕ}
 indexed by `Fin n × Fin m` rewrites as a sum of per-power matrix-vector
 products with curried inputs. Bridge between the assembled-matrix form and
 the matrix-power-sum form of `IsControllable`, and reused by the reachable-
-subspace development in `LinearSystems.Reachability`. -/
+subspace development in `LinearSystems.Structure.Reachability`. -/
 lemma controllabilityMatrix_mulVec_eq_sum
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (u : Fin n × Fin m → 𝕜) :
@@ -150,13 +150,13 @@ controllability matrix having full row rank. -/
        = \sum_{k} A^{k} B \cdot u_{k}$
     (with $u_{k}(j) = u(k, j)$) with the matrix-level bridge
     $\bigl(\forall y,\ \exists x,\ M\, x = y\bigr) \iff
-     \operatorname{rank} M = n$ from `MatrixLemmas`, applied with
+     \operatorname{rank} M = n$ from `MatrixAlgebra.Rank`, applied with
     $M = \mathcal{C}(A, B)$. -/)]
 theorem isControllable_iff_controllabilityMatrix_rank_eq
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     IsControllable A B ↔ Matrix.rank (controllabilityMatrix A B) = n := by
   refine (isControllable_iff_controllabilityMatrix_mulVec_surjective A B).trans ?_
-  refine (LinearSystems.MatrixLemmas.mulVec_range_top_iff_rank_eq_card_rows
+  refine (MatrixAlgebra.mulVec_range_top_iff_rank_eq_card_rows
     (controllabilityMatrix A B)).trans ?_
   rw [Fintype.card_fin]
 

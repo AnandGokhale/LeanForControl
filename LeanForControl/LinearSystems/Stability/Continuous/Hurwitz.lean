@@ -1,11 +1,11 @@
-import LeanForControl.LinearSystems.Stability.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import Architect
 
 /-!
 # Basic theorems for Hurwitz matrices
 
 This file establishes the basic reusable API for the Hurwitz predicates defined in
-`LeanForControl.LinearSystems.Stability.DefsHurwitz`.
+`LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz`.
 
 The definition intentionally allows zero-dimensional matrices. In dimension zero there
 are no nonzero eigenvectors, so every matrix is Hurwitz with every rate; the theorem

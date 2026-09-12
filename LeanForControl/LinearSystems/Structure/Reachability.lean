@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Reachability.DefsReachability
+import LeanForControl.LinearSystems.Structure.DefsReachability
 import Mathlib.Algebra.Module.Submodule.Invariant
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
@@ -121,7 +121,7 @@ theorem reachableSubspace_eq_top_iff_isControllable
   unfold reachableSubspace
   rw [LinearMap.range_eq_top]
   simpa using
-    (LinearSystems.MatrixLemmas.mulVec_range_top_iff_rank_eq_card_rows
+    (MatrixAlgebra.mulVec_range_top_iff_rank_eq_card_rows
       (controllabilityMatrix A B))
 
 /-- Cayley--Hamilton closes the single boundary term needed for reachable

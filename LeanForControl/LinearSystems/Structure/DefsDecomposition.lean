@@ -1,5 +1,5 @@
-import LeanForControl.LinearSystems.Hautus
-import LeanForControl.LinearSystems.Reachability.Reachability
+import LeanForControl.LinearSystems.Structure.Hautus
+import LeanForControl.LinearSystems.Structure.Reachability
 import Architect
 
 /-!

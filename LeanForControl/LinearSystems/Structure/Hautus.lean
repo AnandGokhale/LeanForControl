@@ -1,6 +1,6 @@
-import LeanForControl.LinearSystems.Controllability
-import LeanForControl.LinearSystems.Observability
-import LeanForControl.LinearSystems.MatrixLemmas
+import LeanForControl.LinearSystems.Structure.Controllability
+import LeanForControl.LinearSystems.Structure.Observability
+import LeanForControl.MatrixAlgebra.Rank
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
@@ -421,7 +421,7 @@ Hautus block `[μI - A | B]` has full row rank. -/
     observability Hautus iff \cref{thm:isObservable-iff-hautus}, then
     convert the kernel-form RHS to the rank form via the matrix bridge
     \texttt{mulVec\_kernel\_trivial\_iff\_rank\_eq\_card\_cols} from
-    `MatrixLemmas`, and finally identify the transposed Hautus matrices. -/)]
+    `MatrixAlgebra.Rank`, and finally identify the transposed Hautus matrices. -/)]
 theorem isControllable_iff_hautus
     (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ) :
     IsControllable A B
@@ -429,7 +429,7 @@ theorem isControllable_iff_hautus
   rw [isControllable_iff_isObservable_transpose, isObservable_iff_hautus]
   refine forall_congr' fun μ => ?_
   rw [Matrix.ker_mulVecLin_eq_bot_iff,
-      LinearSystems.MatrixLemmas.mulVec_kernel_trivial_iff_rank_eq_card_cols,
+      MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols,
       Fintype.card_fin,
       ← hautusControllabilityMatrix_transpose,
       Matrix.rank_transpose]

@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Reachability.KalmanDecomposition
+import LeanForControl.LinearSystems.Structure.Decomposition
 
 /-!
 # Regression examples for the Kalman decomposition
@@ -11,7 +11,7 @@ complements.
 Original: regression examples for LeanForControl.
 -/
 
-namespace LinearSystems.KalmanDecompositionExamples
+namespace LinearSystems.DecompositionExamples
 
 open Matrix
 
@@ -51,4 +51,4 @@ example (m p : ℕ) (A : Matrix (Fin 0) (Fin 0) ℂ)
     Nonempty (KalmanDecomposition A B C) :=
   exists_kalmanDecomposition A B C
 
-end LinearSystems.KalmanDecompositionExamples
+end LinearSystems.DecompositionExamples

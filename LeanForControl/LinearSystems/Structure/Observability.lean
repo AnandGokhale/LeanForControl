@@ -1,5 +1,5 @@
 import LeanForControl.LinearSystems.Basic
-import LeanForControl.LinearSystems.MatrixLemmas
+import LeanForControl.MatrixAlgebra.Rank
 import Architect
 
 /-!
@@ -169,8 +169,8 @@ attacking either Hautus or the rank-based reformulations:
   are useful when restating observability in terms of trajectories rather
   than matrix powers.
 
-These belong in `LinearSystems.MatrixLemmas` (matrix-level facts) and a future
-`LinearSystems.Hautus` (control-level facts) once needed.
+These belong in `MatrixAlgebra.Rank` (matrix-level facts) and a future
+`LinearSystems.Structure.Hautus` (control-level facts) once needed.
 -/
 
 end LinearSystems
@@ -183,7 +183,7 @@ the typeclass diamond between the outer `[Semiring 𝕜]` (used for the
 existing definitions and the kernel-form milestone) and the rank-side
 `[Field 𝕜]` is broken: in the section below, the only scalar-typeclass on
 `𝕜` is `Field`, and the `Semiring` derived from it is the canonical one,
-matching the instance picked by `MatrixLemmas`.
+matching the instance picked by `MatrixAlgebra.Rank`.
 -/
 
 namespace LinearSystems
@@ -194,7 +194,7 @@ variable {𝕜 : Type*} [Field 𝕜] {n p : ℕ}
 
 /-- Rank-form characterization: observability is equivalent to the
 observability matrix having full column rank. Chains the kernel-form
-milestone with the matrix bridge from `MatrixLemmas`. -/
+milestone with the matrix bridge from `MatrixAlgebra.Rank`. -/
 @[blueprint "thm:isObservable-iff-rank"
   (statement := /-- A finite-dimensional system $(A, C)$ is observable if
     and only if the observability matrix $\mathcal{O}(A, C)$ has full column
@@ -206,13 +206,13 @@ milestone with the matrix bridge from `MatrixLemmas`. -/
   (proof := /-- Chain the kernel-form milestone
     \cref{thm:isObservable-iff-ker-trivial} with the matrix-level bridge
     $\bigl(\forall x,\ M \cdot x = 0 \Rightarrow x = 0\bigr) \iff
-     \operatorname{rank} M = n$ from `MatrixLemmas`, applied with
+     \operatorname{rank} M = n$ from `MatrixAlgebra.Rank`, applied with
     $M = \mathcal{O}(A, C)$. -/)]
 theorem isObservable_iff_observabilityMatrix_rank_eq
     (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) :
     IsObservable A C ↔ Matrix.rank (observabilityMatrix A C) = n := by
   refine (isObservable_iff_observabilityMatrix_ker_trivial A C).trans ?_
-  refine (LinearSystems.MatrixLemmas.mulVec_kernel_trivial_iff_rank_eq_card_cols
+  refine (MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols
     (observabilityMatrix A C)).trans ?_
   rw [Fintype.card_fin]
 

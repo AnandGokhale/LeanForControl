@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Controllability
+import LeanForControl.LinearSystems.Structure.Controllability
 import Architect
 
 /-!

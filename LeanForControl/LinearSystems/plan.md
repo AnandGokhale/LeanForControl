@@ -101,8 +101,8 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Trivial kernel ⟺ full column rank | `mulVec_kernel_trivial_iff_rank_eq_card_cols` | `Rank.lean` | ✅ done (in `MatrixLemmas.lean`) |
-| Surjectivity ⟺ full row rank | `mulVec_range_top_iff_rank_eq_card_rows` | `Rank.lean` | ✅ done (in `MatrixLemmas.lean`) |
+| Trivial kernel ⟺ full column rank | `mulVec_kernel_trivial_iff_rank_eq_card_cols` | `Rank.lean` | ✅ done |
+| Surjectivity ⟺ full row rank | `mulVec_range_top_iff_rank_eq_card_rows` | `Rank.lean` | ✅ done |
 | Complexification of a real matrix | — | `Spectrum.lean` | 🔶 in review (PR #13, PR #15) |
 | Spectral radius of `exp A` | — | `Spectrum.lean` | 🔶 in review (PR #15) |
 | Positive-definite quadratic forms | `matrixQuadratic` and friends | `PositiveDefinite.lean` | 🔶 in review (PR #15) |
@@ -125,10 +125,10 @@ gap rather than an unstated assumption that this library is continuous-time only
 | PBH test for observability | `isObservable_iff_hautus` | `Hautus.lean` | ✅ done |
 | PBH test for controllability | `isControllable_iff_hautus` | `Hautus.lean` | ✅ done |
 | Controllability/observability duality | `isControllable_iff_isObservable_transpose` | `Hautus.lean` | ✅ done |
-| Reachable subspace | `reachableSubspace` | `DefsReachability.lean` | 🔶 in review (PR #14) |
-| Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `DefsReachability.lean` | 🔶 in review (PR #14) |
-| Kalman decomposition | `exists_kalmanDecomposition` | `Decomposition.lean` | 🔶 in review (PR #14) |
-| Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `Decomposition.lean` | 🔶 in review (PR #14) |
+| Reachable subspace | `reachableSubspace` | `DefsReachability.lean` | ✅ done |
+| Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `Reachability.lean` | ✅ done |
+| Kalman decomposition | `exists_kalmanDecomposition` | `Decomposition.lean` | ✅ done |
+| Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `Decomposition.lean` | ✅ done |
 | Controllable decomposition (standalone) | — | `Decomposition.lean` | planned |
 | Observable decomposition (standalone) | — | `Decomposition.lean` | planned |
 | Stabilizability / detectability | — | `Hautus.lean` | planned |
@@ -148,8 +148,8 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Hurwitz predicates | `IsHurwitz`, `IsHurwitzWithRate` | `Continuous/DefsHurwitz.lean` | 🔶 in review (PR #13) |
-| Rate monotonicity, spectral shift | `IsHurwitzWithRate.mono`, `isHurwitzWithRate_iff_add_smul_one` | `Continuous/Hurwitz.lean` | 🔶 in review (PR #13) |
+| Hurwitz predicates | `IsHurwitz`, `IsHurwitzWithRate` | `Continuous/DefsHurwitz.lean` | ✅ done |
+| Rate monotonicity, spectral shift | `IsHurwitzWithRate.mono`, `isHurwitzWithRate_iff_add_smul_one` | `Continuous/Hurwitz.lean` | ✅ done |
 | Hurwitz ⟹ `‖exp(kA)‖ < 1` for some `k` | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `Continuous/ExponentialStability.lean` | 🔶 in review (PR #15) |
 | Lyapunov equation solvable with `P` positive definite | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `Continuous/LyapunovEquation.lean` | 🔶 in review (PR #15) |
 | Quadratic instability certificate from an unstable eigenpair | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `Continuous/LyapunovEquation.lean` | 🔶 in review (PR #15) |
@@ -167,35 +167,56 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 ## Migration map
 
-The structure above is the target. Nothing has been moved yet — the moves should land as
-one housekeeping commit, sequenced against the open PRs rather than dropped on top of
-them.
+**Done.** #13 and #14 merged, then one housekeeping commit moved everything into the
+structure above — the five pre-existing files plus both PRs' new files landed in the same
+pass, so nothing was moved twice.
 
-| Current | Target |
+| Original location | Landed at |
 |---|---|
 | `LinearSystems/MatrixLemmas.lean` | `MatrixAlgebra/Rank.lean` |
 | `LinearSystems/Controllability.lean` | `LinearSystems/Structure/Controllability.lean` |
 | `LinearSystems/Observability.lean` | `LinearSystems/Structure/Observability.lean` |
 | `LinearSystems/Hautus.lean` | `LinearSystems/Structure/Hautus.lean` |
 | `LinearSystems/Basic.lean` | unchanged |
+| PR #13: `LinearSystems/Stability/DefsHurwitz.lean`, `Hurwitz.lean` | `LinearSystems/Stability/Continuous/` |
+| PR #14: `LinearSystems/Reachability/DefsReachability.lean` | `LinearSystems/Structure/DefsReachability.lean` |
+| PR #14: `LinearSystems/Reachability/Reachability.lean` | `LinearSystems/Structure/Reachability.lean` |
+| PR #14: `LinearSystems/Reachability/DefsKalmanDecomposition.lean` | `LinearSystems/Structure/DefsDecomposition.lean` |
+| PR #14: `LinearSystems/Reachability/KalmanDecomposition.lean` | `LinearSystems/Structure/Decomposition.lean` |
+| PR #14: `LinearSystems/Reachability/KalmanDecompositionExamples.lean` | `LinearSystems/Structure/DecompositionExamples.lean` |
 
-For the open PRs:
+Two deliberate renames rode along with the move, disclosed here rather than left implicit:
 
-| PR | As submitted | Target |
-|---|---|---|
-| #13 | `LinearSystems/Stability/DefsHurwitz.lean`, `Hurwitz.lean` | `LinearSystems/Stability/Continuous/` |
-| #14 | `LinearSystems/Reachability/*` | `LinearSystems/Structure/` (`DefsReachability.lean`, `Decomposition.lean`) |
-| #15 | `LinearSystems/DefsHurwitz.lean`, `Hurwitz.lean` | drop — duplicates PR #13 at a stale path |
-| #15 | `LinearSystems/LyapunovEquation.lean`, `ExponentialStability.lean`, `InstabilityCertificate.lean` | `LinearSystems/Stability/Continuous/` |
-| #15 | `LinearSystems/DefsLyapunov.lean` | `MatrixAlgebra/PositiveDefinite.lean` |
-| #15 | `LinearSystems/DefsDynamics.lean` | `LinearSystems/Defs.lean` |
-| #15 | `Stability/Linearization.lean`, `Chetaev.lean`, `Forward.lean`, … | `Stability/` — unchanged |
-| #15 | `Analysis/Linearization.lean` | `Analysis/` — unchanged |
+- `MatrixLemmas`'s namespace changed from `LinearSystems.MatrixLemmas` to bare
+  `MatrixAlgebra`, matching the rule that this file has no system semantics and shouldn't
+  carry the `LinearSystems` prefix. Four call sites updated accordingly.
+- The Kalman-decomposition files dropped the `Kalman` prefix (`DefsDecomposition.lean`,
+  `Decomposition.lean`, `DecompositionExamples.lean`) since `Decomposition.lean` is also
+  where the standalone controllable/observable decompositions belong once written — see
+  the structural-theory table above.
+
+`LinearSystems/Reachability/plan.md` and `LinearSystems/Stability/plan.md` (added by
+PR #14 and PR #13 respectively) were folded into this file and deleted, rather than kept
+as a third and fourth roadmap for the same track.
+
+**Still pending:** PR #15 branched before #13's review landed, so it carries a stale copy
+of the Hurwitz foundation — see the ordering note below. Its own migration happens when it
+rebases, not as part of this pass.
+
+| PR #15, as submitted | Target |
+|---|---|
+| `LinearSystems/DefsHurwitz.lean`, `Hurwitz.lean` | drop — duplicates #13, now at `Stability/Continuous/` |
+| `LinearSystems/LyapunovEquation.lean`, `ExponentialStability.lean`, `InstabilityCertificate.lean` | `LinearSystems/Stability/Continuous/` |
+| `LinearSystems/DefsLyapunov.lean` | `MatrixAlgebra/PositiveDefinite.lean` |
+| `LinearSystems/DefsDynamics.lean` | `LinearSystems/Defs.lean` |
+| `Stability/Linearization.lean`, `Chetaev.lean`, `Forward.lean`, … | `Stability/` — unchanged |
+| `Analysis/Linearization.lean` | `Analysis/` — unchanged |
 
 Ordering note: PR #15 currently contains PR #13's first two commits verbatim, from before
 review, including the `complexification` wrapper that was dropped and the unattributed
-reference line that was replaced. Merge #13 first, then have #15 rebase and delete its own
-copy of the Hurwitz foundation rather than reconciling two versions in review.
+reference line that was replaced. Now that #13 is merged at its target path, #15 needs to
+rebase onto `main` and delete its own copy of the Hurwitz foundation rather than
+reconciling two versions in review.
 
 ## Open questions
 
