@@ -1,3 +1,4 @@
+import LeanForControl.LinearSystems.Controllability.Defs
 import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Observability.Hautus
 import LeanForControl.MatrixAlgebra.Rank
@@ -44,20 +45,6 @@ theorem isControllable_iff_isObservable_transpose
       isObservable_iff_observabilityMatrix_rank_eq Aᵀ Bᵀ,
       ← controllabilityMatrix_transpose,
       Matrix.rank_transpose]
-
-/-- The Hautus controllability matrix at `μ`, `[μI - A | B]`. -/
-@[blueprint "def:hautusControllabilityMatrix"
-  (statement := /-- The \emph{Hautus controllability matrix} of $(A, B)$
-    at a complex number $\mu$ is the block-column matrix
-    \[
-      H^{\mathrm{ctrl}}_{A, B}(\mu)
-        \;=\; \begin{bmatrix} \mu I - A & B \end{bmatrix}
-        \in \mathbb{C}^{n \times (n + m)} .
-    \] -/)]
-noncomputable def hautusControllabilityMatrix
-    (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ) (μ : ℂ) :
-    Matrix (Fin n) (Fin n ⊕ Fin m) ℂ :=
-  Matrix.fromCols (μ • (1 : Matrix (Fin n) (Fin n) ℂ) - A) B
 
 /-- The transpose of the Hautus controllability matrix is the Hautus
 observability matrix of the transposed system. -/

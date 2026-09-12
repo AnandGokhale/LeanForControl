@@ -1,3 +1,4 @@
+import LeanForControl.LinearSystems.Observability.Defs
 import LeanForControl.LinearSystems.Observability.Observability
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Data.Matrix.ColumnRowPartitioned
@@ -39,28 +40,6 @@ namespace LinearSystems
 open Matrix
 
 variable {n p : ℕ}
-
-/-- The unobservable subspace of `(A, C)`: states that the output `C · A^k`
-fails to distinguish from zero for every `k = 0, …, n-1`.
-
-Defined as the intersection of the kernels of the linear maps
-`(C · A^k).mulVecLin` for `k : Fin n`. By Cayley–Hamilton (see
-`A_mulVec_mem_unobservableSubspace_of_mem`) this submodule is `A`-invariant. -/
-@[blueprint "def:unobservableSubspace"
-  (statement := /-- The \emph{unobservable subspace} of $(A, C)$ is the
-    $A$-invariant subspace
-    \[
-      \mathcal{N}(A, C) \;=\;
-        \{\, v \in \mathbb{C}^{n} \;:\;
-            C\, A^{k}\, v = 0 \text{ for every } k = 0, 1, \dots, n - 1 \,\}.
-    \]
-    Equivalently, $\mathcal{N}(A, C) = \ker \mathcal{O}(A, C)$, but here it
-    is phrased without naming $\mathcal{O}$ so the bridge
-    \cref{thm:unobservable-eq-bot-iff-observable} reads as content. -/)]
-noncomputable def unobservableSubspace
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
-    Submodule ℂ (Fin n → ℂ) :=
-  ⨅ k : Fin n, LinearMap.ker (C * A ^ (k : ℕ)).mulVecLin
 
 lemma mem_unobservableSubspace_iff
     {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
@@ -190,20 +169,6 @@ private theorem exists_eigenvector_of_unobservableSubspace_neBot
     rw [show ((⟨0, hn_pos⟩ : Fin n) : ℕ) = 0 from rfl,
         pow_zero, Matrix.mul_one] at h0
     exact h0
-
-/-- The Hautus observability matrix at `μ`,
-`[μ • 1 - A; C] : Matrix (Fin n ⊕ Fin p) (Fin n) ℂ`. -/
-@[blueprint "def:hautusObservabilityMatrix"
-  (statement := /-- The \emph{Hautus observability matrix} of $(A, C)$ at
-    a complex number $\mu$ is the block-row matrix
-    \[
-      H_{A, C}(\mu) \;=\; \begin{bmatrix} \mu I - A \\ C \end{bmatrix}
-        \in \mathbb{C}^{(n + p) \times n} .
-    \] -/)]
-noncomputable def hautusObservabilityMatrix
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) (μ : ℂ) :
-    Matrix (Fin n ⊕ Fin p) (Fin n) ℂ :=
-  Matrix.fromRows (μ • (1 : Matrix (Fin n) (Fin n) ℂ) - A) C
 
 /-- A vector `v` is in the kernel of `H_{A, C}(μ) *ᵥ ·` iff `v` is an
 eigenvector (or zero) of `A` with eigenvalue `μ` and is annihilated by `C`. -/

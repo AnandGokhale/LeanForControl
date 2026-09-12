@@ -1,25 +1,17 @@
-import LeanForControl.LinearSystems.Basic
+import LeanForControl.LinearSystems.Controllability.Defs
 import LeanForControl.MatrixAlgebra.Rank
 import Architect
 
 /-!
 # Controllability of a finite-dimensional linear system
 
-For a linear system
+Theorems about the controllability matrix and predicate defined in
+`LinearSystems.Controllability.Defs`: the block-column shape lemma, and the milestone
+rank-form characterization of controllability.
 
-  ẋ = A x + B u
-
-with `A : Matrix (Fin n) (Fin n) 𝕜` and `B : Matrix (Fin n) (Fin m) 𝕜`, this
-file defines the (finite-horizon) controllability matrix
-
-  𝒞(A, B) = [ B   A·B   A²·B   ⋯   Aⁿ⁻¹·B ] .
-
-We index columns by `Fin n × Fin m` so that `A ^ (k : ℕ)` is available without
-casting `k : Fin n` through `Fin.val`.
-
-This file deliberately stays at the *definition + shape lemma* level: the
-controllability characterizations (reachable subspace = span of columns,
-controllable iff full column rank) are second-milestone work. -/
+This file deliberately stays at the *shape lemma + rank characterization* level: the
+reachable-subspace theory lives in `Reachability.lean`, and the eigenvector/PBH
+characterization lives in `Hautus.lean`. -/
 
 namespace LinearSystems
 
@@ -27,27 +19,6 @@ open Matrix
 
 variable {𝕜 : Type*} [Semiring 𝕜]
 variable {n m : ℕ}
-
-/-- The controllability matrix of `(A, B)`.
-
-The `(k, j)`-th column is the `j`-th column of `Aᵏ · B`, where `k : Fin n`
-ranges over `0, 1, …, n-1`. -/
-@[blueprint "def:controllabilityMatrix"
-  (statement := /-- The \emph{controllability matrix} of a pair $(A, B)$
-    with $A \in \mathbb{F}^{n \times n}$ and $B \in \mathbb{F}^{n \times m}$
-    is the block-column matrix
-    \[
-      \mathcal{C}(A, B) =
-      \begin{bmatrix} B & A\, B & A^{2}\, B & \cdots & A^{n-1}\, B \end{bmatrix}
-      \in \mathbb{F}^{n \times (n m)}.
-    \]
-    Columns are indexed by $\mathrm{Fin}\, n \times \mathrm{Fin}\, m$, so that
-    $A^{k}$ is available without casting $k : \mathrm{Fin}\, n$ through
-    $\mathrm{Fin.val}$. -/)]
-def controllabilityMatrix
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
-    Matrix (Fin n) (Fin n × Fin m) 𝕜 :=
-  Matrix.of fun i kj => (A ^ (kj.1 : ℕ) * B) i kj.2
 
 /-- Block-column shape lemma: the entry at row `i`, column `(k, j)` of the
 controllability matrix is the `(i, j)` entry of `Aᵏ · B`. Holds
@@ -65,25 +36,6 @@ lemma controllabilityMatrix_apply
     (i : Fin n) (k : Fin n) (j : Fin m) :
     controllabilityMatrix A B i (k, j) = (A ^ (k : ℕ) * B) i j :=
   rfl
-
-/-- The textbook controllability predicate (existential reachability):
-every state can be reached from the origin in `n` steps via some sequence
-of inputs. Phrased in matrix-power language so the bridge theorem
-`isControllable_iff_controllabilityMatrix_rank_eq` has real content. -/
-@[blueprint "def:isControllable"
-  (statement := /-- A linear system $(A, B)$ is \emph{controllable} when
-    every target state $x \in \mathbb{F}^{n}$ is reachable from the origin
-    in $n$ steps: there exist input vectors
-    $u_{0}, u_{1}, \dots, u_{n-1} \in \mathbb{F}^{m}$ such that
-    \[
-      x = \sum_{k = 0}^{n-1} A^{k}\, B\, u_{k}.
-    \]
-    This phrasing does not name the controllability matrix, so the bridge
-    \cref{thm:isControllable-iff-rank} has real content. -/)]
-def IsControllable
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) : Prop :=
-  ∀ x : Fin n → 𝕜, ∃ u : Fin n → (Fin m → 𝕜),
-    x = ∑ k : Fin n, (A ^ (k : ℕ) * B) *ᵥ u k
 
 end LinearSystems
 

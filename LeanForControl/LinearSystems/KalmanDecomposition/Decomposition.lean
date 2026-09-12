@@ -1,4 +1,6 @@
-import LeanForControl.LinearSystems.KalmanDecomposition.DefsDecomposition
+import LeanForControl.LinearSystems.KalmanDecomposition.Defs
+import LeanForControl.LinearSystems.Controllability.Reachability
+import LeanForControl.LinearSystems.Observability.Hautus
 import Mathlib.Algebra.Module.Submodule.Range
 import Mathlib.LinearAlgebra.Basis.Prod
 import Mathlib.LinearAlgebra.Matrix.ToLin
@@ -10,8 +12,9 @@ import Architect
 /-!
 # The finite-dimensional Kalman decomposition
 
-For a complex finite-dimensional state-space system `(A, B, C)`, this file
-constructs four coordinate sectors in the order
+For a complex finite-dimensional state-space system `(A, B, C)`, this file proves existence
+of the four coordinate sectors defined in `LinearSystems.KalmanDecomposition.Defs`, in the
+order
 
 1. controllable-unobservable (`cuo`),
 2. controllable-observable (`co`),
@@ -49,47 +52,6 @@ namespace LinearSystems
 open Matrix
 
 variable {n m p : ℕ}
-
-section RelativeDirectSum
-
-variable {𝕜 V : Type*} [Field 𝕜] [AddCommGroup V] [Module 𝕜 V]
-
-/-- Addition identifies two disjoint subspaces whose supremum is `r` with
-the subtype of `r`.  This is the relative version of
-`Submodule.prodEquivOfIsCompl`. -/
-private noncomputable def prodEquivOfDisjointSupEq
-    {q₁ q₂ r : Submodule 𝕜 V} (hdisj : Disjoint q₁ q₂) (hsup : q₁ ⊔ q₂ = r) :
-    (q₁ × q₂) ≃ₗ[𝕜] r := by
-  let f₀ : q₁ × q₂ →ₗ[𝕜] V := q₁.subtype.coprod q₂.subtype
-  let f : q₁ × q₂ →ₗ[𝕜] r := f₀.codRestrict r fun x => by
-    rw [← hsup]
-    exact Submodule.add_mem_sup x.1.2 x.2.2
-  apply LinearEquiv.ofBijective f
-  constructor
-  · have hf₀ : Function.Injective f₀ := by
-      rw [← LinearMap.ker_eq_bot, LinearMap.ker_coprod_of_disjoint_range,
-        q₁.ker_subtype, q₂.ker_subtype, Submodule.prod_bot]
-      rw [Submodule.range_subtype, Submodule.range_subtype]
-      exact hdisj
-    intro x y hxy
-    apply hf₀
-    exact Subtype.ext_iff.mp hxy
-  · intro z
-    have hz : (z : V) ∈ q₁ ⊔ q₂ := by
-      rw [hsup]
-      exact z.2
-    obtain ⟨x, y, hxy⟩ := Submodule.mem_sup'.mp hz
-    refine ⟨(x, y), Subtype.ext ?_⟩
-    exact hxy
-
-@[simp]
-private lemma prodEquivOfDisjointSupEq_apply
-    {q₁ q₂ r : Submodule 𝕜 V} (hdisj : Disjoint q₁ q₂) (hsup : q₁ ⊔ q₂ = r)
-    (x : q₁ × q₂) :
-    (prodEquivOfDisjointSupEq hdisj hsup x : V) = x.1 + x.2 :=
-  rfl
-
-end RelativeDirectSum
 
 /-- The four Kalman coordinate sectors always exist over `ℂ`. Only vector-space
 complements are used; no semisimplicity or spectral hypothesis is assumed.
@@ -147,36 +109,6 @@ namespace KalmanDecomposition
 
 variable {A : Matrix (Fin n) (Fin n) ℂ} {B : Matrix (Fin n) (Fin m) ℂ}
   {C : Matrix (Fin p) (Fin n) ℂ}
-
-/-- The nested product of the four component spaces, in the documented order
-`cuo, co, uuo, uo`.
-
-Original: formalization infrastructure for LeanForControl. -/
-abbrev Coordinates (d : KalmanDecomposition A B C) :=
-  (((d.cuo × d.co) × d.uuo) × d.uo)
-
-/-- The adapted linear equivalence from four-component coordinates to the
-original state space.
-
-Original: formalization infrastructure for LeanForControl. -/
-@[blueprint "def:kalman-adapted-equivalence"
-  (statement := /-- Addition of the four Kalman coordinate sectors defines a linear
-    equivalence
-    $X_{c\bar o}\times X_{co}\times X_{\bar c\bar o}\times X_{\bar c o}
-      \simeq \mathbb{C}^{n}$.
-    Choosing sector bases therefore gives an adapted basis of the original
-    state space. -/)]
-noncomputable def linearEquiv (d : KalmanDecomposition A B C) :
-    d.Coordinates ≃ₗ[ℂ] (Fin n → ℂ) := by
-  let eR : (d.cuo × d.co) ≃ₗ[ℂ] reachableSubspace A B :=
-    prodEquivOfDisjointSupEq d.disjoint_cuo_co d.cuo_sup_co
-  let eRN : (reachableSubspace A B × d.uuo) ≃ₗ[ℂ]
-      ↥(reachableSubspace A B ⊔ unobservableSubspace A C) :=
-    prodEquivOfDisjointSupEq d.disjoint_reachable_uuo d.reachable_sup_uuo
-  exact
-    (((eR.prodCongr (LinearEquiv.refl ℂ d.uuo)).trans eRN).prodCongr
-      (LinearEquiv.refl ℂ d.uo)).trans
-      (Submodule.prodEquivOfIsCompl _ _ d.isCompl_uo)
 
 /-- The adapted equivalence reconstructs a state by adding its four sector
 components.
@@ -238,28 +170,6 @@ theorem linearEquiv_mem_unobservable_iff
     rw [linearEquiv_apply, hco, huo]
     rw [← d.cuo_sup_uuo]
     simpa using Submodule.add_mem_sup x.1.1.1.2 x.1.2.2
-
-/-- The state endomorphism transported to the four adapted components.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def stateMap (d : KalmanDecomposition A B C) :
-    Module.End ℂ d.Coordinates :=
-  d.linearEquiv.symm.toLinearMap.comp
-    (A.mulVecLin.comp d.linearEquiv.toLinearMap)
-
-/-- The input map transported to the four adapted components.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def inputMap (d : KalmanDecomposition A B C) :
-    (Fin m → ℂ) →ₗ[ℂ] d.Coordinates :=
-  d.linearEquiv.symm.toLinearMap.comp B.mulVecLin
-
-/-- The output map expressed on the four adapted components.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def outputMap (d : KalmanDecomposition A B C) :
-    d.Coordinates →ₗ[ℂ] (Fin p → ℂ) :=
-  C.mulVecLin.comp d.linearEquiv.toLinearMap
 
 /-- Transporting `stateMap` back to the state space recovers multiplication by
 `A`.
@@ -399,25 +309,6 @@ open Module
 
 variable {ιcuo ιco ιuuo ιuo : Type*}
 
-/-- The product basis on the four component-coordinate space.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def coordinateBasis (d : KalmanDecomposition A B C)
-    (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
-    (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
-    Basis (((ιcuo ⊕ ιco) ⊕ ιuuo) ⊕ ιuo) ℂ d.Coordinates :=
-  ((bcuo.prod bco).prod buuo).prod buo
-
-/-- The basis of the original state space obtained from bases of the four
-Kalman components.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def adaptedBasis (d : KalmanDecomposition A B C)
-    (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
-    (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
-    Basis (((ιcuo ⊕ ιco) ⊕ ιuuo) ⊕ ιuo) ℂ (Fin n → ℂ) :=
-  (d.coordinateBasis bcuo bco buuo buo).map d.linearEquiv
-
 @[simp]
 private theorem coordinateBasis_apply_cuo (d : KalmanDecomposition A B C)
     (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
@@ -490,39 +381,6 @@ variable [Fintype ιcuo] [DecidableEq ιcuo]
   [Fintype ιco] [DecidableEq ιco]
   [Fintype ιuuo] [DecidableEq ιuuo]
   [Fintype ιuo] [DecidableEq ιuo]
-
-/-- The state matrix in the four-component product basis.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def stateMatrix (d : KalmanDecomposition A B C)
-    (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
-    (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
-    Matrix (((ιcuo ⊕ ιco) ⊕ ιuuo) ⊕ ιuo)
-      (((ιcuo ⊕ ιco) ⊕ ιuuo) ⊕ ιuo) ℂ :=
-  LinearMap.toMatrix (d.coordinateBasis bcuo bco buuo buo)
-    (d.coordinateBasis bcuo bco buuo buo) d.stateMap
-
-/-- The input matrix in the adapted state basis and the standard input
-basis.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def inputMatrix (d : KalmanDecomposition A B C)
-    (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
-    (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
-    Matrix (((ιcuo ⊕ ιco) ⊕ ιuuo) ⊕ ιuo) (Fin m) ℂ :=
-  LinearMap.toMatrix (Pi.basisFun ℂ (Fin m))
-    (d.coordinateBasis bcuo bco buuo buo) d.inputMap
-
-/-- The output matrix in the standard output basis and the adapted state
-basis.
-
-Original: formalization infrastructure for LeanForControl. -/
-noncomputable def outputMatrix (d : KalmanDecomposition A B C)
-    (bcuo : Basis ιcuo ℂ d.cuo) (bco : Basis ιco ℂ d.co)
-    (buuo : Basis ιuuo ℂ d.uuo) (buo : Basis ιuo ℂ d.uo) :
-    Matrix (Fin p) (((ιcuo ⊕ ιco) ⊕ ιuuo) ⊕ ιuo) ℂ :=
-  LinearMap.toMatrix (d.coordinateBasis bcuo bco buuo buo)
-    (Pi.basisFun ℂ (Fin p)) d.outputMap
 
 /-- The coordinate definition of the state matrix is exactly the matrix of
 `A` in the corresponding adapted basis of the original state space.

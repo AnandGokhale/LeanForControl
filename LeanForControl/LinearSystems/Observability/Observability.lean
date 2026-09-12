@@ -1,22 +1,14 @@
-import LeanForControl.LinearSystems.Basic
+import LeanForControl.LinearSystems.Observability.Defs
 import LeanForControl.MatrixAlgebra.Rank
 import Architect
 
 /-!
 # Observability of a finite-dimensional linear system
 
-For a discrete- or continuous-time linear system
+Theorems about the observability matrix and predicate defined in
+`LinearSystems.Observability.Defs`, for a discrete- or continuous-time linear system
 
   ẋ = A x ,  y = C x
-
-with `A : Matrix (Fin n) (Fin n) 𝕜` and `C : Matrix (Fin p) (Fin n) 𝕜`,
-this file defines:
-
-* `LinearSystems.observabilityMatrix A C`, the stacked block-row matrix
-      [ C ; C·A ; C·A² ; ⋯ ; C·Aⁿ⁻¹ ]
-  with row index `Fin n × Fin p` and column index `Fin n`;
-* `LinearSystems.IsObservable A C`, the textbook condition that the only state
-  annihilating `C·Aᵏ` for every `k = 0, …, n-1` is the zero state.
 
 The milestone theorem is
 `LinearSystems.isObservable_iff_observabilityMatrix_ker_trivial`, the bridge
@@ -30,44 +22,6 @@ open Matrix
 
 variable {𝕜 : Type*} [Semiring 𝕜]
 variable {n p : ℕ}
-
-/-- The observability matrix of `(A, C)`.
-
-The `(k, i)`-th row is the `i`-th row of `C · Aᵏ`, where `k : Fin n`
-ranges over `0, 1, …, n-1`. We index rows by `Fin n × Fin p` so that
-`A ^ (k : ℕ)` is available without first casting `k` through `Fin.val`. -/
-@[blueprint "def:observabilityMatrix"
-  (statement := /-- The \emph{observability matrix} of a pair $(A, C)$
-    with $A \in \mathbb{F}^{n \times n}$ and $C \in \mathbb{F}^{p \times n}$
-    is the block-row matrix
-    \[
-      \mathcal{O}(A, C) =
-      \begin{bmatrix} C \\ C\, A \\ C\, A^{2} \\ \vdots \\ C\, A^{n-1} \end{bmatrix}
-      \in \mathbb{F}^{(n p) \times n}.
-    \]
-    Rows are indexed by $\mathrm{Fin}\, n \times \mathrm{Fin}\, p$, so that
-    $A^{k}$ is available without casting $k : \mathrm{Fin}\, n$ through
-    $\mathrm{Fin.val}$. -/)]
-def observabilityMatrix
-    (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) :
-    Matrix (Fin n × Fin p) (Fin n) 𝕜 :=
-  Matrix.of fun ki j => (C * A ^ (ki.1 : ℕ)) ki.2 j
-
-/-- The textbook observability predicate: the only state for which
-`C · Aᵏ` annihilates the state for every power `k = 0, …, n-1` is the zero
-state. This phrasing does not mention `observabilityMatrix`, so the milestone
-theorem `isObservable_iff_observabilityMatrix_ker_trivial` has real content. -/
-@[blueprint "def:isObservable"
-  (statement := /-- A linear system $(A, C)$ is \emph{observable} when the only
-    state $x \in \mathbb{F}^{n}$ for which
-    \[
-      C\, A^{k}\, x = 0 \qquad \text{for every } k = 0, 1, \dots, n-1
-    \]
-    is the zero state. This phrasing does not mention $\mathcal{O}(A, C)$,
-    so the bridge \cref{thm:isObservable-iff-ker-trivial} has real content. -/)]
-def IsObservable
-    (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) : Prop :=
-  ∀ x : Fin n → 𝕜, (∀ k : Fin n, (C * A ^ (k : ℕ)) *ᵥ x = 0) → x = 0
 
 /-- Block-row shape lemma: row `(k, i)` of the observability matrix at
 column `j` is the `(i, j)` entry of `C · Aᵏ`. Holds definitionally. -/
