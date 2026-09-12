@@ -16,6 +16,7 @@ import LeanForControl.LinearSystems.Observability
 import LeanForControl.LinearSystems.Reachability.DefsKalmanDecomposition
 import LeanForControl.LinearSystems.Reachability.DefsReachability
 import LeanForControl.LinearSystems.Reachability.KalmanDecomposition
+import LeanForControl.LinearSystems.Reachability.KalmanDecompositionExamples
 import LeanForControl.LinearSystems.Reachability.Reachability
 import LeanForControl.LinearSystems.Stability.DefsHurwitz
 import LeanForControl.LinearSystems.Stability.Hurwitz

@@ -51,23 +51,6 @@ lemma mem_reachableSubspace_iff
       ∃ u : Fin n × Fin m → 𝕜, controllabilityMatrix A B *ᵥ u = x := by
   simp [reachableSubspace, LinearMap.mem_range]
 
-/-- Public form of the block-column multiplication identity used by the
-controllability development.
-
-Original: formalization infrastructure for LeanForControl. -/
-lemma controllabilityMatrix_mulVec_eq_sum
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
-    (u : Fin n × Fin m → 𝕜) :
-    controllabilityMatrix A B *ᵥ u =
-      ∑ k : Fin n, (A ^ (k : ℕ) * B) *ᵥ (fun j => u (k, j)) := by
-  funext i
-  rw [Finset.sum_apply]
-  change ∑ kj : Fin n × Fin m, controllabilityMatrix A B i kj * u kj =
-    ∑ k : Fin n, ((A ^ (k : ℕ) * B) *ᵥ (fun j => u (k, j))) i
-  rw [Fintype.sum_prod_type]
-  refine Finset.sum_congr rfl fun k _ => ?_
-  simp only [controllabilityMatrix_apply, Matrix.mulVec, dotProduct]
-
 /-- Every individual finite-horizon input response belongs to the reachable
 subspace.
 
