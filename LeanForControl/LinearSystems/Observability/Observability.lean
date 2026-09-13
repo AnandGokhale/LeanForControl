@@ -1,22 +1,14 @@
-import LeanForControl.LinearSystems.Basic
-import LeanForControl.LinearSystems.MatrixLemmas
+import LeanForControl.LinearSystems.Observability.Defs
+import LeanForControl.MatrixAlgebra.Rank
 import Architect
 
 /-!
 # Observability of a finite-dimensional linear system
 
-For a discrete- or continuous-time linear system
+Theorems about the observability matrix and predicate defined in
+`LinearSystems.Observability.Defs`, for a discrete- or continuous-time linear system
 
   ẋ = A x ,  y = C x
-
-with `A : Matrix (Fin n) (Fin n) 𝕜` and `C : Matrix (Fin p) (Fin n) 𝕜`,
-this file defines:
-
-* `LinearSystems.observabilityMatrix A C`, the stacked block-row matrix
-      [ C ; C·A ; C·A² ; ⋯ ; C·Aⁿ⁻¹ ]
-  with row index `Fin n × Fin p` and column index `Fin n`;
-* `LinearSystems.IsObservable A C`, the textbook condition that the only state
-  annihilating `C·Aᵏ` for every `k = 0, …, n-1` is the zero state.
 
 The milestone theorem is
 `LinearSystems.isObservable_iff_observabilityMatrix_ker_trivial`, the bridge
@@ -30,44 +22,6 @@ open Matrix
 
 variable {𝕜 : Type*} [Semiring 𝕜]
 variable {n p : ℕ}
-
-/-- The observability matrix of `(A, C)`.
-
-The `(k, i)`-th row is the `i`-th row of `C · Aᵏ`, where `k : Fin n`
-ranges over `0, 1, …, n-1`. We index rows by `Fin n × Fin p` so that
-`A ^ (k : ℕ)` is available without first casting `k` through `Fin.val`. -/
-@[blueprint "def:observabilityMatrix"
-  (statement := /-- The \emph{observability matrix} of a pair $(A, C)$
-    with $A \in \mathbb{F}^{n \times n}$ and $C \in \mathbb{F}^{p \times n}$
-    is the block-row matrix
-    \[
-      \mathcal{O}(A, C) =
-      \begin{bmatrix} C \\ C\, A \\ C\, A^{2} \\ \vdots \\ C\, A^{n-1} \end{bmatrix}
-      \in \mathbb{F}^{(n p) \times n}.
-    \]
-    Rows are indexed by $\mathrm{Fin}\, n \times \mathrm{Fin}\, p$, so that
-    $A^{k}$ is available without casting $k : \mathrm{Fin}\, n$ through
-    $\mathrm{Fin.val}$. -/)]
-def observabilityMatrix
-    (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) :
-    Matrix (Fin n × Fin p) (Fin n) 𝕜 :=
-  Matrix.of fun ki j => (C * A ^ (ki.1 : ℕ)) ki.2 j
-
-/-- The textbook observability predicate: the only state for which
-`C · Aᵏ` annihilates the state for every power `k = 0, …, n-1` is the zero
-state. This phrasing does not mention `observabilityMatrix`, so the milestone
-theorem `isObservable_iff_observabilityMatrix_ker_trivial` has real content. -/
-@[blueprint "def:isObservable"
-  (statement := /-- A linear system $(A, C)$ is \emph{observable} when the only
-    state $x \in \mathbb{F}^{n}$ for which
-    \[
-      C\, A^{k}\, x = 0 \qquad \text{for every } k = 0, 1, \dots, n-1
-    \]
-    is the zero state. This phrasing does not mention $\mathcal{O}(A, C)$,
-    so the bridge \cref{thm:isObservable-iff-ker-trivial} has real content. -/)]
-def IsObservable
-    (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) : Prop :=
-  ∀ x : Fin n → 𝕜, (∀ k : Fin n, (C * A ^ (k : ℕ)) *ᵥ x = 0) → x = 0
 
 /-- Block-row shape lemma: row `(k, i)` of the observability matrix at
 column `j` is the `(i, j)` entry of `C · Aᵏ`. Holds definitionally. -/
@@ -169,8 +123,8 @@ attacking either Hautus or the rank-based reformulations:
   are useful when restating observability in terms of trajectories rather
   than matrix powers.
 
-These belong in `LinearSystems.MatrixLemmas` (matrix-level facts) and a future
-`LinearSystems.Hautus` (control-level facts) once needed.
+These belong in `MatrixAlgebra.Rank` (matrix-level facts) and a future
+`LinearSystems.Observability.Hautus` (control-level facts) once needed.
 -/
 
 end LinearSystems
@@ -183,7 +137,7 @@ the typeclass diamond between the outer `[Semiring 𝕜]` (used for the
 existing definitions and the kernel-form milestone) and the rank-side
 `[Field 𝕜]` is broken: in the section below, the only scalar-typeclass on
 `𝕜` is `Field`, and the `Semiring` derived from it is the canonical one,
-matching the instance picked by `MatrixLemmas`.
+matching the instance picked by `MatrixAlgebra.Rank`.
 -/
 
 namespace LinearSystems
@@ -194,7 +148,7 @@ variable {𝕜 : Type*} [Field 𝕜] {n p : ℕ}
 
 /-- Rank-form characterization: observability is equivalent to the
 observability matrix having full column rank. Chains the kernel-form
-milestone with the matrix bridge from `MatrixLemmas`. -/
+milestone with the matrix bridge from `MatrixAlgebra.Rank`. -/
 @[blueprint "thm:isObservable-iff-rank"
   (statement := /-- A finite-dimensional system $(A, C)$ is observable if
     and only if the observability matrix $\mathcal{O}(A, C)$ has full column
@@ -206,13 +160,13 @@ milestone with the matrix bridge from `MatrixLemmas`. -/
   (proof := /-- Chain the kernel-form milestone
     \cref{thm:isObservable-iff-ker-trivial} with the matrix-level bridge
     $\bigl(\forall x,\ M \cdot x = 0 \Rightarrow x = 0\bigr) \iff
-     \operatorname{rank} M = n$ from `MatrixLemmas`, applied with
+     \operatorname{rank} M = n$ from `MatrixAlgebra.Rank`, applied with
     $M = \mathcal{O}(A, C)$. -/)]
 theorem isObservable_iff_observabilityMatrix_rank_eq
     (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) :
     IsObservable A C ↔ Matrix.rank (observabilityMatrix A C) = n := by
   refine (isObservable_iff_observabilityMatrix_ker_trivial A C).trans ?_
-  refine (LinearSystems.MatrixLemmas.mulVec_kernel_trivial_iff_rank_eq_card_cols
+  refine (MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols
     (observabilityMatrix A C)).trans ?_
   rw [Fintype.card_fin]
 
