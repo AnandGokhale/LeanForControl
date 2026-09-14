@@ -362,9 +362,9 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. 
   (statement := /-- \textbf{Theorem 5.1} (Peano--Baker series, uniqueness half). Any solution
     $z$ of $\dot x = A(t)\, x$, $x(t_0) = x_0$ on $[t_0,b]$ coincides with
     $x(t) := \Phi(t,t_0)\, x_0$. -/)
-  (proof := /-- Apply the continuous-dependence bound (Theorem 3.4, `continuous_dependence_ODE`
-    in `ODEs/ODE_properties.lean`) with zero perturbation: since both solutions share the
-    initial value $x_0$, the resulting bound on $\|x(t) - z(t)\|$ collapses to $0$. -/)]
+  (proof := /-- Apply the continuous-dependence bound of Theorem 3.4 with zero perturbation:
+    since both solutions share the initial value $x_0$, the resulting bound on
+    $\|x(t) - z(t)\|$ collapses to $0$. -/)]
 theorem stateTransitionMatrix_mulVec_unique (hA : Continuous A) {b t₀ M : ℝ} (hb : t₀ < b)
     (hA_le : ∀ s ∈ Set.Icc t₀ b, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ)
     {z : ℝ → Fin n → ℝ} (hz : IsIntegralSolution t₀ b z x₀ (fun s v => A s *ᵥ v))
