@@ -104,6 +104,37 @@ margin, and ordinary Hurwitz stability is the zero-rate case.
 
 \inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
 
+\section{Peano--Baker series and the state transition matrix}
+
+For a genuinely time-varying state matrix $A(t)$, this section constructs the state transition
+matrix $\Phi(t,t_0)$ as the Peano--Baker series and proves Theorem 5.1: $\Phi$ solves the
+matrix ODE $\dot\Phi(t,t_0) = A(t)\Phi(t,t_0)$ with $\Phi(t_0,t_0) = I$, and consequently
+$x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
+
+\inputleannode{def:peanoBakerTerm}
+
+\inputleannode{def:stateTransitionMatrix}
+
+\inputleannode{lem:continuous-peanoBakerTerm}
+
+\inputleannode{lem:norm-peanoBakerTerm-le}
+
+\inputleannode{lem:norm-peanoBakerTerm-le-of-mem}
+
+\inputleannode{lem:summable-peanoBakerTerm}
+
+\inputleannode{lem:continuousOn-stateTransitionMatrix}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix}
+
+\inputleannode{thm:stateTransitionMatrix-self}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-mulVec}
+
+\inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mulVec}
+
+\inputleannode{thm:stateTransitionMatrix-mulVec-unique}
+
 \chapter{Ordinary differential equations}
 
 \section{Dini derivatives}
