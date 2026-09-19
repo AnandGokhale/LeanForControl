@@ -58,6 +58,21 @@ lemma IntervalIntegrable_of_lipschitz {t₀ t₁ : ℝ} (hle : t₀ ≤ t₁)
   exact (hf_cont.comp_continuousOn
     (ContinuousOn.prodMk continuous_id.continuousOn hz)).intervalIntegrable
 
+/-- Re-anchoring an integral solution at an interior point `s`: if `x` solves `ẋ = F(t, x)` on
+    `[t₀, t₁]` with initial value `x₀`, it also solves it on `[s, t₁]`, with initial value
+    `x s`, for any `s ∈ [t₀, t₁]`. -/
+lemma IsIntegralSolution.reanchor {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {F : ℝ → E → E}
+    (hx : IsIntegralSolution t₀ t₁ x x₀ F) (hF_cont : Continuous (fun p : ℝ × E => F p.1 p.2))
+    (hx_cont : ContinuousOn x (Icc t₀ t₁)) {s : ℝ} (hs : s ∈ Icc t₀ t₁) :
+    IsIntegralSolution s t₁ x (x s) F := by
+  intro t ht
+  have ht' : t ∈ Icc t₀ t₁ := ⟨hs.1.trans ht.1, ht.2⟩
+  have hint1 : IntervalIntegrable (fun r => F r (x r)) volume t₀ s :=
+    IntervalIntegrable_of_lipschitz hs.1 hF_cont (hx_cont.mono (Icc_subset_Icc_right hs.2))
+  have hint2 : IntervalIntegrable (fun r => F r (x r)) volume s t :=
+    IntervalIntegrable_of_lipschitz ht.1 hF_cont (hx_cont.mono (Icc_subset_Icc hs.1 ht.2))
+  rw [hx t ht', hx s hs, add_assoc, intervalIntegral.integral_add_adjacent_intervals hint1 hint2]
+
 /-- **Theorem 3.4** (Continuous dependence on initial states and parameters).
 
 If `y` is an integral solution of `ẏ = f(t, y)` and `z` is an integral solution of

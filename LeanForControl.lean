@@ -19,8 +19,8 @@ import LeanForControl.LinearSystems.KalmanDecomposition.Defs
 import LeanForControl.LinearSystems.Observability.Defs
 import LeanForControl.LinearSystems.Observability.Hautus
 import LeanForControl.LinearSystems.Observability.Observability
-import LeanForControl.LinearSystems.Solutions.Continuous
-import LeanForControl.LinearSystems.Solutions.DefsContinuous
+import LeanForControl.LinearSystems.Solutions.DefsLTV_solutions
+import LeanForControl.LinearSystems.Solutions.LTV_solutions
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.MatrixAlgebra.Rank
