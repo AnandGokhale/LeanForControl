@@ -587,6 +587,32 @@ theorem stateTransitionMatrix_mul_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
   have h0 : ‖stateTransitionMatrix A t t₀ * C - Y t‖ ≤ 0 := by simpa using hbound t ht
   exact (sub_eq_zero.mp (norm_le_zero_iff.mp h0)).symm
 
+/-- Auxiliary re-anchoring fact: `Y(z) := Φ(z, a) * C`, an integral solution of the matrix ODE
+anchored at `a`, also satisfies the integral equation anchored at the *other* endpoint `b` of the
+segment between `a` and `b`. Unlike `IsIntegralSolution.reanchor` (which only reaches from an
+interior re-anchor point out to the *original* far endpoint, shrinking the domain), this keeps
+the *whole* segment between `a` and `b` as the domain — exactly what `stateTransitionMatrix_inv`
+needs to compare `Φ(·, a)` against `Φ(·, b) * Φ(b, a)` using `stateTransitionMatrix_mul_unique`
+anchored at `b`. -/
+private lemma isIntegralSolution_stateTransitionMatrix_mul_reanchor (hA : Continuous A) {a b M : ℝ}
+    (hA_le : ∀ r ∈ Set.uIcc a b, ‖A r‖ ≤ M) (C : Matrix (Fin n) (Fin n) ℝ) :
+    IsIntegralSolution b a (fun z => stateTransitionMatrix A z a * C)
+      (stateTransitionMatrix A b a * C) (fun s Y => A s * Y) := by
+  intro z hz
+  have hx_cont : ContinuousOn (fun w => stateTransitionMatrix A w a * C) (Set.uIcc b z) :=
+    ((continuous_fst.mul continuous_snd).comp_continuousOn
+      ((continuousOn_stateTransitionMatrix hA hA_le).prodMk continuousOn_const)).mono
+      (by rw [Set.uIcc_comm a b]; exact Set.uIcc_subset_uIcc_left hz)
+  have huIoo_sub : Set.uIoo b z ⊆ Set.uIoo a b := by
+    rw [Set.uIoo_comm a b, ← Set.Ioo_min_max, ← Set.Ioo_min_max]
+    exact Set.Ioo_subset_Ioo (le_min (min_le_left b a) hz.1) (max_le (le_max_left b a) hz.2)
+  have hFTC := intervalIntegral.integral_eq_sub_of_hasDeriv_right hx_cont
+    (fun w hw => (hasDerivAt_stateTransitionMatrix_mul hA hA_le (huIoo_sub hw) C).hasDerivWithinAt)
+    ((continuous_fst.mul continuous_snd).comp_continuousOn
+      (hA.continuousOn.prodMk hx_cont)).intervalIntegrable
+  rw [hFTC]
+  abel
+
 /-- **P5.3 (semigroup property).** `Φ(t,s) * Φ(s,τ) = Φ(t,τ)` for `τ ≤ s < t`, with `A`
 continuous and bounded by `M` on the segment between `τ` and `t`.
 
@@ -622,5 +648,331 @@ theorem stateTransitionMatrix_semigroup (hA : Continuous A) {τ s t M : ℝ} (h�
     ((continuousOn_stateTransitionMatrix hA hA_le_u).mono (Set.uIcc_subset_uIcc_right hs_mem))
     t Set.right_mem_uIcc
   exact hunique.symm
+
+/-- **P5.4.** `Φ(t,τ)` is nonsingular, with `Φ(t,τ)⁻¹ = Φ(τ,t)`, for `A` continuous and bounded
+by `M` on the segment between `τ` and `t`.
+
+Proof: `Φ(·,τ)`, re-anchored at `t` (`isIntegralSolution_stateTransitionMatrix_mul_reanchor`), is
+an integral solution of the matrix ODE on the segment between `t` and `τ` with initial value
+`Φ(t,τ)`, hence coincides with `Φ(·,t) * Φ(t,τ)` there (`stateTransitionMatrix_mul_unique`).
+Evaluating at `τ` gives `Φ(τ,t) * Φ(t,τ) = Φ(τ,τ) = I`, so `Φ(τ,t)` is a left inverse of
+`Φ(t,τ)`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.4. -/
+@[blueprint "thm:stateTransitionMatrix-inv"
+  (statement := /-- \textbf{P5.4.} For every $t,\tau$, $\Phi(t,\tau)$ is nonsingular and
+    \[
+      \Phi(t,\tau)^{-1} = \Phi(\tau,t).
+    \] -/)
+  (proof := /-- From \cref{thm:stateTransitionMatrix-semigroup}, generalized to arbitrary order
+    by re-anchoring $\Phi(\cdot,\tau)$ at $t$ and invoking uniqueness there,
+    $\Phi(\tau,t)\Phi(t,\tau) = \Phi(\tau,\tau) = I$, so $\Phi(t,\tau)$ and $\Phi(\tau,t)$ are
+    mutual inverses. -/)]
+theorem stateTransitionMatrix_inv (hA : Continuous A) {t τ M : ℝ}
+    (hA_le : ∀ r ∈ Set.uIcc τ t, ‖A r‖ ≤ M) :
+    IsUnit (stateTransitionMatrix A t τ) ∧
+      (stateTransitionMatrix A t τ)⁻¹ = stateTransitionMatrix A τ t := by
+  -- `Φ(·,τ)`, re-anchored at `t`, coincides with `Φ(·,t) * Φ(t,τ)` on `[t,τ]` by uniqueness;
+  -- evaluating at `τ` gives `Φ(τ,t) * Φ(t,τ) = Φ(τ,τ) = I`.
+  have hmul : stateTransitionMatrix A τ t * stateTransitionMatrix A t τ = 1 := by
+    have hY : IsIntegralSolution t τ (fun z => stateTransitionMatrix A z τ)
+        (stateTransitionMatrix A t τ) (fun s Y => A s * Y) := by
+      simpa using isIntegralSolution_stateTransitionMatrix_mul_reanchor hA hA_le
+        (1 : Matrix (Fin n) (Fin n) ℝ)
+    have huniq := stateTransitionMatrix_mul_unique hA
+      (show ∀ r ∈ Set.uIcc t τ, ‖A r‖ ≤ M by rwa [Set.uIcc_comm])
+      (stateTransitionMatrix A t τ) hY
+      (show ContinuousOn (fun z => stateTransitionMatrix A z τ) (Set.uIcc t τ) by
+        rw [Set.uIcc_comm]; exact continuousOn_stateTransitionMatrix hA hA_le)
+      τ Set.right_mem_uIcc
+    rwa [stateTransitionMatrix_self, eq_comm] at huniq
+  exact ⟨IsUnit.of_mul_eq_one_right _ hmul, Matrix.inv_eq_left_inv hmul⟩
+
+/-- Composition of the state transition matrix, varying the *first* argument: `Φ(z,a) =
+Φ(z,b) * Φ(b,a)` for every `z` on the segment between `a` and `b`. This is the general form of
+the fact used inside `stateTransitionMatrix_inv` (which only needed it at `z = τ`); kept general
+here because `stateTransitionMatrix_comp` below needs it at an arbitrary point.
+
+Proof: identical to `stateTransitionMatrix_inv`'s — `Φ(·,a)`, re-anchored at `b`
+(`isIntegralSolution_stateTransitionMatrix_mul_reanchor`), coincides with `Φ(·,b) * Φ(b,a)` on
+`[b,a]` by uniqueness (`stateTransitionMatrix_mul_unique`). -/
+theorem stateTransitionMatrix_comp_of_mem (hA : Continuous A) {a b M : ℝ}
+    (hA_le : ∀ r ∈ Set.uIcc a b, ‖A r‖ ≤ M) {z : ℝ} (hz : z ∈ Set.uIcc a b) :
+    stateTransitionMatrix A z a = stateTransitionMatrix A z b * stateTransitionMatrix A b a := by
+  have hY : IsIntegralSolution b a (fun z => stateTransitionMatrix A z a)
+      (stateTransitionMatrix A b a) (fun r Y => A r * Y) := by
+    simpa using isIntegralSolution_stateTransitionMatrix_mul_reanchor hA hA_le
+      (1 : Matrix (Fin n) (Fin n) ℝ)
+  exact stateTransitionMatrix_mul_unique hA (show ∀ r ∈ Set.uIcc b a, ‖A r‖ ≤ M by
+      rwa [Set.uIcc_comm]) (stateTransitionMatrix A b a) hY
+    (show ContinuousOn (fun z => stateTransitionMatrix A z a) (Set.uIcc b a) by
+      rw [Set.uIcc_comm]; exact continuousOn_stateTransitionMatrix hA hA_le)
+    z (by rwa [Set.uIcc_comm] at hz)
+
+/-- **P5.3, order-free.** `Φ(t,s) * Φ(s,τ) = Φ(t,τ)` for *any* `s` on the segment between `τ`
+and `t` — the order-free generalization of `stateTransitionMatrix_semigroup`, whose `τ ≤ s < t`
+restriction was an artifact of matching the textbook's literal statement, not a genuine
+requirement. Needed by the variation-of-constants existence proof, where `s = t₀` is fixed and
+`τ` ranges over the *whole* segment `[t₀,t]`, not just points strictly after `t₀`.
+
+Proof: `Φ(s,τ) = Φ(s,t) * Φ(t,τ)` by `stateTransitionMatrix_comp_of_mem`; left-multiply by
+`Φ(t,s)` and simplify via `Φ(t,s) * Φ(s,t) = I` (P5.4, `stateTransitionMatrix_inv`).
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.3. -/
+theorem stateTransitionMatrix_comp (hA : Continuous A) {τ t M : ℝ}
+    (hA_le : ∀ r ∈ Set.uIcc τ t, ‖A r‖ ≤ M) {s : ℝ} (hs : s ∈ Set.uIcc τ t) :
+    stateTransitionMatrix A t s * stateTransitionMatrix A s τ = stateTransitionMatrix A t τ := by
+  have hcomp := stateTransitionMatrix_comp_of_mem hA hA_le hs
+  have hA_le' : ∀ r ∈ Set.uIcc s t, ‖A r‖ ≤ M := fun r hr =>
+    hA_le r (Set.uIcc_subset_uIcc_right hs hr)
+  obtain ⟨hunit, hinv⟩ := stateTransitionMatrix_inv hA hA_le'
+  rw [hcomp, ← mul_assoc, ← hinv, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
+    hunit), Matrix.one_mul]
+
+/-- Composition of the state transition matrix through a fixed *base* point: `Φ(t,t₀) *
+Φ(t₀,τ) = Φ(t,τ)` for every `τ` on the segment between `t₀` and `t`. This is the shape needed by
+variation-of-constants, where `t₀` and `t` are the fixed integration endpoints and `τ` is the
+integration variable — unlike `stateTransitionMatrix_comp`, which needs the *middle* point of the
+three (there, `τ` would have to lie between the two fixed points, not the reverse).
+
+Proof: `stateTransitionMatrix_comp` (with `τ` itself as the middle point) gives
+`Φ(t,τ) * Φ(τ,t₀) = Φ(t,t₀)`; solve for `Φ(t,τ)` by right-multiplying by `Φ(t₀,τ)` and
+cancelling `Φ(τ,t₀) * Φ(t₀,τ) = I` (P5.4). -/
+theorem stateTransitionMatrix_comp_base (hA : Continuous A) {t₀ t M : ℝ}
+    (hA_le : ∀ r ∈ Set.uIcc t₀ t, ‖A r‖ ≤ M) {τ : ℝ} (hτ : τ ∈ Set.uIcc t₀ t) :
+    stateTransitionMatrix A t t₀ * stateTransitionMatrix A t₀ τ = stateTransitionMatrix A t τ := by
+  have hcomp := stateTransitionMatrix_comp hA hA_le hτ
+  obtain ⟨hunit, hinv⟩ := stateTransitionMatrix_inv hA
+    (fun r hr => hA_le r (Set.uIcc_subset_uIcc_left hτ hr))
+  rw [← hcomp, mul_assoc, ← hinv,
+    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp hunit), mul_one]
+
+/-- Continuity of the state transition matrix in its *second* argument, with the first held
+fixed — the mirror image of `continuousOn_stateTransitionMatrix` (which varies the first
+argument, base fixed). Needed whenever `Φ(t, ·)` appears as an integrand, as in the
+variation-of-constants formula.
+
+Proof: `Φ(τ,t)⁻¹ = Φ(t,τ)` by P5.4 (`stateTransitionMatrix_inv`), so `τ ↦ Φ(t,τ)` is the
+composition of `τ ↦ Φ(τ,t)` (continuous by `continuousOn_stateTransitionMatrix`) with matrix
+inversion, continuous at every unit (`continuousAt_matrix_inv`). -/
+theorem continuousOn_stateTransitionMatrix_snd (hA : Continuous A) {t t₁ M : ℝ}
+    (hA_le : ∀ s ∈ Set.uIcc t t₁, ‖A s‖ ≤ M) :
+    ContinuousOn (fun τ => stateTransitionMatrix A t τ) (Set.uIcc t t₁) := by
+  intro τ hτ
+  have hA_le' : ∀ r ∈ Set.uIcc t τ, ‖A r‖ ≤ M := fun r hr =>
+    hA_le r (Set.uIcc_subset_uIcc_left hτ hr)
+  obtain ⟨hunit, hinv⟩ := stateTransitionMatrix_inv hA hA_le'
+  -- `hunit : IsUnit (Φ(τ,t))`, `hinv : (Φ(τ,t))⁻¹ = Φ(t,τ)`.
+  have hdet_unit : IsUnit (stateTransitionMatrix A τ t).det :=
+    (Matrix.isUnit_iff_isUnit_det _).mp hunit
+  have hring_cont : ContinuousAt Ring.inverse (stateTransitionMatrix A τ t).det := by
+    rw [← hdet_unit.unit_spec]
+    exact NormedRing.inverse_continuousAt hdet_unit.unit
+  have hcont_swap : ContinuousWithinAt (fun τ' => stateTransitionMatrix A τ' t)
+      (Set.uIcc t t₁) τ :=
+    continuousOn_stateTransitionMatrix hA hA_le τ hτ
+  refine ((continuousAt_matrix_inv _ hring_cont).comp_continuousWithinAt
+    (f := fun τ' => stateTransitionMatrix A τ' t) hcont_swap).congr
+    (fun τ' hτ' => ?_) hinv.symm
+  exact (stateTransitionMatrix_inv hA
+    (fun r hr => hA_le r (Set.uIcc_subset_uIcc_left hτ' hr))).2.symm
+
+variable {m p : ℕ} {B : ℝ → Matrix (Fin n) (Fin m) ℝ} {u : ℝ → Fin m → ℝ}
+variable {C : ℝ → Matrix (Fin p) (Fin n) ℝ} {D : ℝ → Matrix (Fin p) (Fin m) ℝ}
+
+/-- **Integrating-factor step 1.** `w(t) := x₀ + ∫ τ in t₀..t, Φ(t₀,τ) *ᵥ (B(τ) *ᵥ u(τ))` has
+derivative `Φ(t₀,t) *ᵥ (B(t) *ᵥ u(t))` — an *ordinary* FTC fact, since `t₀` (unlike the outer `t`
+in `hasDerivAt_variationOfConstants`) is fixed throughout the integrand: only the upper limit
+depends on the differentiation variable. This avoids ever needing to differentiate `Φ` in its
+second argument, only integrate it (`continuousOn_stateTransitionMatrix_snd`). -/
+private lemma hasDerivAt_variationOfConstants_w (hA : Continuous A) (hB : Continuous B)
+    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
+    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
+    HasDerivAt (fun z => x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
+      (stateTransitionMatrix A t₀ t *ᵥ (B t *ᵥ u t)) t := by
+  have hF_cont : ContinuousOn (fun τ => stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
+      (Set.uIcc t₀ t₁) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      ((continuousOn_stateTransitionMatrix_snd hA hA_le).prodMk
+        (hB.matrix_mulVec hu).continuousOn)
+  have hopen : IsOpen (Set.uIoo t₀ t₁) := by rw [← Set.Ioo_min_max]; exact isOpen_Ioo
+  have hF_cont_at : ContinuousAt (fun τ => stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ)) t :=
+    (hF_cont.mono Set.uIoo_subset_uIcc_self).continuousAt (hopen.mem_nhds ht)
+  have hint : IntervalIntegrable (fun τ => stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
+      volume t₀ t :=
+    (hF_cont.mono (Set.uIcc_subset_uIcc_left (Set.uIoo_subset_uIcc_self ht))).intervalIntegrable
+  have hderiv := intervalIntegral.integral_hasDerivAt_right hint
+    (ContinuousOn.stronglyMeasurableAtFilter (μ := volume) hopen
+      (hF_cont.mono Set.uIoo_subset_uIcc_self) t ht)
+    hF_cont_at
+  exact hderiv.const_add x₀
+
+/-- **Integrating-factor step 2.** `x(z) = Φ(z,t₀) *ᵥ w(z)`, algebraically, for `w` as in
+`hasDerivAt_variationOfConstants_w` — this is what lets differentiating `x` reduce to an ordinary
+product rule on `Φ(·,t₀) *ᵥ w(·)` instead of a Leibniz rule.
+
+Proof: push `Φ(z,t₀)` through the integral defining `w` (as a fixed continuous linear map), then
+use `stateTransitionMatrix_comp_base` pointwise: `Φ(z,t₀) *ᵥ (Φ(t₀,τ) *ᵥ v) = Φ(z,τ) *ᵥ v`. -/
+private lemma variationOfConstants_eq_mulVec (hA : Continuous A) (hB : Continuous B)
+    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ)
+    {z : ℝ} (hz : z ∈ Set.uIcc t₀ t₁) :
+    stateTransitionMatrix A z t₀ *ᵥ x₀ +
+        ∫ τ in t₀..z, stateTransitionMatrix A z τ *ᵥ (B τ *ᵥ u τ) =
+      stateTransitionMatrix A z t₀ *ᵥ
+        (x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ)) := by
+  rw [Matrix.mulVec_add]
+  congr 1
+  set L : (Fin n → ℝ) →L[ℝ] (Fin n → ℝ) :=
+    LinearMap.toContinuousLinearMap (stateTransitionMatrix A z t₀).mulVecLin with hL
+  have hL_apply : ∀ v : Fin n → ℝ, L v = stateTransitionMatrix A z t₀ *ᵥ v :=
+    fun v => Matrix.mulVecLin_apply _ v
+  have hA_le' : ∀ s ∈ Set.uIcc t₀ z, ‖A s‖ ≤ M := fun s hs =>
+    hA_le s (Set.uIcc_subset_uIcc_left hz hs)
+  have hcont : ContinuousOn (fun τ => stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
+      (Set.uIcc t₀ z) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      ((continuousOn_stateTransitionMatrix_snd hA hA_le').prodMk
+        (hB.matrix_mulVec hu).continuousOn)
+  have hL_comm := L.intervalIntegral_comp_comm (μ := volume) hcont.intervalIntegrable
+  simp only [hL_apply] at hL_comm
+  rw [← hL_comm]
+  refine intervalIntegral.integral_congr fun τ hτ => ?_
+  rw [Matrix.mulVec_mulVec (B τ *ᵥ u τ), stateTransitionMatrix_comp_base hA hA_le' hτ]
+
+/-- **Integrating-factor step 3, matrix→CLM transport.** `M ↦ (v ↦ M *ᵥ v)`, as a continuous
+linear map from matrices into `(Fin n → ℝ) →L[ℝ] Fin n → ℝ`. Needed to turn a *matrix*-valued
+`HasDerivAt` (`hasDerivAt_stateTransitionMatrix`) into a `ContinuousLinearMap`-valued one, so
+`HasDerivAt.clm_apply` can differentiate `z ↦ Φ(z,t₀) *ᵥ w(z)` as a product of two moving paths.
+
+Built from `Matrix.mulVecBilin`, the curried linear (not yet continuous) version of `*ᵥ`, by
+applying `LinearMap.toContinuousLinearMap` twice — once to continuify each value
+`v ↦ M *ᵥ v` (inner map, domain `Fin n → ℝ` is finite-dimensional), once to continuify the whole
+assignment `M ↦ (that CLM)` (outer map, domain `Matrix (Fin n) (Fin n) ℝ` is finite-dimensional
+too). -/
+private noncomputable def matrixMulVecCLM :
+    Matrix (Fin n) (Fin n) ℝ →L[ℝ] (Fin n → ℝ) →L[ℝ] Fin n → ℝ :=
+  LinearMap.toContinuousLinearMap
+    (LinearMap.toContinuousLinearMap.toLinearMap.comp (Matrix.mulVecBilin ℝ ℝ))
+
+private lemma matrixMulVecCLM_apply (M : Matrix (Fin n) (Fin n) ℝ) (v : Fin n → ℝ) :
+    matrixMulVecCLM M v = M *ᵥ v := rfl
+
+/-- **Integrating-factor step 3+4.** `z ↦ Φ(z,t₀) *ᵥ w(z)` solves `ẋ = A(t)x + B(t)u(t)` at
+`t` — the ordinary product rule (`HasDerivAt.clm_apply`, via `matrixMulVecCLM`) applied to
+`hasDerivAt_stateTransitionMatrix` and `hasDerivAt_variationOfConstants_w`, simplified using
+`Φ(t,t₀) * Φ(t₀,t) = Φ(t,t) = I` (`stateTransitionMatrix_comp_base`,
+`stateTransitionMatrix_self`) to cancel the forcing term down to `B(t) *ᵥ u(t)`. -/
+private lemma hasDerivAt_variationOfConstants_mulVec (hA : Continuous A) (hB : Continuous B)
+    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
+    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
+    HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ
+        (x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ)))
+      (A t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ
+          (x₀ + ∫ τ in t₀..t, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))) + B t *ᵥ u t) t := by
+  have hΦ_deriv := (matrixMulVecCLM.hasFDerivAt
+    (x := stateTransitionMatrix A t t₀)).comp_hasDerivAt t
+    (hasDerivAt_stateTransitionMatrix hA hA_le ht)
+  have hderiv := hΦ_deriv.clm_apply (hasDerivAt_variationOfConstants_w hA hB hu hA_le ht x₀)
+  simp only [Function.comp_apply, matrixMulVecCLM_apply] at hderiv
+  have hcancel : stateTransitionMatrix A t t₀ * stateTransitionMatrix A t₀ t = 1 := by
+    rw [stateTransitionMatrix_comp_base hA
+      (fun r hr => hA_le r (Set.uIcc_subset_uIcc_left (Set.uIoo_subset_uIcc_self ht) hr))
+      Set.right_mem_uIcc, stateTransitionMatrix_self]
+  rwa [Matrix.mulVec_mulVec (B t *ᵥ u t), hcancel, Matrix.one_mulVec,
+    ← Matrix.mulVec_mulVec] at hderiv
+
+/-- **Theorem 5.2 (Variation of constants), existence half.** `x(t) := Φ(t,t₀) *ᵥ x₀ +
+∫ τ in t₀..t, Φ(t,τ) *ᵥ (B(τ) *ᵥ u(τ))` solves the initial value problem
+`ẋ = A(t) x + B(t) u(t)`, `x(t₀) = x₀`.
+
+Proof: transfer `hasDerivAt_variationOfConstants_mulVec` (the derivative of `Φ(·,t₀) *ᵥ w(·)`)
+across the pointwise equality `x(z) = Φ(z,t₀) *ᵥ w(z)` (`variationOfConstants_eq_mulVec`), valid
+on the neighborhood `Set.uIcc t₀ t₁ ∈ 𝓝 t` since `t` is interior to it.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
+theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
+    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
+    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
+    HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ x₀ +
+        ∫ τ in t₀..z, stateTransitionMatrix A z τ *ᵥ (B τ *ᵥ u τ))
+      (A t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +
+          ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)) + B t *ᵥ u t) t := by
+  have hopen : IsOpen (Set.uIoo t₀ t₁) := by rw [← Set.Ioo_min_max]; exact isOpen_Ioo
+  have hderiv0 := hasDerivAt_variationOfConstants_mulVec hA hB hu hA_le ht x₀
+  rw [← variationOfConstants_eq_mulVec hA hB hu hA_le x₀ (Set.uIoo_subset_uIcc_self ht)] at hderiv0
+  refine hderiv0.congr_of_eventuallyEq ?_
+  filter_upwards [Filter.mem_of_superset (hopen.mem_nhds ht) Set.uIoo_subset_uIcc_self] with z hz
+  exact variationOfConstants_eq_mulVec hA hB hu hA_le x₀ hz
+
+/-- The variation-of-constants formula matches the initial value `x₀` at `t = t₀`: the forcing
+integral is over the degenerate interval `[t₀,t₀]`, and `Φ(t₀,t₀) = I`. -/
+theorem variationOfConstants_self (t₀ : ℝ) (x₀ : Fin n → ℝ) :
+    stateTransitionMatrix A t₀ t₀ *ᵥ x₀ +
+        ∫ τ in t₀..t₀, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ) = x₀ := by
+  simp [stateTransitionMatrix_self]
+
+/-- **Theorem 5.2 (Variation of constants), uniqueness half.** Any two integral solutions of the
+forced LTV system `ẋ = A(t) x + B(t) u(t)` sharing the same initial value `x₀` coincide on the
+segment between `t₀` and `t₁`.
+
+Unlike the existence half, this needs no new machinery: for fixed `t`, `v ↦ A(t) v + B(t) u(t)`
+is affine, hence globally Lipschitz, in `v`, so `continuous_dependence_ODE` (Theorem 3.4) applies
+directly with zero perturbation `g := 0`, exactly as in `stateTransitionMatrix_mulVec_unique`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
+theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
+    {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {x₀ : Fin n → ℝ}
+    {z₁ z₂ : ℝ → Fin n → ℝ}
+    (hz₁ : IsIntegralSolution t₀ t₁ z₁ x₀ (fun s v => A s *ᵥ v + B s *ᵥ u s))
+    (hz₂ : IsIntegralSolution t₀ t₁ z₂ x₀ (fun s v => A s *ᵥ v + B s *ᵥ u s))
+    (hz₁_cont : ContinuousOn z₁ (Set.uIcc t₀ t₁)) (hz₂_cont : ContinuousOn z₂ (Set.uIcc t₀ t₁)) :
+    ∀ t ∈ Set.uIcc t₀ t₁, z₁ t = z₂ t := by
+  set L : ℝ := max M 1 with hL_def
+  have hL_pos : (0 : ℝ) < L := lt_of_lt_of_le one_pos (le_max_right M 1)
+  have hM_le_L : M ≤ L := le_max_left M 1
+  have hLip : ∀ t ∈ Set.uIcc t₀ t₁,
+      LipschitzWith ⟨L, hL_pos.le⟩ (fun v : Fin n → ℝ => A t *ᵥ v + B t *ᵥ u t) := by
+    intro t ht
+    refine LipschitzWith.of_dist_le_mul fun v₁ v₂ => ?_
+    have hAt : ‖A t‖ ≤ L := (hA_le t ht).trans hM_le_L
+    calc dist (A t *ᵥ v₁ + B t *ᵥ u t) (A t *ᵥ v₂ + B t *ᵥ u t)
+        = dist (A t *ᵥ v₁) (A t *ᵥ v₂) := dist_add_right _ _ _
+      _ = ‖A t *ᵥ v₁ - A t *ᵥ v₂‖ := dist_eq_norm _ _
+      _ = ‖A t *ᵥ (v₁ - v₂)‖ := by rw [Matrix.mulVec_sub]
+      _ ≤ ‖A t‖ * ‖v₁ - v₂‖ := Matrix.linfty_opNorm_mulVec _ _
+      _ ≤ L * dist v₁ v₂ := by rw [dist_eq_norm]; gcongr
+  have hbound := continuous_dependence_ODE (g := fun _ _ => (0 : Fin n → ℝ)) (μ := 0) hL_pos
+    hz₁ (by simpa using hz₂) hz₁_cont hz₂_cont
+    (((hA.comp continuous_fst).matrix_mulVec continuous_snd).add
+      ((hB.comp continuous_fst).matrix_mulVec (hu.comp continuous_fst)))
+    intervalIntegrable_const hLip (fun _ _ _ => by simp)
+  intro t ht
+  have h0 : ‖z₁ t - z₂ t‖ ≤ 0 := by simpa using hbound t ht
+  exact sub_eq_zero.mp (norm_le_zero_iff.mp h0)
+
+/-- **Theorem 5.2 (Variation of constants), output equation (5.8).** `y(t) := C(t) x(t) + D(t)
+u(t)`, for `x(t)` as in `hasDerivAt_variationOfConstants`, splits into the *homogeneous response*
+`C(t) Φ(t,t₀) x₀` and the *forced response* `∫ τ in t₀..t, C(t) Φ(t,τ) B(τ) u(τ) + D(t) u(t)`. -/
+theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
+    {t₀ t M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ) :
+    C t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +
+        ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)) + D t *ᵥ u t =
+      C t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀) +
+        (∫ τ in t₀..t, C t *ᵥ (stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ))) + D t *ᵥ u t := by
+  rw [Matrix.mulVec_add, add_assoc, add_assoc]
+  congr 2
+  -- `v ↦ C t *ᵥ v`, as a continuous linear map, commutes with the interval integral.
+  set L : (Fin n → ℝ) →L[ℝ] (Fin p → ℝ) := LinearMap.toContinuousLinearMap (C t).mulVecLin
+    with hL
+  have hΦ_cont : ContinuousOn (fun τ => stateTransitionMatrix A t τ) (Set.uIcc t₀ t) := by
+    rw [Set.uIcc_comm]
+    exact continuousOn_stateTransitionMatrix_snd hA (by rwa [Set.uIcc_comm])
+  have hcont : ContinuousOn (fun τ => stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ))
+      (Set.uIcc t₀ t) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      (hΦ_cont.prodMk (hB.matrix_mulVec hu).continuousOn)
+  have hL_apply : ∀ v : Fin n → ℝ, L v = C t *ᵥ v := fun v => Matrix.mulVecLin_apply (C t) v
+  simpa [hL_apply] using
+    (L.intervalIntegral_comp_comm (μ := volume) hcont.intervalIntegrable).symm
 
 end LinearSystems
