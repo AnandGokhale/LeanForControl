@@ -69,10 +69,12 @@ theorem hankelMatrix_eq_observability_mul_controllability
     (R : Realization 𝕜 n m p) (r s : ℕ) :
     R.hankelMatrix r s = R.observabilityHorizon r * R.controllabilityHorizon s := by
   ext ia jb
-  simp only [hankelMatrix, markovParameter, observabilityHorizon,
-    controllabilityHorizon, Matrix.of_apply, Matrix.mul_apply]
-  rw [pow_add, ← Matrix.mul_assoc]
-  simp only [Matrix.mul_apply, Matrix.mul_assoc]
+  change
+    (R.C * R.A ^ ((ia.1 : ℕ) + (jb.1 : ℕ)) * R.B) ia.2 jb.2 =
+      ((R.C * R.A ^ (ia.1 : ℕ)) *
+        (R.A ^ (jb.1 : ℕ) * R.B)) ia.2 jb.2
+  rw [pow_add]
+  simp only [Matrix.mul_assoc]
 
 /-- At the state dimension, the finite controllability horizon is the
 library's controllability matrix.

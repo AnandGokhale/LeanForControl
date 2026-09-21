@@ -97,8 +97,16 @@ lemma Similar.state_pow (r₁ r₂ : Realization 𝕜 n m p) (h : Similar r₁ r
   induction k with
   | zero => simp
   | succ k ih =>
-      rw [pow_succ, pow_succ, Matrix.mul_assoc, ih]
-      simp only [← Matrix.mul_assoc, h.state]
+      calc
+        r₂.A ^ (k + 1) * h.T = r₂.A ^ k * (r₂.A * h.T) := by
+          rw [pow_succ, Matrix.mul_assoc]
+        _ = r₂.A ^ k * (h.T * r₁.A) := by rw [h.state]
+        _ = (r₂.A ^ k * h.T) * r₁.A := by
+          rw [Matrix.mul_assoc]
+        _ = (h.T * r₁.A ^ k) * r₁.A := by rw [ih]
+        _ = h.T * (r₁.A ^ k * r₁.A) := by
+          rw [Matrix.mul_assoc]
+        _ = h.T * r₁.A ^ (k + 1) := by rw [pow_succ]
 
 /-- Similar realizations have identical Markov parameters.
 

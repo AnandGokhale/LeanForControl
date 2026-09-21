@@ -44,6 +44,15 @@ LeanForControl/
       Decomposition.lean        existence, adapted coordinates, forced block-zero pattern
       DecompositionExamples.lean
 
+    Realization/                 algebraic external behavior and minimality
+      Defs.lean                 bundled (A,B,C,D) realization
+      MarkovParameters.lean     Markov parameters, behavior, similarity
+      Hankel.lean               arbitrary finite Hankel matrices
+      Minimal.lean              quantified minimality and rank lower bound
+      Reduction.lean            canonical core realization
+      Minimality.lean           minimality characterization and existence
+      Examples.lean             public-API regression examples
+
     Solutions/
       Continuous.lean           e^{At}, variation of constants
       Discrete.lean             Aᵏ, discrete variation of constants (planned)
@@ -167,7 +176,12 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Kalman sector dimension identities | `finrank_cuo_add_co_add_uuo_add_uo` | `KalmanDecomposition/Dimensions.lean` | ✅ done |
 | Controllable-observable core | `controllableObservableMatrices_isControllable_and_isObservable` | `KalmanDecomposition/Semantic.lean` | ✅ done |
 | Structural Kalman theorem | `exists_kalmanDecomposition_with_semantics` | `KalmanDecomposition/Semantic.lean` | ✅ done |
-| Minimal realizations | — | — | planned, no directory settled (needs both — see open questions) |
+| Realization object and behavioral equivalence | Realization, BehaviorallyEquivalent | Realization/Defs.lean, Realization/MarkovParameters.lean | ✅ done |
+| Finite Hankel factorization and rank bound | hankelMatrix_eq_observability_mul_controllability, hankelMatrix_rank_le_stateDim | Realization/Hankel.lean, Realization/Minimal.lean | ✅ done |
+| Canonical behavior-preserving core | behaviorallyEquivalent_core | Realization/Reduction.lean | ✅ done |
+| Minimal iff controllable and observable | isMinimal_iff_isControllable_and_isObservable | Realization/Minimality.lean | ✅ done over ℂ |
+| Existence of minimal realizations | exists_behaviorallyEquivalent_isMinimal | Realization/Minimality.lean | ✅ done over ℂ |
+| Uniqueness of minimal realizations up to similarity | — | Realization/ | planned |
 
 ## Status: solutions
 
@@ -298,11 +312,10 @@ reconciling two versions in review.
 - **Index types.** `Basic.lean` fixes the `Fin n × Fin m` convention for block matrices.
   Confirm this survives contact with the Gramians and the decomposition work before
   treating it as settled.
-- **Where do minimal realizations live?** Minimality means controllable *and* observable,
-  so — like the Kalman decomposition — it needs both `Controllability/` and
-  `Observability/`. Decide when the first file is written whether it joins
-  `KalmanDecomposition/`, gets its own directory, or is named accordingly (`Realization/`,
-  say) rather than defaulting silently into whichever directory is convenient at the time.
+- **Minimal realizations now live in `Realization/`.** The directory owns the bundled
+  `(A,B,C,D)` object, Markov behavior, Hankel matrices, reductions, and semantic
+  minimality. `KalmanDecomposition/` remains structural and supplies its canonical core
+  to the realization reduction layer.
 
 ## Lessons learned
 
