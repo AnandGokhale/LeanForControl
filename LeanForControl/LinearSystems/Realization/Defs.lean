@@ -37,11 +37,6 @@ namespace Realization
 variable {𝕜 : Type*} [Semiring 𝕜]
 variable {n m p : ℕ}
 
-/-- The explicit state dimension of a realization.
-
-Original: bookkeeping API for LeanForControl. -/
-def stateDim (_r : Realization 𝕜 n m p) : ℕ := n
-
 /-- A realization is controllable when its state/input pair is controllable.
 
 Reference: Kailath, *Linear Systems*. -/
