@@ -17,7 +17,10 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 | Realization controllability/observability | Realization.IsControllable, Realization.IsObservable | Defs.lean | done |
 | Markov parameters | Realization.markovParameter | MarkovParameters.lean | done |
 | Behavioral equivalence across dimensions | BehaviorallyEquivalent | MarkovParameters.lean | done |
+| Similarity equivalence-relation API | similarRefl, Similar.symm, Similar.trans | MarkovParameters.lean | done |
 | Similarity invariance | Similar.behaviorallyEquivalent | MarkovParameters.lean | done |
+| Minimality invariant under similarity | Similar.isMinimal_iff | Minimal.lean | done |
+| Direct controllability/observability invariance under similarity | — | planned | deferred |
 | Arbitrary finite Hankel matrices | hankelMatrix | Hankel.lean | done |
 | Hankel factorization | hankelMatrix_eq_observability_mul_controllability | Hankel.lean | done |
 | Hankel rank bounded by state dimension | hankelMatrix_rank_le_stateDim | Minimal.lean | done |
@@ -34,6 +37,8 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 | Observable-only realization reduction | — | planned | deferred; core reduction already proves the milestone |
 | Stabilization of Hankel rank over growing horizons | — | planned |
 | Uniqueness of minimal realizations up to similarity | — | planned |
+| Finite determinacy of Markov data | — | planned |
+| Finite Ho–Kalman synthesis | — | planned |
 
 ## Dependency graph
 
@@ -75,6 +80,18 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
   relation; the missing direction requires constructing the state isomorphism
   from reachable representatives and proving it is well-defined using
   observability.
+- Add direct coordinate-transport proofs that controllability and
+  observability are invariant under Similar. The current realization results
+  need only behavioral and minimality invariance, so this is isolated API
+  completion rather than a dependency of the milestone theorem.
+- Add the remaining concrete one-state, defective-state, core-reduction, and
+  nontrivial similarity examples. The current regression file covers the
+  zero-dimensional edge case and the public minimal-existence API.
+- Establish finite determinacy via Cayley–Hamilton before exposing any finite
+  Markov-parameter equality criterion; no unproved horizon bound is built into
+  behavioral equivalence.
+- Investigate finite Ho–Kalman synthesis only after similarity uniqueness and
+  finite determinacy are complete.
 - Add standalone reachable and observable realization reductions if future
   clients need them directly. The canonical core is sufficient for the
   minimality characterization and avoids duplicating quotient arguments.

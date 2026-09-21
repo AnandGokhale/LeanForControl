@@ -89,6 +89,90 @@ structure Similar (r₁ r₂ : Realization 𝕜 n m p) where
   /-- Similar realizations have the same feedthrough matrix. -/
   feedthrough : r₂.D = r₁.D
 
+/-- Realization similarity is reflexive.
+
+Original: relation API for LeanForControl. -/
+def similarRefl (r : Realization 𝕜 n m p) : Similar r r where
+  T := 1
+  Tinv := 1
+  Tinv_mul_T := mul_one 1
+  T_mul_Tinv := mul_one 1
+  state := by simp
+  input := by simp
+  output := by simp
+  feedthrough := rfl
+
+/-- Realization similarity is symmetric.
+
+Original: relation API for LeanForControl. -/
+def Similar.symm {r₁ r₂ : Realization 𝕜 n m p}
+    (h : Similar r₁ r₂) : Similar r₂ r₁ where
+  T := h.Tinv
+  Tinv := h.T
+  Tinv_mul_T := h.T_mul_Tinv
+  T_mul_Tinv := h.Tinv_mul_T
+  state := by
+    calc
+      r₁.A * h.Tinv = (h.Tinv * h.T) * r₁.A * h.Tinv := by
+        rw [h.Tinv_mul_T, one_mul]
+      _ = h.Tinv * (h.T * r₁.A) * h.Tinv := by
+        simp only [Matrix.mul_assoc]
+      _ = h.Tinv * (r₂.A * h.T) * h.Tinv := by rw [h.state]
+      _ = h.Tinv * r₂.A * (h.T * h.Tinv) := by
+        simp only [Matrix.mul_assoc]
+      _ = h.Tinv * r₂.A := by rw [h.T_mul_Tinv, mul_one]
+  input := by
+    calc
+      r₁.B = (h.Tinv * h.T) * r₁.B := by
+        rw [h.Tinv_mul_T]
+        exact (Matrix.one_mul r₁.B).symm
+      _ = h.Tinv * (h.T * r₁.B) := by rw [Matrix.mul_assoc]
+      _ = h.Tinv * r₂.B := by rw [← h.input]
+  output := by
+    calc
+      r₁.C * h.Tinv = (r₂.C * h.T) * h.Tinv := by rw [h.output]
+      _ = r₂.C * (h.T * h.Tinv) := by rw [Matrix.mul_assoc]
+      _ = r₂.C := by
+        rw [h.T_mul_Tinv]
+        exact Matrix.mul_one r₂.C
+  feedthrough := h.feedthrough.symm
+
+/-- Realization similarity is transitive.
+
+Original: relation API for LeanForControl. -/
+def Similar.trans {r₁ r₂ r₃ : Realization 𝕜 n m p}
+    (h₁₂ : Similar r₁ r₂) (h₂₃ : Similar r₂ r₃) : Similar r₁ r₃ where
+  T := h₂₃.T * h₁₂.T
+  Tinv := h₁₂.Tinv * h₂₃.Tinv
+  Tinv_mul_T := by
+    calc
+      (h₁₂.Tinv * h₂₃.Tinv) * (h₂₃.T * h₁₂.T) =
+          h₁₂.Tinv * (h₂₃.Tinv * h₂₃.T) * h₁₂.T := by
+            simp only [Matrix.mul_assoc]
+      _ = 1 := by rw [h₂₃.Tinv_mul_T, mul_one, h₁₂.Tinv_mul_T]
+  T_mul_Tinv := by
+    calc
+      (h₂₃.T * h₁₂.T) * (h₁₂.Tinv * h₂₃.Tinv) =
+          h₂₃.T * (h₁₂.T * h₁₂.Tinv) * h₂₃.Tinv := by
+            simp only [Matrix.mul_assoc]
+      _ = 1 := by rw [h₁₂.T_mul_Tinv, mul_one, h₂₃.T_mul_Tinv]
+  state := by
+    calc
+      r₃.A * (h₂₃.T * h₁₂.T) = (r₃.A * h₂₃.T) * h₁₂.T := by
+        rw [Matrix.mul_assoc]
+      _ = (h₂₃.T * r₂.A) * h₁₂.T := by rw [h₂₃.state]
+      _ = h₂₃.T * (r₂.A * h₁₂.T) := by rw [Matrix.mul_assoc]
+      _ = h₂₃.T * (h₁₂.T * r₁.A) := by rw [h₁₂.state]
+      _ = (h₂₃.T * h₁₂.T) * r₁.A := by rw [Matrix.mul_assoc]
+  input := by rw [h₂₃.input, h₁₂.input, Matrix.mul_assoc]
+  output := by
+    calc
+      r₃.C * (h₂₃.T * h₁₂.T) = (r₃.C * h₂₃.T) * h₁₂.T := by
+        rw [Matrix.mul_assoc]
+      _ = r₂.C * h₁₂.T := by rw [h₂₃.output]
+      _ = r₁.C := h₁₂.output
+  feedthrough := h₂₃.feedthrough.trans h₁₂.feedthrough
+
 /-- The state intertwining equation propagates to every matrix power.
 
 Original: algebraic similarity infrastructure for LeanForControl. -/

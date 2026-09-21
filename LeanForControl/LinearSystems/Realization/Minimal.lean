@@ -36,6 +36,18 @@ def IsMinimal (R : Realization 𝕜 n m p) : Prop :=
   ∀ (n' : ℕ) (S : Realization 𝕜 n' m p),
     R.BehaviorallyEquivalent S → n ≤ n'
 
+/-- Minimality is invariant under a change of state coordinates.
+
+Reference: Kailath, *Linear Systems*. -/
+theorem Similar.isMinimal_iff {R₁ R₂ : Realization 𝕜 n m p}
+    (h : Similar R₁ R₂) : R₁.IsMinimal ↔ R₂.IsMinimal := by
+  constructor
+  · intro hmin n' S h₂S
+    exact hmin n' S ((h.behaviorallyEquivalent R₁ R₂).trans h₂S)
+  · intro hmin n' S h₁S
+    exact hmin n' S
+      (((h.symm).behaviorallyEquivalent R₂ R₁).trans h₁S)
+
 /-- Every finite Hankel matrix has rank at most the state dimension of a
 realization through which it factors.
 
