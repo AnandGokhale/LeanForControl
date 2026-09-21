@@ -92,6 +92,22 @@ theorem reachableSubspace_eq_iSup_range
     rintro x ⟨u, rfl⟩
     exact finiteHorizonResponse_mem_reachableSubspace A B k u
 
+/-- The dimension of the reachable subspace is the rank of the
+controllability matrix.
+
+Reference: Hespanha, *Linear Systems Theory*. -/
+@[blueprint "thm:reachableSubspace-finrank"
+  (statement := /-- The dimension of the reachable subspace equals the rank
+    of the controllability matrix:
+    \[
+      \dim \mathcal R(A,B)=\operatorname{rank}\mathcal C(A,B).
+    \] -/)]
+theorem finrank_reachableSubspace_eq_rank_controllabilityMatrix
+    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
+    Module.finrank 𝕜 (reachableSubspace A B) =
+      Matrix.rank (controllabilityMatrix A B) := by
+  rfl
+
 /-- The image of the input matrix is contained in the reachable subspace.
 
 Reference: Hespanha, *Linear Systems Theory*. -/

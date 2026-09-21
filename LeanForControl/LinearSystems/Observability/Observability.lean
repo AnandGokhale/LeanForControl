@@ -170,4 +170,50 @@ theorem isObservable_iff_observabilityMatrix_rank_eq
     (observabilityMatrix A C)).trans ?_
   rw [Fintype.card_fin]
 
+/-- The unobservable subspace is exactly the kernel of the observability
+matrix acting by matrix-vector multiplication.
+
+Reference: Hespanha, *Linear Systems Theory*. -/
+@[blueprint "thm:unobservableSubspace-eq-ker-observabilityMatrix"
+  (statement := /-- The unobservable subspace is the kernel of the
+    observability matrix:
+    \[
+      \mathcal N(A,C)=\ker \mathcal O(A,C).
+    \] -/)]
+theorem unobservableSubspace_eq_ker_observabilityMatrix
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    unobservableSubspace A C =
+      LinearMap.ker (observabilityMatrix A C).mulVecLin := by
+  ext v
+  simp only [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker]
+  constructor
+  · intro h
+    funext ki
+    exact congrFun (h ki.1) ki.2
+  · intro h k
+    funext i
+    exact congrFun h (k, i)
+
+/-- Rank-nullity for the observability matrix, stated in control-theoretic
+form. The additive identity avoids truncated subtraction and includes the
+zero-dimensional case without extra hypotheses.
+
+Reference: Hespanha, *Linear Systems Theory*. -/
+@[blueprint "thm:unobservableSubspace-finrank-add-rank"
+  (statement := /-- The dimension of the unobservable subspace plus the rank
+    of the observability matrix is the state dimension:
+    \[
+      \dim \mathcal N(A,C)+\operatorname{rank}\mathcal O(A,C)=n.
+    \] -/)]
+theorem finrank_unobservableSubspace_add_rank_observabilityMatrix
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    Module.finrank ℂ (unobservableSubspace A C) +
+      Matrix.rank (observabilityMatrix A C) = n := by
+  rw [unobservableSubspace_eq_ker_observabilityMatrix]
+  have h :=
+    LinearMap.finrank_range_add_finrank_ker (observabilityMatrix A C).mulVecLin
+  rw [Module.finrank_pi, Fintype.card_fin] at h
+  unfold Matrix.rank
+  omega
+
 end LinearSystems

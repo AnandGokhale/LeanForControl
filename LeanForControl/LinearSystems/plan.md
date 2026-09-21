@@ -24,18 +24,23 @@ LeanForControl/
 
     Controllability/             identical in discrete and continuous time — no split
       Controllability.lean      controllability matrix and rank test
-      DefsReachability.lean     reachable subspace
+      Defs.lean                 controllability, reachable-subspace definitions
       Reachability.lean         reachable-subspace characterizations, A-invariance
       Hautus.lean               controllability PBH test, via duality with Observability
-      Decomposition.lean        standalone controllable decomposition (planned)
+      DefsDecomposition.lean    canonical reachable restriction and matrices
+      Decomposition.lean        standalone controllable decomposition
 
     Observability/
       Observability.lean        observability matrix, rank/kernel forms
       Hautus.lean               unobservable subspace, observability PBH test
-      Decomposition.lean        standalone observable decomposition (planned)
+      DefsDecomposition.lean    canonical observable quotient and matrices
+      Decomposition.lean        standalone observable decomposition
 
     KalmanDecomposition/         needs both Controllability/ and Observability/
-      DefsDecomposition.lean    the four coordinate sectors and their lattice relations
+      Defs.lean                 the four coordinate sectors and their lattice relations
+      Dimensions.lean           sector dimensions and canonicality
+      DefsSemantic.lean         canonical controllable-observable quotient
+      Semantic.lean             semantic block properties and structural summary
       Decomposition.lean        existence, adapted coordinates, forced block-zero pattern
       DecompositionExamples.lean
 
@@ -148,17 +153,20 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `Controllability/Reachability.lean` | ✅ done |
 | PBH test for controllability | `isControllable_iff_hautus` | `Controllability/Hautus.lean` | ✅ done |
 | Controllability/observability duality | `isControllable_iff_isObservable_transpose` | `Controllability/Hautus.lean` | ✅ done |
-| Controllable decomposition (standalone) | — | `Controllability/Decomposition.lean` | planned |
+| Controllable decomposition (standalone) | `reachableMatrices_isControllable` | `Controllability/Decomposition.lean` | ✅ done |
 | Stabilizability | — | `Controllability/Hautus.lean` | planned |
 | Observability matrix | `observabilityMatrix` | `Observability/Observability.lean` | ✅ done |
 | Observability ⟺ trivial kernel | `isObservable_iff_observabilityMatrix_ker_trivial` | `Observability/Observability.lean` | ✅ done |
 | Observability ⟺ full column rank | `isObservable_iff_observabilityMatrix_rank_eq` | `Observability/Observability.lean` | ✅ done |
 | Unobservable subspace, `A`-invariance | `unobservableSubspace` | `Observability/Hautus.lean` | ✅ done |
 | PBH test for observability | `isObservable_iff_hautus` | `Observability/Hautus.lean` | ✅ done |
-| Observable decomposition (standalone) | — | `Observability/Decomposition.lean` | planned |
+| Observable decomposition (standalone) | `observableMatrices_isObservable` | `Observability/Decomposition.lean` | ✅ done |
 | Detectability | — | `Observability/Hautus.lean` | planned |
 | Kalman decomposition | `exists_kalmanDecomposition` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
 | Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
+| Kalman sector dimension identities | `finrank_cuo_add_co_add_uuo_add_uo` | `KalmanDecomposition/Dimensions.lean` | ✅ done |
+| Controllable-observable core | `controllableObservableMatrices_isControllable_and_isObservable` | `KalmanDecomposition/Semantic.lean` | ✅ done |
+| Structural Kalman theorem | `exists_kalmanDecomposition_with_semantics` | `KalmanDecomposition/Semantic.lean` | ✅ done |
 | Minimal realizations | — | — | planned, no directory settled (needs both — see open questions) |
 
 ## Status: solutions
