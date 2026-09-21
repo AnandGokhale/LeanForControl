@@ -29,6 +29,7 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 | Minimal iff controllable and observable | isMinimal_iff_isControllable_and_isObservable | Minimality.lean | done over ℂ |
 | Existence of a minimal realization | exists_behaviorallyEquivalent_isMinimal | Minimality.lean | done over ℂ |
 | Minimal dimension equals state-horizon Hankel rank | hankelMatrix_rank_eq_stateDim_of_isMinimal | Minimality.lean | done over ℂ |
+| Behaviorally equivalent minimal realizations have equal dimension | IsMinimal.stateDim_eq_of_behaviorallyEquivalent | Minimality.lean | done |
 | Reachable-only realization reduction | — | planned | deferred; core reduction already proves the milestone |
 | Observable-only realization reduction | — | planned | deferred; core reduction already proves the milestone |
 | Stabilization of Hankel rank over growing horizons | — | planned |

@@ -119,6 +119,22 @@ theorem hankelMatrix_rank_eq_stateDim_of_isMinimal
   exact R.hankelMatrix_rank_eq_stateDim_of_controllable_of_observable
     hctrl hobs
 
+/-- Behaviorally equivalent minimal realizations have the same state
+dimension.
+
+This dimension-uniqueness statement is field-generic and follows directly
+from the quantified semantic definition of minimality.
+
+Reference: Kailath, *Linear Systems*. -/
+theorem IsMinimal.stateDim_eq_of_behaviorallyEquivalent
+    {𝕜 : Type*} [Field 𝕜] {n₁ n₂ : ℕ}
+    {R₁ : Realization 𝕜 n₁ m p} {R₂ : Realization 𝕜 n₂ m p}
+    (hmin₁ : R₁.IsMinimal) (hmin₂ : R₂.IsMinimal)
+    (hbehavior : R₁.BehaviorallyEquivalent R₂) :
+    n₁ = n₂ :=
+  Nat.le_antisymm (hmin₁ n₂ R₂ hbehavior)
+    (hmin₂ n₁ R₁ hbehavior.symm)
+
 end Realization
 
 end LinearSystems
