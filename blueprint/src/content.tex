@@ -104,6 +104,16 @@ margin, and ordinary Hurwitz stability is the zero-rate case.
 
 \inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
 
+\section{Matrix Lyapunov equations and quadratic certificates}
+
+\inputleannode{def:solvesContinuousLyapunovEquation}
+
+\inputleannode{def:matrixQuadratic}
+
+\inputleannode{thm:hurwitz-lyapunov-equation}
+
+\inputleannode{thm:positive-real-eigenvalue-quadratic-certificate}
+
 \section{Peano--Baker series and the state transition matrix}
 
 For a genuinely time-varying state matrix $A(t)$, this section constructs the state transition
@@ -175,6 +185,18 @@ $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 
 \inputleannode{def:globalAsymptoticStable}
 
+The finite-forward predicates below quantify over every solution segment on a
+compact interval.  This prevents finite escape from making a stability claim
+vacuous merely because a non-equilibrium solution is not globally defined.
+
+\inputleannode{def:isForwardTrajectoryOn}
+
+\inputleannode{def:forwardLyapunovStable}
+
+\inputleannode{def:forwardLocallyExponentiallyStable}
+
+\inputleannode{def:forwardUnstable}
+
 \section{Sublevel sets and positive invariance}
 
 \inputleannode{def:sublevelSet}
@@ -202,6 +224,25 @@ $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 \inputleannode{thm:lyapunov-asymptotic-stable}
 
 \inputleannode{thm:lyapunov-global-asymptotic-stable}
+
+\section{Lyapunov's indirect method}
+
+\inputleannode{thm:frechet-centered-remainder-bound}
+
+The primary stable-branch theorem uses the finite-forward trajectory API: it gives
+uniform local exponential decay on every finite forward solution segment, without
+silently excluding solutions that are not globally defined.
+
+\inputleannode{thm:hurwitz-linearization-forward-locally-exponentially-stable}
+
+The following legacy local-asymptotic-stability result is a compatibility corollary
+for globally defined trajectories.
+
+\inputleannode{thm:hurwitz-linearization-local-asymptotic-stable}
+
+\inputleannode{thm:exponential-chetaev-forward-unstable}
+
+\inputleannode{thm:positive-real-eigenvalue-forward-unstable}
 
 \section{LaSalle's invariance principle}
 

@@ -68,12 +68,12 @@ keep it tight and faithful; trust the Lean source if they ever drift.
 ```
 LeanForControl/                          ← Lean source
 ├── axioms.lean                          ← top-level custom axioms (real-analysis smoothing)
-├── Stability/                           ← Lyapunov stability, LaSalle, non-autonomous stability theory
+├── Stability/                           ← Lyapunov, LaSalle, finite-forward, and indirect-method theory
 ├── Comparison/                          ← class K / K∞ / KL / L comparison-function library
 ├── ODEs/                                ← comparison lemma, Gronwall–Bellman, ODE existence
 ├── Dini/                                ← Dini derivatives (used by the comparison lemma)
-├── Analysis/                            ← supporting real-analysis lemmas
-└── LinearSystems/                       ← matrices, observability, controllability, Hautus, Hurwitz
+├── Analysis/                            ← supporting analysis and derivative-remainder lemmas
+└── LinearSystems/                       ← matrices, Hurwitz theory, Lyapunov equations, spectral certificates
 blueprint/src/                           ← .tex sources (run leanblueprint web to render)
 docbuild/                                ← nested project for doc-gen4
 home_page/                               ← Jekyll scaffold for the project's home page
@@ -83,11 +83,13 @@ home_page/                               ← Jekyll scaffold for the project's h
 ## What's next
 
 `LeanForControl/Stability/plan.md` is the maintained roadmap for the stability corner of
-the library (Lyapunov theory, LaSalle, non-autonomous systems) — status table, what's
-proved, and what's planned next (Chetaev's instability theorem, linearization).
-`LeanForControl/LinearSystems/Stability/plan.md` tracks the Hurwitz foundation. The other
-directories don't have a written roadmap yet; check `git log <dir>` for recent activity if
-you want a sense of what's currently being worked on.
+the library. It records the autonomous and non-autonomous Lyapunov theory, LaSalle,
+finite-forward stability predicates, and both branches of Lyapunov's indirect method
+(in `Stability/LyapunovIndirect/`). The quantitative exponential Chetaev criterion used
+by the nonlinear instability proof is complete; the more general boundary-form/geometric
+Chetaev theorem remains planned. `LeanForControl/LinearSystems/Stability/plan.md` tracks
+the Hurwitz foundation. The other directories don't have a written roadmap yet; check
+`git log <dir>` for recent activity if you want a sense of what's currently being worked on.
 
 ## Contributing
 
