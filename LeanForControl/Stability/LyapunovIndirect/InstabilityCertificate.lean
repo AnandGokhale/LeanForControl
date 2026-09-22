@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.Stability.LyapunovIndirect.DefsComplexification
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties

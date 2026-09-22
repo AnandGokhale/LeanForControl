@@ -48,11 +48,14 @@ If `u` has derivative `f(t, u(t))` at every interior point of `[t₀, t₁]`, is
 `[t₀, t₁]`, and satisfies `u(t₀) = u₀`, then `u` is an integral solution in the sense of
 `IsIntegralSolution`. -/
 lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → ℝ} {t₀ t₁ u₀ : ℝ}
+    (ht : t₀ ≤ t₁)
     (hu_deriv : ∀ t ∈ Ioo t₀ t₁, HasDerivAt u (f t (u t)) t)
     (hu_cont : ContinuousOn u (Icc t₀ t₁))
     (hf_cont : Continuous (fun p : ℝ × ℝ => f p.1 p.2))
     (hu₀      : u t₀ = u₀) :
     IsIntegralSolution t₀ t₁ u u₀ f := by
+  unfold IsIntegralSolution
+  rw [uIcc_of_le ht]
   intro s hs
   have h := hu_cont.mono (Icc_subset_Icc_right hs.2)
   linarith [hu₀, intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1 h
@@ -86,7 +89,7 @@ private lemma comparison_claim_1
   push Not at h_not
   obtain ⟨t_bad, ht_bad_mem, h_bad_ineq⟩ := h_not
   have hz₀ : z t₀ = u₀ := by
-    simpa [intervalIntegral.integral_same] using hz_sol t₀ (left_mem_Icc.mpr ht.le)
+    simpa [intervalIntegral.integral_same] using hz_sol t₀ left_mem_uIcc
   let diff s := v s - z s
   have h_cont_diff : ContinuousOn diff (Icc t₀ t_bad) :=
     hv_cont.continuousOn.sub (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
@@ -166,7 +169,7 @@ theorem comparison_lemma
       hDv hv₀ hv_bdd t ht_mem
   have hz_close : ‖u t - z t‖ ≤ ε / 2 := by
     have hu_sol : IsIntegralSolution t₀ t₁ u u₀ f :=
-      isIntegralSolution_of_hasDerivAt hu_deriv hu_cont hf_cont hu₀
+      isIntegralSolution_of_hasDerivAt ht.le hu_deriv hu_cont hf_cont hu₀
     have hg_cont : Continuous (fun (_ : ℝ × ℝ) => lam) := continuous_const
     have hg_bound : ∀ τ ∈ Icc t₀ t₁, ∀ x : ℝ, ‖lam‖ ≤ lam := by
       intro τ _ x

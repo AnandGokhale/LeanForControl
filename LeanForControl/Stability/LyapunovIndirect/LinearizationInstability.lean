@@ -4,6 +4,7 @@ import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.Stability.LyapunovIndirect.DefsComplexification
 import LeanForControl.Stability.LyapunovIndirect.Forward
 
 /-!
