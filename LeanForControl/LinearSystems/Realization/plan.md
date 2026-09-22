@@ -41,7 +41,11 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 | Stabilization of Hankel rank over growing horizons | hankelMatrix_rank_eq_stateDim_of_le_horizons | Minimal.lean | done |
 | Finite determinacy of Markov data | behaviorallyEquivalent_of_markovParameter_eq_lt_add | FiniteDetermination.lean | done; exact window k < n₁ + n₂ |
 | Finite Ho–Kalman state space and induced shift | hankelStateSpace, hankelStateMap | HoKalman.lean | done under explicit kernel/range compatibility |
-| Finite Ho–Kalman bundled realization and block recovery | — | HoKalman.lean | partial; needs successive block-column shift consistency |
+| Finite Ho–Kalman bundled realization and block recovery | hoKalmanRealization, hoKalmanRealization_markovParameter_eq | HoKalman.lean | done under explicit shift compatibility |
+| Full behavior from a sufficient Ho–Kalman window | behaviorallyEquivalent_hoKalmanRealization | HoKalman.lean | done for n + rank H₀ ≤ s |
+| Canonical minimal Ho–Kalman realization | minimalHoKalmanRealization_spec | HoKalman.lean | done over ℂ for positive state dimension, at horizons (n, 2n) |
+| Ho–Kalman dimension equals Hankel rank | hoKalmanRealization_stateDim_eq_rank | HoKalman.lean | done |
+| Ho–Kalman uniqueness across horizons | exists_stateDim_eq_and_similar_hoKalmanRealizations | HoKalman.lean | done over ℂ under the sufficient-horizon hypotheses |
 
 ## Dependency graph
 
@@ -72,7 +76,16 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 
     shifted finite Hankel pair H₀,H₁
       ├─ ker H₀ ≤ ker H₁ and range H₁ ≤ range H₀
-      └─ induced state endomorphism on range H₀
+      ├─ induced state endomorphism on range H₀
+      ├─ first block column/row give B_H and C_H
+      ├─ C_H A_H^k B_H = M_k throughout the supplied column window
+      └─ finite determinacy gives full behavioral equivalence
+
+    minimal source over ℂ, n > 0, horizons (n,2n)
+      ├─ controllability + observability give shift compatibility
+      ├─ synthesized realization has dimension rank H₀ = n
+      ├─ behavioral equivalence gives controllability and observability
+      └─ minimality and uniqueness up to similarity
 
 ## File ownership
 
@@ -86,9 +99,10 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 - Similarity.lean: the canonical quotient state equivalence and uniqueness of
   minimal realizations up to similarity.
 - FiniteDetermination.lean: the Cayley–Hamilton finite Markov-window theorem.
-- HoKalman.lean: finite Hankel range/quotient state space and induced shift.
+- HoKalman.lean: finite Hankel range state space, induced shift, bundled
+  synthesis, recovery, minimality, dimension, and uniqueness.
 - Examples.lean: public-API, numerical two-state, finite-determinacy, and
-  nonminimal regression examples.
+  nonminimal, Ho–Kalman, and rank-zero regression examples.
 
 ## Deferred work
 
@@ -99,13 +113,16 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
   observability are invariant under Similar. The current realization results
   need only behavioral and minimality invariance, so this is isolated API
   completion rather than a dependency of the milestone theorem.
-- Complete finite Ho–Kalman synthesis. The state space `range H₀`, quotient
-  descent, induced shift, representative formula, and dimension/rank identity
-  are proved. The smallest missing ingredient is a finite successive
-  block-column shift-consistency hypothesis and recovery theorem strong enough
-  to define the first-column input map and first-row output map and prove that
-  repeated state shifts recover every supplied Markov block. After that, bundle
-  the resulting `Realization`.
+- Add a strict finite-storage wrapper such as `FiniteMarkovData N`, together
+  with a boundary-safe truncation/extension theorem showing that the present
+  sequence-indexed construction depends only on the blocks through index
+  `r + s - 1`. The synthesis theorem is already finite-windowed mathematically,
+  but its public input is currently a sequence `ℕ → Matrix ...` rather than a
+  `Fin N`-indexed container.
+- Package a user-facing rank-stability criterion for arbitrary supplied data
+  if a client needs synthesis from rank equalities alone. The current generic
+  construction states the exact kernel/range shift compatibility it consumes;
+  minimal source realizations discharge it automatically.
 - Add further defective-state and core-reduction examples if future changes
   need more coverage; the current examples include a nontrivial two-state
   shear, finite determinacy, and a redundant-state counterexample.

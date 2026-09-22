@@ -230,6 +230,157 @@ theorem redundantZero_not_isMinimal (D : Matrix (Fin p) (Fin m) ℂ) :
     (redundantZero_behaviorallyEquivalent_stateless D)
   omega
 
+/-! ## Finite Ho–Kalman synthesis -/
+
+/-- The canonical finite Ho–Kalman realization of the explicit minimal
+two-state example.
+
+Original: finite Ho–Kalman regression example for LeanForControl. -/
+noncomputable def diagonalTwoStateHoKalman :=
+  minimalHoKalmanRealization diagonalTwoState
+    diagonalTwoState_isMinimal (by omega)
+
+/-- The synthesized two-state system recovers each block in its directly
+supplied four-block determination window.
+
+Original: finite Ho–Kalman regression example for LeanForControl. -/
+theorem diagonalTwoStateHoKalman_markovParameter_eq
+    (k : ℕ) (hk : k < 4) :
+    diagonalTwoStateHoKalman.markovParameter k =
+      diagonalTwoState.markovParameter k := by
+  simpa [diagonalTwoStateHoKalman, minimalHoKalmanRealization] using
+    hoKalmanRealization_markovParameter_eq
+      diagonalTwoState.markovParameter diagonalTwoState.D 2 4
+      (minimalHoKalmanShiftCompatible
+        diagonalTwoState diagonalTwoState_isMinimal)
+      (by omega) (by omega) k hk
+
+/-- The synthesized two-state system has the complete behavior of the source.
+
+Original: finite Ho–Kalman regression example for LeanForControl. -/
+theorem diagonalTwoState_behaviorallyEquivalent_hoKalman :
+    diagonalTwoState.BehaviorallyEquivalent diagonalTwoStateHoKalman :=
+  behaviorallyEquivalent_minimalHoKalmanRealization
+    diagonalTwoState diagonalTwoState_isMinimal (by omega)
+
+/-- The synthesized two-state system is minimal.
+
+Original: finite Ho–Kalman regression example for LeanForControl. -/
+theorem diagonalTwoStateHoKalman_isMinimal :
+    diagonalTwoStateHoKalman.IsMinimal :=
+  minimalHoKalmanRealization_isMinimal
+    diagonalTwoState diagonalTwoState_isMinimal (by omega)
+
+/-- Its canonical Hankel-range state dimension is exactly two.
+
+Original: finite Ho–Kalman regression example for LeanForControl. -/
+theorem diagonalTwoStateHoKalman_stateDim_eq :
+    Module.finrank ℂ
+        (hankelStateSpace diagonalTwoState.markovParameter 2 4) = 2 :=
+  minimalHoKalmanRealization_stateDim_eq
+    diagonalTwoState diagonalTwoState_isMinimal (by omega)
+
+/-- A second Ho–Kalman construction of the same behavior using five block
+columns instead of four.
+
+Original: horizon-independence regression example for LeanForControl. -/
+noncomputable def diagonalTwoStateHoKalmanFive :=
+  hoKalmanRealization diagonalTwoState.markovParameter diagonalTwoState.D 2 5
+    (hankelShiftCompatible_markovParameter_of_isControllable_of_isObservable
+      diagonalTwoState diagonalTwoState_isControllable
+      diagonalTwoState_isObservable 5 (by omega)) (by omega) (by omega)
+
+/-- The four-column and five-column constructions are similar after transport
+along their canonical equality of state dimensions.
+
+Original: horizon-independence regression example for LeanForControl. -/
+theorem diagonalTwoStateHoKalman_horizons_similar :
+    ∃ e : Module.finrank ℂ
+          (hankelStateSpace diagonalTwoState.markovParameter 2 4) =
+        Module.finrank ℂ
+          (hankelStateSpace diagonalTwoState.markovParameter 2 5),
+      Nonempty
+        (Similar (e ▸ diagonalTwoStateHoKalman)
+          diagonalTwoStateHoKalmanFive) := by
+  let h₄ := minimalHoKalmanShiftCompatible
+    diagonalTwoState diagonalTwoState_isMinimal
+  let h₅ :=
+    hankelShiftCompatible_markovParameter_of_isControllable_of_isObservable
+      diagonalTwoState diagonalTwoState_isControllable
+      diagonalTwoState_isObservable 5 (by omega)
+  have hw₄ := minimalHoKalman_window diagonalTwoState
+  have hrank₅ :
+      Matrix.rank
+          (shiftedHankel diagonalTwoState.markovParameter 2 5 0) ≤ 2 := by
+    rw [shiftedHankel_markovParameter_zero_eq_hankelMatrix]
+    exact diagonalTwoState.hankelMatrix_rank_le_stateDim 2 5
+  have hw₅ :
+      2 + Matrix.rank
+          (shiftedHankel diagonalTwoState.markovParameter 2 5 0) ≤ 5 := by
+    omega
+  simpa [diagonalTwoStateHoKalman, diagonalTwoStateHoKalmanFive,
+    minimalHoKalmanRealization, h₄, h₅] using
+    exists_stateDim_eq_and_similar_hoKalmanRealizations
+      diagonalTwoState diagonalTwoState_isMinimal 2 4 2 5 h₄ h₅
+      (by omega) (by omega) (by omega) (by omega) hw₄ hw₅
+
+/-- The rank-zero finite Ho–Kalman construction with prescribed feedthrough.
+
+Original: pure-feedthrough Ho–Kalman regression example for LeanForControl. -/
+noncomputable def zeroHoKalman
+    (D : Matrix (Fin p) (Fin m) ℂ) :=
+  hoKalmanRealization (fun _ => (0 : Matrix (Fin p) (Fin m) ℂ)) D 1 1
+    (zeroHankelShiftCompatible 1 1) (by omega) (by omega)
+
+/-- The rank-zero construction really has zero state dimension.
+
+Original: pure-feedthrough Ho–Kalman regression example for LeanForControl. -/
+theorem zeroHoKalman_stateDim_eq_zero
+    (_D : Matrix (Fin p) (Fin m) ℂ) :
+    Module.finrank ℂ
+        (hankelStateSpace
+          (fun _ => (0 : Matrix (Fin p) (Fin m) ℂ)) 1 1) = 0 := by
+  rw [hankelStateSpace_finrank_eq_rank]
+  rw [show shiftedHankel
+        (fun _ => (0 : Matrix (Fin p) (Fin m) ℂ)) 1 1 0 =
+        (0 : Matrix (Fin 1 × Fin p) (Fin 1 × Fin m) ℂ) by
+      ext
+      rfl]
+  exact Matrix.rank_zero
+
+/-- The rank-zero construction has exactly the prescribed pure feedthrough
+behavior.
+
+Original: pure-feedthrough Ho–Kalman regression example for LeanForControl. -/
+theorem stateless_behaviorallyEquivalent_zeroHoKalman
+    (D : Matrix (Fin p) (Fin m) ℂ) :
+    (stateless D).BehaviorallyEquivalent (zeroHoKalman D) := by
+  apply behaviorallyEquivalent_of_markovParameter_eq_lt_add
+  · rfl
+  · intro k hk
+    have hdim := zeroHoKalman_stateDim_eq_zero D
+    omega
+
+/-- The rank-zero Ho–Kalman construction is minimal.
+
+Original: pure-feedthrough Ho–Kalman regression example for LeanForControl. -/
+theorem zeroHoKalman_isMinimal (D : Matrix (Fin p) (Fin m) ℂ) :
+    (zeroHoKalman D).IsMinimal := by
+  intro n' S _
+  have hdim := zeroHoKalman_stateDim_eq_zero D
+  omega
+
+/-- Ho–Kalman removes the unreachable and unobservable state from the
+redundant one-state realization, returning a behaviorally equivalent
+zero-dimensional realization.
+
+Original: redundant-state Ho–Kalman regression example for LeanForControl. -/
+theorem redundantZero_behaviorallyEquivalent_zeroHoKalman
+    (D : Matrix (Fin p) (Fin m) ℂ) :
+    (redundantZero D).BehaviorallyEquivalent (zeroHoKalman D) :=
+  (redundantZero_behaviorallyEquivalent_stateless D).trans
+    (stateless_behaviorallyEquivalent_zeroHoKalman D)
+
 end RealizationExamples
 
 end LinearSystems

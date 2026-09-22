@@ -188,7 +188,9 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Minimal behavioral equivalence iff similarity | behaviorallyEquivalent_iff_similar_of_isMinimal | Realization/Similarity.lean | ✅ done over ℂ |
 | Finite Markov determinacy | behaviorallyEquivalent_of_markovParameter_eq_lt_add | Realization/FiniteDetermination.lean | ✅ done for k < n₁+n₂ |
 | Hankel rank stabilization | hankelMatrix_rank_eq_stateDim_of_le_horizons | Realization/Minimal.lean | ✅ done |
-| Finite Ho–Kalman range/shift core | hankelStateMap | Realization/HoKalman.lean | 🔶 partial; bundled recovery remains |
+| Finite Ho–Kalman synthesis and recovery | hoKalmanRealization_markovParameter_eq | Realization/HoKalman.lean | ✅ done under explicit shift compatibility |
+| Canonical minimal Ho–Kalman realization | minimalHoKalmanRealization_spec | Realization/HoKalman.lean | ✅ done over ℂ for positive state dimension; rank-zero behavior covered separately |
+| Ho–Kalman uniqueness across horizons | exists_stateDim_eq_and_similar_hoKalmanRealizations | Realization/HoKalman.lean | ✅ done under sufficient-horizon hypotheses |
 
 ## Status: solutions
 

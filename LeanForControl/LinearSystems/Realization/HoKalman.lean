@@ -3,17 +3,21 @@ import Mathlib.LinearAlgebra.Isomorphisms
 import Architect
 
 /-!
-# Finite Ho–Kalman range/shift construction
+# Finite Ho–Kalman synthesis
 
-This file establishes the canonical state-space and induced-shift core of a
-finite Ho–Kalman construction.  The state space is the range of the unshifted
-finite Hankel map.  Explicit kernel and range compatibility hypotheses make
-the one-step shifted Hankel map descend to an endomorphism of that range.
+This file constructs a finite Ho–Kalman realization from compatible Markov
+blocks.  Its state space is the range of the unshifted finite Hankel map, and
+explicit kernel and range compatibility make the shifted Hankel map descend
+to the state endomorphism.  First-column and first-row maps supply the input
+and output operators, repeated shifts recover the finite Markov window, and
+finite determinacy upgrades a sufficiently long window to full behavioral
+equivalence.
 
-Turning this core into a bundled realization and proving recovery of every
-supplied block requires an additional finite shift-consistency theorem across
-successive block columns; that work is deliberately kept separate from the
-well-definedness result proved here.
+For a positive-dimensional minimal complex realization, controllability and
+observability supply compatibility automatically at horizons `(n, 2 * n)`.
+The resulting realization is behaviorally equivalent, controllable,
+observable, minimal, has state dimension equal to the Hankel rank, and is
+unique across sufficient compatible horizons up to transported similarity.
 
 Reference: Ho and Kalman, “Effective construction of linear state-variable
 models from input/output functions” (1966).
@@ -55,6 +59,24 @@ structure HankelShiftCompatible
   range_le :
     LinearMap.range (shiftedHankel M r s 1).mulVecLin ≤
       LinearMap.range (shiftedHankel M r s 0).mulVecLin
+
+/-- Identically zero Markov blocks satisfy the finite Hankel shift
+compatibility conditions at every pair of horizons.
+
+Original: rank-zero edge-case infrastructure for LeanForControl. -/
+theorem zeroHankelShiftCompatible (r s : ℕ) :
+    HankelShiftCompatible
+      (fun _ => (0 : Matrix (Fin p) (Fin m) 𝕜)) r s where
+  ker_le := by
+    intro u _
+    rw [LinearMap.mem_ker]
+    ext ia
+    simp [shiftedHankel, Matrix.mulVec]
+  range_le := by
+    rintro y ⟨u, rfl⟩
+    refine ⟨0, ?_⟩
+    ext ia
+    simp [shiftedHankel, Matrix.mulVec]
 
 /-- The canonical finite Ho–Kalman state space: the range of the unshifted
 Hankel map.
@@ -648,7 +670,7 @@ variable {n : ℕ}
 canonical positive-dimensional synthesis of a minimal realization.
 
 Reference: Ho and Kalman (1966). -/
-def minimalHoKalmanShiftCompatible
+theorem minimalHoKalmanShiftCompatible
     (R : Realization ℂ n m p) (hmin : R.IsMinimal) :
     HankelShiftCompatible R.markovParameter n (n + n) :=
   let hco := (isMinimal_iff_isControllable_and_isObservable R).mp hmin
