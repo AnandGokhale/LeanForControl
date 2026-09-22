@@ -126,9 +126,10 @@ directory: the observability-side file builds the PBH test from an eigenvector a
 on the unobservable subspace, and the controllability-side file is a short duality
 corollary that imports it (`IsControllable A B ↔ IsObservable Aᵀ Bᵀ`) rather than
 repeating the argument. A result needing both subspaces at once — the Kalman decomposition
-today, minimal realizations eventually — gets its own directory instead of being folded
-into either side, so that "controllable decomposition" (in `Controllability/`) and "the
-Kalman decomposition" (in `KalmanDecomposition/`) stay visibly different results.
+and realization theory — get their own directories instead of being folded
+into either side, so that "controllable decomposition" (in `Controllability/`), "the
+Kalman decomposition" (in `KalmanDecomposition/`), and "realization theory" (in
+`Realization/`) stay visibly different results.
 
 What actually differs is a short list: the solution formula (`e^{At}` vs `Aᵏ`), the
 stability region (`Re λ < 0` vs `|λ| < 1`), the Gramians (integral vs sum), and the

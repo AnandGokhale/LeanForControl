@@ -1,8 +1,9 @@
 # Plan: Structural Kalman Decomposition
 
 This roadmap covers the finite-dimensional structural theory that uses both
-controllability and observability.  Transfer functions and minimal-realization
-theory are deliberately deferred.
+controllability and observability.  The algebraic realization layer built on
+this structure lives in the sibling `../Realization/` directory; transfer
+functions and impulse responses remain outside both roadmaps.
 
 ## Status
 
@@ -61,13 +62,11 @@ directories, not here.
 ## Deferred work
 
 - Transfer functions and impulse responses.
-- Minimal-realization definitions and the controllable-and-observable
-  minimality theorem.
-- Uniqueness of minimal realizations.
 - Numerical decomposition algorithms and Gramian-based constructions.
 
-These are realization-theory topics rather than gaps in the structural
-decomposition proved here.
+The minimal-realization, finite-determinacy, and Ho–Kalman results are tracked
+in `../Realization/plan.md`, rather than being gaps in this structural
+decomposition.
 
 ## Lessons learned
 
