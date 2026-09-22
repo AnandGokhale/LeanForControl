@@ -28,14 +28,14 @@ import LeanForControl.LinearSystems.Observability.Hautus
 import LeanForControl.LinearSystems.Observability.Observability
 import LeanForControl.LinearSystems.Realization.Defs
 import LeanForControl.LinearSystems.Realization.Examples
+import LeanForControl.LinearSystems.Realization.FiniteDetermination
 import LeanForControl.LinearSystems.Realization.Hankel
+import LeanForControl.LinearSystems.Realization.HoKalman
 import LeanForControl.LinearSystems.Realization.MarkovParameters
 import LeanForControl.LinearSystems.Realization.Minimal
 import LeanForControl.LinearSystems.Realization.Minimality
-import LeanForControl.LinearSystems.Realization.Similarity
-import LeanForControl.LinearSystems.Realization.FiniteDetermination
-import LeanForControl.LinearSystems.Realization.HoKalman
 import LeanForControl.LinearSystems.Realization.Reduction
+import LeanForControl.LinearSystems.Realization.Similarity
 import LeanForControl.LinearSystems.Solutions.DefsLTV_solutions
 import LeanForControl.LinearSystems.Solutions.LTV_solutions
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz

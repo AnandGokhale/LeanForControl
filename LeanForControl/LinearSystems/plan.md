@@ -51,6 +51,9 @@ LeanForControl/
       Minimal.lean              quantified minimality and rank lower bound
       Reduction.lean            canonical core realization
       Minimality.lean           minimality characterization and existence
+      Similarity.lean           uniqueness of minimal realizations up to similarity
+      FiniteDetermination.lean  finite Markov-data criterion via Cayley–Hamilton
+      HoKalman.lean             finite Hankel range/shift construction
       Examples.lean             public-API regression examples
 
     Solutions/
@@ -181,7 +184,11 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Canonical behavior-preserving core | behaviorallyEquivalent_core | Realization/Reduction.lean | ✅ done |
 | Minimal iff controllable and observable | isMinimal_iff_isControllable_and_isObservable | Realization/Minimality.lean | ✅ done over ℂ |
 | Existence of minimal realizations | exists_behaviorallyEquivalent_isMinimal | Realization/Minimality.lean | ✅ done over ℂ |
-| Uniqueness of minimal realizations up to similarity | — | Realization/ | planned |
+| Uniqueness of minimal realizations up to similarity | similar_of_isMinimal_of_behaviorallyEquivalent | Realization/Similarity.lean | ✅ done over ℂ |
+| Minimal behavioral equivalence iff similarity | behaviorallyEquivalent_iff_similar_of_isMinimal | Realization/Similarity.lean | ✅ done over ℂ |
+| Finite Markov determinacy | behaviorallyEquivalent_of_markovParameter_eq_lt_add | Realization/FiniteDetermination.lean | ✅ done for k < n₁+n₂ |
+| Hankel rank stabilization | hankelMatrix_rank_eq_stateDim_of_le_horizons | Realization/Minimal.lean | ✅ done |
+| Finite Ho–Kalman range/shift core | hankelStateMap | Realization/HoKalman.lean | 🔶 partial; bundled recovery remains |
 
 ## Status: solutions
 

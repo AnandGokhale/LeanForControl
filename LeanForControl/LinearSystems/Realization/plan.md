@@ -33,12 +33,15 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 | Existence of a minimal realization | exists_behaviorallyEquivalent_isMinimal | Minimality.lean | done over ℂ |
 | Minimal dimension equals state-horizon Hankel rank | hankelMatrix_rank_eq_stateDim_of_isMinimal | Minimality.lean | done over ℂ |
 | Behaviorally equivalent minimal realizations have equal dimension | IsMinimal.stateDim_eq_of_behaviorallyEquivalent | Minimality.lean | done |
+| Minimal realizations are unique up to similarity | similar_of_isMinimal_of_behaviorallyEquivalent | Similarity.lean | done over ℂ |
+| Behavioral equivalence iff similarity for minimal realizations | behaviorallyEquivalent_iff_similar_of_isMinimal | Similarity.lean | done over ℂ |
+| Different-dimension minimal uniqueness with transport | exists_stateDim_eq_and_similar_of_isMinimal_of_behaviorallyEquivalent | Similarity.lean | done over ℂ |
 | Reachable-only realization reduction | — | planned | deferred; core reduction already proves the milestone |
 | Observable-only realization reduction | — | planned | deferred; core reduction already proves the milestone |
-| Stabilization of Hankel rank over growing horizons | — | planned |
-| Uniqueness of minimal realizations up to similarity | — | planned |
-| Finite determinacy of Markov data | — | planned |
-| Finite Ho–Kalman synthesis | — | planned |
+| Stabilization of Hankel rank over growing horizons | hankelMatrix_rank_eq_stateDim_of_le_horizons | Minimal.lean | done |
+| Finite determinacy of Markov data | behaviorallyEquivalent_of_markovParameter_eq_lt_add | FiniteDetermination.lean | done; exact window k < n₁ + n₂ |
+| Finite Ho–Kalman state space and induced shift | hankelStateSpace, hankelStateMap | HoKalman.lean | done under explicit kernel/range compatibility |
+| Finite Ho–Kalman bundled realization and block recovery | — | HoKalman.lean | partial; needs successive block-column shift consistency |
 
 ## Dependency graph
 
@@ -59,6 +62,18 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
     full Hankel rank + canonical core dimension
       └─ minimal ↔ controllable ∧ observable
 
+    controllability maps + common behavior + observability
+      ├─ equality of controllability-map kernels
+      ├─ canonical quotient state equivalence
+      └─ minimal behavioral equivalence ↔ similarity
+
+    Cayley–Hamilton for charpoly(A₁) charpoly(A₂)
+      └─ first n₁+n₂ Markov parameters determine all behavior
+
+    shifted finite Hankel pair H₀,H₁
+      ├─ ker H₀ ≤ ker H₁ and range H₁ ≤ range H₀
+      └─ induced state endomorphism on range H₀
+
 ## File ownership
 
 - Defs.lean: bundled realization data and thin structural predicates.
@@ -68,30 +83,32 @@ Kalman, “Mathematical Description of Linear Dynamical Systems” (1963).
 - Reduction.lean: the complex canonical core as a behavior-preserving
   realization.
 - Minimality.lean: the complex converse, iff milestone, and existence.
-- Examples.lean: public-API and dimension-zero regression examples.
+- Similarity.lean: the canonical quotient state equivalence and uniqueness of
+  minimal realizations up to similarity.
+- FiniteDetermination.lean: the Cayley–Hamilton finite Markov-window theorem.
+- HoKalman.lean: finite Hankel range/quotient state space and induced shift.
+- Examples.lean: public-API, numerical two-state, finite-determinacy, and
+  nonminimal regression examples.
 
 ## Deferred work
 
-- Prove monotonicity and eventual stabilization of finite Hankel ranks, then
-  package the stable rank as a behavior-level invariant independent of any
-  chosen realization.
-- Prove that two minimal behaviorally equivalent realizations are similar.
-  The existing Similar witness and invariance theorem provide the target
-  relation; the missing direction requires constructing the state isomorphism
-  from reachable representatives and proving it is well-defined using
-  observability.
+- Package the stabilized Hankel rank as a behavior-level invariant independent
+  of a chosen realization if a later client needs a named invariant. The
+  horizon theorem itself is complete.
 - Add direct coordinate-transport proofs that controllability and
   observability are invariant under Similar. The current realization results
   need only behavioral and minimality invariance, so this is isolated API
   completion rather than a dependency of the milestone theorem.
-- Add the remaining concrete one-state, defective-state, core-reduction, and
-  nontrivial similarity examples. The current regression file covers the
-  zero-dimensional edge case and the public minimal-existence API.
-- Establish finite determinacy via Cayley–Hamilton before exposing any finite
-  Markov-parameter equality criterion; no unproved horizon bound is built into
-  behavioral equivalence.
-- Investigate finite Ho–Kalman synthesis only after similarity uniqueness and
-  finite determinacy are complete.
+- Complete finite Ho–Kalman synthesis. The state space `range H₀`, quotient
+  descent, induced shift, representative formula, and dimension/rank identity
+  are proved. The smallest missing ingredient is a finite successive
+  block-column shift-consistency hypothesis and recovery theorem strong enough
+  to define the first-column input map and first-row output map and prove that
+  repeated state shifts recover every supplied Markov block. After that, bundle
+  the resulting `Realization`.
+- Add further defective-state and core-reduction examples if future changes
+  need more coverage; the current examples include a nontrivial two-state
+  shear, finite determinacy, and a redundant-state counterexample.
 - Add standalone reachable and observable realization reductions if future
   clients need them directly. The canonical core is sufficient for the
   minimality characterization and avoids duplicating quotient arguments.
