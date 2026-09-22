@@ -2,9 +2,9 @@ import Mathlib.Analysis.Complex.Norm
 import Mathlib.Analysis.Calculus.FDeriv.WithLp
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import LeanForControl.LinearSystems.DefsDynamics
-import LeanForControl.LinearSystems.DefsHurwitz
-import LeanForControl.Stability.Forward
+import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
+import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.Stability.LyapunovIndirect.Forward
 
 /-!
 # Unstable modes and finite forward segments

@@ -1,7 +1,7 @@
-import LeanForControl.Analysis.Linearization
-import LeanForControl.LinearSystems.Lyapunov
-import LeanForControl.LinearSystems.LyapunovEquation
-import LeanForControl.Stability.Forward
+import LeanForControl.Stability.LyapunovIndirect.FrechetRemainder
+import LeanForControl.Stability.LyapunovIndirect.Lyapunov
+import LeanForControl.Stability.LyapunovIndirect.LyapunovEquation
+import LeanForControl.Stability.LyapunovIndirect.Forward
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Architect
 

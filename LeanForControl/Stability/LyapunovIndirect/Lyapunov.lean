@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.DefsLyapunov
+import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.Order.Compact

@@ -1,8 +1,8 @@
-import LeanForControl.Stability.Chetaev
-import LeanForControl.Analysis.Linearization
-import LeanForControl.LinearSystems.DefsHurwitz
-import LeanForControl.LinearSystems.InstabilityCertificate
-import LeanForControl.LinearSystems.Lyapunov
+import LeanForControl.Stability.LyapunovIndirect.Chetaev
+import LeanForControl.Stability.LyapunovIndirect.FrechetRemainder
+import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.Stability.LyapunovIndirect.InstabilityCertificate
+import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Architect
 
 /-!

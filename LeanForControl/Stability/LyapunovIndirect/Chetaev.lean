@@ -1,4 +1,4 @@
-import LeanForControl.Stability.Forward
+import LeanForControl.Stability.LyapunovIndirect.Forward
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Analysis.Calculus.Deriv.MeanValue

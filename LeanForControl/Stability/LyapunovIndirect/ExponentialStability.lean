@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Hurwitz
+import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Normed.Algebra.GelfandFormula
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential

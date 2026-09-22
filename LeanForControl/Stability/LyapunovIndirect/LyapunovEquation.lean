@@ -1,5 +1,5 @@
-import LeanForControl.LinearSystems.DefsLyapunov
-import LeanForControl.LinearSystems.ExponentialStability
+import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
+import LeanForControl.Stability.LyapunovIndirect.ExponentialStability
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.Normed.Operator.Mul
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals

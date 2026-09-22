@@ -1,7 +1,7 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.ODE.PicardLindelof
 import LeanForControl.Stability.Autonomous
-import LeanForControl.Stability.DefsForward
+import LeanForControl.Stability.LyapunovIndirect.DefsForward
 
 /-!
 # Stability on finite forward solution segments
