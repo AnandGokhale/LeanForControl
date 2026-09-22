@@ -5,12 +5,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read # Read access to repository contents
-  pages: write # Write access to GitHub Pages
-  id-token: write # Write access to ID tokens
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,4 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
-      - uses: leanprover-community/docgen-action@v1
+      # No docgen-action step here: deployment to GitHub Pages (blueprint + home_page/ homepage +
+      # docs) is `blueprint.yml`'s job. This workflow runs on every push/PR (not just main), and
+      # the pinned docgen-action@v1 release here predates the `deploy` input — it always
+      # deploys, with no opt-out — so keeping it would race blueprint.yml's deploy and could
+      # overwrite the fuller site with a bare doc-gen4-only one (which is what happened).

@@ -21,12 +21,15 @@ Files:
 - `DefsAutonomous.lean` — autonomous trajectory, stability, and Lyapunov-function definitions
 - `Autonomous.lean` — Lyapunov stability / GAS / LAS
 - `LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
-- `DefsForward.lean` — finite-forward trajectory and stability predicates
-- `Forward.lean` — finite-forward compatibility, local existence, and Lyapunov first-exit theory
-- `Chetaev.lean` — generic finite-forward cutoff, continuation, and exponential Chetaev theory
-- `Linearization.lean` — stable branch of Lyapunov's indirect method
-- `LinearizationInstability.lean` — exact affine-linear positive-mode instability
-- `NonlinearInstability.lean` — quadratic-certificate application and nonlinear unstable branch
+- `LyapunovIndirect/DefsForward.lean` — finite-forward trajectory and stability predicates
+- `LyapunovIndirect/Forward.lean` — finite-forward compatibility, local existence, and Lyapunov first-exit theory
+- `LyapunovIndirect/Chetaev.lean` — generic finite-forward cutoff, continuation, and exponential Chetaev theory
+- `LyapunovIndirect/Linearization.lean` — stable branch of Lyapunov's indirect method
+- `LyapunovIndirect/LinearizationInstability.lean` — exact affine-linear positive-mode instability
+- `LyapunovIndirect/NonlinearInstability.lean` — quadratic-certificate application and nonlinear unstable branch
+- `LyapunovIndirect/DefsDynamics.lean`, `DefsLyapunov.lean`, `Lyapunov.lean`, `LyapunovEquation.lean`,
+  `ExponentialStability.lean`, `InstabilityCertificate.lean`, `FrechetRemainder.lean` — supporting
+  linear-system Lyapunov-equation and Fréchet-remainder infrastructure used by the indirect method
 
 ## Status: Non-autonomous systems (`ẋ = f(t, x)`)
 

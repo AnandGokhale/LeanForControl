@@ -7,6 +7,21 @@ lemma sSup_mem_of_isClosed {S : Set ℝ}
     (hS : S.Nonempty) (hBdd : BddAbove S) (hCl : IsClosed S) : sSup S ∈ S :=
   hCl.csSup_mem hS hBdd
 
+/-- A real number that upper-bounds a norm is itself nonnegative. A one-line fact
+(`(norm_nonneg _).trans h`), but common enough — any time a bound `M` on `‖f s‖` is introduced
+as a hypothesis, `M` needs to be known nonnegative to run further estimates — that it is worth
+a name rather than re-deriving it at each call site. -/
+lemma nonneg_of_norm_le {E : Type*} [SeminormedAddGroup E] {x : E} {M : ℝ} (h : ‖x‖ ≤ M) :
+    0 ≤ M :=
+  (norm_nonneg x).trans h
+
+/-- A uniform bound `‖f s‖ ≤ M` over a nonempty `[a, b]` forces `0 ≤ M`, by evaluating the bound
+at the left endpoint `a` and applying `nonneg_of_norm_le`. The recurring shape behind any
+`hM_nonneg` derived from an `∀ s ∈ Set.Icc a b, ‖f s‖ ≤ M` hypothesis. -/
+lemma nonneg_of_forall_Icc_norm_le {E : Type*} [SeminormedAddGroup E] {f : ℝ → E} {a b M : ℝ}
+    (hab : a ≤ b) (h : ∀ s ∈ Icc a b, ‖f s‖ ≤ M) : 0 ≤ M :=
+  nonneg_of_norm_le (h a (left_mem_Icc.2 hab))
+
 /-- If a continuous function starts ≤ 0 and ends > 0, it has a last root `a` in `[t₀, t₁)`,
     after which it is strictly positive on `(a, t₁]`. -/
 lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀ t₁ : ℝ}
