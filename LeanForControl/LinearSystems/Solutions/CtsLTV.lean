@@ -1,5 +1,5 @@
 import LeanForControl.Analysis.Continuity
-import LeanForControl.LinearSystems.Solutions.DefsLTV_solutions
+import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.ODEs.ODE_properties
 import Mathlib.Analysis.Calculus.SmoothSeries
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
@@ -9,7 +9,7 @@ import Architect
 /-!
 # Continuous-time solutions: the Peano-Baker series
 
-Theorems about `peanoBakerTerm` and `stateTransitionMatrix` (from `DefsLTV_solutions.lean`),
+Theorems about `peanoBakerTerm` and `stateTransitionMatrix` (from `DefsCtsLTV.lean`),
 building up to Theorem 5.1 (Peano-Baker series): the state transition matrix solves the
 matrix ODE `Φ̇(t, t₀) = A(t) Φ(t, t₀)`, `Φ(t₀, t₀) = I`, and `x(t) := Φ(t, t₀) *ᵥ x₀` is the
 unique solution of `ẋ = A(t) x`, `x(t₀) = x₀`.

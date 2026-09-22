@@ -7,7 +7,7 @@ import Architect
 # Definitions for continuous-time solutions
 
 Every `def` and `noncomputable def` for the `Solutions` directory lives here, apart from the
-theorems proved about them (`LTV_solutions.lean`), per the project convention: definitions live
+theorems proved about them (`CtsLTV.lean`), per the project convention: definitions live
 apart from theorems.
 
 Unlike the rest of `LinearSystems/`, this file is about a genuinely *time-varying* state
