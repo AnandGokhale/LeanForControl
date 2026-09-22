@@ -365,18 +365,16 @@ Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*. -/
 theorem exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) {μ : ℂ} {v : Fin n → ℂ}
     (hv : v ≠ 0)
-    (heig : complexification A *ᵥ v = μ • v)
+    (heig : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v)
     (hμ : 0 < μ.re) :
     ∃ (α : ℝ) (H : Matrix (Fin n) (Fin n) ℝ)
         (w : EuclideanSpace ℝ (Fin n)),
       0 < α ∧ H.IsHermitian ∧ w ≠ 0 ∧ 0 < matrixQuadratic H w ∧
         (H * A + Aᵀ * H - (2 * α) • H).PosDef := by
-  have heig' : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v := by
-    simpa only [complexification] using heig
   obtain ⟨α, H, hα, hαμ, hH, hEq⟩ :=
     exists_symmetric_shifted_lyapunov_solution A μ hμ
   obtain ⟨w, hw, hHw⟩ :=
-    exists_positive_matrixQuadratic_direction A H α hv heig' hαμ hH hEq
+    exists_positive_matrixQuadratic_direction A H α hv heig hαμ hH hEq
   refine ⟨α, H, w, hα, hH, hw, hHw, ?_⟩
   rw [hEq]
   exact posDef_one

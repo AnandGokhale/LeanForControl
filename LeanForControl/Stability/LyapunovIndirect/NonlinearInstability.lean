@@ -178,7 +178,7 @@ theorem forwardUnstable_of_complex_eigenvalue_re_pos
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     {μ : ℂ} {v : Fin n → ℂ}
     (hv : v ≠ 0)
-    (heig : LinearSystems.complexification A *ᵥ v = μ • v)
+    (heig : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v)
     (hμ : 0 < μ.re) :
     ForwardUnstable f x_eq := by
   obtain ⟨α, H, w, hα, _hH, hw, hHw, hshift⟩ :=
@@ -212,7 +212,7 @@ theorem forwardUnstable_of_exists_complex_eigenvalue_re_pos
     (hJac : fderiv ℝ f x_eq =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     (hunstable : ∃ (μ : ℂ) (v : Fin n → ℂ),
-      v ≠ 0 ∧ LinearSystems.complexification A *ᵥ v = μ • v ∧ 0 < μ.re) :
+      v ≠ 0 ∧ A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v ∧ 0 < μ.re) :
     ForwardUnstable f x_eq := by
   obtain ⟨μ, v, hv, heig, hμ⟩ := hunstable
   exact forwardUnstable_of_complex_eigenvalue_re_pos A hf heq hJac hv heig hμ

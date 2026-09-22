@@ -61,7 +61,7 @@ private lemma hasDerivAt_realEigenmode
 
 private lemma realEigenmode_deriv_eq_mulVec
     (A : Matrix (Fin n) (Fin n) ℝ) (q μ : ℂ) (v : Fin n → ℂ)
-    (hAv : LinearSystems.complexification A *ᵥ v = μ • v) (t : ℝ) :
+    (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v) (t : ℝ) :
     (WithLp.toLp 2 fun i => (q * Complex.exp (μ * (t : ℂ)) * μ * v i).re) =
       realMulVec A (realEigenmode q μ v t) := by
   ext i
@@ -78,7 +78,7 @@ private lemma realEigenmode_deriv_eq_mulVec
 
 private lemma hasDerivAt_realEigenmode_of_eigenvector
     (A : Matrix (Fin n) (Fin n) ℝ) (q μ : ℂ) (v : Fin n → ℂ)
-    (hAv : LinearSystems.complexification A *ᵥ v = μ • v) (t : ℝ) :
+    (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v) (t : ℝ) :
     HasDerivAt (realEigenmode q μ v)
       (realMulVec A (realEigenmode q μ v t)) t := by
   rw [← realEigenmode_deriv_eq_mulVec A q μ v hAv t]
@@ -129,7 +129,7 @@ Reference: Khalil, *Nonlinear Systems*.
 theorem forwardUnstable_affineLinear_of_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) (x_eq : ℝⁿ) (mu : ℂ) (v : Fin n → ℂ)
     (hv : v ≠ 0)
-    (hAv : LinearSystems.complexification A *ᵥ v = mu • v)
+    (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = mu • v)
     (hmu : 0 < mu.re) :
     ForwardUnstable (LinearSystems.affineLinearVectorField A x_eq) x_eq := by
   apply forwardUnstable_of_fixed_escape (by positivity : (0 : ℝ) < 1)

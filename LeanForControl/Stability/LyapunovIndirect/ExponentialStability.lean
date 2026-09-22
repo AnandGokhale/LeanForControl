@@ -154,7 +154,7 @@ private lemma exists_pow_norm_lt_one_of_spectralRadius_lt_one
 
 Original: compatibility bridge for the real and complex matrix exponential. -/
 lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
-    complexification (exp A) = exp (complexification A) := by
+    (exp A).map (algebraMap ℝ ℂ) = exp (A.map (algebraMap ℝ ℂ)) := by
   letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℝ) :=
     NormedAlgebra.restrictScalars ℚ ℝ _
   letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℂ) :=
@@ -168,15 +168,14 @@ lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
     intro j
     exact Complex.continuous_ofReal.comp
       ((continuous_apply j).comp (continuous_apply i))
-  simpa [φ, complexification] using NormedSpace.map_exp φ hφ A
+  simpa [φ] using NormedSpace.map_exp φ hφ A
 
 /-- Entrywise complexification preserves the Frobenius norm.
 
 Original: norm compatibility bridge for the real and complex matrix spaces. -/
 lemma norm_complexification (A : Matrix (Fin n) (Fin n) ℝ) :
-    ‖complexification A‖ = ‖A‖ := by
-  change ‖A.map (algebraMap ℝ ℂ)‖ = ‖A‖
-  exact Matrix.frobenius_norm_map_eq A (algebraMap ℝ ℂ) (fun x ↦ Complex.norm_real x)
+    ‖A.map (algebraMap ℝ ℂ)‖ = ‖A‖ :=
+  Matrix.frobenius_norm_map_eq A (algebraMap ℝ ℂ) (fun x ↦ Complex.norm_real x)
 
 /-- Every spectral value of the exponential of a complexified Hurwitz matrix lies strictly
 inside the unit disk.
@@ -185,10 +184,10 @@ Reference: standard spectral mapping for the matrix exponential and the definiti
 Hurwitz matrix. -/
 private lemma norm_lt_one_of_mem_spectrum_exp_complexification
     {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsHurwitz A) {z : ℂ}
-    (hz : z ∈ spectrum ℂ (exp (complexification A))) :
+    (hz : z ∈ spectrum ℂ (exp (A.map (algebraMap ℝ ℂ)))) :
     ‖z‖ < 1 := by
   obtain ⟨μ, v, hv, hAv, rfl⟩ :=
-    exists_eigenpair_of_mem_spectrum_exp (complexification A) hz
+    exists_eigenpair_of_mem_spectrum_exp (A.map (algebraMap ℝ ℂ)) hz
   rw [Complex.norm_exp]
   exact Real.exp_lt_one_iff.mpr (by simpa using hA μ v hv hAv)
 
@@ -198,10 +197,10 @@ one.
 Reference: standard spectral mapping for the matrix exponential. -/
 lemma spectralRadius_exp_complexification_lt_one
     {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsHurwitz A) :
-    spectralRadius ℂ (exp (complexification A)) < 1 := by
+    spectralRadius ℂ (exp (A.map (algebraMap ℝ ℂ))) < 1 := by
   by_cases hn : n = 0
   · subst n
-    have heq : exp (complexification A) = 0 := Subsingleton.elim _ _
+    have heq : exp (A.map (algebraMap ℝ ℂ)) = 0 := Subsingleton.elim _ _
     rw [heq, spectrum.spectralRadius_zero]
     exact zero_lt_one
   · letI : Nonempty (Fin n) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero hn)
@@ -228,19 +227,19 @@ theorem IsHurwitz.exists_norm_exp_nat_smul_lt_one
     norm_num
   · letI : Nonempty (Fin n) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero hn)
     obtain ⟨m, hmpos, hm⟩ := exists_pow_norm_lt_one_of_spectralRadius_lt_one
-      (exp (complexification A)) (spectralRadius_exp_complexification_lt_one hA)
+      (exp (A.map (algebraMap ℝ ℂ))) (spectralRadius_exp_complexification_lt_one hA)
     refine ⟨m, hmpos, ?_⟩
     calc
       ‖exp ((m : ℝ) • A)‖ =
-          ‖complexification (exp ((m : ℝ) • A))‖ :=
+          ‖(exp ((m : ℝ) • A)).map (algebraMap ℝ ℂ)‖ :=
         (norm_complexification _).symm
-      _ = ‖exp (complexification ((m : ℝ) • A))‖ := by
+      _ = ‖exp (((m : ℝ) • A).map (algebraMap ℝ ℂ))‖ := by
         rw [complexification_exp]
-      _ = ‖exp (m • complexification A)‖ := by
+      _ = ‖exp (m • A.map (algebraMap ℝ ℂ))‖ := by
         congr 2
         ext i j
-        simp [complexification]
-      _ = ‖exp (complexification A) ^ m‖ := by
+        simp
+      _ = ‖exp (A.map (algebraMap ℝ ℂ)) ^ m‖ := by
         rw [Matrix.exp_nsmul]
       _ < 1 := hm
 
