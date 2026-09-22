@@ -40,59 +40,30 @@ theorem exists_centeredMatrixQuadratic_decay
     ∃ r > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
       fderiv ℝ (centeredMatrixQuadratic P x_eq) x (f x) ≤
         -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by
-  let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
-  let η : ℝ := 1 / (4 * (‖p‖ + 1))
-  have hp_nonneg : 0 ≤ ‖p‖ := norm_nonneg p
-  have hp_one_pos : 0 < ‖p‖ + 1 := by positivity
-  have hη_pos : 0 < η := by
-    dsimp [η]
-    positivity
-  have hderiv : HasFDerivAt f
-      (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A) x_eq := by
-    simpa only [hJac] using (hf.differentiable (by norm_num) x_eq).hasFDerivAt
-  obtain ⟨r, hr, hrem⟩ := hderiv.exists_centered_remainder_bound hη_pos
+  obtain ⟨r, hr, hrem⟩ :=
+    exists_abs_fderiv_centeredMatrixQuadratic_remainder_le A P hf heq hJac
+      (c := 1 / 2) (by norm_num)
   refine ⟨r, hr, ?_⟩
   intro x hx
   let y : ℝⁿ := x - x_eq
   let e : ℝⁿ := f x - f x_eq -
     Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
-  have he_norm : ‖e‖ ≤ η * ‖y‖ := by
-    exact hrem x (by simpa [y] using hx)
+  have herror : fderiv ℝ (centeredMatrixQuadratic P x_eq) x e ≤ (1 / 2 : ℝ) * ‖y‖ ^ 2 :=
+    (le_abs_self _).trans (hrem x hx)
   have hf_split : f x =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y + e := by
     dsimp [e]
     rw [heq]
     abel
-  have herror :
-      fderiv ℝ (centeredMatrixQuadratic P x_eq) x e ≤
-        2 * ‖p‖ * ‖y‖ * ‖e‖ := by
-    simpa [p, y] using fderiv_centeredMatrixQuadratic_le P x_eq x e
-  have hcoef : 2 * ‖p‖ * η ≤ (1 / 2 : ℝ) := by
-    dsimp [η]
-    rw [show 2 * ‖p‖ * (1 / (4 * (‖p‖ + 1))) =
-      (2 * ‖p‖) / (4 * (‖p‖ + 1)) by ring]
-    rw [div_le_iff₀ (by positivity)]
-    nlinarith
   rw [hf_split, map_add]
   calc
     fderiv ℝ (centeredMatrixQuadratic P x_eq) x
           (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y) +
         fderiv ℝ (centeredMatrixQuadratic P x_eq) x e
-        ≤ -‖y‖ ^ 2 + 2 * ‖p‖ * ‖y‖ * ‖e‖ := by
+        ≤ -‖y‖ ^ 2 + (1 / 2 : ℝ) * ‖y‖ ^ 2 := by
           rw [fderiv_centeredMatrixQuadratic_linear hLyap]
           simpa [y] using add_le_add_left herror (-‖y‖ ^ 2)
-    _ ≤ -‖y‖ ^ 2 + (2 * ‖p‖ * η) * ‖y‖ ^ 2 := by
-      have hterm : 2 * ‖p‖ * ‖y‖ * ‖e‖ ≤
-          (2 * ‖p‖ * η) * ‖y‖ ^ 2 := by
-        calc
-          2 * ‖p‖ * ‖y‖ * ‖e‖ ≤
-              2 * ‖p‖ * ‖y‖ * (η * ‖y‖) := by
-            exact mul_le_mul_of_nonneg_left he_norm
-              (mul_nonneg (mul_nonneg (by norm_num) hp_nonneg) (norm_nonneg y))
-          _ = (2 * ‖p‖ * η) * ‖y‖ ^ 2 := by ring
-      linarith
-    _ ≤ -(1 / 2 : ℝ) * ‖y‖ ^ 2 := by
-      nlinarith [sq_nonneg ‖y‖, mul_le_mul_of_nonneg_right hcoef (sq_nonneg ‖y‖)]
+    _ = -(1 / 2 : ℝ) * ‖y‖ ^ 2 := by ring
     _ = -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by rfl
 
 /-- A positive-definite solution of the identity-forced Lyapunov equation for the

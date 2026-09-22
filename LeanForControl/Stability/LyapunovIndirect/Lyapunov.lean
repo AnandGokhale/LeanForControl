@@ -1,4 +1,5 @@
 import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
+import LeanForControl.Stability.LyapunovIndirect.FrechetRemainder
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.Order.Compact
@@ -202,6 +203,60 @@ theorem abs_fderiv_centeredMatrixQuadratic_le
       gcongr <;> exact ContinuousLinearMap.le_opNorm _ _
     _ = 2 * ‖p‖ * ‖y‖ * ‖v‖ := by ring
 
+/-- Near an equilibrium, the derivative of a centered matrix quadratic form applied to the
+first-order remainder of `f` is dominated by any prescribed positive multiple of the
+squared distance to the equilibrium.
+
+This is the shared "remainder absorption" step of both branches of Lyapunov's indirect
+method: the stable branch (`exists_centeredMatrixQuadratic_decay`) uses it to bound the
+error term against the certificate's own decay rate, and the unstable branch
+(`forwardUnstable_of_quadratic_certificate`) uses it to bound the error term against the
+shifted certificate's growth rate.
+
+Reference: adapted from the quadratic-Lyapunov proof of Lyapunov's indirect method;
+Khalil, *Nonlinear Systems*. -/
+theorem exists_abs_fderiv_centeredMatrixQuadratic_remainder_le
+    {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} (A M : Matrix (Fin n) (Fin n) ℝ)
+    (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
+    (hJac : fderiv ℝ f x_eq = Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
+    {c : ℝ} (hc : 0 < c) :
+    ∃ r > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
+      |fderiv ℝ (centeredMatrixQuadratic M x_eq) x
+          (f x - f x_eq - Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq))| ≤
+        c * ‖x - x_eq‖ ^ 2 := by
+  let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M
+  let η : ℝ := c / (4 * (‖p‖ + 1))
+  have hp_nonneg : 0 ≤ ‖p‖ := norm_nonneg p
+  have hp_one_pos : 0 < ‖p‖ + 1 := by positivity
+  have hη_pos : 0 < η := by
+    dsimp [η]
+    positivity
+  have hderiv : HasFDerivAt f
+      (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A) x_eq := by
+    simpa only [hJac] using (hf.differentiable (by norm_num) x_eq).hasFDerivAt
+  obtain ⟨r, hr, hrem⟩ := hderiv.exists_centered_remainder_bound hη_pos
+  refine ⟨r, hr, ?_⟩
+  intro x hx
+  let y : ℝⁿ := x - x_eq
+  let e : ℝⁿ := f x - f x_eq - Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
+  have he_norm : ‖e‖ ≤ η * ‖y‖ := hrem x (by simpa [y] using hx)
+  have herror_abs :
+      |fderiv ℝ (centeredMatrixQuadratic M x_eq) x e| ≤ 2 * ‖p‖ * ‖y‖ * ‖e‖ := by
+    simpa [p, y] using abs_fderiv_centeredMatrixQuadratic_le M x_eq x e
+  have hcoef : 2 * ‖p‖ * η ≤ c := by
+    dsimp [η]
+    rw [show 2 * ‖p‖ * (c / (4 * (‖p‖ + 1))) =
+      (2 * ‖p‖ * c) / (4 * (‖p‖ + 1)) by ring]
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith
+  calc
+    |fderiv ℝ (centeredMatrixQuadratic M x_eq) x e| ≤ 2 * ‖p‖ * ‖y‖ * ‖e‖ := herror_abs
+    _ ≤ 2 * ‖p‖ * ‖y‖ * (η * ‖y‖) := by
+      exact mul_le_mul_of_nonneg_left he_norm
+        (mul_nonneg (mul_nonneg (by norm_num) hp_nonneg) (norm_nonneg y))
+    _ = (2 * ‖p‖ * η) * ‖y‖ ^ 2 := by ring
+    _ ≤ c * ‖y‖ ^ 2 := mul_le_mul_of_nonneg_right hcoef (sq_nonneg ‖y‖)
+
 /-- A solution of the Lyapunov equation makes the derivative of the `P`-quadratic form
 along the linear vector field equal to minus the `Q`-quadratic form.
 
@@ -261,17 +316,8 @@ Reference: the Cauchy--Schwarz and operator-norm bounds. -/
 lemma matrixQuadratic_le_opNorm_mul_norm_sq
     (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝⁿ) :
     matrixQuadratic P x ≤
-      ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖ ^ 2 := by
-  rw [matrixQuadratic]
-  calc
-    inner ℝ x (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P x) ≤
-        ‖x‖ * ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P x‖ :=
-      real_inner_le_norm _ _
-    _ ≤ ‖x‖ *
-        (‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖) := by
-      gcongr
-      exact ContinuousLinearMap.le_opNorm _ _
-    _ = ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖ ^ 2 := by ring
+      ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖ ^ 2 :=
+  (le_abs_self _).trans (abs_matrixQuadratic_le P x)
 
 /-- The derivative of a centered matrix quadratic form is bounded by the product of
 the state norm, direction norm, and twice the matrix operator norm.
@@ -281,17 +327,8 @@ theorem fderiv_centeredMatrixQuadratic_le
     (P : Matrix (Fin n) (Fin n) ℝ) (x_eq x v : ℝⁿ) :
     fderiv ℝ (centeredMatrixQuadratic P x_eq) x v ≤
       2 * ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ *
-        ‖x - x_eq‖ * ‖v‖ := by
-  rw [fderiv_centeredMatrixQuadratic_apply]
-  let p := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
-  let y := x - x_eq
-  calc
-    inner ℝ y (p v) + inner ℝ v (p y) ≤
-        ‖y‖ * ‖p v‖ + ‖v‖ * ‖p y‖ :=
-      add_le_add (real_inner_le_norm _ _) (real_inner_le_norm _ _)
-    _ ≤ ‖y‖ * (‖p‖ * ‖v‖) + ‖v‖ * (‖p‖ * ‖y‖) := by
-      gcongr <;> apply ContinuousLinearMap.le_opNorm
-    _ = 2 * ‖p‖ * ‖y‖ * ‖v‖ := by ring
+        ‖x - x_eq‖ * ‖v‖ :=
+  (le_abs_self _).trans (abs_fderiv_centeredMatrixQuadratic_le P x_eq x v)
 
 /-- In positive dimension, every sublevel set of a centered positive-definite matrix
 quadratic form is compact.

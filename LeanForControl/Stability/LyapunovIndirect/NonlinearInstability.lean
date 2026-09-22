@@ -85,23 +85,12 @@ theorem forwardUnstable_of_quadratic_certificate
     LinearSystems.exists_pos_mul_norm_sq_le_matrixQuadratic G hG
   let p : ℝⁿ →L[ℝ] ℝⁿ :=
     Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) H
-  let η : ℝ := m / (4 * (‖p‖ + 1))
   have hp_nonneg : 0 ≤ ‖p‖ := norm_nonneg p
-  have hη : 0 < η := by
-    dsimp [η]
-    positivity
-  have hderiv : HasFDerivAt f
-      (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A) x_eq := by
-    simpa only [hJac] using (hf.differentiable (by norm_num) x_eq).hasFDerivAt
-  obtain ⟨r, hr, hrem⟩ := hderiv.exists_centered_remainder_bound hη
+  obtain ⟨r, hr, hrem⟩ :=
+    LinearSystems.exists_abs_fderiv_centeredMatrixQuadratic_remainder_le A H hf heq hJac
+      (c := m / 2) (by linarith)
   let ρ : ℝ := r / 2
   have hρ : 0 < ρ := by dsimp [ρ]; positivity
-  have hcoef : 2 * ‖p‖ * η ≤ m / 2 := by
-    dsimp [η]
-    rw [show 2 * ‖p‖ * (m / (4 * (‖p‖ + 1))) =
-      (2 * ‖p‖ * m) / (4 * (‖p‖ + 1)) by ring]
-    rw [div_le_iff₀ (by positivity)]
-    nlinarith
   let V : ℝⁿ → ℝ := LinearSystems.centeredMatrixQuadratic H x_eq
   apply forwardUnstable_of_exponential_chetaev hf
     ((LinearSystems.centeredMatrixQuadratic_contDiff H x_eq).of_le (by norm_num))
@@ -117,7 +106,7 @@ theorem forwardUnstable_of_quadratic_certificate
       have : ‖x - x_eq‖ ≤ r / 2 := by simpa [ρ] using hx
       dsimp [y]
       linarith
-    have he_norm : ‖e‖ ≤ η * ‖y‖ := hrem x (by simpa [y] using hy_r)
+    have herror_bound : |fderiv ℝ V x e| ≤ (m / 2) * ‖y‖ ^ 2 := hrem x hy_r
     have hf_split : f x =
         Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y + e := by
       dsimp [e]
@@ -136,18 +125,6 @@ theorem forwardUnstable_of_quadratic_certificate
       rw [LinearSystems.matrixQuadratic_matrix_add,
         LinearSystems.matrixQuadratic_matrix_smul]
       rfl
-    have herror_abs : |fderiv ℝ V x e| ≤ 2 * ‖p‖ * ‖y‖ * ‖e‖ := by
-      simpa [V, p, y] using
-        LinearSystems.abs_fderiv_centeredMatrixQuadratic_le H x_eq x e
-    have herror_bound : |fderiv ℝ V x e| ≤ (m / 2) * ‖y‖ ^ 2 := by
-      calc
-        |fderiv ℝ V x e| ≤ 2 * ‖p‖ * ‖y‖ * ‖e‖ := herror_abs
-        _ ≤ 2 * ‖p‖ * ‖y‖ * (η * ‖y‖) := by
-          exact mul_le_mul_of_nonneg_left he_norm
-            (mul_nonneg (mul_nonneg (by norm_num) hp_nonneg) (norm_nonneg y))
-        _ = (2 * ‖p‖ * η) * ‖y‖ ^ 2 := by ring
-        _ ≤ (m / 2) * ‖y‖ ^ 2 :=
-          mul_le_mul_of_nonneg_right hcoef (sq_nonneg ‖y‖)
     have hG_lower : m * ‖y‖ ^ 2 ≤ LinearSystems.matrixQuadratic G y :=
       hm_lower y
     rw [hf_split, map_add, hlinear]

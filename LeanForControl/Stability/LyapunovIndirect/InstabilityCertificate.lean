@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.Stability.LyapunovIndirect.ComplexEigenpair
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties
@@ -241,11 +242,16 @@ private lemma eigenpair_real_imag
         μ.re • (fun i ↦ (v i).re) - μ.im • (fun i ↦ (v i).im) ∧
       A *ᵥ (fun i ↦ (v i).im) =
         μ.im • (fun i ↦ (v i).re) + μ.re • (fun i ↦ (v i).im) := by
-  constructor <;> ext i
-  · have hi := congrArg Complex.re (congrFun heig i)
-    simpa [Matrix.mulVec, dotProduct, Complex.mul_re] using hi
-  · have hi := congrArg Complex.im (congrFun heig i)
-    simpa [Matrix.mulVec, dotProduct, Complex.mul_im, add_comm] using hi
+  have hre := matrixMulVec_re_smul_eigenpair A μ 1 v heig
+  have him := matrixMulVec_im_smul_eigenpair A μ 1 v heig
+  simp only [one_mul] at hre him
+  constructor
+  · rw [← hre]
+    ext i
+    simp [Complex.mul_re]
+  · rw [← him]
+    ext i
+    simp [Complex.mul_im, add_comm]
 
 private lemma exists_positive_matrixQuadratic_direction
     (A H : Matrix (Fin n) (Fin n) ℝ) (a : ℝ)

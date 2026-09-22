@@ -24,6 +24,25 @@ open scoped Matrix.Norms.Frobenius Topology BigOperators
 
 variable {n : ℕ}
 
+/-- The continuous linear map extracting entry `(i, j)` of a matrix.
+
+Original: shared row/column projection helper for interval-integral and tsum
+entrywise commutation arguments. -/
+private noncomputable def entryCLM (i j : Fin n) : Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
+  (ContinuousLinearMap.proj j).comp
+    (ContinuousLinearMap.proj i : Matrix (Fin n) (Fin n) ℝ →L[ℝ] (Fin n → ℝ))
+
+/-- The continuous linear map evaluating the quadratic form `xᵀ P x` in its matrix
+argument `P`, for a fixed vector `x`.
+
+Original: shared quadratic-form-as-CLM helper for interval-integral and tsum
+commutation arguments. -/
+private noncomputable def quadraticEvalCLM (x : Fin n → ℝ) : Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap {
+    toFun := fun P ↦ dotProduct (star x) (P *ᵥ x)
+    map_add' := fun P R ↦ by simp [Matrix.add_mulVec, dotProduct_add]
+    map_smul' := fun a P ↦ by simp [Matrix.smul_mulVec, dotProduct_smul] }
+
 private noncomputable def lyapunovKernel
     (A Q : Matrix (Fin n) (Fin n) ℝ) (t : ℝ) :
     Matrix (Fin n) (Fin n) ℝ :=
@@ -174,12 +193,8 @@ private lemma finiteLyapunovIntegral_posDef
   have hentry (i j : Fin n) :
       finiteLyapunovIntegral A Q m i j =
         ∫ t in (0 : ℝ)..(m : ℝ), lyapunovKernel A Q t i j := by
-    let row : Matrix (Fin n) (Fin n) ℝ →L[ℝ] (Fin n → ℝ) :=
-      ContinuousLinearMap.proj i
-    let entry : Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
-      (ContinuousLinearMap.proj j).comp row
-    have h := entry.intervalIntegral_comp_comm hint
-    simpa [entry, row, Function.comp_def, finiteLyapunovIntegral] using h.symm
+    have h := (entryCLM i j).intervalIntegral_comp_comm hint
+    simpa [entryCLM, Function.comp_def, finiteLyapunovIntegral] using h.symm
   have hkernelHermitian (t : ℝ) : (lyapunovKernel A Q t).IsHermitian := by
     let B := NormedSpace.exp (t • A)
     have hleft : NormedSpace.exp (t • Aᵀ) = Bᴴ := by
@@ -199,18 +214,12 @@ private lemma finiteLyapunovIntegral_posDef
     simpa only [Matrix.IsHermitian, Matrix.conjTranspose_apply, star_id_of_comm] using
       congrFun (congrFun ht i) j
   · intro x hx
-    let quadratic : Matrix (Fin n) (Fin n) ℝ →ₗ[ℝ] ℝ := {
-      toFun P := dotProduct (star x) (P *ᵥ x)
-      map_add' P R := by simp [Matrix.add_mulVec, dotProduct_add]
-      map_smul' a P := by simp [Matrix.smul_mulVec, dotProduct_smul] }
-    let quadraticCLM : Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
-      LinearMap.toContinuousLinearMap quadratic
     have hquadraticIntegral :
         dotProduct (star x) (finiteLyapunovIntegral A Q m *ᵥ x) =
           ∫ t in (0 : ℝ)..(m : ℝ),
             dotProduct (star x) (lyapunovKernel A Q t *ᵥ x) := by
-      have h := quadraticCLM.intervalIntegral_comp_comm hint
-      simpa [quadraticCLM, quadratic, Function.comp_def, finiteLyapunovIntegral] using h.symm
+      have h := (quadraticEvalCLM x).intervalIntegral_comp_comm hint
+      simpa [quadraticEvalCLM, Function.comp_def, finiteLyapunovIntegral] using h.symm
     have hquadraticPos (t : ℝ) :
         0 < dotProduct (star x) (lyapunovKernel A Q t *ᵥ x) := by
       let B := NormedSpace.exp (t • A)
@@ -231,8 +240,8 @@ private lemma finiteLyapunovIntegral_posDef
         hQ.dotProduct_mulVec_pos hBx
     rw [hquadraticIntegral]
     apply intervalIntegral.integral_pos (Nat.cast_pos.mpr hm)
-    · change ContinuousOn (fun t ↦ quadraticCLM (lyapunovKernel A Q t)) (Icc 0 (m : ℝ))
-      exact (quadraticCLM.continuous.comp (continuous_lyapunovKernel A Q)).continuousOn
+    · change ContinuousOn (fun t ↦ (quadraticEvalCLM x) (lyapunovKernel A Q t)) (Icc 0 (m : ℝ))
+      exact ((quadraticEvalCLM x).continuous.comp (continuous_lyapunovKernel A Q)).continuousOn
     · intro t _
       exact (hquadraticPos t).le
     · exact ⟨0, ⟨le_rfl, Nat.cast_nonneg m⟩, hquadraticPos 0⟩
@@ -310,12 +319,8 @@ private lemma tsum_conjugationOperator_pow_apply_posDef
         exact posDef_conjugationOperator C (term k) hCunit ih
   have hentry (i j : Fin n) :
       (∑' k : ℕ, term k) i j = ∑' k : ℕ, term k i j := by
-    let row : Matrix (Fin n) (Fin n) ℝ →L[ℝ] (Fin n → ℝ) :=
-      ContinuousLinearMap.proj i
-    let entry : Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
-      (ContinuousLinearMap.proj j).comp row
-    have h := entry.map_tsum hs
-    simpa [entry, row, Function.comp_def] using h
+    have h := (entryCLM i j).map_tsum hs
+    simpa [entryCLM, Function.comp_def] using h
   apply Matrix.PosDef.of_dotProduct_mulVec_pos
   · rw [Matrix.IsHermitian]
     ext i j
@@ -327,20 +332,14 @@ private lemma tsum_conjugationOperator_pow_apply_posDef
     simpa only [Matrix.IsHermitian, Matrix.conjTranspose_apply, star_id_of_comm] using
       congrFun (congrFun hk i) j
   · intro x hx
-    let quadratic : Matrix (Fin n) (Fin n) ℝ →ₗ[ℝ] ℝ := {
-      toFun P := dotProduct (star x) (P *ᵥ x)
-      map_add' P S := by simp [Matrix.add_mulVec, dotProduct_add]
-      map_smul' a P := by simp [Matrix.smul_mulVec, dotProduct_smul] }
-    let quadraticCLM : Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
-      LinearMap.toContinuousLinearMap quadratic
     have hqsum :
         dotProduct (star x) ((∑' k : ℕ, term k) *ᵥ x) =
           ∑' k : ℕ, dotProduct (star x) (term k *ᵥ x) := by
-      have h := quadraticCLM.map_tsum hs
-      simpa [quadraticCLM, quadratic, Function.comp_def] using h
+      have h := (quadraticEvalCLM x).map_tsum hs
+      simpa [quadraticEvalCLM, Function.comp_def] using h
     have hqsummable : Summable (fun k ↦ dotProduct (star x) (term k *ᵥ x)) := by
-      simpa [quadraticCLM, quadratic, Function.comp_def] using
-        hs.map quadraticCLM quadraticCLM.continuous
+      simpa [quadraticEvalCLM, Function.comp_def] using
+        hs.map (quadraticEvalCLM x) (quadraticEvalCLM x).continuous
     rw [hqsum, hqsummable.tsum_eq_zero_add]
     have hhead : 0 < dotProduct (star x) (term 0 *ᵥ x) :=
       (htermPos 0).dotProduct_mulVec_pos hx

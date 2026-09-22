@@ -38,6 +38,7 @@ import LeanForControl.Stability.KLCharacterizationTools
 import LeanForControl.Stability.LaSalle
 import LeanForControl.Stability.LyapunovBounds
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
+import LeanForControl.Stability.LyapunovIndirect.ComplexEigenpair
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.Stability.LyapunovIndirect.DefsForward
 import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
