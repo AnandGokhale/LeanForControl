@@ -85,6 +85,41 @@ theorem hankelMatrix_rank_eq_stateDim_of_controllable_of_observable
   exact
     (isObservable_iff_observabilityMatrix_rank_eq R.A R.C).mp hobs
 
+/-- For horizons at least the state dimension, the finite Hankel rank of a
+controllable and observable realization stabilizes at the state dimension.
+
+The state-horizon Hankel matrix is a row-and-column submatrix of every larger
+horizon, while every Hankel matrix still factors through the state space.
+
+Reference: Kailath, *Linear Systems*. -/
+@[blueprint "thm:hankel-rank-stabilization"
+  (statement := /-- If a realization of dimension $n$ is controllable and
+    observable, then every finite Hankel matrix with both horizons at least
+    $n$ has rank $n$. -/)]
+theorem hankelMatrix_rank_eq_stateDim_of_le_horizons
+    (R : Realization 𝕜 n m p) (hctrl : R.IsControllable)
+    (hobs : R.IsObservable) {r s : ℕ} (hr : n ≤ r) (hs : n ≤ s) :
+    Matrix.rank (R.hankelMatrix r s) = n := by
+  let rowEmbed : Fin n × Fin p → Fin r × Fin p :=
+    fun ki => (Fin.castLE hr ki.1, ki.2)
+  let colEmbed : Fin n × Fin m → Fin s × Fin m :=
+    fun kj => (Fin.castLE hs kj.1, kj.2)
+  have hsub :
+      (R.hankelMatrix r s).submatrix rowEmbed colEmbed =
+        R.hankelMatrix n n := by
+    ext ia jb
+    rfl
+  apply Nat.le_antisymm
+  · exact R.hankelMatrix_rank_le_stateDim r s
+  · calc
+      n = Matrix.rank (R.hankelMatrix n n) :=
+        (R.hankelMatrix_rank_eq_stateDim_of_controllable_of_observable
+          hctrl hobs).symm
+      _ = Matrix.rank ((R.hankelMatrix r s).submatrix rowEmbed colEmbed) :=
+        congrArg Matrix.rank hsub.symm
+      _ ≤ Matrix.rank (R.hankelMatrix r s) :=
+        Matrix.rank_submatrix_le _ _ _
+
 /-- A controllable and observable realization is minimal.
 
 The proof compares a common finite Hankel matrix across an arbitrary

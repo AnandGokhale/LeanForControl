@@ -119,6 +119,18 @@ theorem hankelMatrix_rank_eq_stateDim_of_isMinimal
   exact R.hankelMatrix_rank_eq_stateDim_of_controllable_of_observable
     hctrl hobs
 
+/-- A minimal complex realization has stable Hankel rank at every pair of
+horizons at least its state dimension.
+
+Reference: Kailath, *Linear Systems*. -/
+theorem IsMinimal.hankelMatrix_rank_eq_stateDim_of_le_horizons
+    (R : Realization ℂ n m p) (hmin : R.IsMinimal)
+    {r s : ℕ} (hr : n ≤ r) (hs : n ≤ s) :
+    Matrix.rank (R.hankelMatrix r s) = n := by
+  have hco := (isMinimal_iff_isControllable_and_isObservable R).mp hmin
+  exact R.hankelMatrix_rank_eq_stateDim_of_le_horizons
+    hco.1 hco.2 hr hs
+
 /-- Behaviorally equivalent minimal realizations have the same state
 dimension.
 
