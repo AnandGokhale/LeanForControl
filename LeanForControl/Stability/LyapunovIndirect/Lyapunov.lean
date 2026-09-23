@@ -1,15 +1,13 @@
-import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.Analysis.FrechetRemainder
 import Mathlib.Analysis.InnerProductSpace.Calculus
 
 /-!
-# Quadratic forms and the continuous-time Lyapunov equation
+# The shared remainder-absorption step of Lyapunov's indirect method
 
-This file connects `MatrixAlgebra.QuadraticForm`'s generic quadratic-form machinery to
-`SolvesContinuousLyapunovEquation`: the derivative identity that makes a Lyapunov-equation
-solution's quadratic form decrease along a linear vector field, and the shared
-remainder-absorption step used by both branches of Lyapunov's indirect method.
+This file has one declaration: the bound on how much the nonlinear remainder of `f` can
+perturb the derivative of a quadratic Lyapunov function, used by both branches of the
+indirect method (see its docstring).
 
 Reference: Khalil, *Nonlinear Systems*.
 -/
@@ -76,57 +74,5 @@ theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
         (mul_nonneg (mul_nonneg (by norm_num) hp_nonneg) (norm_nonneg y))
     _ = (2 * ‖p‖ * η) * ‖y‖ ^ 2 := by ring
     _ ≤ c * ‖y‖ ^ 2 := mul_le_mul_of_nonneg_right hcoef (sq_nonneg ‖y‖)
-
-/-- A solution of the Lyapunov equation makes the derivative of the `P`-quadratic form
-along the linear vector field equal to minus the `Q`-quadratic form.
-
-Reference: the continuous-time Lyapunov-equation identity. -/
-theorem fderiv_centeredQuadraticForm_linear_general
-    {A P Q : Matrix (Fin n) (Fin n) ℝ}
-    (hEq : SolvesContinuousLyapunovEquation A P Q)
-    (x_eq x : ℝⁿ) :
-    fderiv ℝ (centeredQuadraticForm P x_eq) x
-        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
-      -quadraticForm Q (x - x_eq) := by
-  rw [fderiv_centeredQuadraticForm_apply]
-  let y := x - x_eq
-  let a := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A
-  let p := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
-  let q := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Q
-  have htranspose :
-      Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ = star a := by
-    rw [← Matrix.conjTranspose_eq_transpose_of_trivial A]
-    exact (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ)).map_star' A
-  have hclm : p * a + star a * p = -q := by
-    have hEq' : P * A + Aᵀ * P = -Q := hEq
-    have h := congrArg (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ)) hEq'
-    have h' :
-        Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P *
-              Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A +
-            Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ *
-              Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P =
-            -Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Q := by
-      simpa using h
-    change p * a + Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ * p = -q at h'
-    rwa [htranspose] at h'
-  rw [← ContinuousLinearMap.adjoint_inner_right]
-  rw [← inner_add_right]
-  change inner ℝ y ((p * a + star a * p) y) = -quadraticForm Q y
-  rw [hclm]
-  simp [quadraticForm, q]
-
-/-- For identity forcing, the quadratic derivative along the linear vector field is
-`-‖x - x_eq‖²`.
-
-Reference: the continuous-time Lyapunov-equation identity. -/
-theorem fderiv_centeredQuadraticForm_linear
-    {A P : Matrix (Fin n) (Fin n) ℝ}
-    (hEq : SolvesContinuousLyapunovEquation A P 1)
-    (x_eq x : ℝⁿ) :
-    fderiv ℝ (centeredQuadraticForm P x_eq) x
-        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
-      -‖x - x_eq‖ ^ 2 := by
-  rw [fderiv_centeredQuadraticForm_linear_general hEq]
-  simp [quadraticForm]
 
 end LinearSystems

@@ -1,5 +1,5 @@
-import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
-import LeanForControl.Stability.LyapunovIndirect.ExponentialStability
+import LeanForControl.LinearSystems.Stability.Continuous.ExponentialStability
+import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.Normed.Operator.Mul
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
@@ -10,19 +10,38 @@ import Architect
 /-!
 # The continuous-time Lyapunov equation
 
-This file constructs the positive-definite solution of the continuous-time Lyapunov equation
-from a strict contraction of one matrix-exponential time step. The proof uses an integral on
-one finite time block and the resulting convergent discrete Lyapunov series.
+This file defines the continuous-time Lyapunov equation and constructs its positive-definite
+solution from a strict contraction of one matrix-exponential time step. The proof uses an
+integral on one finite time block and the resulting convergent discrete Lyapunov series. It
+also connects `MatrixAlgebra.QuadraticForm`'s generic quadratic-form machinery to the
+equation: the derivative identity that makes a solution's quadratic form decrease along a
+linear vector field.
 
 Reference: Khalil, *Nonlinear Systems*.
 -/
 
 namespace LinearSystems
 
-open Filter Matrix MeasureTheory Set
-open scoped Matrix.Norms.Frobenius Topology BigOperators
+open Filter Matrix MatrixAlgebra MeasureTheory Set
+open scoped Matrix.Norms.Frobenius RealInnerProductSpace Topology BigOperators
 
 variable {n : ℕ}
+
+local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+
+/-- `P` solves the continuous-time Lyapunov equation for `A` and `Q` when
+`P A + Aᵀ P = -Q`.
+
+Reference: Khalil, *Nonlinear Systems*. -/
+@[blueprint "def:solvesContinuousLyapunovEquation"
+  (statement := /-- For real square matrices $A$, $P$, and $Q$, the matrix $P$
+    solves the continuous-time Lyapunov equation with forcing $Q$ when
+    \[
+      PA+A^{\mathsf T}P=-Q.
+    \] -/)]
+def SolvesContinuousLyapunovEquation
+    (A P Q : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  P * A + Aᵀ * P = -Q
 
 /-- The continuous linear map extracting entry `(i, j)` of a matrix.
 
@@ -434,5 +453,57 @@ theorem IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov
           SolvesContinuousLyapunovEquation A S Q → S = P :=
   exists_posDef_unique_solution_continuous_lyapunov_of_exp_nat_norm_lt_one
     A Q hQ hA.exists_norm_exp_nat_smul_lt_one
+
+/-- A solution of the Lyapunov equation makes the derivative of the `P`-quadratic form
+along the linear vector field equal to minus the `Q`-quadratic form.
+
+Reference: the continuous-time Lyapunov-equation identity. -/
+theorem fderiv_centeredQuadraticForm_linear_general
+    {A P Q : Matrix (Fin n) (Fin n) ℝ}
+    (hEq : SolvesContinuousLyapunovEquation A P Q)
+    (x_eq x : ℝⁿ) :
+    fderiv ℝ (centeredQuadraticForm P x_eq) x
+        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
+      -quadraticForm Q (x - x_eq) := by
+  rw [fderiv_centeredQuadraticForm_apply]
+  let y := x - x_eq
+  let a := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A
+  let p := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
+  let q := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Q
+  have htranspose :
+      Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ = star a := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial A]
+    exact (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ)).map_star' A
+  have hclm : p * a + star a * p = -q := by
+    have hEq' : P * A + Aᵀ * P = -Q := hEq
+    have h := congrArg (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ)) hEq'
+    have h' :
+        Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P *
+              Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A +
+            Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ *
+              Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P =
+            -Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Q := by
+      simpa using h
+    change p * a + Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ * p = -q at h'
+    rwa [htranspose] at h'
+  rw [← ContinuousLinearMap.adjoint_inner_right]
+  rw [← inner_add_right]
+  change inner ℝ y ((p * a + star a * p) y) = -quadraticForm Q y
+  rw [hclm]
+  simp [quadraticForm, q]
+
+/-- For identity forcing, the quadratic derivative along the linear vector field is
+`-‖x - x_eq‖²`.
+
+Reference: the continuous-time Lyapunov-equation identity. -/
+theorem fderiv_centeredQuadraticForm_linear
+    {A P : Matrix (Fin n) (Fin n) ℝ}
+    (hEq : SolvesContinuousLyapunovEquation A P 1)
+    (x_eq x : ℝⁿ) :
+    fderiv ℝ (centeredQuadraticForm P x_eq) x
+        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
+      -‖x - x_eq‖ ^ 2 := by
+  rw [fderiv_centeredQuadraticForm_linear_general hEq]
+  simp [quadraticForm]
 
 end LinearSystems

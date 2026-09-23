@@ -2,10 +2,7 @@ import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.Spectrum
-import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
-import Mathlib.LinearAlgebra.Eigenspace.Matrix
-import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 
 /-!
 # A contractive exponential block for Hurwitz matrices
@@ -24,12 +21,10 @@ Reference: Rudin, *Functional Analysis* (Gelfand's formula and spectral mapping)
 
 namespace LinearSystems
 
-open Filter Matrix Module NormedSpace Set
-open scoped Matrix.Norms.Frobenius Topology
+open Matrix NormedSpace
+open scoped Matrix.Norms.Frobenius
 
 noncomputable section
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E]
 
 variable {n : ℕ}
 

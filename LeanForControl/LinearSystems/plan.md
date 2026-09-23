@@ -180,9 +180,9 @@ gap rather than an unstated assumption that this library is continuous-time only
 |---|---|---|---|
 | Hurwitz predicates | `IsHurwitz`, `IsHurwitzWithRate` | `Continuous/DefsHurwitz.lean` | ✅ done |
 | Rate monotonicity, spectral shift | `IsHurwitzWithRate.mono`, `isHurwitzWithRate_iff_add_smul_one` | `Continuous/Hurwitz.lean` | ✅ done |
-| Hurwitz ⟹ `‖exp(kA)‖ < 1` for some `k` | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `Continuous/ExponentialStability.lean` | 🔶 in review (PR #15) |
-| Lyapunov equation solvable with `P` positive definite | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `Continuous/LyapunovEquation.lean` | 🔶 in review (PR #15) |
-| Quadratic instability certificate from an unstable eigenpair | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `Continuous/LyapunovEquation.lean` | 🔶 in review (PR #15) |
+| Hurwitz ⟹ `‖exp(kA)‖ < 1` for some `k` | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `Continuous/ExponentialStability.lean` | ✅ done |
+| Lyapunov equation solvable with `P` positive definite | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `Continuous/LyapunovEquation.lean` | ✅ done |
+| Quadratic instability certificate from an unstable eigenpair | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `Continuous/InstabilityCertificate.lean` | ✅ done |
 | Eigenvalue assignment by state feedback | — | — | planned |
 | Schur predicate and discrete Lyapunov equation | — | `Discrete/` | planned |
 

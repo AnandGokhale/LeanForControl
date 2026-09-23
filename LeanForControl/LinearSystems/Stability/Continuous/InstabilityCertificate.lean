@@ -1,7 +1,6 @@
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Spectrum
-import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly

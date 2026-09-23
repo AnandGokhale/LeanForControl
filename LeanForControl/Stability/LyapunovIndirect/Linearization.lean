@@ -1,7 +1,7 @@
 import LeanForControl.Analysis.FrechetRemainder
 import LeanForControl.MatrixAlgebra.QuadraticForm
+import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
-import LeanForControl.Stability.LyapunovIndirect.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.Forward
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Architect

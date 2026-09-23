@@ -27,7 +27,10 @@ import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.Continuous.ExponentialStability
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
+import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
+import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
@@ -46,14 +49,10 @@ import LeanForControl.Stability.LyapunovBounds
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.Stability.LyapunovIndirect.DefsForward
-import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov
-import LeanForControl.Stability.LyapunovIndirect.ExponentialStability
 import LeanForControl.Stability.LyapunovIndirect.Forward
-import LeanForControl.Stability.LyapunovIndirect.InstabilityCertificate
 import LeanForControl.Stability.LyapunovIndirect.Linearization
 import LeanForControl.Stability.LyapunovIndirect.LinearizationInstability
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
-import LeanForControl.Stability.LyapunovIndirect.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.NonlinearInstability
 import LeanForControl.Stability.NonAutonomous
 import LeanForControl.axioms
