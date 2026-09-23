@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.Stability.LyapunovIndirect.ComplexEigenpair
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -20,7 +21,7 @@ ingredient from finite-dimensional linear algebra.
 Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*.
 -/
 
-open Matrix Set
+open Matrix MatrixAlgebra Set
 open scoped RealInnerProductSpace
 
 namespace LinearSystems
@@ -253,7 +254,7 @@ private lemma eigenpair_real_imag
     ext i
     simp [Complex.mul_im, add_comm]
 
-private lemma exists_positive_matrixQuadratic_direction
+private lemma exists_positive_quadraticForm_direction
     (A H : Matrix (Fin n) (Fin n) ℝ) (a : ℝ)
     {μ : ℂ} {v : Fin n → ℂ}
     (hv : v ≠ 0)
@@ -262,7 +263,7 @@ private lemma exists_positive_matrixQuadratic_direction
     (hHerm : H.IsHermitian)
     (hH : H * A + Aᵀ * H - (2 * a) • H = 1) :
     ∃ w : EuclideanSpace ℝ (Fin n),
-      w ≠ 0 ∧ 0 < matrixQuadratic H w := by
+      w ≠ 0 ∧ 0 < quadraticForm H w := by
   let x : Fin n → ℝ := fun i ↦ (v i).re
   let y : Fin n → ℝ := fun i ↦ (v i).im
   let B : (Fin n → ℝ) →ₗ[ℝ] ((Fin n → ℝ) →ₗ[ℝ] ℝ) :=
@@ -333,7 +334,7 @@ private lemma exists_positive_matrixQuadratic_direction
       have hx : x = 0 := (WithLp.toLp_eq_zero 2).mp hx0
       rw [hx] at hqx
       simp at hqx
-    · unfold matrixQuadratic
+    · unfold quadraticForm
       rw [Matrix.inner_toEuclideanCLM]
       change 0 < x ⬝ᵥ H *ᵥ x
       simpa only [B, Matrix.toBilin'_apply'] using hqx
@@ -342,7 +343,7 @@ private lemma exists_positive_matrixQuadratic_direction
       have hy : y = 0 := (WithLp.toLp_eq_zero 2).mp hy0
       rw [hy] at hqy
       simp at hqy
-    · unfold matrixQuadratic
+    · unfold quadraticForm
       rw [Matrix.inner_toEuclideanCLM]
       change 0 < y ⬝ᵥ H *ᵥ y
       simpa only [B, Matrix.toBilin'_apply'] using hqy
@@ -375,14 +376,14 @@ theorem exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos
     (hμ : 0 < μ.re) :
     ∃ (α : ℝ) (H : Matrix (Fin n) (Fin n) ℝ)
         (w : EuclideanSpace ℝ (Fin n)),
-      0 < α ∧ H.IsHermitian ∧ w ≠ 0 ∧ 0 < matrixQuadratic H w ∧
+      0 < α ∧ H.IsHermitian ∧ w ≠ 0 ∧ 0 < quadraticForm H w ∧
         (H * A + Aᵀ * H - (2 * α) • H).PosDef := by
   obtain ⟨α, H, hα, hαμ, hH, hEq⟩ :=
     exists_symmetric_shifted_lyapunov_solution A μ hμ
   obtain ⟨w, hw, hHw⟩ :=
-    exists_positive_matrixQuadratic_direction A H α hv heig hαμ hH hEq
+    exists_positive_quadraticForm_direction A H α hv heig hαμ hH hEq
   refine ⟨α, H, w, hα, hH, hw, hHw, ?_⟩
   rw [hEq]
-  exact posDef_one
+  exact Matrix.PosDef.one
 
 end LinearSystems

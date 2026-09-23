@@ -20,15 +20,6 @@ variable {𝕜 E F : Type*}
   [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- The centered error after subtracting a Fréchet derivative is little-o of the
-distance from the base point.
-
-Reference: the standard Fréchet-derivative remainder characterization. -/
-theorem HasFDerivAt.centered_remainder_isLittleO
-    {f : E → F} {A : E →L[𝕜] F} {x₀ : E} (hf : HasFDerivAt f A x₀) :
-    (fun x ↦ f x - f x₀ - A (x - x₀)) =o[nhds x₀] (fun x ↦ x - x₀) :=
-  hf.isLittleO
-
 /-- A Fréchet derivative gives an arbitrarily small linear bound on the centered
 first-order remainder near the base point.
 
@@ -45,7 +36,7 @@ theorem HasFDerivAt.exists_centered_remainder_bound
     {ε : ℝ} (hε : 0 < ε) :
     ∃ δ > 0, ∀ x, ‖x - x₀‖ < δ →
       ‖f x - f x₀ - A (x - x₀)‖ ≤ ε * ‖x - x₀‖ := by
-  have hsmall := hf.centered_remainder_isLittleO.bound hε
+  have hsmall := hf.isLittleO.bound hε
   rw [Metric.eventually_nhds_iff] at hsmall
   rcases hsmall with ⟨δ, hδ, hbound⟩
   refine ⟨δ, hδ, fun x hx ↦ hbound ?_⟩

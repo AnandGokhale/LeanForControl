@@ -131,7 +131,7 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Surjectivity ⟺ full row rank | `mulVec_range_top_iff_rank_eq_card_rows` | `Rank.lean` | ✅ done |
 | Complexification of a real matrix | — | `Spectrum.lean` | 🔶 in review (PR #13, PR #15) |
 | Spectral radius of `exp A` | — | `Spectrum.lean` | 🔶 in review (PR #15) |
-| Positive-definite quadratic forms | `matrixQuadratic` and friends | `PositiveDefinite.lean` | 🔶 in review (PR #15) |
+| Quadratic forms represented by a matrix | `quadraticForm` and friends | `MatrixAlgebra/QuadraticForm.lean` | ✅ done |
 | Jordan normal form | — | `Jordan.lean` | planned |
 
 `MatrixAlgebra/` deliberately has no `plan.md` of its own: like `Comparison/` and

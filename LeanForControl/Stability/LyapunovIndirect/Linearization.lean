@@ -1,4 +1,5 @@
-import LeanForControl.Stability.LyapunovIndirect.FrechetRemainder
+import LeanForControl.Analysis.FrechetRemainder
+import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import LeanForControl.Stability.LyapunovIndirect.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.Forward
@@ -23,14 +24,14 @@ variable {n : ℕ}
 
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
-open LinearSystems
+open LinearSystems MatrixAlgebra
 
 /-- Near an equilibrium, a quadratic Lyapunov function solving the identity-forced
 Lyapunov equation has a uniform negative quadratic Lie-derivative bound.
 
 Reference: adapted from the quadratic-Lyapunov proof of the stable branch of Lyapunov's
 indirect method; Khalil, *Nonlinear Systems*. -/
-theorem exists_centeredMatrixQuadratic_decay
+theorem exists_centeredQuadraticForm_decay
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A P : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
@@ -38,17 +39,17 @@ theorem exists_centeredMatrixQuadratic_decay
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     (hLyap : SolvesContinuousLyapunovEquation A P 1) :
     ∃ r > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
-      fderiv ℝ (centeredMatrixQuadratic P x_eq) x (f x) ≤
+      fderiv ℝ (centeredQuadraticForm P x_eq) x (f x) ≤
         -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by
   obtain ⟨r, hr, hrem⟩ :=
-    exists_abs_fderiv_centeredMatrixQuadratic_remainder_le A P hf heq hJac
+    exists_abs_fderiv_centeredQuadraticForm_remainder_le A P hf heq hJac
       (c := 1 / 2) (by norm_num)
   refine ⟨r, hr, ?_⟩
   intro x hx
   let y : ℝⁿ := x - x_eq
   let e : ℝⁿ := f x - f x_eq -
     Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
-  have herror : fderiv ℝ (centeredMatrixQuadratic P x_eq) x e ≤ (1 / 2 : ℝ) * ‖y‖ ^ 2 :=
+  have herror : fderiv ℝ (centeredQuadraticForm P x_eq) x e ≤ (1 / 2 : ℝ) * ‖y‖ ^ 2 :=
     (le_abs_self _).trans (hrem x hx)
   have hf_split : f x =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y + e := by
@@ -57,11 +58,11 @@ theorem exists_centeredMatrixQuadratic_decay
     abel
   rw [hf_split, map_add]
   calc
-    fderiv ℝ (centeredMatrixQuadratic P x_eq) x
+    fderiv ℝ (centeredQuadraticForm P x_eq) x
           (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y) +
-        fderiv ℝ (centeredMatrixQuadratic P x_eq) x e
+        fderiv ℝ (centeredQuadraticForm P x_eq) x e
         ≤ -‖y‖ ^ 2 + (1 / 2 : ℝ) * ‖y‖ ^ 2 := by
-          rw [fderiv_centeredMatrixQuadratic_linear hLyap]
+          rw [fderiv_centeredQuadraticForm_linear hLyap]
           simpa [y] using add_le_add_left herror (-‖y‖ ^ 2)
     _ = -(1 / 2 : ℝ) * ‖y‖ ^ 2 := by ring
     _ = -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by rfl
@@ -82,18 +83,18 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
     ForwardLocallyExponentiallyStable f x_eq := by
   letI : NeZero n := ⟨Nat.ne_of_gt hn⟩
   obtain ⟨r, hr, hdecay⟩ :=
-    exists_centeredMatrixQuadratic_decay A P hf heq hJac hLyap
-  let V : ℝⁿ → ℝ := centeredMatrixQuadratic P x_eq
+    exists_centeredQuadraticForm_decay A P hf heq hJac hLyap
+  let V : ℝⁿ → ℝ := centeredQuadraticForm P x_eq
   let D : Set ℝⁿ := Metric.ball x_eq r
   have hlocal : IsLocalLyapunovFunction f V x_eq D := {
     hD_open := Metric.isOpen_ball
     hD_mem := by simp [D, hr]
-    hcont := (centeredMatrixQuadratic_contDiff P x_eq).continuous
-    hV_diff := (centeredMatrixQuadratic_contDiff P x_eq).differentiable (by norm_num)
-    hzero := by simp [V, centeredMatrixQuadratic, matrixQuadratic]
+    hcont := (centeredQuadraticForm_contDiff P x_eq).continuous
+    hV_diff := (centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)
+    hzero := by simp [V, centeredQuadraticForm, quadraticForm]
     hpos := by
       intro x _ hx
-      exact matrixQuadratic_pos P hP (sub_ne_zero.mpr hx)
+      exact quadraticForm_pos P hP (sub_ne_zero.mpr hx)
     hLie_nonpos := by
       intro x hx
       have hx' : ‖x - x_eq‖ < r := by
@@ -104,7 +105,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
     forwardLyapunovStable_of_isLocalLyapunovFunction hn hlocal
   obtain ⟨ρ, hρ, hstay⟩ := hstable r hr
   obtain ⟨m, hm, hm_lower⟩ :=
-    exists_pos_mul_norm_sq_le_matrixQuadratic P hP
+    exists_pos_mul_norm_sq_le_quadraticForm P hP
   let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
   let M : ℝ := ‖p‖ + 1
   have hM : 0 < M := by dsimp [M]; positivity
@@ -112,7 +113,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
     let u : ℝⁿ := EuclideanSpace.single (⟨0, hn⟩ : Fin n) 1
     have hu_norm : ‖u‖ = 1 := by simp [u, PiLp.norm_single]
     have hlower := hm_lower u
-    have hupper := matrixQuadratic_le_opNorm_mul_norm_sq P u
+    have hupper := quadraticForm_le_opNorm_mul_norm_sq P u
     dsimp [p, M]
     rw [hu_norm, one_pow, mul_one] at hlower hupper
     linarith
@@ -131,8 +132,8 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
   have hVupper (x : ℝⁿ) : V x ≤ M * ‖x - x_eq‖ ^ 2 := by
     calc
       V x ≤ ‖p‖ * ‖x - x_eq‖ ^ 2 := by
-        simpa [V, centeredMatrixQuadratic, p] using
-          matrixQuadratic_le_opNorm_mul_norm_sq P (x - x_eq)
+        simpa [V, centeredQuadraticForm, p] using
+          quadraticForm_le_opNorm_mul_norm_sq P (x - x_eq)
       _ ≤ M * ‖x - x_eq‖ ^ 2 := by
         gcongr
         dsimp [M]
@@ -143,7 +144,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
     · exact
         ((Real.continuous_exp.comp_continuousOn
           (continuousOn_const.mul continuousOn_id)).mul
-          ((centeredMatrixQuadratic_contDiff P x_eq).continuous.comp_continuousOn
+          ((centeredQuadraticForm_contDiff P x_eq).continuous.comp_continuousOn
             hφ.continuousOn))
     · intro s hs
       rw [interior_Icc] at hs
@@ -152,7 +153,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
         (hφ.2 s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
       have hVcurve : HasDerivAt (V ∘ φ)
           (fderiv ℝ V (φ s) (f (φ s))) s :=
-        ((centeredMatrixQuadratic_contDiff P x_eq).differentiable (by norm_num) (φ s))
+        ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num) (φ s))
           |>.hasFDerivAt.comp_hasDerivAt s hcurve
       exact ((((hasDerivAt_id s).const_mul k).exp.mul hVcurve).differentiableAt)
         |>.differentiableWithinAt
@@ -163,7 +164,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
         (hφ.2 s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
       have hVcurve : HasDerivAt (V ∘ φ)
           (fderiv ℝ V (φ s) (f (φ s))) s :=
-        ((centeredMatrixQuadratic_contDiff P x_eq).differentiable (by norm_num) (φ s))
+        ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num) (φ s))
           |>.hasFDerivAt.comp_hasDerivAt s hcurve
       have hWderiv : HasDerivAt (fun q : ℝ ↦ Real.exp (k * q) * V (φ q))
           (Real.exp (k * s) *
@@ -284,7 +285,7 @@ theorem hurwitz_linearization_forward_locally_exponentially_stable
     simp
   · have hn : 0 < n := Nat.pos_of_ne_zero hn0
     obtain ⟨P, hP, hLyap, _⟩ :=
-      hA.exists_posDef_unique_solution_continuous_lyapunov 1 posDef_one
+      hA.exists_posDef_unique_solution_continuous_lyapunov 1 Matrix.PosDef.one
     exact forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
       hn A P hf heq hJac hP hLyap
 
