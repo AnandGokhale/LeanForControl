@@ -10,6 +10,10 @@ This file supplies stability predicates phrased in terms of every finite forward
 solution segment.  Unlike `IsTrajectory`, these predicates do not silently discard
 solutions that cease to exist after a finite escape time.
 
+A finite forward solution segment is Mathlib's `IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T)`,
+used directly rather than through a wrapper: `Icc 0 T` is empty for `T < 0`, so no separate
+`0 ≤ T` hypothesis is needed to keep these predicates meaningful.
+
 Reference: Khalil, *Nonlinear Systems*.
 -/
 
@@ -18,16 +22,6 @@ open Set Filter Topology
 variable {n : ℕ}
 
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
-
-/-- `φ` solves `x' = f x` on the finite forward interval `[0, T]`.
-
-Reference: Khalil, *Nonlinear Systems*.
--/
-@[blueprint "def:isForwardTrajectoryOn"
-  (statement := /-- A finite forward trajectory for $\dot x=f(x)$ on $[0,T]$
-    is an integral curve on that interval, with $T\geq 0$. -/)]
-def IsForwardTrajectoryOn (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) (T : ℝ) : Prop :=
-  0 ≤ T ∧ IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T)
 
 /-- Forward Lyapunov stability, quantified over all finite forward solution segments.
 
@@ -39,7 +33,7 @@ Reference: Khalil, *Nonlinear Systems*.
     prescribed neighborhood for its entire interval of definition. -/)]
 def ForwardLyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ (T : ℝ) (φ : ℝ → ℝⁿ),
-    IsForwardTrajectoryOn φ f T → ‖φ 0 - x_eq‖ < δ →
+    IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T) → ‖φ 0 - x_eq‖ < δ →
       ∀ t ∈ Icc (0 : ℝ) T, ‖φ t - x_eq‖ < ε
 
 /-- Local exponential stability on every finite forward solution segment.
@@ -55,7 +49,7 @@ Reference: Khalil, *Nonlinear Systems*.
     $\|x(t)-x_{\rm eq}\|\leq C e^{-at}\|x(0)-x_{\rm eq}\|$. -/)]
 def ForwardLocallyExponentiallyStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ r C a : ℝ, 0 < r ∧ 1 ≤ C ∧ 0 < a ∧
-    ∀ (T : ℝ) (φ : ℝ → ℝⁿ), IsForwardTrajectoryOn φ f T →
+    ∀ (T : ℝ) (φ : ℝ → ℝⁿ), IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T) →
       ‖φ 0 - x_eq‖ < r → ∀ t ∈ Icc (0 : ℝ) T,
         ‖φ t - x_eq‖ ≤ C * Real.exp (-a * t) * ‖φ 0 - x_eq‖
 

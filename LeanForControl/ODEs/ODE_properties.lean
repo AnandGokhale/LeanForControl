@@ -2,14 +2,16 @@ import Mathlib.Analysis.Calculus.ParametricIntegral
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.ODE.Gronwall
+import Mathlib.Analysis.ODE.PicardLindelof
 import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.Analysis.Integrals
 import Architect
 
 open MeasureTheory Metric Set Filter TopologicalSpace
-open scoped Real Interval
+open scoped Real Interval Topology
 
 /-!
 # `ODEs.ODE_properties`
@@ -72,6 +74,91 @@ lemma IsIntegralSolution.reanchor {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {
   have hint2 : IntervalIntegrable (fun r => F r (x r)) volume s t :=
     IntervalIntegrable_of_lipschitz hF_cont (hx_cont.mono (uIcc_subset_uIcc hs ht'))
   rw [hx t ht', hx s hs, add_assoc, intervalIntegral.integral_add_adjacent_intervals hint1 hint2]
+
+/-! ## Relation to Mathlib's integral curves
+
+`IsIntegralSolution` is the *integral* (Volterra) formulation of `ẋ = F(t, x)`; Mathlib's
+`IsIntegralCurveOn` is the *differential* one. Mathlib's public ODE API — Picard-Lindelöf
+existence (`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`), Grönwall uniqueness
+(`ODE_solution_unique_of_mem_Icc`) — is stated exclusively in the differential form, which is
+therefore the canonical one; the integral form appears in Mathlib only as `ODE.picard`, an
+internal proof device. The lemmas below are the two directions of the fundamental theorem of
+calculus relating them, so that results proved against either formulation transfer to the other.
+
+Note that `IsIntegralSolution` is *definitionally* the statement that `x` is a fixed point of
+Mathlib's Picard operator (`isIntegralSolution_iff_eq_picard`), and that the differential form is
+the weaker hypothesis to discharge but the stronger one to assume: it carries no integrability
+side conditions, which is why the Lyapunov track differentiates along it directly.
+-/
+
+section IntegralCurve
+
+variable {x : ℝ → E} {x₀ : E} {F : ℝ → E → E}
+
+/-- An integral solution is exactly a fixed point of Mathlib's Picard operator
+`ODE.picard` on the segment between `t₀` and `t₁`. This holds by definition. -/
+theorem isIntegralSolution_iff_eq_picard :
+    IsIntegralSolution t₀ t₁ x x₀ F ↔ ∀ t ∈ uIcc t₀ t₁, x t = ODE.picard F t₀ x₀ x t :=
+  Iff.rfl
+
+variable [CompleteSpace E]
+
+/-- **Differential form implies integral form.** An integral curve of `F` on the segment between
+`t₀` and `t₁` is an integral solution there, anchored at its own initial value `x t₀`.
+
+Continuity of `x` is not assumed: it follows from the differentiability hypothesis. -/
+theorem IsIntegralCurveOn.isIntegralSolution
+    (hcurve : IsIntegralCurveOn x F (uIcc t₀ t₁))
+    (hFx : ContinuousOn (fun s => F s (x s)) (uIcc t₀ t₁)) :
+    IsIntegralSolution t₀ t₁ x (x t₀) F := by
+  intro t ht
+  have hsub : uIcc t₀ t ⊆ uIcc t₀ t₁ := uIcc_subset_uIcc_left ht
+  have hcont : ContinuousOn x (uIcc t₀ t) := fun s hs =>
+    ((hcurve s (hsub hs)).continuousWithinAt).mono hsub
+  have hderiv : ∀ s ∈ Ioo (min t₀ t) (max t₀ t), HasDerivWithinAt x (F s (x s)) (Ioi s) s := by
+    intro s hs
+    have hs' : s ∈ uIcc t₀ t := Ioo_subset_Icc_self hs
+    have hmem : uIcc t₀ t₁ ∈ 𝓝 s :=
+      mem_nhds_iff.2 ⟨Ioo (min t₀ t) (max t₀ t),
+        fun r hr => hsub (Ioo_subset_Icc_self hr), isOpen_Ioo, hs⟩
+    exact ((hcurve s (hsub hs')).hasDerivAt hmem).hasDerivWithinAt
+  have hint : IntervalIntegrable (fun s => F s (x s)) volume t₀ t :=
+    (hFx.mono hsub).intervalIntegrable
+  have hFTC := intervalIntegral.integral_eq_sub_of_hasDeriv_right hcont hderiv hint
+  rw [hFTC]
+  abel
+
+/-- **Integral form implies differential form.** An integral solution on the segment between `t₀`
+and `t₁` is an integral curve there, provided `s ↦ F s (x s)` is continuous along it. -/
+theorem IsIntegralSolution.isIntegralCurveOn
+    (hsol : IsIntegralSolution t₀ t₁ x x₀ F)
+    (hFx : ContinuousOn (fun s => F s (x s)) (uIcc t₀ t₁)) :
+    IsIntegralCurveOn x F (uIcc t₀ t₁) := by
+  intro t ht
+  haveI : Fact (t ∈ uIcc t₀ t₁) := ⟨ht⟩
+  have hint : IntervalIntegrable (fun s => F s (x s)) volume t₀ t :=
+    (hFx.mono (uIcc_subset_uIcc_left ht)).intervalIntegrable
+  have hderiv : HasDerivWithinAt (fun u => ∫ s in t₀..u, F s (x s)) (F t (x t)) (uIcc t₀ t₁) t :=
+    intervalIntegral.integral_hasDerivWithinAt_right hint
+      (hFx.stronglyMeasurableAtFilter_nhdsWithin measurableSet_uIcc t) (hFx t ht)
+  exact (hderiv.const_add x₀).congr (fun u hu => hsol u hu) (hsol t ht)
+
+/-- The two formulations agree, given continuity of `F` along `x`. -/
+theorem isIntegralSolution_iff_isIntegralCurveOn
+    (hFx : ContinuousOn (fun s => F s (x s)) (uIcc t₀ t₁)) :
+    IsIntegralSolution t₀ t₁ x (x t₀) F ↔ IsIntegralCurveOn x F (uIcc t₀ t₁) :=
+  ⟨fun h => h.isIntegralCurveOn hFx, fun h => h.isIntegralSolution hFx⟩
+
+/-- The forward-time form of `isIntegralSolution_iff_isIntegralCurveOn`, stated over `Icc t₀ t₁`
+rather than `uIcc t₀ t₁`. This is the form the finite-forward stability predicates are phrased
+in (with `t₀ = 0`). -/
+theorem isIntegralSolution_iff_isIntegralCurveOn_Icc (hle : t₀ ≤ t₁)
+    (hFx : ContinuousOn (fun s => F s (x s)) (Icc t₀ t₁)) :
+    IsIntegralSolution t₀ t₁ x (x t₀) F ↔ IsIntegralCurveOn x F (Icc t₀ t₁) := by
+  rw [← uIcc_of_le hle] at hFx ⊢
+  exact isIntegralSolution_iff_isIntegralCurveOn hFx
+
+end IntegralCurve
 
 /-- **Theorem 3.4** (Continuous dependence on initial states and parameters).
 

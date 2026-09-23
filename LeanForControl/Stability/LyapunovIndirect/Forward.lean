@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.ODE.PicardLindelof
+import LeanForControl.ODEs.ODE_properties
 import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.LyapunovIndirect.DefsForward
 
@@ -21,6 +22,19 @@ variable {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-! ## Consequences and compatibility -/
+
+/-- A finite forward solution segment of a continuous field is an integral solution
+(`IsIntegralSolution`, the integral formulation used by the `ODEs/` and
+`LinearSystems/Solutions/` tracks), anchored at `0` with initial value `φ 0`.
+
+The continuity of `φ` that the integral formulation needs comes for free from the curve
+hypothesis. See `isIntegralSolution_iff_isIntegralCurveOn_Icc` for the general statement. -/
+theorem IsIntegralCurveOn.isIntegralSolution_of_continuous
+    {φ : ℝ → ℝⁿ} {f : ℝⁿ → ℝⁿ} {T : ℝ} (hT : 0 ≤ T)
+    (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T)) (hf : Continuous f) :
+    IsIntegralSolution 0 T φ (φ 0) (fun _ y => f y) :=
+  (isIntegralSolution_iff_isIntegralCurveOn_Icc hT
+    (hf.comp_continuousOn (fun s hs => (hφ s hs).continuousWithinAt))).mpr hφ
 
 /-- Local exponential stability on finite forward segments implies forward
 Lyapunov stability.
@@ -50,16 +64,13 @@ theorem ForwardLocallyExponentiallyStable.forwardLyapunovStable
       rw [mul_one, ← lt_div_iff₀' hCpos]
       simpa [mul_comm] using hinit
 
-/-- A globally defined trajectory restricts to a finite forward solution segment.
+/-- A globally defined trajectory restricts to an integral curve on any set of times.
 
 Original: compatibility between the legacy global-trajectory API and the finite-segment API.
 -/
-theorem IsTrajectory.isForwardTrajectoryOn
-    {f : ℝⁿ → ℝⁿ} {φ : ℝ → ℝⁿ} (hφ : IsTrajectory φ f)
-    {T : ℝ} (hT : 0 ≤ T) : IsForwardTrajectoryOn φ f T := by
-  refine ⟨hT, ?_⟩
-  intro t _
-  exact (hφ t).hasDerivWithinAt
+theorem IsTrajectory.isIntegralCurveOn
+    {f : ℝⁿ → ℝⁿ} {φ : ℝ → ℝⁿ} (hφ : IsTrajectory φ f) (s : Set ℝ) :
+    IsIntegralCurveOn φ (fun _ x => f x) s := fun t _ => (hφ t).hasDerivWithinAt
 
 /-- Forward Lyapunov stability implies the legacy stability predicate for global
 trajectories.
@@ -73,7 +84,7 @@ theorem ForwardLyapunovStable.lyapunovStable
   obtain ⟨δ, hδ, hstable⟩ := h ε hε
   refine ⟨δ, hδ, ?_⟩
   intro φ hφ hφ0 t ht
-  exact hstable t φ (hφ.isForwardTrajectoryOn ht) hφ0 t ⟨ht, le_rfl⟩
+  exact hstable t φ (hφ.isIntegralCurveOn _) hφ0 t ⟨ht, le_rfl⟩
 
 /-- Local exponential stability on finite forward segments implies the legacy
 local asymptotic-stability predicate for globally defined trajectories.
@@ -108,8 +119,7 @@ theorem ForwardLocallyExponentiallyStable.localAsymptoticStable
   refine ⟨max T₀ 0, ?_⟩
   intro t ht
   have ht0 : 0 ≤ t := (le_max_right T₀ 0).trans ht
-  have hsegment : IsForwardTrajectoryOn φ f t := hφ.isForwardTrajectoryOn ht0
-  have hestimate := hbound t φ hsegment hφ0 t ⟨ht0, le_rfl⟩
+  have hestimate := hbound t φ (hφ.isIntegralCurveOn _) hφ0 t ⟨ht0, le_rfl⟩
   rw [dist_eq_norm]
   refine hestimate.trans_lt ?_
   have hnonneg : 0 ≤ C * Real.exp (-a * t) * ‖φ 0 - x_eq‖ := by positivity
@@ -136,7 +146,7 @@ Reference: Khalil, *Nonlinear Systems*.
 theorem forwardUnstable_of_fixed_escape
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ε : ℝ} (hε : 0 < ε)
     (hescape : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
-      IsForwardTrajectoryOn φ f T ∧ ‖φ 0 - x_eq‖ < δ ∧
+      IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T) ∧ ‖φ 0 - x_eq‖ < δ ∧
         t ∈ Icc (0 : ℝ) T ∧ ε ≤ ‖φ t - x_eq‖) :
     ForwardUnstable f x_eq := by
   intro hstable
@@ -152,19 +162,10 @@ Original: finite-segment form of `hasDerivAt_V_comp_traj`.
 -/
 lemma hasDerivWithinAt_V_comp_forwardTrajectoryOn
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {φ : ℝ → ℝⁿ} {T t : ℝ}
-    (hV_diff : Differentiable ℝ V) (hφ : IsForwardTrajectoryOn φ f T)
+    (hV_diff : Differentiable ℝ V) (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T))
     (ht : t ∈ Icc (0 : ℝ) T) :
     HasDerivWithinAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) (Icc 0 T) t :=
-  (hV_diff (φ t)).hasFDerivAt.comp_hasDerivWithinAt t (hφ.2 t ht)
-
-/-- A finite forward solution segment is continuous on its interval of definition.
-
-Original: convenience wrapper around continuity of integral curves.
--/
-lemma IsForwardTrajectoryOn.continuousOn
-    {f : ℝⁿ → ℝⁿ} {φ : ℝ → ℝⁿ} {T : ℝ}
-    (hφ : IsForwardTrajectoryOn φ f T) : ContinuousOn φ (Icc (0 : ℝ) T) :=
-  hφ.2.continuousOn
+  (hV_diff (φ t)).hasFDerivAt.comp_hasDerivWithinAt t (hφ t ht)
 
 /-- A Lyapunov function is nonincreasing between two times of a finite forward
 solution segment, provided the segment remains in the certificate domain.
@@ -174,11 +175,11 @@ Reference: Khalil, *Nonlinear Systems*.
 lemma V_nonincreasing_on_forwardTrajectoryOn
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
     (hV : IsLocalLyapunovFunction f V x_eq D)
-    {φ : ℝ → ℝⁿ} {T a b : ℝ} (hφ : IsForwardTrajectoryOn φ f T)
+    {φ : ℝ → ℝⁿ} {T a b : ℝ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T))
     (ha : 0 ≤ a) (hab : a ≤ b) (hb : b ≤ T)
     (hstay : ∀ t ∈ Icc a b, φ t ∈ D) : V (φ b) ≤ V (φ a) := by
   have hsub : Icc a b ⊆ Icc (0 : ℝ) T := fun t ht => ⟨ha.trans ht.1, ht.2.trans hb⟩
-  have hcurve : IsIntegralCurveOn φ (fun _ x => f x) (Icc a b) := hφ.2.mono hsub
+  have hcurve : IsIntegralCurveOn φ (fun _ x => f x) (Icc a b) := hφ.mono hsub
   have hanti : AntitoneOn (V ∘ φ) (Icc a b) := by
     apply antitoneOn_of_deriv_nonpos (convex_Icc a b)
     · exact hV.hcont.continuousOn.comp hcurve.continuousOn hstay
@@ -306,13 +307,13 @@ every point at which it is `C¹`.
 
 Reference: the Picard--Lindelöf local existence theorem.
 -/
-theorem ContDiffAt.exists_isForwardTrajectoryOn
+theorem ContDiffAt.exists_isIntegralCurveOn_Icc
     {f : ℝⁿ → ℝⁿ} {x₀ : ℝⁿ} (hf : ContDiffAt ℝ 1 f x₀) :
-    ∃ (T : ℝ) (φ : ℝ → ℝⁿ), 0 < T ∧ φ 0 = x₀ ∧ IsForwardTrajectoryOn φ f T := by
+    ∃ (T : ℝ) (φ : ℝ → ℝⁿ), 0 < T ∧ φ 0 = x₀ ∧
+      IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T) := by
   obtain ⟨φ, hφ0, ε, hε, hφ⟩ :=
     hf.exists_forall_mem_closedBall_exists_eq_forall_mem_Ioo_hasDerivAt₀ 0
   refine ⟨ε / 2, φ, by positivity, hφ0, ?_⟩
-  refine ⟨by positivity, ?_⟩
   intro t ht
   have htIoo : t ∈ Ioo (0 - ε) (0 + ε) := by
     constructor <;> norm_num at * <;> linarith

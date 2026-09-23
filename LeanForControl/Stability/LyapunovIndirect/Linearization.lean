@@ -150,7 +150,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
       rw [interior_Icc] at hs
       have hsIcc : s ∈ Icc (0 : ℝ) T := Ioo_subset_Icc_self hs
       have hcurve : HasDerivAt φ (f (φ s)) s :=
-        (hφ.2 s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
+        (hφ s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
       have hVcurve : HasDerivAt (V ∘ φ)
           (fderiv ℝ V (φ s) (f (φ s))) s :=
         ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num) (φ s))
@@ -161,7 +161,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
       rw [interior_Icc] at hs
       have hsIcc : s ∈ Icc (0 : ℝ) T := Ioo_subset_Icc_self hs
       have hcurve : HasDerivAt φ (f (φ s)) s :=
-        (hφ.2 s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
+        (hφ s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
       have hVcurve : HasDerivAt (V ∘ φ)
           (fderiv ℝ V (φ s) (f (φ s))) s :=
         ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num) (φ s))
@@ -190,7 +190,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
                 (by simpa only [neg_mul] using hdV)
         _ = 0 := by rw [← mul_assoc, hkM]; ring
   have hweighted : Real.exp (k * t) * V (φ t) ≤ V (φ 0) := by
-    have hmono := hWanti (left_mem_Icc.mpr hφ.1) ht ht.1
+    have hmono := hWanti (left_mem_Icc.mpr (ht.1.trans ht.2)) ht ht.1
     simpa using hmono
   have hVdecay : V (φ t) ≤ Real.exp (-k * t) * V (φ 0) := by
     calc

@@ -171,9 +171,8 @@ theorem forwardUnstable_affineLinear_of_eigenvalue_re_pos
   let phi (q : ℂ) : ℝ → ℝⁿ := fun t => x_eq + realEigenmode q mu v t
   have hqre_norm : ‖qre‖ = rho := by simp [qre, abs_of_pos hrho]
   have hqim_norm : ‖qim‖ = rho := by simp [qim, hrho.le]
-  have hphi_traj (q : ℂ) : IsForwardTrajectoryOn (phi q)
-      (LinearSystems.affineLinearVectorField A x_eq) T := by
-    refine ⟨hT, ?_⟩
+  have hphi_traj (q : ℂ) : IsIntegralCurveOn (phi q)
+      (fun _ x => LinearSystems.affineLinearVectorField A x_eq x) (Icc 0 T) := by
     intro t ht
     have hd := (hasDerivAt_realEigenmode_of_eigenvector A q mu v hAv t).const_add x_eq
     convert hd.hasDerivWithinAt using 1

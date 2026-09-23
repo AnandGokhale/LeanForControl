@@ -130,7 +130,7 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Trivial kernel ⟺ full column rank | `mulVec_kernel_trivial_iff_rank_eq_card_cols` | `Rank.lean` | ✅ done |
 | Surjectivity ⟺ full row rank | `mulVec_range_top_iff_rank_eq_card_rows` | `Rank.lean` | ✅ done |
 | Eigenpair real/imaginary transport, generalized-eigenspace resonance, reverse spectral mapping for `exp` | `mulVec_re`/`mulVec_im`, `matrixMulVec_re_smul_eigenpair`/`_im_smul_eigenpair`, `eigenpair_real_imag`, `bilinear_eq_zero_of_no_resonance`, `toBilin_*`, `exists_eigenpair_of_mem_spectrum_exp` | `MatrixAlgebra/Spectrum.lean` | ✅ moved (interfaces not yet reviewed) |
-| Complexification of a real matrix as a named def | — | — | retired — the named def was deleted in favour of inlining `A.map (algebraMap ℝ ℂ)`; see `Stability/LyapunovIndirect/INVENTORY.md` §Open decisions |
+| Complexification of a real matrix as a named def | — | — | retired — the named def was deleted in favour of inlining `A.map (algebraMap ℝ ℂ)`; see `INVENTORY.md` §Open decisions |
 | Spectral radius of `exp A` (`spectralRadius_exp_complexification_lt_one`) | `spectralRadius_exp_complexification_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | 🔶 in review (PR #15) — still in `Stability/LyapunovIndirect/ExponentialStability.lean`, pending Step 4 |
 | Quadratic forms represented by a matrix | `quadraticForm` and friends | `MatrixAlgebra/QuadraticForm.lean` | ✅ done |
 | The matrix exponential's complexification bridges | `complexification_exp`, `norm_complexification` | `MatrixAlgebra/Exponential.lean` | ✅ done |

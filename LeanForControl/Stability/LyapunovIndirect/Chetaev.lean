@@ -295,8 +295,7 @@ private theorem forwardUnstable_of_cutoff_segment_escape
   have hφ0ρ : ‖φ 0 - x_eq‖ < ρ := hφ0.trans_le (min_le_right _ _)
   obtain ⟨τ, hτT, hτeq, hstay⟩ :=
     exists_first_sphere_hit hφcont hφ0ρ ht₁ hfar
-  have hφf : IsForwardTrajectoryOn φ f τ := by
-    refine ⟨hτT.1, ?_⟩
+  have hφf : IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 τ) := by
     intro t ht
     exact (hφderiv t ⟨ht.1, ht.2.trans hτT.2⟩ (hstay t ht)).mono
       (Icc_subset_Icc_right hτT.2)

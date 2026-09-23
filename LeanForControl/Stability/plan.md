@@ -78,11 +78,11 @@ with one-way compatibility theorems where the quantifiers make that sound.
 
 | Infrastructure or result | Lean name | File | Status |
 |---|---|---|---|
-| Finite forward solution segment | `IsForwardTrajectoryOn` | `DefsForward.lean` | ✅ done |
+| Finite forward solution segment | Mathlib's `IsIntegralCurveOn ... (Icc 0 T)`, used directly | — | ✅ done (bespoke wrapper retired) |
 | Forward Lyapunov stability | `ForwardLyapunovStable` | `DefsForward.lean` | ✅ done |
 | Forward local exponential stability | `ForwardLocallyExponentiallyStable` | `DefsForward.lean` | ✅ done |
 | Forward instability | `ForwardUnstable` | `DefsForward.lean` | ✅ done |
-| Local finite segment for a `C¹` field | `ContDiffAt.exists_isForwardTrajectoryOn` | `Forward.lean` | ✅ done |
+| Local finite segment for a `C¹` field | `ContDiffAt.exists_isIntegralCurveOn_Icc` | `Forward.lean` | ✅ done |
 | Forward Lyapunov first-exit theorem | `forwardLyapunovStable_of_isLocalLyapunovFunction` | `Forward.lean` | ✅ done |
 | Forward exponential stability implies legacy LAS | `ForwardLocallyExponentiallyStable.localAsymptoticStable` | `Forward.lean` | ✅ done |
 | Hurwitz exponential contractivity block | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `ExponentialStability.lean` | ✅ done |

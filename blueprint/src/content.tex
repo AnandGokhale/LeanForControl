@@ -188,8 +188,8 @@ $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 The finite-forward predicates below quantify over every solution segment on a
 compact interval.  This prevents finite escape from making a stability claim
 vacuous merely because a non-equilibrium solution is not globally defined.
-
-\inputleannode{def:isForwardTrajectoryOn}
+A solution segment on $[0,T]$ is an integral curve of the vector field on that
+interval, in the sense of \texttt{IsIntegralCurveOn}.
 
 \inputleannode{def:forwardLyapunovStable}
 

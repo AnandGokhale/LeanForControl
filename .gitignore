@@ -34,3 +34,6 @@ texput.log
 
 # Browser "Save Page As" dumps.
 *_files/
+
+# Personal migration/working notes, not for tracking.
+/INVENTORY.md
