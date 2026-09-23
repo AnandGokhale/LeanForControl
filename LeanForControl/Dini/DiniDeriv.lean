@@ -436,7 +436,8 @@ lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b
     rw [hasDerivWithinAt_iff_tendsto_slope] at hz_deriv
     have h_shift : Tendsto (fun h => a + h) (𝓝[>] 0) (𝓝[Ici a \ {a}] a) := by
       apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      · exact (continuous_const.add continuous_id).tendsto' 0 a (add_zero a) |>.mono_left nhdsWithin_le_nhds
+      · exact (continuous_const.add continuous_id).tendsto' 0 a (add_zero a)
+          |>.mono_left nhdsWithin_le_nhds
       · filter_upwards [self_mem_nhdsWithin] with h hh
         -- Expose the inequality here too
         have h1 : 0 < h := hh
@@ -450,7 +451,8 @@ lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b
     ring_nf
   calc d_z
     _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
-    _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le hv_bdd
+    _ ≤ limsup q_v (𝓝[>] 0) :=
+        Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le hv_bdd
     _ = D⁺ v a              := rfl
 
 end
