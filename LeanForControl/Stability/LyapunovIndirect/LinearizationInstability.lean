@@ -2,7 +2,7 @@ import Mathlib.Analysis.Complex.Norm
 import Mathlib.Analysis.Calculus.FDeriv.WithLp
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import LeanForControl.Stability.LyapunovIndirect.ComplexEigenpair
+import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.Stability.LyapunovIndirect.Forward
@@ -65,7 +65,7 @@ private lemma realEigenmode_deriv_eq_mulVec
     (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v) (t : ℝ) :
     (WithLp.toLp 2 fun i => (q * Complex.exp (μ * (t : ℂ)) * μ * v i).re) =
       realMulVec A (realEigenmode q μ v t) := by
-  have h := LinearSystems.matrixMulVec_re_smul_eigenpair A μ
+  have h := MatrixAlgebra.matrixMulVec_re_smul_eigenpair A μ
     (q * Complex.exp (μ * (t : ℂ))) v hAv
   simpa [realMulVec, realEigenmode] using congrArg (WithLp.toLp 2) h
 

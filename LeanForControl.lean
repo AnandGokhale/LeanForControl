@@ -2,6 +2,7 @@ import LeanForControl.Analysis.Continuity
 import LeanForControl.Analysis.FrechetRemainder
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.MonotoneFunctions
+import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.Comparison.Axioms
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
@@ -27,8 +28,10 @@ import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
+import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
+import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties
@@ -41,7 +44,6 @@ import LeanForControl.Stability.KLCharacterizationTools
 import LeanForControl.Stability.LaSalle
 import LeanForControl.Stability.LyapunovBounds
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
-import LeanForControl.Stability.LyapunovIndirect.ComplexEigenpair
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.Stability.LyapunovIndirect.DefsForward
 import LeanForControl.Stability.LyapunovIndirect.DefsLyapunov

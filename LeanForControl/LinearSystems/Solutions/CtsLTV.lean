@@ -63,8 +63,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
   (proof := /-- Induction on $k$: bound the integrand $A(s) P_k(s,t_0)$ pointwise on the segment
     between $t_0$ and $t$, using submultiplicativity of the matrix norm and the induction
     hypothesis. Split on whether $t_0 \le t$ or $t \le t_0$ and integrate the majorant via the
-    power rule, flipping the integral's orientation (`intervalIntegral.integral_symm`) in the
-    backward case. -/)]
+    power rule, flipping the integral's orientation
+    (\texttt{intervalIntegral.integral\_symm}) in the backward case. -/)]
 theorem norm_peanoBakerTerm_le {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (k : ℕ) :
     ∀ t ∈ Set.uIcc t₀ t₁,
       ‖peanoBakerTerm A k t t₀‖ ≤ ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ * (M * |t - t₀|) ^ k / (k)! := by
@@ -380,7 +380,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
       \dot Y(t) = A(t)\, Y(t).
     \] -/)
   (proof := /-- Right-multiply \cref{thm:hasDerivAt-stateTransitionMatrix} by the constant $C$
-    (`HasDerivAt.mul_const`), then reassociate. -/)]
+    (\texttt{HasDerivAt.mul\_const}), then reassociate. -/)]
 theorem hasDerivAt_stateTransitionMatrix_mul (hA : Continuous A) {t₀ t₁ M : ℝ}
     (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁)
     (C : Matrix (Fin n) (Fin n) ℝ) :
@@ -533,7 +533,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.2
     standard basis vector. -/)
   (proof := /-- Restatement of \cref{thm:stateTransitionMatrix-mulVec-unique} at
     $x_0 := e_i$, using $\Phi(t,t_0)\, e_i = (\Phi(t,t_0))_{\cdot,i}$
-    (`Matrix.mulVec_single_one`). -/)]
+    (\texttt{Matrix.mulVec\_single\_one}). -/)]
 theorem stateTransitionMatrix_col_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
     (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (i : Fin n)
     {z : ℝ → Fin n → ℝ} (hz : IsIntegralSolution t₀ t₁ z (Pi.single i 1) (fun s v => A s *ᵥ v))

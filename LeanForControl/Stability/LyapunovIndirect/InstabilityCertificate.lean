@@ -1,6 +1,6 @@
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.MatrixAlgebra.QuadraticForm
-import LeanForControl.Stability.LyapunovIndirect.ComplexEigenpair
+import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties
@@ -26,101 +26,6 @@ open scoped RealInnerProductSpace
 
 namespace LinearSystems
 
-variable {V : Type*} [AddCommGroup V] [Module ℂ V]
-
-private lemma bilinear_eq_zero_on_genEigenspaces
-    (T : Module.End ℂ V) (B : V →ₗ[ℂ] (V →ₗ[ℂ] ℂ)) (c ξ ν : ℂ)
-    (hB : ∀ x y, B x (T y) + B (T x) y = c * B x y)
-    (hres : ξ + ν ≠ c) :
-    ∀ (k l : ℕ) (x y : V), x ∈ T.genEigenspace ξ k →
-      y ∈ T.genEigenspace ν l → B x y = 0 := by
-  intro k l
-  induction hsum : k + l using Nat.strong_induction_on generalizing k l with
-  | h s ih =>
-      intro x y hx hy
-      rcases k with _ | k
-      · have hx' : x ∈ T.genEigenspace ξ (0 : ℕ∞) := by simpa using hx
-        have hxzero :=
-          (Module.End.mem_genEigenspace_zero (f := T) (μ := ξ) (x := x)).mp hx'
-        subst x
-        simp
-      rcases l with _ | l
-      · have hy' : y ∈ T.genEigenspace ν (0 : ℕ∞) := by simpa using hy
-        have hyzero :=
-          (Module.End.mem_genEigenspace_zero (f := T) (μ := ν) (x := y)).mp hy'
-        subst y
-        simp
-      let Nx := (T - ξ • (1 : Module.End ℂ V)) x
-      let Ny := (T - ν • (1 : Module.End ℂ V)) y
-      have hxN : Nx ∈ T.genEigenspace ξ k := by
-        rw [Module.End.mem_genEigenspace_nat] at hx ⊢
-        simpa only [Nx, pow_succ, Module.End.mul_apply] using hx
-      have hyN : Ny ∈ T.genEigenspace ν l := by
-        rw [Module.End.mem_genEigenspace_nat] at hy ⊢
-        simpa only [Ny, pow_succ, Module.End.mul_apply] using hy
-      have hNx : B Nx y = 0 := by
-        apply ih (k + (l + 1)) (by omega) k (l + 1) rfl Nx y hxN hy
-      have hNy : B x Ny = 0 := by
-        apply ih ((k + 1) + l) (by omega) (k + 1) l rfl x Ny hx hyN
-      have hrec := hB x y
-      have hTx : T x = Nx + ξ • x := by simp [Nx]
-      have hTy : T y = Ny + ν • y := by simp [Ny]
-      rw [hTx, hTy] at hrec
-      simp [hNx, hNy] at hrec
-      have hcoeff : ξ + ν - c ≠ 0 := sub_ne_zero.mpr hres
-      apply (mul_eq_zero.mp ?_).resolve_left hcoeff
-      linear_combination hrec
-
-private lemma hasEigenvalue_of_mem_maxGenEigenspace_ne_zero
-    (T : Module.End ℂ V) {ξ : ℂ} {x : V}
-    (hx : x ∈ T.maxGenEigenspace ξ) (hx0 : x ≠ 0) :
-    T.HasEigenvalue ξ := by
-  obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace T ξ x).mp hx
-  have hk0 : k ≠ 0 := by
-    intro hkzero
-    subst k
-    simpa using hx0 (by simpa using hk)
-  apply Module.End.hasEigenvalue_of_hasGenEigenvalue
-  rw [Module.End.hasGenEigenvalue_iff, Submodule.ne_bot_iff]
-  exact ⟨x, Module.End.mem_genEigenspace_nat.mpr hk, hx0⟩
-
-private lemma bilinear_eq_zero_of_no_resonance
-    [FiniteDimensional ℂ V]
-    (T : Module.End ℂ V) (B : V →ₗ[ℂ] (V →ₗ[ℂ] ℂ)) (c : ℂ)
-    (hB : ∀ x y, B x (T y) + B (T x) y = c * B x y)
-    (hres : ∀ ξ ν, T.HasEigenvalue ξ → T.HasEigenvalue ν → ξ + ν ≠ c) :
-    B = 0 := by
-  apply LinearMap.ext
-  intro x
-  change B x = 0
-  rw [← LinearMap.mem_ker]
-  have hxall : (⊤ : Submodule ℂ V) ≤ LinearMap.ker B := by
-    rw [← T.iSup_maxGenEigenspace_eq_top]
-    apply iSup_le
-    intro ξ x hx
-    rw [LinearMap.mem_ker]
-    apply LinearMap.ext
-    intro y
-    have hyall : (⊤ : Submodule ℂ V) ≤ LinearMap.ker (B x) := by
-      rw [← T.iSup_maxGenEigenspace_eq_top]
-      apply iSup_le
-      intro ν y hy
-      rw [LinearMap.mem_ker]
-      by_cases hx0 : x = 0
-      · simp [hx0]
-      by_cases hy0 : y = 0
-      · simp [hy0]
-      obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace T ξ x).mp hx
-      obtain ⟨l, hl⟩ := (Module.End.mem_maxGenEigenspace T ν y).mp hy
-      exact bilinear_eq_zero_on_genEigenspaces T B c ξ ν hB
-        (hres ξ ν
-          (hasEigenvalue_of_mem_maxGenEigenspace_ne_zero T hx hx0)
-          (hasEigenvalue_of_mem_maxGenEigenspace_ne_zero T hy hy0))
-        k l x y (Module.End.mem_genEigenspace_nat.mpr hk)
-          (Module.End.mem_genEigenspace_nat.mpr hl)
-    exact LinearMap.mem_ker.mp (hyall Submodule.mem_top)
-  exact hxall Submodule.mem_top
-
 variable {n : ℕ}
 
 private def shiftedLyapunovOperator
@@ -134,17 +39,6 @@ private def shiftedLyapunovOperator
     ext i j
     simp [Matrix.mul_apply]
     ring
-
-private lemma toBilin_right_mul {K : Type*} [CommSemiring K]
-    (H A : Matrix (Fin n) (Fin n) K) (x y : Fin n → K) :
-    Matrix.toBilin' (H * A) x y = Matrix.toBilin' H x (A *ᵥ y) := by
-  rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.mulVec_mulVec]
-
-private lemma toBilin_left_transpose_mul {K : Type*} [CommSemiring K]
-    (H A : Matrix (Fin n) (Fin n) K) (x y : Fin n → K) :
-    Matrix.toBilin' (Aᵀ * H) x y = Matrix.toBilin' H (A *ᵥ x) y := by
-  rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.dotProduct_mulVec,
-    ← Matrix.vecMul_vecMul, Matrix.vecMul_transpose, Matrix.dotProduct_mulVec]
 
 private lemma shiftedLyapunovOperator_injective_of_no_resonance
     (A : Matrix (Fin n) (Fin n) ℝ) (a : ℝ)
@@ -228,31 +122,6 @@ private lemma exists_symmetric_shifted_lyapunov_solution
     rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]
     exact hinj (hHt.trans hH.symm)
   exact ⟨a, H, haIoo.1, haIoo.2, hsymm, hH⟩
-
-private lemma toBilin_symm_real
-    {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm) (x y : Fin n → ℝ) :
-    Matrix.toBilin' H x y = Matrix.toBilin' H y x := by
-  rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.dotProduct_mulVec,
-    ← Matrix.mulVec_transpose]
-  rw [hH.eq, dotProduct_comm]
-
-private lemma eigenpair_real_imag
-    (A : Matrix (Fin n) (Fin n) ℝ) (μ : ℂ) (v : Fin n → ℂ)
-    (heig : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v) :
-    A *ᵥ (fun i ↦ (v i).re) =
-        μ.re • (fun i ↦ (v i).re) - μ.im • (fun i ↦ (v i).im) ∧
-      A *ᵥ (fun i ↦ (v i).im) =
-        μ.im • (fun i ↦ (v i).re) + μ.re • (fun i ↦ (v i).im) := by
-  have hre := matrixMulVec_re_smul_eigenpair A μ 1 v heig
-  have him := matrixMulVec_im_smul_eigenpair A μ 1 v heig
-  simp only [one_mul] at hre him
-  constructor
-  · rw [← hre]
-    ext i
-    simp [Complex.mul_re]
-  · rw [← him]
-    ext i
-    simp [Complex.mul_im, add_comm]
 
 private lemma exists_positive_quadraticForm_direction
     (A H : Matrix (Fin n) (Fin n) ℝ) (a : ℝ)
