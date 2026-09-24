@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.Calculus.ContDiff.Defs
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Topology.MetricSpace.Bounded
@@ -50,51 +51,25 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 def IsTrajectory (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
   ∀ t : ℝ, HasDerivAt φ (f (φ t)) t
 
+/-- `φ` solves `ẋ = f(x)` on the segment `[t₀, t₁]`.
+
+Reducible, so it is the Mathlib notion rather than a wrapper around it: `hφ.continuousOn`,
+`hφ.mono`, and direct application `hφ t ht` all work, and a bare `IsIntegralCurveOn` is
+accepted wherever this is expected. -/
+@[blueprint "def:isTrajectoryOn"
+  (statement := /-- A \emph{solution segment} of $\dot{x} = f(x)$ on $[t_0, t_1]$ is an
+    integral curve of the vector field restricted to that interval. Unlike a trajectory
+    (\cref{def:isTrajectory}) it need not exist for all time, so quantifying over segments
+    does not silently discard solutions with a finite escape time. -/)]
+abbrev IsTrajectoryOn (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) (t₀ t₁ : ℝ) : Prop :=
+  IsIntegralCurveOn φ (fun _ x => f x) (Icc t₀ t₁)
+
 /-- An equilibrium point `x_eq` of `ẋ = f(x)`: `f(x_eq) = 0`. -/
 @[blueprint "def:isEquilibrium"
   (statement := /-- A point $x_{\mathrm{eq}} \in \mathbb{R}^{n}$ is an
     \emph{equilibrium} of $\dot{x} = f(x)$ when $f(x_{\mathrm{eq}}) = 0$. -/)]
 def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   f x_eq = 0
-
-/-! ## Stability predicates -/
-
-/-- Standard Lyapunov (ε-δ) stability: trajectories starting near `x_eq` remain near `x_eq`
-    for all future time. -/
-@[blueprint "def:lyapunovStable"
-  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{Lyapunov stable} when
-    \[
-      \forall \varepsilon > 0,\;\exists \delta > 0,\;\forall \varphi,\;
-        \mathrm{IsTrajectory}(\varphi,f)
-        \;\Rightarrow\; \|\varphi(0)-x_{\mathrm{eq}}\|<\delta
-        \;\Rightarrow\; \forall t\ge 0,\;\|\varphi(t)-x_{\mathrm{eq}}\|<\varepsilon.
-    \] -/)]
-def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  ∀ ε > 0, ∃ δ > 0, ∀ φ : ℝ → ℝⁿ,
-    IsTrajectory φ f → ‖φ 0 - x_eq‖ < δ → ∀ t ≥ 0, ‖φ t - x_eq‖ < ε
-
-/-- Local asymptotic stability: Lyapunov stable, and trajectories starting sufficiently near
-    `x_eq` also converge to `x_eq` as `t → ∞`. -/
-@[blueprint "def:localAsymptoticStable"
-  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{locally asymptotically
-    stable} (LAS) when it is Lyapunov stable (\cref{def:lyapunovStable}) and there
-    exists $c > 0$ such that every trajectory $\varphi$ with
-    $\|\varphi(0) - x_{\mathrm{eq}}\| < c$ satisfies
-    $\varphi(t) \to x_{\mathrm{eq}}$ as $t \to \infty$. -/)]
-def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  LyapunovStable f x_eq ∧
-  ∃ c > 0, ∀ φ : ℝ → ℝⁿ,
-    IsTrajectory φ f → ‖φ 0 - x_eq‖ < c → Filter.Tendsto φ Filter.atTop (nhds x_eq)
-
-/-- Global asymptotic stability: Lyapunov stable, and every trajectory converges to `x_eq`. -/
-@[blueprint "def:globalAsymptoticStable"
-  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally asymptotically
-    stable} (GAS) when it is Lyapunov stable (\cref{def:lyapunovStable}) and every
-    trajectory $\varphi$ satisfies $\varphi(t) \to x_{\mathrm{eq}}$ as
-    $t \to \infty$. -/)]
-def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  LyapunovStable f x_eq ∧
-  ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → Filter.Tendsto φ Filter.atTop (nhds x_eq)
 
 /-! ## Sublevel sets -/
 
@@ -207,17 +182,19 @@ structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → �
 
 /-! ## Positive invariance -/
 
-/-- A set `S` is positively invariant for `ẋ = f(x)`: every trajectory starting in `S`
-    remains in `S` for all `t ≥ 0`. -/
+/-- A set `S` is positively invariant for `ẋ = f(x)`: every solution segment starting in `S`
+    remains in `S` for its whole interval of definition. -/
 @[blueprint "def:isPositivelyInvariant"
   (statement := /-- A set $S \subseteq \mathbb{R}^{n}$ is \emph{positively invariant}
-    for $\dot{x} = f(x)$ when every trajectory $\varphi$ starting in $S$ remains
-    in $S$ for all future time:
+    for $\dot{x} = f(x)$ when every solution segment $\varphi$ on $[t_0, t_1]$ starting
+    in $S$ remains in $S$ throughout:
     \[
-      \varphi(0) \in S \;\Rightarrow\; \varphi(t) \in S \quad \forall\, t \ge 0.
+      \varphi(t_0) \in S \;\Rightarrow\; \varphi(t) \in S
+        \quad \forall\, t \in [t_0, t_1].
     \] -/)]
 def IsPositivelyInvariant (S : Set ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
-  ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → φ 0 ∈ S → ∀ t ≥ 0, φ t ∈ S
+  ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOn φ f t₀ t₁ →
+    φ t₀ ∈ S → ∀ t ∈ Icc t₀ t₁, φ t ∈ S
 
 /-- Sublevel sets of a radially unbounded continuous function are compact.
 

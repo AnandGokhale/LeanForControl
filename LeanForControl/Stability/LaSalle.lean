@@ -32,6 +32,7 @@ LaSalle's invariance principle and its corollaries (Barbashin–Krasovskii theor
 -/
 
 open Filter Set Topology
+open scoped Pointwise
 
 /-- ω-limit set of trajectory φ, using Mathlib's omegaLimit with the trivial flow. -/
 noncomputable def omegaLimitTraj (φ : ℝ → ℝⁿ) : Set ℝⁿ :=
@@ -45,18 +46,23 @@ lemma V_antitoneOn_lasalle
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {Ω : Set ℝⁿ}
     (hV_c1 : ContDiff ℝ 1 V)
     (hLie : ∀ x ∈ Ω, fderiv ℝ V x (f x) ≤ 0)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
+    {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0))
     (hphi : ∀ t ≥ 0, φ t ∈ Ω) :
     AntitoneOn (V ∘ φ) (Set.Ici 0) := by
+  have hda : ∀ t ∈ Set.Ioi (0 : ℝ),
+      HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t := by
+    intro t ht
+    have ht' : (0 : ℝ) < t := ht
+    exact ((hV_c1.differentiable (by norm_num) (φ t)).hasFDerivAt).comp_hasDerivAt t
+      ((hφ t (Set.mem_Ici.mpr ht'.le)).hasDerivAt (Ici_mem_nhds ht'))
   apply antitoneOn_of_deriv_nonpos (convex_Ici (0 : ℝ))
-  · exact (hV_c1.continuous.comp (trajectory_continuous htraj)).continuousOn
-  · intro t _
-    have hda := hasDerivAt_V_comp_traj (hV_c1.differentiable (by norm_num)) htraj t
-    exact hda.differentiableAt.differentiableWithinAt
+  · exact hV_c1.continuous.comp_continuousOn hφ.continuousOn
   · intro t ht
     rw [interior_Ici] at ht
-    have hda := hasDerivAt_V_comp_traj (hV_c1.differentiable (by norm_num)) htraj t
-    rw [hda.deriv]
+    exact (hda t ht).differentiableAt.differentiableWithinAt
+  · intro t ht
+    rw [interior_Ici] at ht
+    rw [(hda t ht).deriv]
     exact hLie (φ t) (hphi t (le_of_lt ht))
 
 /-! ## Lemma 2: V(φ t) converges to its infimum -/
@@ -69,12 +75,13 @@ lemma lasalle_V_tendsto
     (hΩ_compact : IsCompact Ω)
     (hΩ_inv : IsPositivelyInvariant Ω f)
     (hLie : ∀ x ∈ Ω, fderiv ℝ V x (f x) ≤ 0)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) (hφ0 : φ 0 ∈ Ω) :
+    {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0)) (hφ0 : φ 0 ∈ Ω) :
     ∃ L, Filter.Tendsto (V ∘ φ) Filter.atTop (nhds L) := by
   -- φ stays in Ω for all t ≥ 0
-  have hphi : ∀ t ≥ 0, φ t ∈ Ω := hΩ_inv φ htraj hφ0
+  have hphi : ∀ t ≥ 0, φ t ∈ Ω := fun t ht =>
+    hΩ_inv 0 t φ (hφ.mono (fun r hr => hr.1)) hφ0 t ⟨ht, le_rfl⟩
   -- V(φ t) is antitone on [0, ∞)
-  have hanti : AntitoneOn (V ∘ φ) (Set.Ici 0) := V_antitoneOn_lasalle hV_c1 hLie htraj hphi
+  have hanti : AntitoneOn (V ∘ φ) (Set.Ici 0) := V_antitoneOn_lasalle hV_c1 hLie hφ hphi
   -- Ω is compact so V attains its minimum on Ω, giving a lower bound
   have hΩ_nonempty : Ω.Nonempty := ⟨φ 0, hφ0⟩
   have hV_cont : Continuous V := hV_c1.continuous
@@ -137,12 +144,13 @@ lemma omegaLimit_subset_of_invariant
     {f : ℝⁿ → ℝⁿ} {Ω : Set ℝⁿ}
     (hΩ_compact : IsCompact Ω)
     (hΩ_inv : IsPositivelyInvariant Ω f)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) (hφ0 : φ 0 ∈ Ω) :
+    {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0)) (hφ0 : φ 0 ∈ Ω) :
     omegaLimitTraj φ ⊆ Ω := by
   -- Ω is closed (compact in a Hausdorff space)
   have hΩ_closed : IsClosed Ω := hΩ_compact.isClosed
   -- φ t ∈ Ω for t ≥ 0
-  have hphi : ∀ t ≥ 0, φ t ∈ Ω := hΩ_inv φ htraj hφ0
+  have hphi : ∀ t ≥ 0, φ t ∈ Ω := fun t ht =>
+    hΩ_inv 0 t φ (hφ.mono (fun r hr => hr.1)) hφ0 t ⟨ht, le_rfl⟩
   -- omegaLimitTraj(φ) ⊆ closure (image2 (fun t () => φ t) (Ici 0) univ)
   have hsub : omegaLimitTraj φ ⊆
       closure (image2 (fun (t : ℝ) (_ : Unit) => φ t) (Set.Ici 0) Set.univ) :=
@@ -180,19 +188,20 @@ theorem lasalle_invariance_principle
     (hV_c1 : ContDiff ℝ 1 V)
     -- V̇(x) = DV(x)[f(x)] ≤ 0 on Ω
     (hLie : ∀ x ∈ Ω, fderiv ℝ V x (f x) ≤ 0)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) (hφ0 : φ 0 ∈ Ω)
+    {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0)) (hφ0 : φ 0 ∈ Ω)
     (_hM_closed : IsClosed M)
     -- ω(φ) ⊆ M: classically M is the largest invariant subset of {V̇ = 0} ∩ Ω.
     -- This requires ODE uniqueness (forward invariance of ω(φ)); taken as hypothesis.
     (hω_sub_M : omegaLimitTraj φ ⊆ M) :
     Filter.Tendsto φ Filter.atTop (𝓝ˢ M) := by
   -- V(φ t) converges to its infimum L along the trajectory
-  obtain ⟨L, hVL⟩ := lasalle_V_tendsto hV_c1 hΩ_compact hΩ_inv hLie htraj hφ0
+  obtain ⟨L, hVL⟩ := lasalle_V_tendsto hV_c1 hΩ_compact hΩ_inv hLie hφ hφ0
   -- V = L on ω(φ): every ω-limit point sees the limiting value
   have _ : ∀ y ∈ omegaLimitTraj φ, V y = L :=
     V_const_on_omegaLimit hV_c1.continuous hVL
   -- φ stays in Ω for t ≥ 0
-  have hphi_in_Ω : ∀ t ≥ 0, φ t ∈ Ω := hΩ_inv φ htraj hφ0
+  have hphi_in_Ω : ∀ t ≥ 0, φ t ∈ Ω := fun t ht =>
+    hΩ_inv 0 t φ (hφ.mono (fun r hr => hr.1)) hφ0 t ⟨ht, le_rfl⟩
   -- Build the compact absorption hypothesis: ∀ᶠ t in atTop, MapsTo (fun () => φ t) univ Ω
   have hc₂ : ∀ᶠ t in Filter.atTop, MapsTo (fun (_ : Unit) => φ t) Set.univ Ω :=
     (Filter.eventually_ge_atTop 0).mono fun t ht () _ => hphi_in_Ω t ht
@@ -227,21 +236,31 @@ theorem lasalle_local_asymptotic_stable
     (hΩ_sub_D : SublevelSet V c ⊆ D)
     (hΩ_compact : IsCompact (SublevelSet V c))
     (hΩ_inv : IsPositivelyInvariant (SublevelSet V c) f)
-    (hLasalle : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f →
+    (hLasalle : ∀ φ : ℝ → ℝⁿ, IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0) →
                   φ 0 ∈ SublevelSet V c → omegaLimitTraj φ ⊆ {x_eq}) :
-    LocalAsymptoticStable f x_eq := by
+    ForwardLocalAsymptoticStable f x_eq := by
   refine ⟨lyapunov_stable hn hV_local, ?_⟩
   obtain ⟨δ, hδ_pos, hδ⟩ := Metric.continuousAt_iff.mp hV_local.hcont.continuousAt c hc_pos
-  refine ⟨δ, hδ_pos, fun φ htraj hφ0 => ?_⟩
-  have hV0 : V (φ 0) < c := by
-    have h := hδ (by rwa [dist_eq_norm])
+  refine ⟨δ, hδ_pos, fun t₀ φ hφ hφ0 => ?_⟩
+  -- re-anchor the solution at `0`, where the LaSalle machinery lives
+  have hψ : IsIntegralCurveOn (fun s => φ (s + t₀)) (fun _ x => f x) (Set.Ici 0) := by
+    have hset : -t₀ +ᵥ Set.Ici t₀ = Set.Ici (0 : ℝ) := by
+      ext x
+      simp only [Set.mem_vadd_set_iff_neg_vadd_mem, vadd_eq_add, neg_neg, Set.mem_Ici]
+      constructor <;> intro h <;> linarith
+    have h := hφ.comp_add_autonomous t₀
+    rwa [hset] at h
+  have hV0 : V (φ (0 + t₀)) < c := by
+    have h := hδ (show dist (φ t₀) x_eq < δ by rw [dist_eq_norm]; exact hφ0)
     rw [Real.dist_eq, hV_local.hzero, sub_zero] at h
-    exact (abs_lt.mp h).2
-  have hφ0_in : φ 0 ∈ SublevelSet V c := le_of_lt hV0
+    simpa using (abs_lt.mp h).2
+  have hψ0_in : (fun s => φ (s + t₀)) 0 ∈ SublevelSet V c := le_of_lt hV0
   have hconv := lasalle_invariance_principle hΩ_compact hΩ_inv hV_c1
     (fun x hx => hV_local.hLie_nonpos x (hΩ_sub_D hx))
-    htraj hφ0_in isClosed_singleton (hLasalle φ htraj hφ0_in)
-  rwa [nhdsSet_singleton] at hconv
+    hψ hψ0_in isClosed_singleton (hLasalle _ hψ hψ0_in)
+  rw [nhdsSet_singleton] at hconv
+  exact Filter.Tendsto.congr (fun x => by simp)
+    (hconv.comp (Filter.tendsto_atTop_add_const_right Filter.atTop (-t₀) Filter.tendsto_id))
 
 /-- Krasovskii's theorem: global asymptotic stability via LaSalle.
     V C¹, positive definite, radially unbounded, V̇ ≤ 0 on ℝⁿ,
@@ -259,8 +278,9 @@ theorem lasalle_global_asymptotic_stable
     (hpos : ∀ x : ℝⁿ, x ≠ x_eq → 0 < V x)
     (hLie : ∀ x : ℝⁿ, fderiv ℝ V x (f x) ≤ 0)
     (hradial : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop)
-    (hLasalle : ∀ φ : ℝ → ℝⁿ, IsTrajectory φ f → omegaLimitTraj φ ⊆ {x_eq}) :
-    GlobalAsymptoticStable f x_eq := by
+    (hLasalle : ∀ φ : ℝ → ℝⁿ, IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0) →
+                  omegaLimitTraj φ ⊆ {x_eq}) :
+    ForwardGlobalAsymptoticStable f x_eq := by
   have hV_local : IsLocalLyapunovFunction f V x_eq Set.univ :=
     { hD_open := isOpen_univ
       hD_mem := Set.mem_univ _
@@ -269,16 +289,25 @@ theorem lasalle_global_asymptotic_stable
       hzero := hzero
       hpos := fun x _ hx => hpos x hx
       hLie_nonpos := fun x _ => hLie x }
-  refine ⟨lyapunov_stable hn hV_local, fun φ htraj => ?_⟩
-  set c := V (φ 0) with hc_def
+  refine ⟨lyapunov_stable hn hV_local, fun t₀ φ hφ => ?_⟩
+  have hψ : IsIntegralCurveOn (fun s => φ (s + t₀)) (fun _ x => f x) (Set.Ici 0) := by
+    have hset : -t₀ +ᵥ Set.Ici t₀ = Set.Ici (0 : ℝ) := by
+      ext x
+      simp only [Set.mem_vadd_set_iff_neg_vadd_mem, vadd_eq_add, neg_neg, Set.mem_Ici]
+      constructor <;> intro h <;> linarith
+    have h := hφ.comp_add_autonomous t₀
+    rwa [hset] at h
+  set c := V ((fun s => φ (s + t₀)) 0) with hc_def
   have hΩ_compact : IsCompact (SublevelSet V c) :=
     isCompact_sublevel_set V hV_c1.continuous hradial c
   have hΩ_inv : IsPositivelyInvariant (SublevelSet V c) f := by
-    intro ξ hξ hξ0 t ht
-    have hanti := V_antitoneOn_lasalle hV_c1 (fun x _ => hLie x) hξ
-      (fun s _ => Set.mem_univ _)
-    exact (hanti (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht) ht).trans hξ0
-  have hφ0_in : φ 0 ∈ SublevelSet V c := by simp [SublevelSet, hc_def]
+    intro s₀ s₁ ξ hξ hξ0 t ht
+    exact le_trans (V_nonincreasing_on hV_local
+      (hξ.mono (Set.Icc_subset_Icc_right ht.2)) ht.1 (fun _ _ => Set.mem_univ _)) hξ0
+  have hψ0_in : (fun s => φ (s + t₀)) 0 ∈ SublevelSet V c := by
+    simp [SublevelSet, hc_def]
   have hconv := lasalle_invariance_principle hΩ_compact hΩ_inv hV_c1
-    (fun x _ => hLie x) htraj hφ0_in isClosed_singleton (hLasalle φ htraj)
-  rwa [nhdsSet_singleton] at hconv
+    (fun x _ => hLie x) hψ hψ0_in isClosed_singleton (hLasalle _ hψ)
+  rw [nhdsSet_singleton] at hconv
+  exact Filter.Tendsto.congr (fun x => by simp)
+    (hconv.comp (Filter.tendsto_atTop_add_const_right Filter.atTop (-t₀) Filter.tendsto_id))

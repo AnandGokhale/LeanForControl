@@ -35,7 +35,7 @@ private theorem exists_forward_segment_of_lipschitz_bounded
     (hg_lip : LipschitzWith K g) (hg_bound : ∀ x, ‖g x‖ ≤ L)
     {T : ℝ} (hT : 0 ≤ T) (x₀ : E) :
     ∃ φ : ℝ → E, φ 0 = x₀ ∧
-      IsIntegralCurveOn φ (fun _ x ↦ g x) (Icc 0 T) := by
+      IsIntegralCurveOn φ (fun _ x => g x) (Icc 0 T) := by
   let t₀ : Icc (0 : ℝ) T := ⟨0, le_rfl, hT⟩
   let Tₙ : ℝ≥0 := ⟨T, hT⟩
   let a : ℝ≥0 := L * Tₙ
@@ -295,7 +295,7 @@ private theorem forwardUnstable_of_cutoff_segment_escape
   have hφ0ρ : ‖φ 0 - x_eq‖ < ρ := hφ0.trans_le (min_le_right _ _)
   obtain ⟨τ, hτT, hτeq, hstay⟩ :=
     exists_first_sphere_hit hφcont hφ0ρ ht₁ hfar
-  have hφf : IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 τ) := by
+  have hφf : IsTrajectoryOn φ f 0 τ := by
     intro t ht
     exact (hφderiv t ⟨ht.1, ht.2.trans hτT.2⟩ (hstay t ht)).mono
       (Icc_subset_Icc_right hτT.2)

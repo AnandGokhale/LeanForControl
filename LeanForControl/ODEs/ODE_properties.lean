@@ -5,13 +5,14 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.ODE.Gronwall
 import Mathlib.Analysis.ODE.PicardLindelof
+import Mathlib.Analysis.ODE.Transform
 import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.Analysis.Integrals
 import Architect
 
 open MeasureTheory Metric Set Filter TopologicalSpace
-open scoped Real Interval Topology
+open scoped Real Interval Pointwise Topology
 
 /-!
 # `ODEs.ODE_properties`
@@ -157,6 +158,28 @@ theorem isIntegralSolution_iff_isIntegralCurveOn_Icc (hle : t₀ ≤ t₁)
     IsIntegralSolution t₀ t₁ x (x t₀) F ↔ IsIntegralCurveOn x F (Icc t₀ t₁) := by
   rw [← uIcc_of_le hle] at hFx ⊢
   exact isIntegralSolution_iff_isIntegralCurveOn hFx
+
+omit [CompleteSpace E] in
+/-- **Time invariance.** An autonomous vector field has no preferred time origin: translating
+an integral curve translates its interval of definition and nothing else.
+
+This is Mathlib's `IsIntegralCurveOn.comp_add` with the time-dependence removed — for
+`fun _ y => g y` the translated field `v ∘ (· + dt)` is the field itself. -/
+lemma IsIntegralCurveOn.comp_add_autonomous {g : E → E} {s : Set ℝ}
+    (hx : IsIntegralCurveOn x (fun _ y => g y) s) (dt : ℝ) :
+    IsIntegralCurveOn (fun t => x (t + dt)) (fun _ y => g y) (-dt +ᵥ s) :=
+  hx.comp_add dt
+
+omit [CompleteSpace E] in
+/-- Time invariance in the form the finite-segment predicates need: a segment on `[t₀, t₁]`
+re-anchored to `[0, t₁ - t₀]`. -/
+lemma IsIntegralCurveOn.shift_to_zero {g : E → E} {t₀ t₁ : ℝ}
+    (hx : IsIntegralCurveOn x (fun _ y => g y) (Icc t₀ t₁)) :
+    IsIntegralCurveOn (fun s => x (s + t₀)) (fun _ y => g y) (Icc 0 (t₁ - t₀)) := by
+  have h := hx.comp_add_autonomous t₀
+  have hset : -t₀ +ᵥ Icc t₀ t₁ = Icc 0 (t₁ - t₀) := by
+    simp [Set.vadd_Icc, neg_add_eq_sub]
+  rwa [hset] at h
 
 end IntegralCurve
 

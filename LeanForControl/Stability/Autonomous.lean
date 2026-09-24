@@ -1,6 +1,8 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
+import LeanForControl.ODEs.ODE_properties
 import LeanForControl.Stability.DefsAutonomous
+import LeanForControl.Stability.LyapunovIndirect.DefsForward
 import Architect
 
 variable {n : ℕ}
@@ -95,28 +97,33 @@ lemma V_plus_linear_bound
 
 /-! ## Monotonicity of V along trajectories -/
 
-/-- `V` is nonincreasing on `[a, b]` when the trajectory stays in `D` on that interval
-    and the Lie derivative is nonpositive on `D`.
+/-- `V` is nonincreasing on `[t₀, t₁]` when the solution segment stays in `D` on that
+    interval and the Lie derivative is nonpositive on `D`.
 
     Proof: `(V ∘ φ)'(t) = DV(φ(t))[f(φ(t))] ≤ 0` by `hLie_nonpos`,
     then `antitoneOn_of_deriv_nonpos` applies. -/
 lemma V_nonincreasing_on
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
     (hV : IsLocalLyapunovFunction f V x_eq D)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
-    {a b : ℝ} (hab : a ≤ b)
-    (hstay : ∀ t ∈ Set.Icc a b, φ t ∈ D) :
-    V (φ b) ≤ V (φ a) := by
-  have hanti : AntitoneOn (V ∘ φ) (Set.Icc a b) := by
-    apply antitoneOn_of_deriv_nonpos (convex_Icc a b)
-    · exact (hV.hcont.comp (trajectory_continuous htraj)).continuousOn
-    · exact fun t _ => (hasDerivAt_V_comp_traj hV.hV_diff htraj t).differentiableAt
+    {φ : ℝ → ℝⁿ} {t₀ t₁ : ℝ}
+    (hφ : IsTrajectoryOn φ f t₀ t₁)
+    (hle : t₀ ≤ t₁)
+    (hstay : ∀ t ∈ Set.Icc t₀ t₁, φ t ∈ D) :
+    V (φ t₁) ≤ V (φ t₀) := by
+  have hderiv : ∀ t ∈ Set.Ioo t₀ t₁, HasDerivAt φ (f (φ t)) t := fun t ht =>
+    (hφ t (Set.Ioo_subset_Icc_self ht)).hasDerivAt (Icc_mem_nhds ht.1 ht.2)
+  have hanti : AntitoneOn (V ∘ φ) (Set.Icc t₀ t₁) := by
+    apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
+    · exact hV.hcont.comp_continuousOn hφ.continuousOn
+    · intro t ht
+      rw [interior_Icc] at ht
+      exact ((hV.hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t (hderiv t ht)).differentiableAt
         |>.differentiableWithinAt
     · intro t ht
       rw [interior_Icc] at ht
-      rw [(hasDerivAt_V_comp_traj hV.hV_diff htraj t).deriv]
+      rw [((hV.hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t (hderiv t ht)).deriv]
       exact hV.hLie_nonpos (φ t) (hstay t (Set.Ioo_subset_Icc_self ht))
-  exact hanti (Set.left_mem_Icc.mpr hab) (Set.right_mem_Icc.mpr hab) hab
+  exact hanti (Set.left_mem_Icc.mpr hle) (Set.right_mem_Icc.mpr hle) hle
 
 /-- Convenience wrapper for `V_nonincreasing_on` when `D = Set.univ` (used by GAS proofs). -/
 lemma V_nonincreasing
@@ -124,7 +131,9 @@ lemma V_nonincreasing
     (hV : IsLocalLyapunovFunction f V x_eq Set.univ)
     {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) :
     Antitone (V ∘ φ) :=
-  fun _ _ hab => V_nonincreasing_on hV htraj hab (fun _ _ => Set.mem_univ _)
+  fun _ _ hab =>
+    V_nonincreasing_on hV (fun t _ => (htraj t).hasDerivWithinAt) hab
+      (fun _ _ => Set.mem_univ _)
 
 /-- `V(φ t) ≤ V(φ 0)` for all `t ≥ 0` when the Lyapunov conditions hold globally
     (`D = Set.univ`). -/
@@ -201,51 +210,69 @@ Proof by contradiction via a first-exit-time argument:
 lemma sublevel_set_invariant
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
     (hV : IsLocalLyapunovFunction f V x_eq D)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
+    {φ : ℝ → ℝⁿ} {t₀ t₁ : ℝ} (hφ : IsTrajectoryOn φ f t₀ t₁)
     {c : ℝ} (hΩ_sub_D : SublevelSet V c ⊆ D)
-    (h0 : V (φ 0) < c) :
-    ∀ t ≥ 0, V (φ t) < c := by
-  have hcont : Continuous (V ∘ φ) :=
-    hV.hcont.comp (trajectory_continuous htraj)
+    (h0 : V (φ t₀) < c) :
+    ∀ t ∈ Set.Icc t₀ t₁, V (φ t) < c := by
+  have hcont : ContinuousOn (V ∘ φ) (Set.Icc t₀ t₁) :=
+    hV.hcont.comp_continuousOn hφ.continuousOn
   intro t ht
   by_contra hge
   push Not at hge
-  set S := {s : ℝ | 0 ≤ s ∧ c ≤ V (φ s)} with hS_def
+  set S := Set.Icc t₀ t₁ ∩ (V ∘ φ) ⁻¹' (Set.Ici c) with hS_def
   have hS_nonempty : S.Nonempty := ⟨t, ht, hge⟩
-  have hS_bddBelow : BddBelow S := ⟨0, fun s hs => hs.1⟩
-  have hS_closed : IsClosed S := by
-    have : S = (V ∘ φ) ⁻¹' (Set.Ici c) ∩ Set.Ici 0 := by
-      ext s; simp [hS_def, and_comm]
-    rw [this]
-    exact (isClosed_Ici.preimage hcont).inter isClosed_Ici
+  have hS_bddBelow : BddBelow S := ⟨t₀, fun s hs => hs.1.1⟩
+  have hS_closed : IsClosed S :=
+    hcont.preimage_isClosed_of_isClosed isClosed_Icc isClosed_Ici
   set T := sInf S with hT_def
   have hT_mem : T ∈ S := hS_closed.csInf_mem hS_nonempty hS_bddBelow
   have hT_ge_c : c ≤ V (φ T) := hT_mem.2
-  have hT_pos : 0 < T := by
-    rcases lt_or_eq_of_le hT_mem.1 with h | h
+  have hT_gt : t₀ < T := by
+    rcases lt_or_eq_of_le hT_mem.1.1 with h | h
     · exact h
-    · exact absurd (h ▸ hT_mem) (by simp [hS_def]; linarith)
-  have hlt_of_lt : ∀ s : ℝ, 0 ≤ s → s < T → V (φ s) < c := by
+    · exact absurd hT_ge_c (by rw [← h] at hT_ge_c ⊢; linarith)
+  have hlt_of_lt : ∀ s : ℝ, t₀ ≤ s → s < T → V (φ s) < c := by
     intro s hs_nonneg hs_lt
     by_contra h
     push Not at h
-    exact absurd (csInf_le hS_bddBelow ⟨hs_nonneg, h⟩) (not_le.mpr hs_lt)
-  have hVs_le : ∀ s : ℝ, 0 ≤ s → s < T → V (φ s) ≤ V (φ 0) := by
+    exact absurd (csInf_le hS_bddBelow
+      ⟨⟨hs_nonneg, le_of_lt (lt_of_lt_of_le hs_lt hT_mem.1.2)⟩, h⟩) (not_le.mpr hs_lt)
+  have hVs_le : ∀ s : ℝ, t₀ ≤ s → s < T → V (φ s) ≤ V (φ t₀) := by
     intro s hs_nonneg hs_lt
-    exact V_nonincreasing_on hV htraj hs_nonneg fun r hr =>
+    have hsub : Set.Icc t₀ s ⊆ Set.Icc t₀ t₁ :=
+      Set.Icc_subset_Icc_right (le_of_lt (lt_of_lt_of_le hs_lt hT_mem.1.2))
+    exact V_nonincreasing_on hV (hφ.mono hsub) hs_nonneg fun r hr =>
       hΩ_sub_D (le_of_lt (hlt_of_lt r hr.1 (lt_of_le_of_lt hr.2 hs_lt)))
-  haveI hNeBot : (nhdsWithin T (Set.Ico 0 T)).NeBot := by
-    rw [nhdsWithin_Ico_eq_nhdsLT hT_pos]
-    exact nhdsLT_neBot_of_exists_lt ⟨0, hT_pos⟩
-  have hVs_bound : ∀ᶠ s in nhdsWithin T (Set.Ico 0 T), (V ∘ φ) s ≤ V (φ 0) :=
+  haveI hNeBot : (nhdsWithin T (Set.Ico t₀ T)).NeBot := by
+    rw [nhdsWithin_Ico_eq_nhdsLT hT_gt]
+    exact nhdsLT_neBot_of_exists_lt ⟨t₀, hT_gt⟩
+  have hVs_bound : ∀ᶠ s in nhdsWithin T (Set.Ico t₀ T), (V ∘ φ) s ≤ V (φ t₀) :=
     eventually_nhdsWithin_of_forall (fun s hs => hVs_le s hs.1 hs.2)
-  have hVT_le : V (φ T) ≤ V (φ 0) := le_of_tendsto hcont.continuousWithinAt hVs_bound
+  have hTwithin : ContinuousWithinAt (V ∘ φ) (Set.Ico t₀ T) T :=
+    (hcont T hT_mem.1).mono (fun r hr => ⟨hr.1, le_of_lt (lt_of_lt_of_le hr.2 hT_mem.1.2)⟩)
+  have hVT_le : V (φ T) ≤ V (φ t₀) := le_of_tendsto hTwithin hVs_bound
   linarith
 
 /-! ## Lyapunov stability -/
 
+/-- Time invariance lifts the anchored-at-zero form of forward Lyapunov stability to the
+anchor-free predicate, so a first-exit argument may be run at the origin and transported. -/
+lemma forwardLyapunovStable_of_anchored_zero {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
+    (h : ∀ ε > 0, ∃ δ > 0, ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+      IsTrajectoryOn φ f 0 t₁ → ‖φ 0 - x_eq‖ < δ →
+        ∀ t ∈ Set.Icc 0 t₁, ‖φ t - x_eq‖ < ε) :
+    ForwardLyapunovStable f x_eq := by
+  intro ε hε
+  obtain ⟨δ, hδ, hbase⟩ := h ε hε
+  refine ⟨δ, hδ, ?_⟩
+  intro t₀ t₁ φ hφ hφ0 t ht
+  have hψ0 : ‖(fun s => φ (s + t₀)) 0 - x_eq‖ < δ := by simpa using hφ0
+  have hmem : t - t₀ ∈ Set.Icc 0 (t₁ - t₀) := ⟨by linarith [ht.1], by linarith [ht.2]⟩
+  simpa using hbase (t₁ - t₀) (fun s => φ (s + t₀)) hφ.shift_to_zero hψ0 (t - t₀) hmem
+
+open Set in
 /-- **Lyapunov's stability theorem.** If `V` is a local Lyapunov function on `D`, then
-    `x_eq` is Lyapunov stable.
+    `x_eq` is stable with respect to every finite forward solution segment.
 
 Proof sketch:
 1. `D` open + `x_eq ∈ D` → `closedBall x_eq ε₀ ⊆ D` for some `ε₀ > 0`.
@@ -253,12 +280,16 @@ Proof sketch:
 3. Find `δ` with `V(y) < m` for `‖y − x_eq‖ < δ` (continuity at `x_eq`, `V(x_eq) = 0`).
 4. If `‖φ 0 − x_eq‖ < δ` and `‖φ t* − x_eq‖ ≥ ε` for some `t*`, let `T* = sInf Q`
    where `Q = {t ≥ 0 | ε' ≤ ‖φ t − x_eq‖}`.
-5. `V_nonincreasing_on` on `[0, T*]` gives `V(φ T*) ≤ V(φ 0) < m ≤ V(φ T*)`. Contradiction. -/
+5. `V_nonincreasing_on` on `[0, T*]` gives `V(φ T*) ≤ V(φ 0) < m ≤ V(φ T*)`. Contradiction.
+
+The first-exit argument runs on segments anchored at `0`; time invariance, via
+`forwardLyapunovStable_of_anchored_zero`, carries it to segments anchored anywhere. -/
 @[blueprint "thm:lyapunov-stable"
   (statement := /-- \textbf{Lyapunov's stability theorem.}
     If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
     $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
-    is Lyapunov stable (\cref{def:lyapunovStable}). -/)
+    is stable on every finite forward solution segment
+    (\cref{def:forwardLyapunovStable}). -/)
   (proof := /-- Pick $\varepsilon_{0}$ so $\overline{B}(x_{\mathrm{eq}},\varepsilon_{0})
     \subseteq D$. Let $m = \min_{S_{\varepsilon'}} V > 0$. Choose $\delta$ with
     $V < m$ on $B(x_{\mathrm{eq}},\delta)$. If $\|\varphi(t^{*})-x_{\mathrm{eq}}\|
@@ -267,89 +298,97 @@ Proof sketch:
 theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
-    LyapunovStable f x_eq := by
+    ForwardLyapunovStable f x_eq := by
+  apply forwardLyapunovStable_of_anchored_zero
   obtain ⟨r, hr_pos, hr_ball⟩ := Metric.isOpen_iff.mp hV.hD_open x_eq hV.hD_mem
-  set ε₀ := r / 2 with hε₀_def
-  have hε₀_pos : 0 < ε₀ := by linarith
+  set ε₀ := r / 2
+  have hε₀_pos : 0 < ε₀ := by dsimp [ε₀]; linarith
   have hcBall_sub_D : Metric.closedBall x_eq ε₀ ⊆ D := by
     intro x hx
     apply hr_ball
     rw [Metric.mem_ball, Metric.mem_closedBall] at *
+    dsimp [ε₀] at *
     linarith
-  have hsphere_sub_D : Metric.sphere x_eq ε₀ ⊆ D :=
-    Metric.sphere_subset_closedBall.trans hcBall_sub_D
   intro ε hε
   set ε' := min ε ε₀
-  have hε'_le_ε : ε' ≤ ε := by grind
+  have hε'_pos : 0 < ε' := lt_min hε hε₀_pos
+  have hε'_le_ε : ε' ≤ ε := min_le_left _ _
   have hcBall'_sub_D : Metric.closedBall x_eq ε' ⊆ D :=
-    (Metric.closedBall_subset_closedBall (by grind)).trans hcBall_sub_D
+    (Metric.closedBall_subset_closedBall (min_le_right _ _)).trans hcBall_sub_D
   have hsphere'_sub_D : Metric.sphere x_eq ε' ⊆ D :=
-    Metric.sphere_subset_closedBall.trans
-      ((Metric.closedBall_subset_closedBall (by grind)).trans hcBall_sub_D)
+    Metric.sphere_subset_closedBall.trans hcBall'_sub_D
   obtain ⟨x_min, hx_min_mem, hx_min_le⟩ :=
     (isCompact_sphere x_eq ε').exists_isMinOn
-    (sphere_nonempty x_eq hn (by grind))
-    hV.hcont.continuousOn
+      (sphere_nonempty x_eq hn hε'_pos) hV.hcont.continuousOn
   set m := V x_min
   have hm_pos : 0 < m := by
     apply hV.hpos x_min (hsphere'_sub_D hx_min_mem)
     intro heq
-    have : (x_min : ℝⁿ) ∈ Metric.sphere x_eq ε' := hx_min_mem
-    rw [heq, Metric.mem_sphere, dist_self] at this
-    exact absurd this (ne_of_lt (by grind))
+    have hx := hx_min_mem
+    rw [heq, Metric.mem_sphere, dist_self] at hx
+    exact (ne_of_gt hε'_pos) hx.symm
   have hV_cont_at : ContinuousAt V x_eq := hV.hcont.continuousAt
   rw [Metric.continuousAt_iff] at hV_cont_at
   obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := hV_cont_at m hm_pos
   set δ := min δ₀ ε'
-  refine ⟨δ, (by grind), ?_⟩
-  intro φ htraj hφ0 t ht
+  refine ⟨δ, lt_min hδ₀_pos hε'_pos, ?_⟩
+  intro t₁ φ hφ hφ0 t ht
+  have hφ0ε' : ‖φ 0 - x_eq‖ < ε' := hφ0.trans_le (min_le_right _ _)
   have hV0_lt_m : V (φ 0) < m := by
-    have := hδ₀ ((dist_eq_norm (φ 0) x_eq).symm ▸ hφ0.trans_le (by grind))
-    simp only [Real.dist_eq, hV.hzero, sub_zero] at this
-    exact (abs_lt.mp this).2
-  by_contra hge
-  push Not at hge
-  have hge_ε' : ε' ≤ ‖φ t - x_eq‖ := hε'_le_ε.trans hge
-  set Q := {s : ℝ | 0 ≤ s ∧ ε' ≤ ‖φ s - x_eq‖}
-  have hQ_bddBelow : BddBelow Q := ⟨0, fun s hs => hs.1⟩
-  have hphi_cont : Continuous (fun s => ‖φ s - x_eq‖) :=
-    continuous_norm.comp ((trajectory_continuous htraj).sub continuous_const)
+    have hnear : dist (V (φ 0)) (V x_eq) < m := hδ₀ (by
+      rw [dist_eq_norm]
+      exact hφ0.trans_le (min_le_left _ _))
+    simp only [Real.dist_eq, hV.hzero, sub_zero] at hnear
+    exact (abs_lt.mp hnear).2
+  by_contra hnot
+  push Not at hnot
+  have hge_ε' : ε' ≤ ‖φ t - x_eq‖ := hε'_le_ε.trans hnot
+  set Q := {s : ℝ | s ∈ Icc (0 : ℝ) t ∧ ε' ≤ ‖φ s - x_eq‖}
+  have hQ_nonempty : Q.Nonempty := ⟨t, ⟨ht.1, le_rfl⟩, hge_ε'⟩
+  have hQ_bddBelow : BddBelow Q := ⟨0, fun s hs => hs.1.1⟩
+  have hφ_cont : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc (0 : ℝ) t) :=
+    (continuous_norm.comp_continuousOn
+      ((hφ.continuousOn.mono (Icc_subset_Icc le_rfl ht.2)).sub continuousOn_const))
   have hQ_closed : IsClosed Q := by
-    have : Q = (fun s => ‖φ s - x_eq‖) ⁻¹' (Set.Ici ε') ∩ Set.Ici 0 := by
-      ext s; simp [Q, and_comm]
-    rw [this]
-    exact (isClosed_Ici.preimage hphi_cont).inter isClosed_Ici
-  set T := sInf Q
-  have hT_mem : T ∈ Q := hQ_closed.csInf_mem ⟨t, ht, hge_ε'⟩ hQ_bddBelow
-  have hphi0_lt_ε' : ‖φ 0 - x_eq‖ < ε' := hφ0.trans_le (by grind)
-  have hT_pos : 0 < T := by
-    rcases lt_or_eq_of_le hT_mem.1 with h | h
-    · exact h
-    · exact absurd (h ▸ hT_mem)
-        (by simp only [Q, Set.mem_setOf_eq, le_refl, true_and, not_le]; exact hphi0_lt_ε')
-  have hlt_ε' : ∀ s : ℝ, 0 ≤ s → s < T → ‖φ s - x_eq‖ < ε' := by
-    intro s hs_nonneg hs_lt
-    by_contra h; push Not at h
-    exact absurd (csInf_le hQ_bddBelow ⟨hs_nonneg, h⟩) (not_le.mpr hs_lt)
-  have hT_eq_ε' : ‖φ T - x_eq‖ = ε' := by
-    apply le_antisymm _ hT_mem.2
+    exact isClosed_Icc.isClosed_le continuousOn_const hφ_cont
+  set Tstar := sInf Q
+  have hTstar_mem : Tstar ∈ Q := hQ_closed.csInf_mem hQ_nonempty hQ_bddBelow
+  have hTstar_pos : 0 < Tstar := by
+    rcases lt_or_eq_of_le hTstar_mem.1.1 with hpos | hzero
+    · exact hpos
+    · exact False.elim ((not_le_of_gt hφ0ε') (by simpa [hzero] using hTstar_mem.2))
+  have hlt_ε' : ∀ s : ℝ, 0 ≤ s → s < Tstar → ‖φ s - x_eq‖ < ε' := by
+    intro s hs0 hsT
+    by_contra hs
+    push Not at hs
+    have hs_le_t : s ≤ t := (le_of_lt hsT).trans hTstar_mem.1.2
+    exact (not_le_of_gt hsT) (csInf_le hQ_bddBelow ⟨⟨hs0, hs_le_t⟩, hs⟩)
+  have hTstar_eq : ‖φ Tstar - x_eq‖ = ε' := by
+    apply le_antisymm _ hTstar_mem.2
     by_contra hlt
     push Not at hlt
+    have hcont_sub : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc (0 : ℝ) Tstar) :=
+      hφ_cont.mono (Icc_subset_Icc le_rfl hTstar_mem.1.2)
     obtain ⟨s₀, hs₀_mem, hs₀_val⟩ :=
-      intermediate_value_Icc (le_of_lt hT_pos) hphi_cont.continuousOn
-        ⟨le_of_lt hphi0_lt_ε', le_of_lt hlt⟩
-    have hs₀_ge_T : T ≤ s₀ := csInf_le hQ_bddBelow ⟨hs₀_mem.1, ge_of_eq hs₀_val⟩
-    linarith [le_antisymm hs₀_mem.2 hs₀_ge_T ▸ hs₀_val]
-  have hstay : ∀ s ∈ Set.Icc (0 : ℝ) T, φ s ∈ D := by
+      intermediate_value_Icc (le_of_lt hTstar_pos) hcont_sub
+        ⟨le_of_lt hφ0ε', le_of_lt hlt⟩
+    have hs₀_ge : Tstar ≤ s₀ := csInf_le hQ_bddBelow
+      ⟨⟨hs₀_mem.1, hs₀_mem.2.trans hTstar_mem.1.2⟩, ge_of_eq hs₀_val⟩
+    have hs₀_eq : s₀ = Tstar := le_antisymm hs₀_mem.2 hs₀_ge
+    exact (not_lt_of_ge (le_of_eq (hs₀_eq ▸ hs₀_val))) hlt
+  have hstay : ∀ s ∈ Icc (0 : ℝ) Tstar, φ s ∈ D := by
     intro s hs
     apply hcBall'_sub_D
     rw [Metric.mem_closedBall, dist_eq_norm]
     rcases eq_or_lt_of_le hs.2 with heq | hlt
-    · rw [heq]; exact le_of_eq hT_eq_ε'
+    · subst s
+      exact le_of_eq hTstar_eq
     · exact le_of_lt (hlt_ε' s hs.1 hlt)
-  have hVT_le : V (φ T) ≤ V (φ 0) := V_nonincreasing_on hV htraj (le_of_lt hT_pos) hstay
-  have hVT_ge_m : m ≤ V (φ T) :=
-    hx_min_le (by rw [Metric.mem_sphere, dist_eq_norm]; exact hT_eq_ε')
+  have hVT_le : V (φ Tstar) ≤ V (φ 0) :=
+    V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right (hTstar_mem.1.2.trans ht.2)))
+      (le_of_lt hTstar_pos) hstay
+  have hVT_ge : m ≤ V (φ Tstar) :=
+    hx_min_le (by rw [Metric.mem_sphere, dist_eq_norm]; exact hTstar_eq)
   linarith
 
 /-! ## Shared limit lemmas -/
@@ -526,36 +565,152 @@ lemma tendsto_of_V_tendsto_zero
     le_rfl
     hV_tendsto
 
+open Set in
+/-- **Uniform entry time.** A segment that starts in the sublevel set `{V ≤ M}`, stays in the
+certificate domain `D`, and remains outside the ball of radius `δ` about `x_eq`, can do so only
+for a time depending on `M` and `δ` — not on the segment.
+
+This uniformity is what separates asymptotic stability from mere per-solution convergence: the
+Lie derivative is bounded away from `0` on the compact set `{V ≤ M} ∩ {δ ≤ ‖x - x_eq‖}`, so `V`
+is drained at a rate shared by every solution.
+
+Stated for a local certificate; the global case is this with `D = univ`. That the segment stays
+in `D` is a hypothesis rather than a conclusion, since deriving it is exactly sublevel-set
+invariance, which the caller is better placed to supply. -/
+lemma time_outside_ball_le
+    {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
+    (hV : IsLocalLyapunovFunction f V x_eq D) (hV_c1 : ContDiff ℝ 1 V)
+    (hLie_neg : ∀ x ∈ D, x ≠ x_eq → fderiv ℝ V x (f x) < 0) (hf_cont : Continuous f)
+    {M : ℝ} (hM_sub : SublevelSet V M ⊆ D) (hM_compact : IsCompact (SublevelSet V M))
+    {δ : ℝ} (hδ : 0 < δ) :
+    ∃ τ ≥ 0, ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOn φ f t₀ t₁ → t₀ ≤ t₁ →
+      V (φ t₀) ≤ M → (∀ t ∈ Icc t₀ t₁, φ t ∈ D) →
+      (∀ t ∈ Icc t₀ t₁, δ ≤ ‖φ t - x_eq‖) → t₁ - t₀ ≤ τ := by
+  have hout_closed : IsClosed {x : ℝⁿ | δ ≤ ‖x - x_eq‖} :=
+    isClosed_le continuous_const (continuous_norm.comp (continuous_id.sub continuous_const))
+  set K : Set ℝⁿ := SublevelSet V M ∩ {x : ℝⁿ | δ ≤ ‖x - x_eq‖} with hK_def
+  have hK_compact : IsCompact K := hM_compact.inter_right hout_closed
+  have hmem_K : ∀ x : ℝⁿ, V x ≤ M → δ ≤ ‖x - x_eq‖ → x ∈ K := fun x h₁ h₂ => ⟨h₁, h₂⟩
+  have hK_sub_D : ∀ x ∈ K, x ∈ D := fun x hx => hM_sub hx.1
+  have hK_ne_eq : ∀ x ∈ K, x ≠ x_eq := by
+    intro x hx hxeq
+    have h2 : δ ≤ ‖x - x_eq‖ := hx.2
+    rw [hxeq, sub_self, norm_zero] at h2
+    linarith
+  rcases K.eq_empty_or_nonempty with hKempty | hKne
+  · refine ⟨0, le_rfl, fun t₀ t₁ φ _ hle hM _ hout => ?_⟩
+    have hmem : φ t₀ ∈ K := hmem_K (φ t₀) hM (hout t₀ ⟨le_rfl, hle⟩)
+    rw [hKempty] at hmem
+    simp at hmem
+  · have hM_pos : 0 < M := by
+      obtain ⟨x, hx⟩ := hKne
+      exact lt_of_lt_of_le (hV.hpos x (hK_sub_D x hx) (hK_ne_eq x hx)) hx.1
+    obtain ⟨x_max, hx_max_mem, hx_max⟩ :=
+      hK_compact.exists_isMaxOn hKne (lie_deriv_continuous hV_c1 hf_cont).continuousOn
+    set γ := -(fderiv ℝ V x_max (f x_max)) with hγ_def
+    have hγ_pos : 0 < γ := by
+      have h := hLie_neg x_max (hK_sub_D x_max hx_max_mem) (hK_ne_eq x_max hx_max_mem)
+      rw [hγ_def]; linarith
+    refine ⟨M / γ, le_of_lt (div_pos hM_pos hγ_pos), ?_⟩
+    intro t₀ t₁ φ hφ hle hMle hstayD hout
+    have hVle : ∀ t ∈ Icc t₀ t₁, V (φ t) ≤ M := by
+      intro t ht
+      refine le_trans ?_ hMle
+      exact V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right ht.2)) ht.1
+        (fun r hr => hstayD r ⟨hr.1, hr.2.trans ht.2⟩)
+    have hW_anti : AntitoneOn (fun t => V (φ t) + γ * t) (Icc t₀ t₁) := by
+      apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
+      · exact (hV.hcont.comp_continuousOn hφ.continuousOn).add
+          (continuous_const.mul continuous_id).continuousOn
+      · intro t ht
+        rw [interior_Icc] at ht
+        have hd : HasDerivAt φ (f (φ t)) t :=
+          (hφ t (Ioo_subset_Icc_self ht)).hasDerivAt (Icc_mem_nhds ht.1 ht.2)
+        exact ((((hV_c1.differentiable (by norm_num)) (φ t)).hasFDerivAt.comp_hasDerivAt t
+          hd).add ((hasDerivAt_id t).const_mul γ)).differentiableAt.differentiableWithinAt
+      · intro t ht
+        rw [interior_Icc] at ht
+        have ht' : t ∈ Icc t₀ t₁ := Ioo_subset_Icc_self ht
+        have hd : HasDerivAt φ (f (φ t)) t :=
+          (hφ t ht').hasDerivAt (Icc_mem_nhds ht.1 ht.2)
+        have hWd : HasDerivAt (fun s => V (φ s) + γ * s)
+            (fderiv ℝ V (φ t) (f (φ t)) + γ) t := by
+          simpa using
+            ((((hV_c1.differentiable (by norm_num)) (φ t)).hasFDerivAt.comp_hasDerivAt t
+              hd).add ((hasDerivAt_id t).const_mul γ))
+        rw [hWd.deriv]
+        have hle_max : fderiv ℝ V (φ t) (f (φ t)) ≤ fderiv ℝ V x_max (f x_max) :=
+          hx_max (hmem_K (φ t) (hVle t ht') (hout t ht'))
+        rw [hγ_def]
+        linarith
+    have hstep : V (φ t₁) + γ * t₁ ≤ V (φ t₀) + γ * t₀ :=
+      hW_anti (left_mem_Icc.mpr hle) (right_mem_Icc.mpr hle) hle
+    have hV1_nonneg : 0 ≤ V (φ t₁) := by
+      rcases eq_or_ne (φ t₁) x_eq with h | h
+      · rw [h, hV.hzero]
+      · exact (hV.hpos _ (hstayD t₁ (right_mem_Icc.mpr hle)) h).le
+    have hbound : γ * (t₁ - t₀) ≤ M := by
+      have hexp : γ * (t₁ - t₀) = γ * t₁ - γ * t₀ := by ring
+      rw [hexp]
+      linarith [hVle t₀ ⟨le_rfl, hle⟩]
+    rw [le_div_iff₀ hγ_pos]
+    linarith [hbound, mul_comm γ (t₁ - t₀)]
+
+open Set in
 /-- **Lyapunov's global asymptotic stability theorem.** `IsStrictLyapunovFunction` implies
-    `GlobalAsymptoticStable`. -/
+    `ForwardGlobalAsymptoticStable`.
+
+Proof sketch: stability supplies a radius `δ` from which a solution can no longer leave the
+`ε`-ball. `time_outside_ball_le` bounds how long a solution can stay outside that `δ`-ball, so it
+has entered by `t₀ + τ₀ + 1`; re-applying stability *at that entry time* — which needs the
+anchor-free form of the predicate — pins it inside the `ε`-ball from then on. The bound is in
+fact uniform over solutions; only the per-solution consequence is recorded here. -/
 @[blueprint "thm:lyapunov-asymptotic-stable"
   (statement := /-- \textbf{Lyapunov's global asymptotic stability theorem.}
     If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
     and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
-    (\cref{def:globalAsymptoticStable}). -/)
-  (proof := /-- Stability from \cref{thm:lyapunov-stable}. For convergence:
-    $V(\varphi(t)) \to L \ge 0$ by monotone convergence; $L = 0$ by a
-    LaSalle-type argument; $\varphi(t) \to x_{\mathrm{eq}}$ by coercivity. -/)]
+    (\cref{def:forwardGlobalAsymptoticStable}). -/)
+  (proof := /-- Stability from \cref{thm:lyapunov-stable} fixes $\delta$ for the given
+    $\varepsilon$. On the compact set $\{V \le M\} \cap \{\delta \le \|x-x_{\rm eq}\|\}$ the Lie
+    derivative is at most $-\gamma < 0$, so $V$ is drained at a definite rate and the
+    $\delta$-ball is reached in finite time; stability applied at the entry time keeps the
+    solution within $\varepsilon$ thereafter. -/)]
 theorem lyapunov_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLyapunovFunction f V x_eq)
     (hf_cont : Continuous f) :
-    GlobalAsymptoticStable f x_eq := by
-  constructor
-  · exact lyapunov_stable hn (strict_implies_semidefinite hV)
-  · intro φ htraj
-    obtain ⟨L, hL_nonneg, hL_tendsto⟩ := V_tendsto_limit hV htraj
-    have hL_zero : L = 0 := V_limit_zero hV hf_cont htraj hL_nonneg hL_tendsto
-    rw [hL_zero] at hL_tendsto
-    exact tendsto_of_V_tendsto_zero hV htraj hL_tendsto
+    ForwardGlobalAsymptoticStable f x_eq := by
+  have hstable : ForwardLyapunovStable f x_eq :=
+    lyapunov_stable hn (strict_implies_semidefinite hV)
+  refine ⟨hstable, ?_⟩
+  intro t₀ φ hφ
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  obtain ⟨δ, hδ_pos, hδ⟩ := hstable ε hε
+  obtain ⟨τ₀, hτ₀_nonneg, hτ₀⟩ :=
+    time_outside_ball_le (strict_implies_semidefinite hV) hV.hV_c1
+      (fun x _ hx => hV.hLie_neg x hx) hf_cont (Set.subset_univ _)
+      (hV.hbounded_sublevel (V (φ t₀))) hδ_pos
+  refine ⟨t₀ + (τ₀ + 1), fun t ht => ?_⟩
+  rw [dist_eq_norm]
+  by_cases hex : ∃ s ∈ Icc t₀ (t₀ + (τ₀ + 1)), ‖φ s - x_eq‖ < δ
+  · obtain ⟨s, hs_mem, hs⟩ := hex
+    have hsub : Icc s t ⊆ Ici t₀ := fun r hr => le_trans hs_mem.1 hr.1
+    exact hδ s t φ (hφ.mono hsub) hs t ⟨le_trans hs_mem.2 ht, le_rfl⟩
+  · push Not at hex
+    have hsub : Icc t₀ (t₀ + (τ₀ + 1)) ⊆ Ici t₀ := fun r hr => hr.1
+    have hdwell := hτ₀ t₀ (t₀ + (τ₀ + 1)) φ (hφ.mono hsub) (by linarith) le_rfl
+      (fun _ _ => Set.mem_univ _) hex
+    linarith
 
-/-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
+/-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `ForwardGlobalAsymptoticStable`
     (the classical radially-unbounded form of the theorem). -/
 @[blueprint "thm:lyapunov-global-asymptotic-stable"
   (statement := /-- \textbf{Corollary.}
     If $V$ is a radially unbounded strict Lyapunov function
     (\cref{def:isAsymptoticLyapunovFunction}) and $f$ is continuous, then
-    $x_{\mathrm{eq}}$ is globally asymptotically stable. -/)
+    $x_{\mathrm{eq}}$ is globally asymptotically stable on finite forward
+    solution segments. -/)
   (proof := /-- Radial unboundedness gives compact sublevel sets
     (\cref{lem:isCompact-sublevel-set}), so $V$ satisfies
     \cref{def:isStrictLyapunovFunction}; apply
@@ -564,82 +719,68 @@ theorem lyapunov_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsAsymptoticLyapunovFunction f V x_eq)
     (hf_cont : Continuous f) :
-    GlobalAsymptoticStable f x_eq :=
+    ForwardGlobalAsymptoticStable f x_eq :=
   lyapunov_asymptotic_stable hn (asymptotic_implies_strict hV) hf_cont
 
 /-! ## Local asymptotic stability (IsStrictLocalLyapunovFunction) -/
 
+open Set in
 /-- **Lyapunov's local asymptotic stability theorem.** `IsStrictLocalLyapunovFunction` implies
-    `LocalAsymptoticStable`.
+    `ForwardLocalAsymptoticStable`.
 
 Proof sketch:
 1. `hcompact` gives `c₀ > 0` with `{V ≤ c₀} ⊆ D` compact.
-2. `lyapunov_stable` on the semidefinite part gives `LyapunovStable`.
-3. For convergence: trajectories starting in `int({V ≤ c₀})` stay in `{V ≤ c₀} ⊆ D`
-   (`sublevel_set_invariant`). `V(φ t) → L ≥ 0` via monotone convergence.
-   `V_limit_zero_of_compact` gives `L = 0`.
-   `tendsto_of_V_tendsto_zero_compact` gives `φ t → x_eq`. -/
+2. `lyapunov_stable` on the semidefinite part gives forward Lyapunov stability, hence for each
+   `ε` a radius `δ` from which a solution can no longer leave the `ε`-ball.
+3. Continuity of `V` at `x_eq` gives the basin `δ₀`: starting within it forces `V (φ t₀) < c₀`,
+   and `sublevel_set_invariant` then keeps the solution inside `D`.
+4. `time_outside_ball_le` caps the time spent outside the `δ`-ball, so the solution has entered
+   it by `t₀ + τ₀ + 1`; stability re-applied at that entry time finishes. -/
 @[blueprint "thm:lyapunov-local-asymptotic-stable"
   (statement := /-- \textbf{Lyapunov's local asymptotic stability theorem.}
     If $V$ is a strict local Lyapunov function
     (\cref{def:isStrictLocalLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is locally asymptotically stable
-    (\cref{def:localAsymptoticStable}). -/)
-  (proof := /-- The compact sublevel set $\Omega_{c_{0}} \subseteq D$ is
-    positively invariant. $V(\varphi(t)) \to L \ge 0$ by monotone convergence;
-    $L = 0$ by compactness; $\varphi(t) \to x_{\mathrm{eq}}$. -/)]
+    (\cref{def:forwardLocalAsymptoticStable}). -/)
+  (proof := /-- The compact sublevel set $\Omega_{c_{0}} \subseteq D$ is positively
+    invariant, so the Lie derivative is at most $-\gamma < 0$ off any ball around
+    $x_{\mathrm{eq}}$, draining $V$ at a definite rate; the $\delta$-ball supplied by
+    stability is therefore reached in finite time, and stability applied at the entry
+    time confines the solution thereafter. -/)]
 theorem lyapunov_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLocalLyapunovFunction f V x_eq D)
     (hf_cont : Continuous f) :
-    LocalAsymptoticStable f x_eq := by
+    ForwardLocalAsymptoticStable f x_eq := by
   obtain ⟨c₀, hc₀_pos, hΩ_sub_D, hΩ_compact⟩ := hV.hcompact
   have hV_local := strict_local_implies_semidefinite hV
-  refine ⟨lyapunov_stable hn hV_local, ?_⟩
+  have hstable : ForwardLyapunovStable f x_eq := lyapunov_stable hn hV_local
+  refine ⟨hstable, ?_⟩
   have hVcont_at : ContinuousAt V x_eq := hV.hcont.continuousAt
   rw [Metric.continuousAt_iff] at hVcont_at
   obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := hVcont_at c₀ hc₀_pos
   refine ⟨δ₀, hδ₀_pos, ?_⟩
-  intro φ htraj hφ0
-  have hV0_lt : V (φ 0) < c₀ := by
+  intro t₀ φ hφ hφ0
+  have hV0_lt : V (φ t₀) < c₀ := by
     have h := hδ₀ (by rw [dist_eq_norm]; exact hφ0)
     rw [Real.dist_eq, hV.hzero, sub_zero] at h
     exact (abs_lt.mp h).2
-  have hSub_compact : IsCompact (SublevelSet V (V (φ 0))) :=
-    hΩ_compact.of_isClosed_subset (isClosed_Iic.preimage hV.hcont)
-      (fun x hVx => le_trans hVx (le_of_lt hV0_lt))
-  have hSub_sub_D : SublevelSet V (V (φ 0)) ⊆ D :=
-    fun x hVx => hΩ_sub_D (le_trans hVx (le_of_lt hV0_lt))
-  have hVt_lt : ∀ t ≥ 0, V (φ t) < c₀ :=
-    sublevel_set_invariant hV_local htraj hΩ_sub_D hV0_lt
-  have hphit_in_D : ∀ t ≥ 0, φ t ∈ D := fun t ht => hΩ_sub_D (le_of_lt (hVt_lt t ht))
-  have hanti : AntitoneOn (V ∘ φ) (Set.Ici 0) := fun s hs t ht hst =>
-    V_nonincreasing_on hV_local htraj hst (fun r hr => hphit_in_D r (hs.trans hr.1))
-  have hVt_nonneg : ∀ t ≥ 0, 0 ≤ V (φ t) := fun t ht => by
-    by_cases hx : φ t = x_eq
-    · simp [hx, hV.hzero]
-    · exact le_of_lt (hV.hpos (φ t) (hphit_in_D t ht) hx)
-  set g : ℝ → ℝ := fun t => (V ∘ φ) (max t 0) with hg_def
-  have hg_anti : Antitone g := fun s t hst =>
-    hanti (Set.mem_Ici.mpr (le_max_right s 0)) (Set.mem_Ici.mpr (le_max_right t 0))
-      (max_le_max_right 0 hst)
-  have hg_bdd : BddBelow (Set.range g) :=
-    ⟨0, fun _ ⟨t, ht⟩ => ht ▸ hVt_nonneg (max t 0) (le_max_right t 0)⟩
-  set L := ⨅ t, g t
-  have hL_nonneg : 0 ≤ L := le_ciInf fun t => hVt_nonneg (max t 0) (le_max_right t 0)
-  have hg_tendsto : Filter.Tendsto g Filter.atTop (nhds L) :=
-    tendsto_atTop_ciInf hg_anti hg_bdd
-  have hgL_eq : ∀ t ≥ (0 : ℝ), g t = (V ∘ φ) t := fun t ht => by
-    simp [hg_def, max_eq_left ht]
-  have hVphi_tendsto : Filter.Tendsto (V ∘ φ) Filter.atTop (nhds L) :=
-    hg_tendsto.congr' ((Filter.eventually_ge_atTop 0).mono fun t ht => hgL_eq t ht)
-  have hVt_ge_L : ∀ t ≥ 0, L ≤ V (φ t) := fun t ht => by
-    have := hg_anti.le_of_tendsto hg_tendsto t; rwa [hgL_eq t ht] at this
-  have hL_zero : L = 0 :=
-    V_limit_zero_of_compact hV.hcont hV.hV_c1 hV.hzero
-      (fun x hxD hx => hV.hLie_neg x hxD hx)
-      hf_cont htraj hSub_sub_D hSub_compact le_rfl hanti hL_nonneg hVt_ge_L
-  rw [hL_zero] at hVphi_tendsto
-  exact tendsto_of_V_tendsto_zero_compact hV.hcont
-    (fun x hxD hx => hV.hpos x hxD hx)
-    htraj hSub_compact hSub_sub_D hanti le_rfl hVphi_tendsto
+  have hstayD : ∀ (t₁ : ℝ), ∀ s ∈ Icc t₀ t₁, φ s ∈ D := fun t₁ s hs =>
+    hΩ_sub_D (le_of_lt (sublevel_set_invariant hV_local
+      (hφ.mono (fun r hr => hr.1)) hΩ_sub_D hV0_lt s hs))
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  obtain ⟨δ, hδ_pos, hδ⟩ := hstable ε hε
+  obtain ⟨τ₀, hτ₀_nonneg, hτ₀⟩ :=
+    time_outside_ball_le hV_local hV.hV_c1 hV.hLie_neg hf_cont hΩ_sub_D hΩ_compact hδ_pos
+  refine ⟨t₀ + (τ₀ + 1), fun t ht => ?_⟩
+  rw [dist_eq_norm]
+  by_cases hex : ∃ s ∈ Icc t₀ (t₀ + (τ₀ + 1)), ‖φ s - x_eq‖ < δ
+  · obtain ⟨s, hs_mem, hs⟩ := hex
+    have hsub : Icc s t ⊆ Ici t₀ := fun r hr => le_trans hs_mem.1 hr.1
+    exact hδ s t φ (hφ.mono hsub) hs t ⟨le_trans hs_mem.2 ht, le_rfl⟩
+  · push Not at hex
+    have hsub : Icc t₀ (t₀ + (τ₀ + 1)) ⊆ Ici t₀ := fun r hr => hr.1
+    have hdwell := hτ₀ t₀ (t₀ + (τ₀ + 1)) φ (hφ.mono hsub) (by linarith)
+      (le_of_lt hV0_lt) (fun s hs => hstayD _ s hs) hex
+    linarith
