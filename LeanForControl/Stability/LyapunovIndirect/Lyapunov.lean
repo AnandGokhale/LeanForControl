@@ -28,7 +28,7 @@ squared distance to the equilibrium.
 This is the shared "remainder absorption" step of both branches of Lyapunov's indirect
 method: the stable branch (`exists_centeredQuadraticForm_decay`) uses it to bound the
 error term against the certificate's own decay rate, and the unstable branch
-(`forwardUnstable_of_quadratic_certificate`) uses it to bound the error term against the
+(`unstable_of_quadratic_certificate`) uses it to bound the error term against the
 shifted certificate's growth rate.
 
 Reference: adapted from the quadratic-Lyapunov proof of Lyapunov's indirect method;

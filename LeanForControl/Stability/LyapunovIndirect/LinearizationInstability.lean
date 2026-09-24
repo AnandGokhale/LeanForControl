@@ -119,7 +119,7 @@ segment from an arbitrarily small initial perturbation.
 
 Reference: Khalil, *Nonlinear Systems*.
 -/
-theorem forwardUnstable_affineLinear_of_eigenvalue_re_pos
+theorem unstable_affineLinear_of_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) (x_eq : ℝⁿ) (mu : ℂ) (v : Fin n → ℂ)
     (hv : v ≠ 0)
     (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = mu • v)

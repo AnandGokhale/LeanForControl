@@ -279,7 +279,7 @@ private theorem exists_cutoff_segment_reaching_radius
 and reach a fixed radius witness forward instability.
 
 Original: first-exit reduction for locally valid differential equations. -/
-private theorem forwardUnstable_of_cutoff_segment_escape
+private theorem unstable_of_cutoff_segment_escape
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ρ : ℝ} (hρ : 0 < ρ)
     (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
       ‖φ 0 - x_eq‖ < min δ ρ ∧
@@ -309,7 +309,7 @@ follows the resulting solution to its first sphere crossing, and applies the
 differential inequality to rule out remaining inside the sphere forever.
 
 Reference: Hahn, *Stability of Motion* (Chetaev's instability method). -/
-@[blueprint "thm:exponential-chetaev-forward-unstable"
+@[blueprint "thm:exponential-chetaev-unstable"
   (statement := /-- Suppose the vector field $f$ and certificate $V$ are $C^1$,
     $V$ is quadratically bounded on a ball, its positive set accumulates at the
     base point, and its Lie derivative satisfies $\dot V\geq 2\alpha V$ there
@@ -319,7 +319,7 @@ Reference: Hahn, *Stability of Motion* (Chetaev's instability method). -/
   (proof := /-- Globalize the vector field by a smooth cutoff, integrate the
     differential inequality on a sufficiently long finite segment, and stop
     the curve at its first crossing of the certificate ball. -/)]
-theorem forwardUnstable_of_exponential_chetaev
+theorem unstable_of_exponential_chetaev
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
     {ρ α C : ℝ} (hρ : 0 < ρ) (hα : 0 < α) (hC : 0 ≤ C)
@@ -329,7 +329,7 @@ theorem forwardUnstable_of_exponential_chetaev
       2 * α * V x ≤ fderiv ℝ V x (f x))
     (hseed : ∀ δ > 0, ∃ x, ‖x - x_eq‖ < min δ ρ ∧ 0 < V x) :
     Unstable f x_eq := by
-  apply forwardUnstable_of_cutoff_segment_escape hρ
+  apply unstable_of_cutoff_segment_escape hρ
   intro δ hδ
   obtain ⟨x₀, hx₀, hVx₀⟩ := hseed δ hδ
   obtain ⟨T, φ, t₁, hφ0, hφcont, hφderiv, ht₁, hfar⟩ :=
