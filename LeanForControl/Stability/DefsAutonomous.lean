@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.Calculus.ContDiff.Defs
+import Mathlib.Analysis.SpecialFunctions.Exp
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Topology.MetricSpace.Bounded
 import Mathlib.Analysis.Normed.Group.Bounded
@@ -70,6 +71,85 @@ abbrev IsTrajectoryOn (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) (t₀ t₁ :
     \emph{equilibrium} of $\dot{x} = f(x)$ when $f(x_{\mathrm{eq}}) = 0$. -/)]
 def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   f x_eq = 0
+
+/-! ## Stability predicates -/
+
+/-- Lyapunov stability, quantified over all finite forward solution segments.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+@[blueprint "def:lyapunovStable"
+  (statement := /-- An equilibrium is Lyapunov stable when every finite
+    forward solution segment starting sufficiently close remains within any
+    prescribed neighborhood for its entire interval of definition. -/)]
+def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  ∀ ε > 0, ∃ δ > 0, ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ),
+    IsTrajectoryOn φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < δ →
+      ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ < ε
+
+/-- Local exponential stability on every finite forward solution segment.
+
+The radius `r` selects the local basin; `C ≥ 1` is the overshoot constant and
+`a > 0` is the exponential decay rate. Decay is measured from `t₀`, not from the
+time origin.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+@[blueprint "def:locallyExponentiallyStable"
+  (statement := /-- An equilibrium is locally exponentially stable on finite
+    forward segments when nearby solutions satisfy a uniform estimate
+    $\|x(t)-x_{\rm eq}\|\leq C e^{-a(t-t_0)}\|x(t_0)-x_{\rm eq}\|$. -/)]
+def LocallyExponentiallyStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  ∃ r C a : ℝ, 0 < r ∧ 1 ≤ C ∧ 0 < a ∧
+    ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOn φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < r → ∀ t ∈ Icc t₀ t₁,
+        ‖φ t - x_eq‖ ≤ C * Real.exp (-a * (t - t₀)) * ‖φ t₀ - x_eq‖
+
+/-- Local asymptotic stability: Lyapunov stable, and forward-complete solutions
+starting within `c` converge to the equilibrium.
+
+Attractivity is per-solution and quantifies over forward-complete solutions, as convergence must.
+The completeness restriction is harmless because the stability conjunct guards it: where
+solutions escape in finite time `LyapunovStable` already fails. A `τ` uniform over
+solutions is strictly stronger and is recorded separately, for the certificates that supply it.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+@[blueprint "def:localAsymptoticStable"
+  (statement := /-- An equilibrium is \emph{locally asymptotically stable} when it is forward
+    Lyapunov stable and there is a radius $c>0$ such that every solution defined for all
+    forward time with $\|\varphi(t_0)-x_{\rm eq}\|<c$ satisfies
+    $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$. -/)]
+def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  LyapunovStable f x_eq ∧
+  ∃ c > 0, ∀ (t₀ : ℝ) (φ : ℝ → ℝⁿ), IsIntegralCurveOn φ (fun _ y => f y) (Ici t₀) →
+    ‖φ t₀ - x_eq‖ < c → Tendsto φ atTop (𝓝 x_eq)
+
+/-- Global asymptotic stability: Lyapunov stable, and *every* forward-complete solution
+converges to the equilibrium.
+
+As `LocalAsymptoticStable` but with no basin restriction.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+@[blueprint "def:globalAsymptoticStable"
+  (statement := /-- An equilibrium is \emph{globally asymptotically stable} when it is forward
+    Lyapunov stable and every solution defined for all forward time satisfies
+    $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$. -/)]
+def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  LyapunovStable f x_eq ∧
+  ∀ (t₀ : ℝ) (φ : ℝ → ℝⁿ), IsIntegralCurveOn φ (fun _ y => f y) (Ici t₀) →
+    Tendsto φ atTop (𝓝 x_eq)
+
+/-- Instability is the negation of forward Lyapunov stability.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+@[blueprint "def:unstable"
+  (statement := /-- Instability is the negation of stability quantified
+    over all finite forward solution segments. -/)]
+def Unstable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  ¬ LyapunovStable f x_eq
 
 /-! ## Sublevel sets -/
 

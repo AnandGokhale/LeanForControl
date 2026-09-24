@@ -1,4 +1,4 @@
-import LeanForControl.Stability.LyapunovIndirect.Forward
+import LeanForControl.Stability.Autonomous
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
@@ -287,8 +287,8 @@ private theorem forwardUnstable_of_cutoff_segment_escape
       (∀ s ∈ Icc (0 : ℝ) T, ‖φ s - x_eq‖ ≤ ρ →
         HasDerivWithinAt φ (f (φ s)) (Icc 0 T) s) ∧
       t ∈ Icc (0 : ℝ) T ∧ ρ ≤ ‖φ t - x_eq‖) :
-    ForwardUnstable f x_eq := by
-  apply forwardUnstable_of_fixed_escape hρ
+    Unstable f x_eq := by
+  apply unstable_of_fixed_escape hρ
   intro δ hδ
   obtain ⟨T, φ, t₁, hφ0, hφcont, hφderiv, ht₁, hfar⟩ := hsegments δ hδ
   have hφ0δ : ‖φ 0 - x_eq‖ < δ := hφ0.trans_le (min_le_left _ _)
@@ -328,7 +328,7 @@ theorem forwardUnstable_of_exponential_chetaev
     (hgrowth : ∀ x, ‖x - x_eq‖ ≤ ρ →
       2 * α * V x ≤ fderiv ℝ V x (f x))
     (hseed : ∀ δ > 0, ∃ x, ‖x - x_eq‖ < min δ ρ ∧ 0 < V x) :
-    ForwardUnstable f x_eq := by
+    Unstable f x_eq := by
   apply forwardUnstable_of_cutoff_segment_escape hρ
   intro δ hδ
   obtain ⟨x₀, hx₀, hVx₀⟩ := hseed δ hδ

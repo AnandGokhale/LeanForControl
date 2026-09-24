@@ -5,7 +5,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
-import LeanForControl.Stability.LyapunovIndirect.Forward
+import LeanForControl.Stability.Autonomous
 
 /-!
 # Unstable modes and finite forward segments
@@ -124,8 +124,8 @@ theorem forwardUnstable_affineLinear_of_eigenvalue_re_pos
     (hv : v ≠ 0)
     (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = mu • v)
     (hmu : 0 < mu.re) :
-    ForwardUnstable (LinearSystems.affineLinearVectorField A x_eq) x_eq := by
-  apply forwardUnstable_of_fixed_escape (by positivity : (0 : ℝ) < 1)
+    Unstable (LinearSystems.affineLinearVectorField A x_eq) x_eq := by
+  apply unstable_of_fixed_escape (by positivity : (0 : ℝ) < 1)
   intro delta hdelta
   have hvE : WithLp.toLp 2 v ≠ (0 : EuclideanSpace ℂ (Fin n)) := by
     intro h

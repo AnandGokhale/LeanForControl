@@ -2,7 +2,6 @@ import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.Stability.DefsAutonomous
-import LeanForControl.Stability.LyapunovIndirect.DefsForward
 import Architect
 
 variable {n : ℕ}
@@ -261,7 +260,7 @@ lemma forwardLyapunovStable_of_anchored_zero {f : ℝⁿ → ℝⁿ} {x_eq : ℝ
     (h : ∀ ε > 0, ∃ δ > 0, ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
       IsTrajectoryOn φ f 0 t₁ → ‖φ 0 - x_eq‖ < δ →
         ∀ t ∈ Set.Icc 0 t₁, ‖φ t - x_eq‖ < ε) :
-    ForwardLyapunovStable f x_eq := by
+    LyapunovStable f x_eq := by
   intro ε hε
   obtain ⟨δ, hδ, hbase⟩ := h ε hε
   refine ⟨δ, hδ, ?_⟩
@@ -298,7 +297,7 @@ The first-exit argument runs on segments anchored at `0`; time invariance, via
 theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
-    ForwardLyapunovStable f x_eq := by
+    LyapunovStable f x_eq := by
   apply forwardLyapunovStable_of_anchored_zero
   obtain ⟨r, hr_pos, hr_ball⟩ := Metric.isOpen_iff.mp hV.hD_open x_eq hV.hD_mem
   set ε₀ := r / 2
@@ -390,6 +389,53 @@ theorem lyapunov_stable
   have hVT_ge : m ≤ V (φ Tstar) :=
     hx_min_le (by rw [Metric.mem_sphere, dist_eq_norm]; exact hTstar_eq)
   linarith
+
+/-! ## Consequences of local exponential stability -/
+
+open Set in
+/-- Local exponential stability on finite forward segments implies Lyapunov stability.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+theorem LocallyExponentiallyStable.lyapunovStable
+    {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
+    (h : LocallyExponentiallyStable f x_eq) :
+    LyapunovStable f x_eq := by
+  rcases h with ⟨r, C, a, hr, hC, ha, hdecay⟩
+  intro ε hε
+  refine ⟨min r (ε / C), ?_, ?_⟩
+  · positivity
+  intro t₀ t₁ φ hφ hφ0 t ht
+  have ht0 : t₀ ≤ t := ht.1
+  have hexp : Real.exp (-a * (t - t₀)) ≤ 1 := by
+    rw [← Real.exp_zero]
+    exact Real.exp_le_exp.mpr (by nlinarith)
+  have hCpos : 0 < C := lt_of_lt_of_le zero_lt_one hC
+  have hinit : ‖φ t₀ - x_eq‖ < ε / C := lt_of_lt_of_le hφ0 (min_le_right _ _)
+  calc
+    ‖φ t - x_eq‖ ≤ C * Real.exp (-a * (t - t₀)) * ‖φ t₀ - x_eq‖ :=
+      hdecay t₀ t₁ φ hφ (lt_of_lt_of_le hφ0 (min_le_left _ _)) t ht
+    _ ≤ C * 1 * ‖φ t₀ - x_eq‖ := by gcongr
+    _ < ε := by
+      rw [mul_one, ← lt_div_iff₀' hCpos]
+      simpa [mul_comm] using hinit
+
+open Set in
+/-- A fixed escape radius witnessed from arbitrarily small initial perturbations on finite
+forward segments implies instability.
+
+Reference: Khalil, *Nonlinear Systems*.
+-/
+theorem unstable_of_fixed_escape
+    {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ε : ℝ} (hε : 0 < ε)
+    (hescape : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
+      IsTrajectoryOn φ f 0 T ∧ ‖φ 0 - x_eq‖ < δ ∧
+        t ∈ Icc (0 : ℝ) T ∧ ε ≤ ‖φ t - x_eq‖) :
+    Unstable f x_eq := by
+  intro hstable
+  obtain ⟨δ, hδ, hstay⟩ := hstable ε hε
+  obtain ⟨T, φ, t, hφ, hφ0, ht, hfar⟩ := hescape δ hδ
+  exact (not_lt_of_ge hfar) (hstay 0 T φ hφ hφ0 t ht)
 
 /-! ## Shared limit lemmas -/
 
@@ -658,7 +704,7 @@ lemma time_outside_ball_le
 
 open Set in
 /-- **Lyapunov's global asymptotic stability theorem.** `IsStrictLyapunovFunction` implies
-    `ForwardGlobalAsymptoticStable`.
+    `GlobalAsymptoticStable`.
 
 Proof sketch: stability supplies a radius `δ` from which a solution can no longer leave the
 `ε`-ball. `time_outside_ball_le` bounds how long a solution can stay outside that `δ`-ball, so it
@@ -679,8 +725,8 @@ theorem lyapunov_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLyapunovFunction f V x_eq)
     (hf_cont : Continuous f) :
-    ForwardGlobalAsymptoticStable f x_eq := by
-  have hstable : ForwardLyapunovStable f x_eq :=
+    GlobalAsymptoticStable f x_eq := by
+  have hstable : LyapunovStable f x_eq :=
     lyapunov_stable hn (strict_implies_semidefinite hV)
   refine ⟨hstable, ?_⟩
   intro t₀ φ hφ
@@ -703,7 +749,7 @@ theorem lyapunov_asymptotic_stable
       (fun _ _ => Set.mem_univ _) hex
     linarith
 
-/-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `ForwardGlobalAsymptoticStable`
+/-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
     (the classical radially-unbounded form of the theorem). -/
 @[blueprint "thm:lyapunov-global-asymptotic-stable"
   (statement := /-- \textbf{Corollary.}
@@ -719,14 +765,14 @@ theorem lyapunov_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsAsymptoticLyapunovFunction f V x_eq)
     (hf_cont : Continuous f) :
-    ForwardGlobalAsymptoticStable f x_eq :=
+    GlobalAsymptoticStable f x_eq :=
   lyapunov_asymptotic_stable hn (asymptotic_implies_strict hV) hf_cont
 
 /-! ## Local asymptotic stability (IsStrictLocalLyapunovFunction) -/
 
 open Set in
 /-- **Lyapunov's local asymptotic stability theorem.** `IsStrictLocalLyapunovFunction` implies
-    `ForwardLocalAsymptoticStable`.
+    `LocalAsymptoticStable`.
 
 Proof sketch:
 1. `hcompact` gives `c₀ > 0` with `{V ≤ c₀} ⊆ D` compact.
@@ -751,10 +797,10 @@ theorem lyapunov_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsStrictLocalLyapunovFunction f V x_eq D)
     (hf_cont : Continuous f) :
-    ForwardLocalAsymptoticStable f x_eq := by
+    LocalAsymptoticStable f x_eq := by
   obtain ⟨c₀, hc₀_pos, hΩ_sub_D, hΩ_compact⟩ := hV.hcompact
   have hV_local := strict_local_implies_semidefinite hV
-  have hstable : ForwardLyapunovStable f x_eq := lyapunov_stable hn hV_local
+  have hstable : LyapunovStable f x_eq := lyapunov_stable hn hV_local
   refine ⟨hstable, ?_⟩
   have hVcont_at : ContinuousAt V x_eq := hV.hcont.continuousAt
   rw [Metric.continuousAt_iff] at hVcont_at

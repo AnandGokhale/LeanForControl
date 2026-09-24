@@ -2,7 +2,7 @@ import LeanForControl.Analysis.FrechetRemainder
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
-import LeanForControl.Stability.LyapunovIndirect.Forward
+import LeanForControl.Stability.Autonomous
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Architect
 
@@ -80,7 +80,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
     (hJac : fderiv ℝ f x_eq =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     (hP : P.PosDef) (hLyap : SolvesContinuousLyapunovEquation A P 1) :
-    ForwardLocallyExponentiallyStable f x_eq := by
+    LocallyExponentiallyStable f x_eq := by
   letI : NeZero n := ⟨Nat.ne_of_gt hn⟩
   obtain ⟨r, hr, hdecay⟩ :=
     exists_centeredQuadraticForm_decay A P hf heq hJac hLyap
@@ -101,7 +101,7 @@ theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
         simpa [D, Metric.mem_ball, dist_eq_norm] using hx
       have hd := hdecay x hx'
       nlinarith [sq_nonneg ‖x - x_eq‖] }
-  have hstable : ForwardLyapunovStable f x_eq :=
+  have hstable : LyapunovStable f x_eq :=
     lyapunov_stable hn hlocal
   obtain ⟨ρ, hρ, hstay⟩ := hstable r hr
   obtain ⟨m, hm, hm_lower⟩ :=
@@ -265,7 +265,7 @@ theorem hurwitz_linearization_forward_locally_exponentially_stable
     (hJac : fderiv ℝ f x_eq =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     (hA : IsHurwitz A) :
-    ForwardLocallyExponentiallyStable f x_eq := by
+    LocallyExponentiallyStable f x_eq := by
   by_cases hn0 : n = 0
   · subst n
     refine ⟨1, 1, 1, zero_lt_one, le_rfl, zero_lt_one, ?_⟩

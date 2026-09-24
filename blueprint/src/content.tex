@@ -179,17 +179,21 @@ $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 
 \section{Stability predicates}
 
-The finite-forward predicates below quantify over every solution segment on a
-compact interval.  This prevents finite escape from making a stability claim
-vacuous merely because a non-equilibrium solution is not globally defined.
-A solution segment on $[0,T]$ is an integral curve of the vector field on that
-interval, in the sense of \texttt{IsIntegralCurveOn}.
+The predicates below quantify over every solution segment on a compact interval
+$[t_0, t_1]$.  This prevents finite escape from making a stability claim vacuous
+merely because a non-equilibrium solution is not globally defined.  A solution
+segment is an integral curve of the vector field restricted to that interval, in
+the sense of \texttt{IsTrajectoryOn}.
 
-\inputleannode{def:forwardLyapunovStable}
+\inputleannode{def:lyapunovStable}
 
-\inputleannode{def:forwardLocallyExponentiallyStable}
+\inputleannode{def:locallyExponentiallyStable}
 
-\inputleannode{def:forwardUnstable}
+\inputleannode{def:localAsymptoticStable}
+
+\inputleannode{def:globalAsymptoticStable}
+
+\inputleannode{def:unstable}
 
 \section{Sublevel sets and positive invariance}
 
@@ -223,16 +227,11 @@ interval, in the sense of \texttt{IsIntegralCurveOn}.
 
 \inputleannode{thm:frechet-centered-remainder-bound}
 
-The primary stable-branch theorem uses the finite-forward trajectory API: it gives
-uniform local exponential decay on every finite forward solution segment, without
-silently excluding solutions that are not globally defined.
+The stable-branch theorem gives uniform local exponential decay on every finite
+forward solution segment, without silently excluding solutions that are not
+globally defined.
 
 \inputleannode{thm:hurwitz-linearization-forward-locally-exponentially-stable}
-
-The following legacy local-asymptotic-stability result is a compatibility corollary
-for globally defined trajectories.
-
-\inputleannode{thm:hurwitz-linearization-local-asymptotic-stable}
 
 \inputleannode{thm:exponential-chetaev-forward-unstable}
 

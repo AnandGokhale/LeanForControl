@@ -181,7 +181,36 @@ lemma IsIntegralCurveOn.shift_to_zero {g : E → E} {t₀ t₁ : ℝ}
     simp [Set.vadd_Icc, neg_add_eq_sub]
   rwa [hset] at h
 
+/-- An integral curve of an autonomous field on `[t₀, t₁]` is an integral solution there.
+
+The continuity of `x` that the integral formulation needs comes for free from the curve
+hypothesis; only continuity of the field is assumed. Specializes
+`isIntegralSolution_iff_isIntegralCurveOn_Icc`. -/
+lemma IsIntegralCurveOn.isIntegralSolution_of_continuous {g : E → E} {t₀ t₁ : ℝ}
+    (hle : t₀ ≤ t₁) (hx : IsIntegralCurveOn x (fun _ y => g y) (Icc t₀ t₁))
+    (hg : Continuous g) :
+    IsIntegralSolution t₀ t₁ x (x t₀) (fun _ y => g y) :=
+  (isIntegralSolution_iff_isIntegralCurveOn_Icc hle
+    (hg.comp_continuousOn (fun s hs => (hx s hs).continuousWithinAt))).mpr hx
+
 end IntegralCurve
+
+/-- A `C¹` vector field admits a nontrivial solution segment from every point at which it is
+`C¹`. The anchor `0` is a construction choice, not a restriction: by time invariance a segment
+from any anchor follows.
+
+Reference: the Picard--Lindelöf local existence theorem. -/
+theorem ContDiffAt.exists_isIntegralCurveOn_Icc [CompleteSpace E]
+    {g : E → E} {x₀ : E} (hg : ContDiffAt ℝ 1 g x₀) :
+    ∃ (T : ℝ) (φ : ℝ → E), 0 < T ∧ φ 0 = x₀ ∧
+      IsIntegralCurveOn φ (fun _ y => g y) (Icc 0 T) := by
+  obtain ⟨φ, hφ0, ε, hε, hφ⟩ :=
+    hg.exists_forall_mem_closedBall_exists_eq_forall_mem_Ioo_hasDerivAt₀ 0
+  refine ⟨ε / 2, φ, by positivity, hφ0, ?_⟩
+  intro t ht
+  have htIoo : t ∈ Ioo (0 - ε) (0 + ε) := by
+    constructor <;> norm_num at * <;> linarith
+  exact (hφ t htIoo).hasDerivWithinAt
 
 /-- **Theorem 3.4** (Continuous dependence on initial states and parameters).
 

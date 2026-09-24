@@ -238,7 +238,7 @@ theorem lasalle_local_asymptotic_stable
     (hΩ_inv : IsPositivelyInvariant (SublevelSet V c) f)
     (hLasalle : ∀ φ : ℝ → ℝⁿ, IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0) →
                   φ 0 ∈ SublevelSet V c → omegaLimitTraj φ ⊆ {x_eq}) :
-    ForwardLocalAsymptoticStable f x_eq := by
+    LocalAsymptoticStable f x_eq := by
   refine ⟨lyapunov_stable hn hV_local, ?_⟩
   obtain ⟨δ, hδ_pos, hδ⟩ := Metric.continuousAt_iff.mp hV_local.hcont.continuousAt c hc_pos
   refine ⟨δ, hδ_pos, fun t₀ φ hφ hφ0 => ?_⟩
@@ -280,7 +280,7 @@ theorem lasalle_global_asymptotic_stable
     (hradial : Filter.Tendsto V (Filter.comap norm Filter.atTop) Filter.atTop)
     (hLasalle : ∀ φ : ℝ → ℝⁿ, IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0) →
                   omegaLimitTraj φ ⊆ {x_eq}) :
-    ForwardGlobalAsymptoticStable f x_eq := by
+    GlobalAsymptoticStable f x_eq := by
   have hV_local : IsLocalLyapunovFunction f V x_eq Set.univ :=
     { hD_open := isOpen_univ
       hD_mem := Set.mem_univ _

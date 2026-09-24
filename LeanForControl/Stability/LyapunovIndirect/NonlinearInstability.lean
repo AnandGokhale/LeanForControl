@@ -74,7 +74,7 @@ theorem forwardUnstable_of_quadratic_certificate
     (hshift : (H * A + Aᵀ * H - (2 * α) • H).PosDef)
     (w : ℝⁿ) (hw : w ≠ 0)
     (hHw : 0 < MatrixAlgebra.quadraticForm H w) :
-    ForwardUnstable f x_eq := by
+    Unstable f x_eq := by
   have hn : n ≠ 0 := by
     intro hnzero
     subst n
@@ -158,7 +158,7 @@ theorem forwardUnstable_of_complex_eigenvalue_re_pos
     (hv : v ≠ 0)
     (heig : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v)
     (hμ : 0 < μ.re) :
-    ForwardUnstable f x_eq := by
+    Unstable f x_eq := by
   obtain ⟨α, H, w, hα, _hH, hw, hHw, hshift⟩ :=
     LinearSystems.exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos
       A hv heig hμ
@@ -191,6 +191,6 @@ theorem forwardUnstable_of_exists_complex_eigenvalue_re_pos
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     (hunstable : ∃ (μ : ℂ) (v : Fin n → ℂ),
       v ≠ 0 ∧ A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v ∧ 0 < μ.re) :
-    ForwardUnstable f x_eq := by
+    Unstable f x_eq := by
   obtain ⟨μ, v, hv, heig, hμ⟩ := hunstable
   exact forwardUnstable_of_complex_eigenvalue_re_pos A hf heq hJac hv heig hμ
