@@ -73,7 +73,7 @@ finite forward solution segment.
 
 Reference: adapted from the quadratic-Lyapunov proof of the stable branch of Lyapunov's
 indirect method; Khalil, *Nonlinear Systems*. -/
-theorem forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
+theorem locallyExponentiallyStable_of_continuousLyapunovEquation
     (hn : 0 < n) {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A P : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
@@ -248,7 +248,7 @@ finite forward solution segment.
 
 Reference: Khalil, *Nonlinear Systems*.
 -/
-@[blueprint "thm:hurwitz-linearization-forward-locally-exponentially-stable"
+@[blueprint "thm:hurwitz-linearization-locally-exponentially-stable"
   (statement := /-- Let $f : \mathbb{R}^n \to \mathbb{R}^n$ be $C^1$, and let
     $x_{\rm eq}$ be an equilibrium. If its Jacobian $A$ at the equilibrium is
     Hurwitz, then there are uniform local constants giving exponential decay
@@ -258,7 +258,7 @@ Reference: Khalil, *Nonlinear Systems*.
     $P$, use $V(x)=(x-x_{\rm eq})^{\mathsf T}P(x-x_{\rm eq})$, absorb the
     $o(\|x-x_{\rm eq}\|)$ linearization remainder on a small ball, and apply a
     weighted-energy estimate up to the first possible exit time. -/)]
-theorem hurwitz_linearization_forward_locally_exponentially_stable
+theorem hurwitz_linearization_locally_exponentially_stable
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
@@ -275,6 +275,6 @@ theorem hurwitz_linearization_forward_locally_exponentially_stable
   · have hn : 0 < n := Nat.pos_of_ne_zero hn0
     obtain ⟨P, hP, hLyap, _⟩ :=
       hA.exists_posDef_unique_solution_continuous_lyapunov 1 Matrix.PosDef.one
-    exact forwardLocallyExponentiallyStable_of_continuousLyapunovEquation
+    exact locallyExponentiallyStable_of_continuousLyapunovEquation
       hn A P hf heq hJac hP hLyap
 

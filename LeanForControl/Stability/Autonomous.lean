@@ -193,21 +193,6 @@ lemma sublevel_set_invariant
 
 /-! ## Lyapunov stability -/
 
-/-- Time invariance lifts the anchored-at-zero form of forward Lyapunov stability to the
-anchor-free predicate, so a first-exit argument may be run at the origin and transported. -/
-lemma forwardLyapunovStable_of_anchored_zero {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
-    (h : ∀ ε > 0, ∃ δ > 0, ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
-      IsTrajectoryOn φ f 0 t₁ → ‖φ 0 - x_eq‖ < δ →
-        ∀ t ∈ Set.Icc 0 t₁, ‖φ t - x_eq‖ < ε) :
-    LyapunovStable f x_eq := by
-  intro ε hε
-  obtain ⟨δ, hδ, hbase⟩ := h ε hε
-  refine ⟨δ, hδ, ?_⟩
-  intro t₀ t₁ φ hφ hφ0 t ht
-  have hψ0 : ‖(fun s => φ (s + t₀)) 0 - x_eq‖ < δ := by simpa using hφ0
-  have hmem : t - t₀ ∈ Set.Icc 0 (t₁ - t₀) := ⟨by linarith [ht.1], by linarith [ht.2]⟩
-  simpa using hbase (t₁ - t₀) (fun s => φ (s + t₀)) hφ.shift_to_zero hψ0 (t - t₀) hmem
-
 open Set in
 /-- **Lyapunov's stability theorem.** If `V` is a local Lyapunov function on `D`, then
     `x_eq` is stable with respect to every finite forward solution segment.
@@ -216,12 +201,11 @@ Proof sketch:
 1. `D` open + `x_eq ∈ D` → `closedBall x_eq ε₀ ⊆ D` for some `ε₀ > 0`.
 2. `m = min V` on `sphere x_eq ε' > 0` (compact sphere, `V > 0` away from `x_eq`).
 3. Find `δ` with `V(y) < m` for `‖y − x_eq‖ < δ` (continuity at `x_eq`, `V(x_eq) = 0`).
-4. If `‖φ 0 − x_eq‖ < δ` and `‖φ t* − x_eq‖ ≥ ε` for some `t*`, let `T* = sInf Q`
-   where `Q = {t ≥ 0 | ε' ≤ ‖φ t − x_eq‖}`.
-5. `V_nonincreasing_on` on `[0, T*]` gives `V(φ T*) ≤ V(φ 0) < m ≤ V(φ T*)`. Contradiction.
+4. If `‖φ t₀ − x_eq‖ < δ` and `‖φ t* − x_eq‖ ≥ ε` for some `t*`, let `T* = sInf Q`
+   where `Q = {t ∈ [t₀, t*] | ε' ≤ ‖φ t − x_eq‖}`.
+5. `V_nonincreasing_on` on `[t₀, T*]` gives `V(φ T*) ≤ V(φ t₀) < m ≤ V(φ T*)`. Contradiction.
 
-The first-exit argument runs on segments anchored at `0`; time invariance, via
-`forwardLyapunovStable_of_anchored_zero`, carries it to segments anchored anywhere. -/
+The first-exit argument runs at the segment's own left endpoint `t₀`. -/
 @[blueprint "thm:lyapunov-stable"
   (statement := /-- \textbf{Lyapunov's stability theorem.}
     If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
@@ -237,7 +221,6 @@ theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
     LyapunovStable f x_eq := by
-  apply forwardLyapunovStable_of_anchored_zero
   obtain ⟨r, hr_pos, hr_ball⟩ := Metric.isOpen_iff.mp hV.hD_open x_eq hV.hD_mem
   set ε₀ := r / 2
   have hε₀_pos : 0 < ε₀ := by dsimp [ε₀]; linarith
@@ -270,10 +253,10 @@ theorem lyapunov_stable
   obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := hV_cont_at m hm_pos
   set δ := min δ₀ ε'
   refine ⟨δ, lt_min hδ₀_pos hε'_pos, ?_⟩
-  intro t₁ φ hφ hφ0 t ht
-  have hφ0ε' : ‖φ 0 - x_eq‖ < ε' := hφ0.trans_le (min_le_right _ _)
-  have hV0_lt_m : V (φ 0) < m := by
-    have hnear : dist (V (φ 0)) (V x_eq) < m := hδ₀ (by
+  intro t₀ t₁ φ hφ hφ0 t ht
+  have hφ0ε' : ‖φ t₀ - x_eq‖ < ε' := hφ0.trans_le (min_le_right _ _)
+  have hV0_lt_m : V (φ t₀) < m := by
+    have hnear : dist (V (φ t₀)) (V x_eq) < m := hδ₀ (by
       rw [dist_eq_norm]
       exact hφ0.trans_le (min_le_left _ _))
     simp only [Real.dist_eq, hV.hzero, sub_zero] at hnear
@@ -281,21 +264,21 @@ theorem lyapunov_stable
   by_contra hnot
   push Not at hnot
   have hge_ε' : ε' ≤ ‖φ t - x_eq‖ := hε'_le_ε.trans hnot
-  set Q := {s : ℝ | s ∈ Icc (0 : ℝ) t ∧ ε' ≤ ‖φ s - x_eq‖}
+  set Q := {s : ℝ | s ∈ Icc t₀ t ∧ ε' ≤ ‖φ s - x_eq‖}
   have hQ_nonempty : Q.Nonempty := ⟨t, ⟨ht.1, le_rfl⟩, hge_ε'⟩
-  have hQ_bddBelow : BddBelow Q := ⟨0, fun s hs => hs.1.1⟩
-  have hφ_cont : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc (0 : ℝ) t) :=
+  have hQ_bddBelow : BddBelow Q := ⟨t₀, fun s hs => hs.1.1⟩
+  have hφ_cont : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc t₀ t) :=
     (continuous_norm.comp_continuousOn
       ((hφ.continuousOn.mono (Icc_subset_Icc le_rfl ht.2)).sub continuousOn_const))
   have hQ_closed : IsClosed Q := by
     exact isClosed_Icc.isClosed_le continuousOn_const hφ_cont
   set Tstar := sInf Q
   have hTstar_mem : Tstar ∈ Q := hQ_closed.csInf_mem hQ_nonempty hQ_bddBelow
-  have hTstar_pos : 0 < Tstar := by
+  have hTstar_pos : t₀ < Tstar := by
     rcases lt_or_eq_of_le hTstar_mem.1.1 with hpos | hzero
     · exact hpos
     · exact False.elim ((not_le_of_gt hφ0ε') (by simpa [hzero] using hTstar_mem.2))
-  have hlt_ε' : ∀ s : ℝ, 0 ≤ s → s < Tstar → ‖φ s - x_eq‖ < ε' := by
+  have hlt_ε' : ∀ s : ℝ, t₀ ≤ s → s < Tstar → ‖φ s - x_eq‖ < ε' := by
     intro s hs0 hsT
     by_contra hs
     push Not at hs
@@ -305,7 +288,7 @@ theorem lyapunov_stable
     apply le_antisymm _ hTstar_mem.2
     by_contra hlt
     push Not at hlt
-    have hcont_sub : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc (0 : ℝ) Tstar) :=
+    have hcont_sub : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc t₀ Tstar) :=
       hφ_cont.mono (Icc_subset_Icc le_rfl hTstar_mem.1.2)
     obtain ⟨s₀, hs₀_mem, hs₀_val⟩ :=
       intermediate_value_Icc (le_of_lt hTstar_pos) hcont_sub
@@ -314,7 +297,7 @@ theorem lyapunov_stable
       ⟨⟨hs₀_mem.1, hs₀_mem.2.trans hTstar_mem.1.2⟩, ge_of_eq hs₀_val⟩
     have hs₀_eq : s₀ = Tstar := le_antisymm hs₀_mem.2 hs₀_ge
     exact (not_lt_of_ge (le_of_eq (hs₀_eq ▸ hs₀_val))) hlt
-  have hstay : ∀ s ∈ Icc (0 : ℝ) Tstar, φ s ∈ D := by
+  have hstay : ∀ s ∈ Icc t₀ Tstar, φ s ∈ D := by
     intro s hs
     apply hcBall'_sub_D
     rw [Metric.mem_closedBall, dist_eq_norm]
@@ -322,7 +305,7 @@ theorem lyapunov_stable
     · subst s
       exact le_of_eq hTstar_eq
     · exact le_of_lt (hlt_ε' s hs.1 hlt)
-  have hVT_le : V (φ Tstar) ≤ V (φ 0) :=
+  have hVT_le : V (φ Tstar) ≤ V (φ t₀) :=
     V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right (hTstar_mem.1.2.trans ht.2)))
       (le_of_lt hTstar_pos) hstay
   have hVT_ge : m ≤ V (φ Tstar) :=

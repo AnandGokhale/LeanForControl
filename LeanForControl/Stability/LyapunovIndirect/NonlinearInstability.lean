@@ -64,7 +64,7 @@ on a sufficiently small ball.
 
 Reference: Hahn, *Stability of Motion* (quadratic Chetaev construction).
 -/
-theorem forwardUnstable_of_quadratic_certificate
+theorem unstable_of_quadratic_certificate
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A H : Matrix (Fin n) (Fin n) ℝ) (α : ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
@@ -93,7 +93,7 @@ theorem forwardUnstable_of_quadratic_certificate
   let ρ : ℝ := r / 2
   have hρ : 0 < ρ := by dsimp [ρ]; positivity
   let V : ℝⁿ → ℝ := MatrixAlgebra.centeredQuadraticForm H x_eq
-  apply forwardUnstable_of_exponential_chetaev hf
+  apply unstable_of_exponential_chetaev hf
     ((MatrixAlgebra.centeredQuadraticForm_contDiff H x_eq).of_le (by norm_num))
       hρ hα hp_nonneg
   · intro x hx
@@ -147,7 +147,7 @@ certificate, and the nonlinear first-order remainder is absorbed locally.
 
 Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).
 -/
-theorem forwardUnstable_of_complex_eigenvalue_re_pos
+theorem unstable_of_complex_eigenvalue_re_pos
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f)
@@ -162,7 +162,7 @@ theorem forwardUnstable_of_complex_eigenvalue_re_pos
   obtain ⟨α, H, w, hα, _hH, hw, hHw, hshift⟩ :=
     LinearSystems.exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos
       A hv heig hμ
-  exact NonlinearInstability.forwardUnstable_of_quadratic_certificate
+  exact NonlinearInstability.unstable_of_quadratic_certificate
     A H α hf heq hJac hα hshift w hw hHw
 
 /-- A `C¹` equilibrium is forward unstable if its Jacobian has some complex
@@ -173,7 +173,7 @@ matching the repository's matrix spectral API.
 
 Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).
 -/
-@[blueprint "thm:positive-real-eigenvalue-forward-unstable"
+@[blueprint "thm:positive-real-eigenvalue-unstable"
   (statement := /-- Let $f:\mathbb R^n\to\mathbb R^n$ be $C^1$ with
     $f(x_{\rm eq})=0$.  If the Jacobian at $x_{\rm eq}$ has a complex
     eigenvalue with positive real part, then $x_{\rm eq}$ is unstable when
@@ -182,7 +182,7 @@ Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).
     \cref{thm:positive-real-eigenvalue-quadratic-certificate}, absorb the
     first-order nonlinear remainder on a small ball, and apply the exponential
     Chetaev criterion. -/)]
-theorem forwardUnstable_of_exists_complex_eigenvalue_re_pos
+theorem unstable_of_exists_complex_eigenvalue_re_pos
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f)
@@ -193,4 +193,4 @@ theorem forwardUnstable_of_exists_complex_eigenvalue_re_pos
       v ≠ 0 ∧ A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v ∧ 0 < μ.re) :
     Unstable f x_eq := by
   obtain ⟨μ, v, hv, heig, hμ⟩ := hunstable
-  exact forwardUnstable_of_complex_eigenvalue_re_pos A hf heq hJac hv heig hμ
+  exact unstable_of_complex_eigenvalue_re_pos A hf heq hJac hv heig hμ
