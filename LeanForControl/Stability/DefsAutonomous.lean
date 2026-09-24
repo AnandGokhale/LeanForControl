@@ -22,7 +22,7 @@ Core definitions for the stability theory of autonomous ODEs `ẋ = f(x)` on `�
 
 ## Contents
 
-* **Trajectories and equilibria** (`IsTrajectory`, `IsEquilibrium`).
+* **Solution segments and equilibria** (`IsTrajectoryOn`, `IsEquilibrium`).
 * **Stability predicates** (`LyapunovStable`, `LocalAsymptoticStable`,
   `GlobalAsymptoticStable`).
 * **Sublevel sets** (`SublevelSet`).
@@ -41,17 +41,6 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-! ## System primitives -/
 
-/-- A global solution `φ : ℝ → ℝⁿ` of the autonomous ODE `ẋ = f(x)`,
-    defined for all `t ∈ ℝ`. -/
-@[blueprint "def:isTrajectory"
-  (statement := /-- A \emph{trajectory} of the autonomous ODE $\dot{x} = f(x)$
-    is a globally defined map $\varphi : \mathbb{R} \to \mathbb{R}^{n}$ satisfying
-    \[
-      \dot{\varphi}(t) = f(\varphi(t)) \qquad \text{for every } t \in \mathbb{R}.
-    \] -/)]
-def IsTrajectory (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) : Prop :=
-  ∀ t : ℝ, HasDerivAt φ (f (φ t)) t
-
 /-- `φ` solves `ẋ = f(x)` on the segment `[t₀, t₁]`.
 
 Reducible, so it is the Mathlib notion rather than a wrapper around it: `hφ.continuousOn`,
@@ -59,8 +48,8 @@ Reducible, so it is the Mathlib notion rather than a wrapper around it: `hφ.con
 accepted wherever this is expected. -/
 @[blueprint "def:isTrajectoryOn"
   (statement := /-- A \emph{solution segment} of $\dot{x} = f(x)$ on $[t_0, t_1]$ is an
-    integral curve of the vector field restricted to that interval. Unlike a trajectory
-    (\cref{def:isTrajectory}) it need not exist for all time, so quantifying over segments
+    integral curve of the vector field restricted to that interval. Unlike a globally
+    defined trajectory it need not exist for all time, so quantifying over segments
     does not silently discard solutions with a finite escape time. -/)]
 abbrev IsTrajectoryOn (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) (t₀ t₁ : ℝ) : Prop :=
   IsIntegralCurveOn φ (fun _ x => f x) (Icc t₀ t₁)

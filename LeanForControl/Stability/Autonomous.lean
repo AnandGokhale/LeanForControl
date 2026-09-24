@@ -37,21 +37,6 @@ The proofs follow the classical Lyapunov stability arguments (Khalil, *Nonlinear
 
 /-! ## Infrastructure -/
 
-/-- Chain rule for `V ∘ φ`: if `φ` is a trajectory of `f` and `V` is differentiable, then
-    `(V ∘ φ)'(t) = DV(φ(t))[f(φ(t))]`. -/
-lemma hasDerivAt_V_comp_traj
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
-    (hV_diff : Differentiable ℝ V)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) (t : ℝ) :
-    HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t :=
-  (hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t (htraj t)
-
-/-- A trajectory `φ` of `ẋ = f(x)` is continuous (differentiability implies continuity). -/
-lemma trajectory_continuous
-    {f : ℝⁿ → ℝⁿ} {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) :
-    Continuous φ :=
-  continuous_iff_continuousAt.mpr fun t => (htraj t).differentiableAt.continuousAt
-
 /-- The sphere `Metric.sphere x_eq ε` is nonempty when `0 < n` and `0 < ε`. -/
 lemma sphere_nonempty
     (x_eq : ℝⁿ) (hn : 0 < n) {ε : ℝ} (hε : 0 < ε) :
@@ -66,33 +51,6 @@ lemma lie_deriv_continuous
     (hV_c1 : ContDiff ℝ 1 V) (hf_cont : Continuous f) :
     Continuous (fun x : ℝⁿ => fderiv ℝ V x (f x)) :=
   (hV_c1.continuous_fderiv (by norm_num)).clm_apply hf_cont
-
-/-- If `φ` stays in a compact set `K ⊆ D` on which the Lie derivative satisfies
-    `DV(x)[f(x)] ≤ −γ < 0`, then `V(φ t) + γ · t ≤ V(φ 0)` for all `t ≥ 0`.
-    Used to derive the linear-decay contradiction in the GAS proofs. -/
-lemma V_plus_linear_bound
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
-    (hV_diff : Differentiable ℝ V) (hV_cont : Continuous V)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
-    {K : Set ℝⁿ} (hphi_in_K : ∀ t ≥ 0, φ t ∈ K)
-    {γ : ℝ} (_hγ_pos : 0 < γ)
-    (hLie_le : ∀ x ∈ K, fderiv ℝ V x (f x) ≤ -γ) :
-    ∀ t ≥ 0, V (φ t) + γ * t ≤ V (φ 0) := by
-  have hanti_sum : AntitoneOn (fun t => V (φ t) + γ * t) (Set.Ici 0) := by
-    apply antitoneOn_of_deriv_nonpos (convex_Ici (0 : ℝ))
-    · exact (hV_cont.comp_continuousOn (trajectory_continuous htraj).continuousOn).add
-        (continuous_const.mul continuous_id).continuousOn
-    · exact fun t _ => ((hasDerivAt_V_comp_traj hV_diff htraj t).add
-        ((hasDerivAt_id t).const_mul γ)).differentiableAt.differentiableWithinAt
-    · intro t ht
-      rw [interior_Ici] at ht
-      have hd : HasDerivAt (fun s => V (φ s) + γ * s)
-          (fderiv ℝ V (φ t) (f (φ t)) + γ * 1) t :=
-        (hasDerivAt_V_comp_traj hV_diff htraj t).add ((hasDerivAt_id t).const_mul γ)
-      rw [hd.deriv]
-      linarith [hLie_le (φ t) (hphi_in_K t (le_of_lt ht))]
-  intro t ht
-  simpa using hanti_sum (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht) ht
 
 /-! ## Monotonicity of V along trajectories -/
 
@@ -123,25 +81,6 @@ lemma V_nonincreasing_on
       rw [((hV.hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t (hderiv t ht)).deriv]
       exact hV.hLie_nonpos (φ t) (hstay t (Set.Ioo_subset_Icc_self ht))
   exact hanti (Set.left_mem_Icc.mpr hle) (Set.right_mem_Icc.mpr hle) hle
-
-/-- Convenience wrapper for `V_nonincreasing_on` when `D = Set.univ` (used by GAS proofs). -/
-lemma V_nonincreasing
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    (hV : IsLocalLyapunovFunction f V x_eq Set.univ)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) :
-    Antitone (V ∘ φ) :=
-  fun _ _ hab =>
-    V_nonincreasing_on hV (fun t _ => (htraj t).hasDerivWithinAt) hab
-      (fun _ _ => Set.mem_univ _)
-
-/-- `V(φ t) ≤ V(φ 0)` for all `t ≥ 0` when the Lyapunov conditions hold globally
-    (`D = Set.univ`). -/
-lemma V_le_initial
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    (hV : IsLocalLyapunovFunction f V x_eq Set.univ)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
-    {t : ℝ} (ht : 0 ≤ t) : V (φ t) ≤ V (φ 0) :=
-  V_nonincreasing hV htraj ht
 
 /-! ## Lyapunov function hierarchy -/
 
@@ -437,179 +376,7 @@ theorem unstable_of_fixed_escape
   obtain ⟨T, φ, t, hφ, hφ0, ht, hfar⟩ := hescape δ hδ
   exact (not_lt_of_ge hfar) (hstay 0 T φ hφ hφ0 t ht)
 
-/-! ## Shared limit lemmas -/
-
-/-- If `φ t` stays in a compact set `K ⊆ D` where the Lie derivative is strictly negative and
-    `L ≤ V(φ t)` for all `t ≥ 0`, then `L = 0`.
-
-    Proof: if `L > 0`, pick `K = {L/2 ≤ V} ∩ SublevelSet V c₀` (compact). The Lie derivative
-    attains its maximum `−γ < 0` on `K` (EVT), giving `V(φ t) + γ · t ≤ V(φ 0)`.
-    For large `t`, this forces `V(φ t) < L/2`, contradicting `L ≤ V(φ t)`. -/
-lemma V_limit_zero_of_compact
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ}
-    (hcont : Continuous V) (hV_c1 : ContDiff ℝ 1 V)
-    (hzero : V x_eq = 0)
-    (hLie_neg : ∀ x ∈ D, x ≠ x_eq → fderiv ℝ V x (f x) < 0)
-    (hf_cont : Continuous f)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
-    {c₀ : ℝ} (hSub_sub_D : SublevelSet V c₀ ⊆ D) (hSub_compact : IsCompact (SublevelSet V c₀))
-    (hphi0_le : V (φ 0) ≤ c₀)
-    (hanti : AntitoneOn (V ∘ φ) (Set.Ici 0))
-    {L : ℝ} (hL_nonneg : 0 ≤ L) (hVt_ge_L : ∀ t ≥ 0, L ≤ V (φ t)) :
-    L = 0 := by
-  by_contra hL_ne
-  have hL_pos : 0 < L := lt_of_le_of_ne hL_nonneg (Ne.symm hL_ne)
-  set K := {x : ℝⁿ | L / 2 ≤ V x} ∩ SublevelSet V c₀
-  have hK_compact : IsCompact K :=
-    hSub_compact.of_isClosed_subset
-      ((isClosed_Ici.preimage hcont).inter (isClosed_Iic.preimage hcont))
-      (fun x ⟨_, hVx⟩ => hVx)
-  have hK_sub_D : K ⊆ D := fun x hxK => hSub_sub_D hxK.2
-  have hphi_mem_K : ∀ t ≥ 0, φ t ∈ K := fun t ht =>
-    ⟨le_trans (by linarith) (hVt_ge_L t ht),
-     (hanti (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht) ht).trans hphi0_le⟩
-  have hK_nonempty : K.Nonempty := ⟨φ 0, hphi_mem_K 0 le_rfl⟩
-  have hLie_neg_K : ∀ x ∈ K, fderiv ℝ V x (f x) < 0 := fun x hxK =>
-    hLie_neg x (hK_sub_D hxK) (fun heq => by
-      have hVx0 : V x = 0 := heq ▸ hzero
-      have hLhalf : L / 2 ≤ V x := hxK.1
-      linarith)
-  obtain ⟨x_max, hx_max_mem, hx_max_le⟩ :=
-    hK_compact.exists_isMaxOn hK_nonempty (lie_deriv_continuous hV_c1 hf_cont).continuousOn
-  set γ := -(fderiv ℝ V x_max (f x_max))
-  have hγ_pos : 0 < γ := neg_pos.mpr (hLie_neg_K x_max hx_max_mem)
-  have hLie_le : ∀ x ∈ K, fderiv ℝ V x (f x) ≤ -γ := fun x hx => by
-    have h := isMaxOn_iff.mp hx_max_le x hx; linarith
-  have hbound := V_plus_linear_bound (hV_c1.differentiable (by norm_num)) hcont
-    htraj hphi_mem_K hγ_pos hLie_le
-  set t₁ := (V (φ 0) - L / 2) / γ + 1
-  have ht₁_nonneg : 0 ≤ t₁ := by
-    have hnum : 0 ≤ V (φ 0) - L / 2 := by linarith [hVt_ge_L 0 le_rfl]
-    have hdiv : 0 ≤ (V (φ 0) - L / 2) / γ := div_nonneg hnum (le_of_lt hγ_pos)
-    linarith
-  have hγt₁ : γ * t₁ = V (φ 0) - L / 2 + γ := by
-    simp only [t₁]
-    field_simp
-  linarith [hVt_ge_L t₁ ht₁_nonneg, hbound t₁ ht₁_nonneg]
-
-/-- If `V(φ t) → 0` and `φ t` stays in a compact sublevel set `{V ≤ c₀} ⊆ D`, then
-    `φ t → x_eq`.
-
-    Proof: for any `ε > 0`, the set `K_ε = {V ≤ c₀} ∩ {‖· − x_eq‖ ≥ ε}` is compact.
-    If `K_ε` is empty, the conclusion is immediate. Otherwise, `V` attains its minimum
-    on `K_ε` at some `x_min` with `V(x_min) > 0`; for large `t`, `V(φ t) < V(x_min)`,
-    so `φ t ∉ K_ε`, i.e., `‖φ t − x_eq‖ < ε`. -/
-lemma tendsto_of_V_tendsto_zero_compact
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ}
-    (hcont : Continuous V)
-    (hpos : ∀ x ∈ D, x ≠ x_eq → 0 < V x)
-    {φ : ℝ → ℝⁿ} (_htraj : IsTrajectory φ f)
-    {c₀ : ℝ} (hSub_compact : IsCompact (SublevelSet V c₀))
-    (hSub_sub_D : SublevelSet V c₀ ⊆ D)
-    (hanti : AntitoneOn (V ∘ φ) (Set.Ici 0))
-    (hphi0_le : V (φ 0) ≤ c₀)
-    (hV_tendsto : Filter.Tendsto (V ∘ φ) Filter.atTop (nhds 0)) :
-    Filter.Tendsto φ Filter.atTop (nhds x_eq) := by
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  set K_ε := SublevelSet V c₀ ∩ {x : ℝⁿ | ε ≤ ‖x - x_eq‖}
-  have hKε_compact : IsCompact K_ε :=
-    hSub_compact.of_isClosed_subset
-      ((isClosed_Iic.preimage hcont).inter
-        (isClosed_le continuous_const (continuous_norm.comp (continuous_id.sub continuous_const))))
-      (fun x ⟨hVx, _⟩ => hVx)
-  by_cases hKε_empty : K_ε = ∅
-  · exact ⟨0, fun t ht => by
-      rw [dist_eq_norm]
-      have hVt_le : V (φ t) ≤ c₀ :=
-        (hanti (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr ht) ht).trans hphi0_le
-      by_contra hcontra
-      push Not at hcontra
-      have hmem : φ t ∈ K_ε := ⟨hVt_le, hcontra⟩
-      simp only [hKε_empty, Set.mem_empty_iff_false] at hmem⟩
-  · have hKε_nonempty : K_ε.Nonempty := Set.nonempty_iff_ne_empty.mpr hKε_empty
-    obtain ⟨x_min, hx_min_mem, hx_min_le⟩ :=
-      hKε_compact.exists_isMinOn hKε_nonempty hcont.continuousOn
-    have hx_min_ne : x_min ≠ x_eq := fun heq => by
-      have : ε ≤ ‖x_eq - x_eq‖ := heq ▸ hx_min_mem.2
-      simp at this; linarith
-    have hγε_pos : 0 < V x_min := hpos x_min (hSub_sub_D hx_min_mem.1) hx_min_ne
-    rw [Metric.tendsto_atTop] at hV_tendsto
-    obtain ⟨T₀, hT₀⟩ := hV_tendsto (V x_min) hγε_pos
-    exact ⟨max T₀ 0, fun t ht => by
-      rw [dist_eq_norm]
-      have hVt_lt_min : V (φ t) < V x_min := by
-        have h := hT₀ t (le_trans (le_max_left _ _) ht)
-        simp only [Function.comp, Real.dist_eq, sub_zero] at h
-        exact (abs_lt.mp h).2
-      have hVt_le : V (φ t) ≤ c₀ :=
-        (hanti (Set.mem_Ici.mpr le_rfl)
-          (Set.mem_Ici.mpr (le_trans (le_max_right _ _) ht))
-          (le_trans (le_max_right _ _) ht)).trans hphi0_le
-      by_contra hcontra
-      push Not at hcontra
-      exact absurd hVt_lt_min (not_lt.mpr (hx_min_le ⟨hVt_le, hcontra⟩))⟩
-
 /-! ## Global asymptotic stability -/
-
-/-- `V(φ t) ≥ 0` for all `t`, when `V` is a strict Lyapunov function. -/
-lemma V_nonneg
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    (hV : IsStrictLyapunovFunction f V x_eq) (x : ℝⁿ) :
-    0 ≤ V x := by
-  by_cases hx : x = x_eq
-  · simp [hx, hV.hzero]
-  · exact le_of_lt (hV.hpos x hx)
-
-/-- `V(φ t)` converges to some `L ≥ 0` as `t → ∞` when `V` is a strict Lyapunov function.
-    Follows from monotone convergence: `V ∘ φ` is antitone and bounded below by 0. -/
-lemma V_tendsto_limit
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    (hV : IsStrictLyapunovFunction f V x_eq)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f) :
-    ∃ L ≥ 0, Filter.Tendsto (V ∘ φ) Filter.atTop (nhds L) := by
-  have hanti : Antitone (V ∘ φ) := V_nonincreasing (strict_implies_semidefinite hV) htraj
-  have hbdd : BddBelow (Set.range (V ∘ φ)) :=
-    ⟨0, fun _ ⟨t, ht⟩ => ht ▸ V_nonneg hV _⟩
-  exact ⟨⨅ t, (V ∘ φ) t,
-    le_ciInf (fun t => V_nonneg hV (φ t)),
-    tendsto_atTop_ciInf hanti hbdd⟩
-
-/-- The limit `L` in `V_tendsto_limit` is actually `0`. -/
-lemma V_limit_zero
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    (hV : IsStrictLyapunovFunction f V x_eq)
-    (hf_cont : Continuous f)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
-    {L : ℝ} (hL_nonneg : 0 ≤ L)
-    (hL_tendsto : Filter.Tendsto (V ∘ φ) Filter.atTop (nhds L)) :
-    L = 0 := by
-  have hanti := V_nonincreasing (strict_implies_semidefinite hV) htraj
-  exact V_limit_zero_of_compact hV.hcont hV.hV_c1 hV.hzero
-    (fun x _ hx => hV.hLie_neg x hx)
-    hf_cont htraj
-    (fun _ _ => Set.mem_univ _)
-    (hV.hbounded_sublevel (V (φ 0)))
-    le_rfl
-    (hanti.antitoneOn (Set.Ici 0))
-    hL_nonneg
-    (fun t _ => hanti.le_of_tendsto hL_tendsto t)
-
-/-- If `V(φ t) → 0` under a strict Lyapunov function, then `φ t → x_eq`. -/
-lemma tendsto_of_V_tendsto_zero
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    (hV : IsStrictLyapunovFunction f V x_eq)
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectory φ f)
-    (hV_tendsto : Filter.Tendsto (V ∘ φ) Filter.atTop (nhds 0)) :
-    Filter.Tendsto φ Filter.atTop (nhds x_eq) :=
-  tendsto_of_V_tendsto_zero_compact hV.hcont
-    (fun x _ hx => hV.hpos x hx)
-    htraj
-    (hV.hbounded_sublevel (V (φ 0)))
-    (fun _ _ => Set.mem_univ _)
-    ((V_nonincreasing (strict_implies_semidefinite hV) htraj).antitoneOn (Set.Ici 0))
-    le_rfl
-    hV_tendsto
 
 open Set in
 /-- **Uniform entry time.** A segment that starts in the sublevel set `{V ≤ M}`, stays in the
