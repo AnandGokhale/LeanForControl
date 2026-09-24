@@ -48,7 +48,6 @@ import LeanForControl.Stability.LaSalle
 import LeanForControl.Stability.LyapunovBounds
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
-import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.LyapunovIndirect.Linearization
 import LeanForControl.Stability.LyapunovIndirect.LinearizationInstability
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
