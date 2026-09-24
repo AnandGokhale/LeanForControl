@@ -288,7 +288,7 @@ The first-exit argument runs on segments anchored at `0`; time invariance, via
     If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
     $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
     is stable on every finite forward solution segment
-    (\cref{def:forwardLyapunovStable}). -/)
+    (\cref{def:lyapunovStable}). -/)
   (proof := /-- Pick $\varepsilon_{0}$ so $\overline{B}(x_{\mathrm{eq}},\varepsilon_{0})
     \subseteq D$. Let $m = \min_{S_{\varepsilon'}} V > 0$. Choose $\delta$ with
     $V < m$ on $B(x_{\mathrm{eq}},\delta)$. If $\|\varphi(t^{*})-x_{\mathrm{eq}}\|
@@ -715,7 +715,7 @@ fact uniform over solutions; only the per-solution consequence is recorded here.
   (statement := /-- \textbf{Lyapunov's global asymptotic stability theorem.}
     If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
     and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
-    (\cref{def:forwardGlobalAsymptoticStable}). -/)
+    (\cref{def:globalAsymptoticStable}). -/)
   (proof := /-- Stability from \cref{thm:lyapunov-stable} fixes $\delta$ for the given
     $\varepsilon$. On the compact set $\{V \le M\} \cap \{\delta \le \|x-x_{\rm eq}\|\}$ the Lie
     derivative is at most $-\gamma < 0$, so $V$ is drained at a definite rate and the
@@ -787,7 +787,7 @@ Proof sketch:
     If $V$ is a strict local Lyapunov function
     (\cref{def:isStrictLocalLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is locally asymptotically stable
-    (\cref{def:forwardLocalAsymptoticStable}). -/)
+    (\cref{def:localAsymptoticStable}). -/)
   (proof := /-- The compact sublevel set $\Omega_{c_{0}} \subseteq D$ is positively
     invariant, so the Lie derivative is at most $-\gamma < 0$ off any ball around
     $x_{\mathrm{eq}}$, draining $V$ at a definite rate; the $\delta$-ball supplied by
