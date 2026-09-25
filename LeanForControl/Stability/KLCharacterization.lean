@@ -50,21 +50,24 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hUS : UniformlyStableNA f x_eq) :
     ∃ (a b : ℝ) (_ : 0 < a) (_ : 0 < b) (α : ClassK a b),
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < a →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun (‖φ t₀ - x_eq‖) := by
+      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+        IsTrajectoryOnNA φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < a →
+        ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun (‖φ t₀ - x_eq‖) := by
   obtain ⟨δ₀, hδ₀, hUS_1⟩ := hUS 1 one_pos
   let a := δ₀ / 2
   have ha       : 0 < a   := half_pos hδ₀
   have ha_lt_δ₀ : a < δ₀  := half_lt_self hδ₀
+  -- A reachable value is the norm attained at the *right endpoint* of a segment `[t₀, t]`,
+  -- so the segment and the evaluation time are the same datum.
   let reachable (r : ℝ) : Set ℝ :=
-    {d | ∃ (φ : ℝ → ℝⁿ) (t₀ t : ℝ), 0 ≤ t₀ ∧ t₀ ≤ t ∧ IsTrajectoryNA φ f ∧
+    {d | ∃ (φ : ℝ → ℝⁿ) (t₀ t : ℝ), 0 ≤ t₀ ∧ t₀ ≤ t ∧ IsTrajectoryOnNA φ f t₀ t ∧
          ‖φ t₀ - x_eq‖ ≤ r ∧ d = ‖φ t - x_eq‖}
   let ω (r : ℝ) : ℝ := sSup (reachable r)
   -- Common bound: any reachable d ≤ 1 when the initial radius is ≤ a
   have hbdd_of_le : ∀ r ≤ a, BddAbove (reachable r) := fun r hr =>
     ⟨1, fun d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, heq⟩ =>
-      heq ▸ le_of_lt (hUS_1 t₀ ht₀ φ hφ (h_init.trans_lt (hr.trans_lt ha_lt_δ₀)) t ht)⟩
+      heq ▸ le_of_lt
+        (hUS_1 t₀ ht₀ t φ hφ (h_init.trans_lt (hr.trans_lt ha_lt_δ₀)) t ⟨ht, le_rfl⟩)⟩
   -- ω(0) = 0: stability at ε forces any ‖φ t₀ - x_eq‖ = 0 trajectory to stay at 0
   have hω_zero : ω 0 = 0 := by
     apply le_antisymm
@@ -73,7 +76,7 @@ lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
       have h0 : ‖φ t₀ - x_eq‖ = 0 := le_antisymm h_init (norm_nonneg _)
       refine le_of_forall_pos_lt_add (fun ε hε => ?_)
       obtain ⟨δ, hδ, hUS_ε⟩ := hUS ε hε
-      linarith [hUS_ε t₀ ht₀ φ hφ (h0 ▸ hδ) t ht]
+      linarith [hUS_ε t₀ ht₀ t φ hφ (h0 ▸ hδ) t ⟨ht, le_rfl⟩]
     · rcases (reachable 0).eq_empty_or_nonempty with h | ⟨d, hd⟩
       · change 0 ≤ sSup (reachable 0); rw [h]; simp
       · obtain ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := hd
@@ -101,10 +104,11 @@ lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
     exact ⟨b, hb, ClassK.of_strictMono ha hb g hg_zero hg_a hg_cont hg_mono,
       fun r hr => hg_bound r hr.1 hr.2.le⟩
   -- Chain: ‖φ t - x_eq‖ ≤ ω(‖φ t₀ - x_eq‖) ≤ α(‖φ t₀ - x_eq‖)
-  refine ⟨a, b, ha, hb, α, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
+  refine ⟨a, b, ha, hb, α, fun t₀ ht₀ t₁ φ hφ h_init t ht => ?_⟩
   have hr : ‖φ t₀ - x_eq‖ ∈ Set.Ico 0 a := ⟨norm_nonneg _, h_init⟩
   exact (le_csSup (s := reachable (‖φ t₀ - x_eq‖)) (hbdd_of_le _ hr.2.le)
-      ⟨φ, t₀, t, ht₀, ht, hφ, le_rfl, rfl⟩).trans (hα_bound _ hr)
+      ⟨φ, t₀, t, ht₀, ht.1, hφ.mono (Icc_subset_Icc_right ht.2), le_rfl, rfl⟩).trans
+    (hα_bound _ hr)
 
 
 lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
@@ -170,14 +174,18 @@ lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ
     $t_{0}$, such that
     \[
       \|\varphi(t) - x_{\mathrm{eq}}\| \le \alpha(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|)
-      \quad \forall\, t \ge t_{0} \ge 0,\; \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c.
-    \] -/)]
+      \quad \forall\, t \in [t_{0},t_{1}],\; t_{0} \ge 0,\;
+      \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c.
+    \]
+    Both sides quantify over solution segments; moving only one side would break the
+    equivalence, since a bound holding on globally defined trajectories says nothing
+    about a solution that escapes in finite time. -/)]
 theorem uniformlyStableNA_iff_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
     UniformlyStableNA f x_eq ↔
     ∃ (a b : ℝ) (_ : 0 < a) (_ : 0 < b) (α : ClassK a b),
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < a →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α (‖φ t₀ - x_eq‖) := by
+      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+        IsTrajectoryOnNA φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < a →
+        ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α (‖φ t₀ - x_eq‖) := by
   refine ⟨uniformlyStable_implies_classK f x_eq, ?_⟩
   · rintro ⟨a, b, ha, hb, α, hα⟩ ε hε
     have h_cont := α.continuous 0 ⟨le_refl 0, α.ha⟩
@@ -187,11 +195,11 @@ theorem uniformlyStableNA_iff_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
     have hδ_pos : 0 < δ  := lt_min (half_pos hδ_c_pos) (half_pos ha)
     have hδ_a   : δ < a  := (min_le_right ..).trans_lt (half_lt_self ha)
     have hδ_lt  : δ < δ_c := (min_le_left ..).trans_lt (half_lt_self hδ_c_pos)
-    refine ⟨δ, hδ_pos, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
+    refine ⟨δ, hδ_pos, fun t₀ ht₀ t₁ φ hφ h_init t ht => ?_⟩
     have h_alpha := hδ_c ⟨hδ_pos.le, hδ_a⟩
       (by rw [Real.dist_eq, sub_zero, abs_of_pos hδ_pos]; exact hδ_lt)
     rw [α.map_zero, Real.dist_eq, sub_zero] at h_alpha
-    linarith [hα t₀ ht₀ φ hφ (h_init.trans hδ_a) t ht,
+    linarith [hα t₀ ht₀ t₁ φ hφ (h_init.trans hδ_a) t ht,
               (α.strict_mono_iff ⟨norm_nonneg _, h_init.trans hδ_a⟩ ⟨hδ_pos.le, hδ_a⟩).mpr h_init,
               (abs_lt.mp h_alpha).2]
 

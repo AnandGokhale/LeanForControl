@@ -87,8 +87,8 @@ private lemma Tbar_zero_of_classK_bound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOnNA φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < a_α → ∀ t ∈ Set.Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
     {a : ℝ} (ha_lt_aα : a < a_α) (ha_le_c : a ≤ c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a) {η : ℝ} (h_le : α.toFun r ≤ η) :
     Tbar_fn f x_eq η r = 0 := by
@@ -251,8 +251,8 @@ lemma W_fn_tendsto_atTop (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : �
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOnNA φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < a_α → ∀ t ∈ Set.Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
     {a : ℝ} (_ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a) :
     Filter.Tendsto (W_fn f x_eq r) Filter.atTop (nhds 0) := by
@@ -286,8 +286,8 @@ noncomputable def W_fn_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : �
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOnNA φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < a_α → ∀ t ∈ Set.Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a) : ClassLSingular where
   toFun        := W_fn f x_eq r
@@ -303,8 +303,8 @@ noncomputable def W_fn_inv_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq 
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOnNA φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < a_α → ∀ t ∈ Set.Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     (ha_a : a ∈ Set.Ioc 0 a) : ClassLSingular where
   toFun        := Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0)
@@ -394,8 +394,8 @@ lemma invFunOn_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOnNA φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < a_α → ∀ t ∈ Set.Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r₁ r₂ : ℝ} (hr₁ : r₁ ∈ Set.Ioc 0 a) (hr₂ : r₂ ∈ Set.Ioc 0 a) (h_le : r₁ ≤ r₂)
     {s : ℝ} (hs : 0 < s) :
@@ -434,8 +434,8 @@ lemma U_decay_bound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
     (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOnNA φ f t₀ t₁ →
+      ‖φ t₀ - x_eq‖ < a_α → ∀ t ∈ Set.Icc t₀ t₁, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a)
     {t₀ : ℝ} (ht₀ : 0 ≤ t₀) {φ : ℝ → ℝⁿ} (hφ : IsTrajectoryNA φ f)

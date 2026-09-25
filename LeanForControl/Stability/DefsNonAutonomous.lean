@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.Calculus.ContDiff.Defs
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Topology.MetricSpace.Bounded
@@ -22,7 +23,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
 ## Contents
 
-* **Trajectories and equilibria** (`IsTrajectoryNA`, `IsEquilibriumNA`).
+* **Trajectories and equilibria** (`IsTrajectoryNA`, `IsTrajectoryOnNA`, `IsEquilibriumNA`).
 * **Stability predicates** (`StableNA`, `UniformlyStableNA`, `UnstableNA`,
   `AsymptoticStableNA`, `UniformlyAsymptoticStableNA`,
   `GloballyUniformlyAsymptoticStableNA`).
@@ -45,6 +46,23 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 def IsTrajectoryNA (φ : ℝ → ℝⁿ) (f : ℝ → ℝⁿ → ℝⁿ) : Prop :=
   ∀ t : ℝ, HasDerivAt φ (f t (φ t)) t
 
+/-- `φ` solves `ẋ = f(t, x)` on the segment `[t₀, t₁]`.
+
+Reducible, so it is the Mathlib notion rather than a wrapper around it: `hφ.continuousOn`,
+`hφ.mono`, and direct application `hφ t ht` all work, and a bare `IsIntegralCurveOn` is
+accepted wherever this is expected.
+
+Unlike the autonomous `IsTrajectoryOn`, no `fun _ x =>` wrapper is needed: Mathlib's
+`IsIntegralCurveOn` already takes a time-dependent vector field, which is exactly the
+shape of a non-autonomous `f`. -/
+@[blueprint "def:isTrajectoryOnNA"
+  (statement := /-- A \emph{solution segment} of $\dot{x} = f(t, x)$ on $[t_0, t_1]$ is an
+    integral curve of the vector field restricted to that interval. Unlike a globally
+    defined trajectory it need not exist for all time, so quantifying over segments
+    does not silently discard solutions with a finite escape time. -/)]
+abbrev IsTrajectoryOnNA (φ : ℝ → ℝⁿ) (f : ℝ → ℝⁿ → ℝⁿ) (t₀ t₁ : ℝ) : Prop :=
+  IsIntegralCurveOn φ f (Icc t₀ t₁)
+
 /-- The point `x_eq` is an equilibrium of `ẋ = f(t, x)` when `f(t, x_eq) = 0` for all `t`. -/
 @[blueprint "def:isEquilibriumNA"
   (statement := /-- A point $x_{\mathrm{eq}} \in \mathbb{R}^{n}$ is an
@@ -56,23 +74,30 @@ def IsEquilibriumNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 /-! ## Stability predicates -/
 
 /-- The equilibrium `x_eq` of `ẋ = f(t, x)` is **stable**: for each `ε > 0` and each
-    initial time `t₀ ≥ 0`, there is `δ = δ(ε, t₀) > 0` such that every trajectory
-    starting within `δ` of `x_eq` at time `t₀` remains within `ε` of `x_eq` for all
-    `t ≥ t₀`. -/
+    initial time `t₀ ≥ 0`, there is `δ = δ(ε, t₀) > 0` such that every solution segment
+    starting within `δ` of `x_eq` at time `t₀` remains within `ε` of `x_eq` for its
+    entire interval of definition.
+
+    Quantifying over segments rather than globally defined trajectories is what keeps the
+    predicate non-vacuous: a system whose solutions escape in finite time has no global
+    trajectory at all, so the global form would be satisfied by an unstable equilibrium. -/
 @[blueprint "def:stableNA"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
     \emph{stable} when
     \[
       \forall \varepsilon > 0,\;\forall t_{0} \ge 0,\;
       \exists\,\delta = \delta(\varepsilon,t_{0}) > 0,\;
-      \forall \varphi,\;\mathrm{IsTrajectoryNA}(\varphi,f)
+      \forall t_{1},\;\forall \varphi,\;
+      \mathrm{IsTrajectoryOnNA}(\varphi,f,t_{0},t_{1})
       \;\Rightarrow\; \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < \delta
-      \;\Rightarrow\; \forall t \ge t_{0},\;\|\varphi(t) - x_{\mathrm{eq}}\| < \varepsilon.
+      \;\Rightarrow\; \forall t \in [t_{0},t_{1}],\;
+      \|\varphi(t) - x_{\mathrm{eq}}\| < \varepsilon.
     \] -/)]
 def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ →
-    ∃ δ > 0, ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < δ → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ < ε
+    ∃ δ > 0, ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+      IsTrajectoryOnNA φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < δ →
+        ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ < ε
 
 /-- The equilibrium `x_eq` is **uniformly stable**: `δ` can be chosen independently of `t₀`. -/
 @[blueprint "def:uniformlyStableNA"
@@ -80,13 +105,16 @@ def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
     $\delta$ in \cref{def:stableNA} can be chosen independently of $t_{0}$:
     \[
       \forall \varepsilon > 0,\;\exists\,\delta = \delta(\varepsilon) > 0,\;
-      \forall t_{0} \ge 0,\;\forall \varphi,\;\mathrm{IsTrajectoryNA}(\varphi,f)
+      \forall t_{0} \ge 0,\;\forall t_{1},\;\forall \varphi,\;
+      \mathrm{IsTrajectoryOnNA}(\varphi,f,t_{0},t_{1})
       \;\Rightarrow\; \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < \delta
-      \;\Rightarrow\; \forall t \ge t_{0},\;\|\varphi(t) - x_{\mathrm{eq}}\| < \varepsilon.
+      \;\Rightarrow\; \forall t \in [t_{0},t_{1}],\;
+      \|\varphi(t) - x_{\mathrm{eq}}\| < \varepsilon.
     \] -/)]
 def UniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  ∀ ε > 0, ∃ δ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-    IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < δ → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ < ε
+  ∀ ε > 0, ∃ δ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+    IsTrajectoryOnNA φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < δ →
+      ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ < ε
 
 /-- The equilibrium `x_eq` is **unstable** if it is not stable. -/
 @[blueprint "def:unstableNA"
@@ -100,13 +128,17 @@ def UnstableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop := ¬ Stab
 @[blueprint "def:asymptoticStableNA"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{asymptotically stable}
     when it is stable (\cref{def:stableNA}) and for each $t_{0} \ge 0$ there exists
-    $c = c(t_{0}) > 0$ such that every trajectory $\varphi$ with
+    $c = c(t_{0}) > 0$ such that every solution defined for all forward time with
     $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$ satisfies
-    $\varphi(t) \to x_{\mathrm{eq}}$ as $t \to \infty$. -/)]
+    $\varphi(t) \to x_{\mathrm{eq}}$ as $t \to \infty$.
+
+    Attractivity quantifies over forward-complete solutions, as convergence must; the
+    completeness restriction is harmless because the stability conjunct guards it. -/)]
 def AsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   StableNA f x_eq ∧
   ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ c > 0, ∀ φ : ℝ → ℝⁿ,
-    IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → Filter.Tendsto φ Filter.atTop (nhds x_eq)
+    IsIntegralCurveOn φ f (Ici t₀) → ‖φ t₀ - x_eq‖ < c →
+      Filter.Tendsto φ Filter.atTop (nhds x_eq)
 
 /-- The equilibrium `x_eq` is **uniformly asymptotically stable**: uniformly stable, and
     there is `c > 0`, independent of `t₀`, such that for each `η > 0` there is
@@ -165,13 +197,13 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
       \|\varphi(t) - x_{\mathrm{eq}}\| \le k\,\|\varphi(t_{0}) - x_{\mathrm{eq}}\|\,
       e^{-\lambda(t - t_{0})}
     \]
-    for all $t \ge t_{0} \ge 0$ and all trajectories $\varphi$ with
-    $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$. -/)]
+    for all $t \in [t_{0},t_{1}]$ with $t_{0} \ge 0$, and all solution segments $\varphi$
+    on $[t_{0},t_{1}]$ with $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$. -/)]
 def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ c > 0, ∃ k > 0, ∃ γ > 0,
-    ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
+    ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+      IsTrajectoryOnNA φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < c →
+        ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
 
 /-- The equilibrium `x_eq` is **globally exponentially stable**: the exponential bound
     holds for any initial state, with no restriction on `‖φ(t₀) - x_eq‖`. -/
@@ -181,9 +213,9 @@ def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop
     state $\varphi(t_{0}) \in \mathbb{R}^{n}$, i.e., $c = \infty$. -/)]
 def GloballyExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ k > 0, ∃ γ > 0,
-    ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
+    ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (φ : ℝ → ℝⁿ),
+      IsTrajectoryOnNA φ f t₀ t₁ →
+        ∀ t ∈ Icc t₀ t₁, ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
 
 /-! ## Existence of trajectories (Picard-Lindelöf) -/
 
