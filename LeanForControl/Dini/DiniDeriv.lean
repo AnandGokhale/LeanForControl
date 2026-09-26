@@ -55,34 +55,43 @@ notation "D⁺" => diniDerivRight
 /-! ### Relationship to the classical derivative -/
 
 
+/-- A right derivative at `t` gives the forward difference quotients a limit as `h → 0⁺`.
+
+This is the content shared by `diniDerivRight_of_hasDerivWithinAt` (which reads off the
+`limsup`) and the boundedness side condition that the comparison lemmas require, so it is
+stated once here rather than re-derived at each. -/
+theorem HasDerivWithinAt.tendsto_forward_slope {f : ℝ → ℝ} {t L : ℝ}
+    (hf : HasDerivWithinAt f L (Ici t) t) :
+    Tendsto (fun h => (f (t + h) - f t) / h) (𝓝[>] 0) (𝓝 L) := by
+  -- 1. Extract the slope limit using the slope-specific lemma
+  -- This ensures the domain filter is exactly 𝓝[Ici t \ {t}] t
+  rw [hasDerivWithinAt_iff_tendsto_slope] at hf
+  -- 2. Define the shift map h ↦ t + h and prove it maps to the punctured domain
+  have h_shift : Tendsto (fun h => t + h) (𝓝[>] 0) (𝓝[Ici t \ {t}] t) := by
+    apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+    · have h_cont : Continuous (fun h => t + h) := continuous_const.add continuous_id
+      have h_tendsto_0 := h_cont.tendsto 0
+      rw [add_zero] at h_tendsto_0
+      exact h_tendsto_0.mono_left nhdsWithin_le_nhds
+    · filter_upwards [self_mem_nhdsWithin] with h hh
+      rw [mem_Ioi] at hh
+      simp only [mem_diff, mem_Ici, mem_singleton_iff]
+      exact ⟨by linarith, by linarith⟩
+  -- 3. Now the filters match perfectly: 𝓝[>] 0 → 𝓝[Ici t \ {t}] t → 𝓝 L
+  have h_comp := hf.comp h_shift
+  -- 4. Clean up the denominator: (t + h - t) becomes h
+  apply Tendsto.congr' _ h_comp
+  filter_upwards with h
+  rw [Function.comp_apply, slope_def_field]
+  ring
+
 /-- If `f` has a right derivative `L` at `t` (in the sense of `HasDerivWithinAt` on `Ici t`),
 then `D⁺ f t = L`. -/
 theorem diniDerivRight_of_hasDerivWithinAt {f : ℝ → ℝ} {t L : ℝ}
     (hf : HasDerivWithinAt f L (Ici t) t) :
     D⁺ f t = L := by
   rw [diniDerivRight]
-  have h_tendsto : Tendsto (fun h => (f (t + h) - f t) / h) (𝓝[>] 0) (𝓝 L) := by
-    -- 1. Extract the slope limit using the slope-specific lemma
-    -- This ensures the domain filter is exactly 𝓝[Ici t \ {t}] t
-    rw [hasDerivWithinAt_iff_tendsto_slope] at hf
-    -- 2. Define the shift map h ↦ t + h and prove it maps to the punctured domain
-    have h_shift : Tendsto (fun h => t + h) (𝓝[>] 0) (𝓝[Ici t \ {t}] t) := by
-      apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      · have h_cont : Continuous (fun h => t + h) := continuous_const.add continuous_id
-        have h_tendsto_0 := h_cont.tendsto 0
-        rw [add_zero] at h_tendsto_0
-        exact h_tendsto_0.mono_left nhdsWithin_le_nhds
-      · filter_upwards [self_mem_nhdsWithin] with h hh
-        rw [mem_Ioi] at hh
-        simp only [mem_diff, mem_Ici, mem_singleton_iff]
-        exact ⟨by linarith, by linarith⟩
-    -- 3. Now the filters match perfectly: 𝓝[>] 0 → 𝓝[Ici t \ {t}] t → 𝓝 L
-    have h_comp := hf.comp h_shift
-    -- 4. Clean up the denominator: (t + h - t) becomes h
-    apply Tendsto.congr' _ h_comp
-    filter_upwards with h
-    rw [Function.comp_apply, slope_def_field]
-    ring
+  have h_tendsto := hf.tendsto_forward_slope
   -- Since the limit exists and the filter 𝓝[>] 0 is nontrivial (NeBot),
   -- the limsup evaluates exactly to the limit.
   exact Tendsto.limsup_eq h_tendsto

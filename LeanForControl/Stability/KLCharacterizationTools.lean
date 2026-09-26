@@ -22,7 +22,7 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 private noncomputable def validTSet (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (η r : ℝ) : Set ℝ :=
   {T | 0 ≤ T ∧ ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-    IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < r → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η}
+    IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < r → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η}
 
 /-- `Tbar_fn f x_eq η r` is the infimum of valid convergence times from the `r`-ball to the
     `η`-ball: the smallest `T` that works for all trajectories simultaneously. -/
@@ -35,8 +35,7 @@ private lemma validTSet_bddBelow (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 
 private lemma validTSet_nonempty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {η : ℝ} (hη : 0 < η) {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
     (validTSet f x_eq η r).Nonempty := by
   obtain ⟨T, hT_pos, hT_prop⟩ := hconv η hη
@@ -45,16 +44,14 @@ private lemma validTSet_nonempty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 
 private lemma Tbar_nonneg_of (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {η : ℝ} (hη : 0 < η) {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
     0 ≤ Tbar_fn f x_eq η r :=
   le_csInf (validTSet_nonempty f x_eq hconv hη hr) (fun _ hT => hT.1)
 
 private lemma Tbar_antitone (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
     AntitoneOn (fun η => Tbar_fn f x_eq η r) (Set.Ioi 0) := by
   intro η₁ hη₁ η₂ hη₂ h_le
@@ -65,8 +62,7 @@ private lemma Tbar_antitone (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 
 private lemma Tbar_intervalIntegrable (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {a b : ℝ} (hab : a ≤ b) (ha : 0 < a) :
     IntervalIntegrable (fun s => Tbar_fn f x_eq s r) MeasureTheory.volume a b := by
   apply AntitoneOn.intervalIntegrable
@@ -75,8 +71,7 @@ private lemma Tbar_intervalIntegrable (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : �
 
 private lemma Tbar_intervalIntegrable_of_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) (a b : ℝ) (ha : 0 < a) (hb : 0 < b) :
     IntervalIntegrable (fun s => Tbar_fn f x_eq s r) MeasureTheory.volume a b := by
   rcases le_total a b with hab | hab
@@ -84,11 +79,9 @@ private lemma Tbar_intervalIntegrable_of_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_
   · exact (Tbar_intervalIntegrable f x_eq hconv hr hab hb).symm
 
 private lemma Tbar_zero_of_classK_bound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : HasUniformClassKBound f x_eq α)
     {a : ℝ} (ha_lt_aα : a < a_α) (ha_le_c : a ≤ c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a) {η : ℝ} (h_le : α.toFun r ≤ η) :
     Tbar_fn f x_eq η r = 0 := by
@@ -106,9 +99,8 @@ private lemma Tbar_zero_of_classK_bound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
 
 
 private lemma Tbar_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    {r₁ r₂ : ℝ}  (hr₂ : r₂ ∈ Set.Ioc 0 c) (h_le : r₁ ≤ r₂)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
+    {r₁ r₂ : ℝ} (hr₂ : r₂ ∈ Set.Ioc 0 c) (h_le : r₁ ≤ r₂)
     {η : ℝ} (hη : 0 < η) :
     Tbar_fn f x_eq η r₁ ≤ Tbar_fn f x_eq η r₂ := by
   exact csInf_le_csInf (validTSet_bddBelow f x_eq η r₁)
@@ -125,8 +117,7 @@ noncomputable def W_fn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (r η : �
 
 lemma W_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {η : ℝ} (hη : 0 < η) :
     0 < W_fn f x_eq r η := by
   have h_int_Tbar := Tbar_intervalIntegrable f x_eq hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)
@@ -152,8 +143,7 @@ lemma W_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 
 private lemma W_ge_Tbar (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {η : ℝ} (hη : 0 < η) :
     Tbar_fn f x_eq η r + r / η ≤ W_fn f x_eq r η := by
   have h_int_Tbar := Tbar_intervalIntegrable f x_eq hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)
@@ -183,7 +173,7 @@ private lemma W_ge_Tbar (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 private lemma norm_le_of_Tbar_lt {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {η r s t₀ t : ℝ} {φ : ℝ → ℝⁿ}
   (hne : (validTSet f x_eq η r).Nonempty)
   (hlt : Tbar_fn f x_eq η r < s) (ht₀ : 0 ≤ t₀)
-  (hφ : IsTrajectoryNA φ f) (h_init : ‖φ t₀ - x_eq‖ < r)
+  (hφ : IsTrajectoryNA φ f t₀) (h_init : ‖φ t₀ - x_eq‖ < r)
   (ht : t₀ + s ≤ t) :
   ‖φ t - x_eq‖ ≤ η := by
   -- sInf(validTSet) < s and validTSet nonempty ⇒ ∃ T ∈ validTSet, T < s ⇒ t₀ + T ≤ t
@@ -191,8 +181,7 @@ private lemma norm_le_of_Tbar_lt {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
   exact (hT_prop t₀ ht₀ φ hφ h_init t (by linarith)).le
 
 private lemma W_fn_eq (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) {η : ℝ} (hη : 0 < η) :
     W_fn f x_eq r η = (2 / η) * (∫ s in (η / 2)..η, Tbar_fn f x_eq s r) + r / η := by
   have hη_ne : η ≠ 0 := ne_of_gt hη
@@ -205,8 +194,7 @@ private lemma W_fn_eq (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
   rw [h_const]; field_simp [hη_ne]
 
 lemma W_fn_continuousOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) : ContinuousOn (W_fn f x_eq r) (Set.Ioi 0) := by
   have h_int_cont : ContinuousOn (fun η => ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
     (Set.Ioi 0) := continuousOn_halfWindow_integral (Tbar_intervalIntegrable_of_pos f x_eq hconv hr)
@@ -218,8 +206,7 @@ lemma W_fn_continuousOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ
   exact h_rhs_cont.congr (fun η hη => W_fn_eq f x_eq hconv hr hη)
 
 lemma W_fn_strictAntiOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) : StrictAntiOn (W_fn f x_eq r) (Set.Ioi 0) := by
   have h_avg_anti : AntitoneOn (fun η => (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
       (Set.Ioi 0) :=
@@ -232,8 +219,7 @@ lemma W_fn_strictAntiOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ
   linarith [h_avg_anti hη₁ hη₂ h_lt.le, h_r_div_strict hη₁ hη₂ h_lt]
 
 lemma W_fn_tendsto_nhdsGT (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) :
     Filter.Tendsto (W_fn f x_eq r) (𝓝[>] 0) Filter.atTop := by
   have h_r_pos : 0 < r := hr.1
@@ -248,11 +234,9 @@ lemma W_fn_tendsto_nhdsGT (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : �
   exact tendsto_atTop_mono' (𝓝[>] 0) h_lower_bound h_r_div
 
 lemma W_fn_tendsto_atTop (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : HasUniformClassKBound f x_eq α)
     {a : ℝ} (_ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a) :
     Filter.Tendsto (W_fn f x_eq r) Filter.atTop (nhds 0) := by
@@ -283,11 +267,9 @@ lemma W_fn_tendsto_atTop (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : �
 /-- Package `W_fn f x_eq r` as a `ClassLSingular`: it is continuous, positive, strictly
     antitone, tends to `0` at `+∞`, and blows up near `0⁺`. -/
 noncomputable def W_fn_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : HasUniformClassKBound f x_eq α)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a) : ClassLSingular where
   toFun        := W_fn f x_eq r
@@ -300,11 +282,9 @@ noncomputable def W_fn_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : �
 /-- Package `invFunOn (W_fn f x_eq a) (Ioi 0)` as a `ClassLSingular`: the radius cap at time `s`,
     continuous, positive, antitone, tending to `0` at `+∞` and to `+∞` near `0⁺`. -/
 noncomputable def W_fn_inv_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : HasUniformClassKBound f x_eq α)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     (ha_a : a ∈ Set.Ioc 0 a) : ClassLSingular where
   toFun        := Function.invFunOn (W_fn f x_eq a) (Set.Ioi 0)
@@ -376,8 +356,7 @@ noncomputable def W_fn_inv_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq 
       exact absurd h_anti (not_le.mpr hs_lt)
 
 lemma W_fn_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r₁ r₂ : ℝ} (hr₁ : r₁ ∈ Set.Ioc 0 c) (hr₂ : r₂ ∈ Set.Ioc 0 c) (h_le : r₁ ≤ r₂)
     {η : ℝ} (hη : 0 < η) :
     W_fn f x_eq r₁ η ≤ W_fn f x_eq r₂ η := by
@@ -391,11 +370,9 @@ lemma W_fn_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
   exact Tbar_mono_r f x_eq hconv hr₂ h_le (by linarith [hx.1])
 
 lemma invFunOn_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : HasUniformClassKBound f x_eq α)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r₁ r₂ : ℝ} (hr₁ : r₁ ∈ Set.Ioc 0 a) (hr₂ : r₂ ∈ Set.Ioc 0 a) (h_le : r₁ ≤ r₂)
     {s : ℝ} (hs : 0 < s) :
@@ -431,14 +408,12 @@ lemma invFunOn_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
 /-! ## U — time-decay function -/
 
 lemma U_decay_bound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
+    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < a_α → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hα_bound : HasUniformClassKBound f x_eq α)
     {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 a)
-    {t₀ : ℝ} (ht₀ : 0 ≤ t₀) {φ : ℝ → ℝⁿ} (hφ : IsTrajectoryNA φ f)
+    {t₀ : ℝ} (ht₀ : 0 ≤ t₀) {φ : ℝ → ℝⁿ} (hφ : IsTrajectoryNA φ f t₀)
     (h_init : ‖φ t₀ - x_eq‖ < r) {t : ℝ} (ht : t₀ < t) :
     ‖φ t - x_eq‖ ≤ Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) (t - t₀) := by
   let U_r := Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0)
@@ -478,20 +453,27 @@ private noncomputable def mk_ClassK_from_KInfty (α : ClassKInfty) {b : ℝ} (hb
     (α.continuous.mono Set.Icc_subset_Ici_self)
     (α.strict_mono.mono Set.Icc_subset_Ici_self)
 
+/-- A uniform class `K∞` bound restricts to a uniform class `K` bound at any finite radius.
+
+This is the only place the global and local bound notions differ, so it is stated once here
+rather than rebuilt inside each global lemma. -/
+private lemma HasUniformClassKInftyBound.toClassK
+    {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {α : ClassKInfty}
+    (h : HasUniformClassKInftyBound f x_eq α) {b : ℝ} (hb : 0 < b) :
+    HasUniformClassKBound f x_eq (mk_ClassK_from_KInfty α hb) :=
+  fun t₀ ht₀ φ hφ _ t ht => h t₀ ht₀ φ hφ t ht
+
 /-- Given a global class K∞ bound and global uniform convergence, the W-function inverse
     is strictly antitone on `(0, ∞)` for any radius `r > 0`. -/
 lemma guas_invFunOn_strictAntiOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : ClassKInfty)
-    (hGUC : ∀ η > 0, ∀ c > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    (h_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f → ∀ t : ℝ, t₀ ≤ t →
-      ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hGUC : GloballyHasUniformConvergenceTime f x_eq)
+    (h_bound : HasUniformClassKInftyBound f x_eq α)
     {r : ℝ} (hr : 0 < r) :
     StrictAntiOn (Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0)) (Set.Ioi 0) := by
-  have hconv := fun η hη => hGUC η hη (r + 1) (by linarith)
+  have hconv := hGUC (r + 1) (by linarith)
   let α_loc := mk_ClassK_from_KInfty α (show (0:ℝ) < r + 2 by linarith)
-  have hα_loc : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < r + 2 → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α_loc.toFun ‖φ t₀ - x_eq‖ :=
-    fun t₀ ht₀ φ hφ _ t ht => h_bound t₀ ht₀ φ hφ t ht
+  have hα_loc : HasUniformClassKBound f x_eq α_loc :=
+    h_bound.toClassK (show (0:ℝ) < r + 2 by linarith)
   exact strictAntiOn_invFunOn
     (W_fn_continuousOn f x_eq hconv ⟨hr, by linarith⟩)
     (W_fn_strictAntiOn f x_eq hconv ⟨hr, by linarith⟩)
@@ -502,17 +484,14 @@ lemma guas_invFunOn_strictAntiOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 /-- Given a global class K∞ bound and global uniform convergence, the W-function inverse
     is positive for any `s > 0`. -/
 lemma guas_invFunOn_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : ClassKInfty)
-    (hGUC : ∀ η > 0, ∀ c > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    (h_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f → ∀ t : ℝ, t₀ ≤ t →
-      ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hGUC : GloballyHasUniformConvergenceTime f x_eq)
+    (h_bound : HasUniformClassKInftyBound f x_eq α)
     {r : ℝ} (hr : 0 < r) {s : ℝ} (hs : 0 < s) :
     0 < Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) s := by
-  have hconv := fun η hη => hGUC η hη (r + 1) (by linarith)
+  have hconv := hGUC (r + 1) (by linarith)
   let α_loc := mk_ClassK_from_KInfty α (show (0:ℝ) < r + 2 by linarith)
-  have hα_loc : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < r + 2 → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α_loc.toFun ‖φ t₀ - x_eq‖ :=
-    fun t₀ ht₀ φ hφ _ t ht => h_bound t₀ ht₀ φ hφ t ht
+  have hα_loc : HasUniformClassKBound f x_eq α_loc :=
+    h_bound.toClassK (show (0:ℝ) < r + 2 by linarith)
   exact invFunOn_pos
     (W_fn_continuousOn f x_eq hconv ⟨hr, by linarith⟩)
     (W_fn_tendsto_atTop f x_eq hconv α_loc hα_loc (by linarith) le_rfl (by linarith)
@@ -522,17 +501,14 @@ lemma guas_invFunOn_pos (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : Cl
 /-- Given a global class K∞ bound and global uniform convergence, the W-function inverse
     tends to `0` as `s → +∞`. -/
 lemma guas_invFunOn_tendsto_zero (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : ClassKInfty)
-    (hGUC : ∀ η > 0, ∀ c > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    (h_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f → ∀ t : ℝ, t₀ ≤ t →
-      ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hGUC : GloballyHasUniformConvergenceTime f x_eq)
+    (h_bound : HasUniformClassKInftyBound f x_eq α)
     {r : ℝ} (hr : 0 < r) :
     Filter.Tendsto (Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0)) Filter.atTop (nhds 0) := by
-  have hconv := fun η hη => hGUC η hη (r + 1) (by linarith)
+  have hconv := hGUC (r + 1) (by linarith)
   let α_loc := mk_ClassK_from_KInfty α (show (0:ℝ) < r + 2 by linarith)
-  have hα_loc : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < r + 2 → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α_loc.toFun ‖φ t₀ - x_eq‖ :=
-    fun t₀ ht₀ φ hφ _ t ht => h_bound t₀ ht₀ φ hφ t ht
+  have hα_loc : HasUniformClassKBound f x_eq α_loc :=
+    h_bound.toClassK (show (0:ℝ) < r + 2 by linarith)
   exact invFunOn_tendsto_zero
     (W_fn_continuousOn f x_eq hconv ⟨hr, by linarith⟩)
     (W_fn_strictAntiOn f x_eq hconv ⟨hr, by linarith⟩)
@@ -543,37 +519,31 @@ lemma guas_invFunOn_tendsto_zero (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
 /-- Given a global class K∞ bound and global uniform convergence, a trajectory starting
     strictly inside the `r`-ball decays to within the W-function inverse at time `t - t₀`. -/
 lemma guas_U_decay_bound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : ClassKInfty)
-    (hGUC : ∀ η > 0, ∀ c > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    (h_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f → ∀ t : ℝ, t₀ ≤ t →
-      ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
-    {r : ℝ} (hr : 0 < r) {t₀ : ℝ} (ht₀ : 0 ≤ t₀) {φ : ℝ → ℝⁿ} (hφ : IsTrajectoryNA φ f)
+    (hGUC : GloballyHasUniformConvergenceTime f x_eq)
+    (h_bound : HasUniformClassKInftyBound f x_eq α)
+    {r : ℝ} (hr : 0 < r) {t₀ : ℝ} (ht₀ : 0 ≤ t₀) {φ : ℝ → ℝⁿ} (hφ : IsTrajectoryNA φ f t₀)
     (h_init : ‖φ t₀ - x_eq‖ < r) {t : ℝ} (ht : t₀ < t) :
     ‖φ t - x_eq‖ ≤ Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) (t - t₀) := by
-  have hconv := fun η hη => hGUC η hη (r + 1) (by linarith)
+  have hconv := hGUC (r + 1) (by linarith)
   let α_loc := mk_ClassK_from_KInfty α (show (0:ℝ) < r + 2 by linarith)
-  have hα_loc : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < r + 2 → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α_loc.toFun ‖φ t₀ - x_eq‖ :=
-    fun t₀ ht₀ φ hφ _ t ht => h_bound t₀ ht₀ φ hφ t ht
+  have hα_loc : HasUniformClassKBound f x_eq α_loc :=
+    h_bound.toClassK (show (0:ℝ) < r + 2 by linarith)
   exact U_decay_bound f x_eq hconv α_loc hα_loc (by linarith) le_rfl (by linarith)
     ⟨hr, by linarith⟩ ht₀ hφ h_init ht
 
 /-- Given a global class K∞ bound and global uniform convergence, the W-function inverse
     is monotone in the radius parameter. -/
 lemma guas_invFunOn_mono_r (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : ClassKInfty)
-    (hGUC : ∀ η > 0, ∀ c > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η)
-    (h_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f → ∀ t : ℝ, t₀ ≤ t →
-      ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖)
+    (hGUC : GloballyHasUniformConvergenceTime f x_eq)
+    (h_bound : HasUniformClassKInftyBound f x_eq α)
     {s : ℝ} (hs : 0 < s) :
     MonotoneOn (fun r => Function.invFunOn (W_fn f x_eq (r + 1)) (Set.Ioi 0) s) (Set.Ici 0) := by
   intro r₁ hr₁ r₂ hr₂ h_le
   have hr1_nn : 0 ≤ r₁ := hr₁
   have hr2_nn : 0 ≤ r₂ := hr₂
-  have hconv := fun η hη => hGUC η hη (r₂ + 2) (by linarith)
+  have hconv := hGUC (r₂ + 2) (by linarith)
   let α_loc := mk_ClassK_from_KInfty α (show (0:ℝ) < r₂ + 3 by linarith)
-  have hα_loc : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f →
-      ‖φ t₀ - x_eq‖ < r₂ + 3 → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α_loc.toFun ‖φ t₀ - x_eq‖ :=
-    fun t₀ ht₀ φ hφ _ t ht => h_bound t₀ ht₀ φ hφ t ht
+  have hα_loc : HasUniformClassKBound f x_eq α_loc :=
+    h_bound.toClassK (show (0:ℝ) < r₂ + 3 by linarith)
   exact invFunOn_mono_r f x_eq hconv α_loc hα_loc (by linarith) le_rfl (by linarith)
     ⟨by linarith, by linarith⟩ ⟨by linarith, by linarith⟩ (by linarith) hs

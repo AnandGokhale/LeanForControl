@@ -20,30 +20,52 @@ open Set Filter Topology Metric
 lemma hasDerivAt_V_comp_traj_NA
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectoryNA φ f) (t : ℝ) :
+    {φ : ℝ → ℝⁿ} {t₀ : ℝ} (htraj : IsTrajectoryNA φ f t₀) {t : ℝ} (ht : t₀ < t) :
     HasDerivAt (fun s => V s (φ s))
                (fderiv ℝ (Function.uncurry V) (t, φ t) (1, f t (φ t))) t := by
+  have hφd : HasDerivAt φ (f t (φ t)) t :=
+    (htraj t (Set.mem_Ici.mpr ht.le)).hasDerivAt (Ici_mem_nhds ht)
   have h_pair : HasDerivAt (fun s => (s, φ s)) (1, f t (φ t)) t :=
-    (hasDerivAt_id t).prodMk (htraj t)
+    (hasDerivAt_id t).prodMk hφd
   exact (hV_diff (t, φ t)).hasFDerivAt.comp_hasDerivAt t h_pair
+
+/-- The chain rule at the left endpoint of the solution's interval, where only a
+one-sided derivative exists. This is the form the Dini-derivative machinery consumes. -/
+lemma hasDerivWithinAt_V_comp_traj_NA
+    {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
+    (hV_diff : Differentiable ℝ (Function.uncurry V))
+    {φ : ℝ → ℝⁿ} {t₀ : ℝ} (htraj : IsTrajectoryNA φ f t₀) {t : ℝ} (ht : t₀ ≤ t) :
+    HasDerivWithinAt (fun s => V s (φ s))
+      (fderiv ℝ (Function.uncurry V) (t, φ t) (1, f t (φ t))) (Set.Ici t) t := by
+  have hφd : HasDerivWithinAt φ (f t (φ t)) (Set.Ici t) t :=
+    (htraj t (Set.mem_Ici.mpr ht)).mono (Set.Ici_subset_Ici.mpr ht)
+  have h_pair : HasDerivWithinAt (fun s => (s, φ s)) (1, f t (φ t)) (Set.Ici t) t :=
+    (hasDerivWithinAt_id t _).prodMk hφd
+  exact (hV_diff (t, φ t)).hasFDerivAt.comp_hasDerivWithinAt t h_pair
 
 /-! ## V nonincreasing along trajectories -/
 
 lemma V_NA_nonincreasing
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
-    {φ : ℝ → ℝⁿ} (htraj : IsTrajectoryNA φ f)
-    {a b : ℝ} (hab : a ≤ b)
+    {φ : ℝ → ℝⁿ} {t₀ : ℝ} (htraj : IsTrajectoryNA φ f t₀)
+    {a b : ℝ} (ht₀a : t₀ ≤ a) (hab : a ≤ b)
     (hLie : ∀ t ∈ Set.Ioo a b,
         fderiv ℝ (Function.uncurry V) (t, φ t) (1, f t (φ t)) ≤ 0) :
     V b (φ b) ≤ V a (φ a) := by
-  have hderiv : ∀ s, HasDerivAt (fun u => V u (φ u))
+  have hsub : Set.Icc a b ⊆ Set.Ici t₀ := fun s hs => Set.mem_Ici.mpr (ht₀a.trans hs.1)
+  have hderiv : ∀ s ∈ Set.Ioo a b, HasDerivAt (fun u => V u (φ u))
       (fderiv ℝ (Function.uncurry V) (s, φ s) (1, f s (φ s))) s :=
-    fun s => hasDerivAt_V_comp_traj_NA hV_diff htraj s
-  apply antitoneOn_of_deriv_nonpos (convex_Icc a b)
-    (fun s _ => (hderiv s).continuousAt.continuousWithinAt)
-    (fun s hs => (hderiv s).differentiableAt.differentiableWithinAt)
-    (fun s hs => by simp only [interior_Icc] at hs; rw [(hderiv s).deriv]; exact hLie s hs)
+    fun s hs => hasDerivAt_V_comp_traj_NA hV_diff htraj (lt_of_le_of_lt ht₀a hs.1)
+  have hcont : ContinuousOn (fun u => V u (φ u)) (Set.Icc a b) :=
+    hV_diff.continuous.comp_continuousOn
+      (continuousOn_id.prodMk (htraj.continuousOn.mono hsub))
+  apply antitoneOn_of_deriv_nonpos (convex_Icc a b) hcont
+    (fun s hs => by
+      rw [interior_Icc] at hs
+      exact (hderiv s hs).differentiableAt.differentiableWithinAt)
+    (fun s hs => by
+      rw [interior_Icc] at hs; rw [(hderiv s hs).deriv]; exact hLie s hs)
     (Set.left_mem_Icc.mpr hab) (Set.right_mem_Icc.mpr hab)
   exact hab
 
@@ -60,22 +82,22 @@ private lemma NA_ball_invariant
     (hV_lb  : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r → W₁ x ≤ V t x)
     (hLie_nonpos : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
         fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ 0)
-    {φ : ℝ → ℝⁿ} (hφ : IsTrajectoryNA φ f) {t₀ t : ℝ}
+    {φ : ℝ → ℝⁿ} {t₀ t : ℝ} (hφ : IsTrajectoryNA φ f t₀)
     (ht₀ : 0 ≤ t₀) (_ : t₀ ≤ t)
     (h_φt₀_lt_r : ‖φ t₀‖ < r) (h_Vt₀_lt_d : V t₀ (φ t₀) < d) :
     ∀ s : ℝ, t₀ ≤ s → s ≤ t → ‖φ s‖ < r := by
-  have hφ_cont : Continuous φ :=
-    continuous_iff_continuousAt.mpr fun s => (hφ s).differentiableAt.continuousAt
-  have h_norm_cont : Continuous (fun s => ‖φ s‖) := continuous_norm.comp hφ_cont
+  have h_norm_cont : ContinuousOn (fun s => ‖φ s‖) (Set.Ici t₀) :=
+    continuous_norm.comp_continuousOn hφ.continuousOn
   by_contra h_neg
   push Not at h_neg
   obtain ⟨s_bad, hs_lo, hs_hi, hs_bad⟩ := h_neg
   set E := {s ∈ Set.Icc t₀ s_bad | r ≤ ‖φ s‖}
   have hE_ne  : E.Nonempty := ⟨s_bad, ⟨hs_lo, le_rfl⟩, hs_bad⟩
   have hE_bdd : BddBelow E := ⟨t₀, fun s hs => hs.1.1⟩
+  have hnorm_Icc : ∀ {u : ℝ}, ContinuousOn (fun s => ‖φ s‖) (Set.Icc t₀ u) :=
+    fun {_} => h_norm_cont.mono (fun s hs => Set.mem_Ici.mpr hs.1)
   have hE_cl  : IsClosed E :=
-    IsClosed.inter isClosed_Icc
-      (isClosed_le continuous_const (continuous_norm.comp hφ_cont))
+    isClosed_Icc.isClosed_le continuousOn_const hnorm_Icc
   set T_exit := sInf E
   have hT_mem  : T_exit ∈ E      := hE_cl.csInf_mem hE_ne hE_bdd
   have hT_lo   : t₀ ≤ T_exit    := hT_mem.1.1
@@ -90,7 +112,7 @@ private lemma NA_ball_invariant
   have hT_le_r : ‖φ T_exit‖ ≤ r := by
     by_contra h_gt; push Not at h_gt
     obtain ⟨s, hs_mem, hs_eq⟩ := intermediate_value_Icc (le_of_lt hT_gt)
-      h_norm_cont.continuousOn ⟨le_of_lt h_φt₀_lt_r, le_of_lt h_gt⟩
+      hnorm_Icc ⟨le_of_lt h_φt₀_lt_r, le_of_lt h_gt⟩
     change ‖φ s‖ = r at hs_eq
     have hs_E : s ∈ E := ⟨⟨hs_mem.1, hs_mem.2.trans hT_mem.1.2⟩, hs_eq.symm ▸ le_rfl⟩
     have hT_le_s : T_exit ≤ s := csInf_le hE_bdd hs_E
@@ -108,7 +130,7 @@ private lemma NA_ball_invariant
     by_contra h_all; push Not at h_all
     have hT_le_invd : ‖φ T_exit‖ ≤ α1.invFun d := by
       by_contra h; push Not at h
-      have hcont := (continuous_norm.comp hφ_cont).continuousAt (x := T_exit)
+      have hcont := h_norm_cont.continuousAt (Ici_mem_nhds hT_gt)
       rw [Metric.continuousAt_iff] at hcont
       obtain ⟨δ, hδ_pos, hδ⟩ := hcont (‖φ T_exit‖ - α1.invFun d) (by linarith)
       set s := T_exit - min δ (T_exit - t₀) / 2
@@ -126,7 +148,7 @@ private lemma NA_ball_invariant
   obtain ⟨T₁, hT₁_ico, hT₁_gt⟩ := h_near
   have hT₁_lt_r : ‖φ T₁‖ < r := h_pre T₁ hT₁_ico
   have hV_T₁_dec : V T₁ (φ T₁) ≤ V t₀ (φ t₀) :=
-    V_NA_nonincreasing hV_diff hφ hT₁_ico.1
+    V_NA_nonincreasing hV_diff hφ le_rfl hT₁_ico.1
       (fun s hs => hLie_nonpos s (ht₀.trans hs.1.le) (φ s)
                      (h_stay s ⟨hs.1.le, hs.2.le.trans hT₁_ico.2.le⟩))
   have h_W1_gt_d : d < W₁ (φ T₁) :=
@@ -182,7 +204,7 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
     ClassK.comp α1_inv_res α2_res
   -- Provide the composed function to the US characterization
   rw [uniformlyStableNA_iff_classK f 0]
-  refine ⟨c, α1_inv_res.toFun d, hc_pos, α_comp.hb, α_comp, ?_⟩
+  refine ⟨c, α1_inv_res.toFun d, α_comp, ?_⟩
   intro t₀ ht₀ φ hφ h_init t ht
   simp only [sub_zero] at h_init ⊢
   have h_φt₀_lt_r : ‖φ t₀‖ < r := h_init.trans hc_lt_r
@@ -205,7 +227,7 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
     calc α1.toFun ‖φ t‖
         ≤ W₁ (φ t)         := (hW1_bounds (φ t) h_φt_lt_r).1
       _ ≤ V t (φ t)         := (hV_sandwich t (ht₀.trans ht) (φ t) h_φt_lt_r.le).1
-      _ ≤ V t₀ (φ t₀)       := V_NA_nonincreasing hV_diff hφ ht
+      _ ≤ V t₀ (φ t₀)       := V_NA_nonincreasing hV_diff hφ le_rfl ht
                                   (fun s hs => hLie_nonpos s (ht₀.trans hs.1.le) (φ s)
                                                  (h_ball s hs.1.le hs.2.le).le)
       _ ≤ W₂ (φ t₀)         := (hV_sandwich t₀ ht₀ (φ t₀) h_φt₀_lt_r.le).2
@@ -297,7 +319,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
   obtain ⟨σ, hσ_zero, hσ_general⟩ := classK_dini_bound α_comp
   -- ── Trajectory bound: V(t, φ(t)) ≤ σ(V(t₀, φ(t₀)), t − t₀) ─────────────────
   have hσ_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f → ‖φ t₀‖ < c → ∀ t : ℝ, t₀ ≤ t →
+      IsTrajectoryNA φ f t₀ → ‖φ t₀‖ < c → ∀ t : ℝ, t₀ ≤ t →
       V t (φ t) ≤ σ.toFun (V t₀ (φ t₀)) (t - t₀) := by
     intro t₀ ht₀ φ hφ h_init t ht
     have h_Vt₀_lt_d' : V t₀ (φ t₀) < d :=
@@ -324,7 +346,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       have hV_nn   := (hW1_nonneg_of (φ s) h_φs_r.le).trans
         (hV_sandwich s (ht₀.trans hs.1) (φ s) h_φs_r.le).1
       have hV_lt_d :=
-        (V_NA_nonincreasing hV_diff hφ hs.1
+        (V_NA_nonincreasing hV_diff hφ le_rfl hs.1
           (fun t' ht' => hLie_nonpos t' (ht₀.trans ht'.1.le) (φ t')
             (h_φs_lt_r t' ⟨ht'.1.le, (ht'.2.trans hs.2).le⟩).le)).trans_lt h_Vt₀_lt_d'
       exact ⟨hV_nn, hV_lt_d⟩
@@ -334,7 +356,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
         D⁺ (fun s => V s (φ s)) s ≤ -α_comp.toFun (V s (φ s)) := by
       intro s hs
       rw [diniDerivRight_of_hasDerivWithinAt
-            (hasDerivAt_V_comp_traj_NA hV_diff hφ s).hasDerivWithinAt]
+            (hasDerivWithinAt_V_comp_traj_NA hV_diff hφ hs.1)]
       have h_Lie    := hLie_bound s (ht₀.trans hs.1) (φ s) (h_φs_lt_r s ⟨hs.1, hs.2.le⟩).le
       have h_φs_r   := h_φs_lt_r s ⟨hs.1, hs.2.le⟩
       have h1       : α3.toFun ‖φ s‖ ≤ W₃ (φ s) := (hW3_bounds (φ s) h_φs_r).1
@@ -357,16 +379,15 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
     -- Difference quotients are bounded (from HasDerivAt)
     have hv_bdd : ∀ s ∈ Set.Ico t₀ t,
         IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (V (s + h) (φ (s + h)) - V s (φ s)) / h) := by
-      intro s _
-      have h_deriv := hasDerivAt_V_comp_traj_NA hV_diff hφ s
-      apply h_deriv.tendsto_slope_zero_right.isBoundedUnder_le.mono_le
-      filter_upwards [self_mem_nhdsWithin] with h (hh : 0 < h)
-      simp only [smul_eq_mul, div_eq_mul_inv, mul_comm, le_refl]
+      intro s hs
+      have h_deriv := hasDerivWithinAt_V_comp_traj_NA hV_diff hφ hs.1
+      exact h_deriv.tendsto_forward_slope.isBoundedUnder_le
     -- Apply the comparison wrapper
-    exact hσ_general ht (fun s => V s (φ s))
-      (hV_diff.continuous.comp (continuous_id.prodMk
-        (continuous_iff_continuousAt.mpr fun s => (hφ s).differentiableAt.continuousAt)))
-      hV_Ico_t₀ hv_range hDv hv_bdd
+    have hv_cont : ContinuousOn (fun s => V s (φ s)) (Set.Icc t₀ t) :=
+      hV_diff.continuous.comp_continuousOn
+        (continuousOn_id.prodMk
+          (hφ.continuousOn.mono (fun s hs => Set.mem_Ici.mpr hs.1)))
+    exact hσ_general ht (fun s => V s (φ s)) hv_cont hV_Ico_t₀ hv_range hDv hv_bdd
   -- ── Step 4: Construct β(r, s) = α₁⁻¹(σ(α₂(r), s)) ─────────────────────────
   -- Since your ClassKL.comp_left only takes ClassKInfty, we assert the existence
   -- of the composed KL bound manually here for you to construct.

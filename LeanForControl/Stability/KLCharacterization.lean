@@ -47,24 +47,38 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 
 
+/-- The distances from `x_eq` attainable by a trajectory that started in the closed ball of
+radius `r` about `x_eq`.
+
+A set of *reals*, not of states: its elements are the values `‖φ t - x_eq‖`. Its supremum,
+as a function of `r`, is the class `K` majorant built by `uniformlyStable_implies_classK` —
+uniform stability says exactly that this set is bounded, and monotone in `r`. -/
+private def normsReachableFromBall (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (r : ℝ) : Set ℝ :=
+  {d | ∃ (φ : ℝ → ℝⁿ) (t₀ t : ℝ), 0 ≤ t₀ ∧ t₀ ≤ t ∧ IsTrajectoryNA φ f t₀ ∧
+       ‖φ t₀ - x_eq‖ ≤ r ∧ d = ‖φ t - x_eq‖}
+
+/-- The deviation of a trajectory at any time is reachable from its own initial radius. -/
+private lemma mem_normsReachableFromBall {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {r : ℝ}
+    {φ : ℝ → ℝⁿ} {t₀ t : ℝ} (ht₀ : 0 ≤ t₀) (ht : t₀ ≤ t) (hφ : IsTrajectoryNA φ f t₀)
+    (h_init : ‖φ t₀ - x_eq‖ ≤ r) :
+    ‖φ t - x_eq‖ ∈ normsReachableFromBall f x_eq r :=
+  ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
+
 lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hUS : UniformlyStableNA f x_eq) :
-    ∃ (a b : ℝ) (_ : 0 < a) (_ : 0 < b) (α : ClassK a b),
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < a →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun (‖φ t₀ - x_eq‖) := by
+    ∃ (a b : ℝ) (α : ClassK a b), HasUniformClassKBound f x_eq α := by
   obtain ⟨δ₀, hδ₀, hUS_1⟩ := hUS 1 one_pos
   let a := δ₀ / 2
   have ha       : 0 < a   := half_pos hδ₀
   have ha_lt_δ₀ : a < δ₀  := half_lt_self hδ₀
-  let reachable (r : ℝ) : Set ℝ :=
-    {d | ∃ (φ : ℝ → ℝⁿ) (t₀ t : ℝ), 0 ≤ t₀ ∧ t₀ ≤ t ∧ IsTrajectoryNA φ f ∧
-         ‖φ t₀ - x_eq‖ ≤ r ∧ d = ‖φ t - x_eq‖}
-  let ω (r : ℝ) : ℝ := sSup (reachable r)
+  -- `normsReachableFromBall f x_eq r` collects every deviation a trajectory can attain, at any time `t ≥ t₀`
+  -- and from any admissible start `t₀ ≥ 0`, having begun within `r` of `x_eq`.
+  let ω (r : ℝ) : ℝ := sSup (normsReachableFromBall f x_eq r)
   -- Common bound: any reachable d ≤ 1 when the initial radius is ≤ a
-  have hbdd_of_le : ∀ r ≤ a, BddAbove (reachable r) := fun r hr =>
+  have hbdd_of_le : ∀ r ≤ a, BddAbove (normsReachableFromBall f x_eq r) := fun r hr =>
     ⟨1, fun d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, heq⟩ =>
-      heq ▸ le_of_lt (hUS_1 t₀ ht₀ φ hφ (h_init.trans_lt (hr.trans_lt ha_lt_δ₀)) t ht)⟩
+      heq ▸ le_of_lt
+        (hUS_1 t₀ ht₀ φ hφ (h_init.trans_lt (hr.trans_lt ha_lt_δ₀)) t ht)⟩
   -- ω(0) = 0: stability at ε forces any ‖φ t₀ - x_eq‖ = 0 trajectory to stay at 0
   have hω_zero : ω 0 = 0 := by
     apply le_antisymm
@@ -74,25 +88,25 @@ lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
       refine le_of_forall_pos_lt_add (fun ε hε => ?_)
       obtain ⟨δ, hδ, hUS_ε⟩ := hUS ε hε
       linarith [hUS_ε t₀ ht₀ φ hφ (h0 ▸ hδ) t ht]
-    · rcases (reachable 0).eq_empty_or_nonempty with h | ⟨d, hd⟩
-      · change 0 ≤ sSup (reachable 0); rw [h]; simp
+    · rcases (normsReachableFromBall f x_eq 0).eq_empty_or_nonempty with h | ⟨d, hd⟩
+      · change 0 ≤ sSup (normsReachableFromBall f x_eq 0); rw [h]; simp
       · obtain ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := hd
         exact (norm_nonneg _).trans
-          (le_csSup (hbdd_of_le 0 ha.le) ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩)
-  -- ω non-decreasing on [0, a]: reachable r₁ ⊆ reachable r₂ when r₁ ≤ r₂ ≤ a
+          (le_csSup (hbdd_of_le 0 ha.le) (mem_normsReachableFromBall ht₀ ht hφ h_init))
+  -- ω non-decreasing on [0, a]: normsReachableFromBall f x_eq r₁ ⊆ normsReachableFromBall f x_eq r₂ when r₁ ≤ r₂ ≤ a
   have hω_mono : ∀ s₁ s₂, 0 ≤ s₁ → s₁ ≤ s₂ → s₂ ≤ a → ω s₁ ≤ ω s₂ := by
     intro s₁ s₂ hs₁ hs₁₂ hs₂
     have hbdd₂ := hbdd_of_le s₂ hs₂
-    rcases (reachable s₁).eq_empty_or_nonempty with h | hne
-    · have hω₁ : ω s₁ = 0 := by change sSup (reachable s₁) = 0; rw [h]; simp
-      rw [hω₁]; change 0 ≤ sSup (reachable s₂)
-      rcases (reachable s₂).eq_empty_or_nonempty with h2 | ⟨d, hd⟩
+    rcases (normsReachableFromBall f x_eq s₁).eq_empty_or_nonempty with h | hne
+    · have hω₁ : ω s₁ = 0 := by change sSup (normsReachableFromBall f x_eq s₁) = 0; rw [h]; simp
+      rw [hω₁]; change 0 ≤ sSup (normsReachableFromBall f x_eq s₂)
+      rcases (normsReachableFromBall f x_eq s₂).eq_empty_or_nonempty with h2 | ⟨d, hd⟩
       · rw [h2]; simp
       · obtain ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := hd
-        exact (norm_nonneg _).trans (le_csSup hbdd₂ ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩)
+        exact (norm_nonneg _).trans (le_csSup hbdd₂ (mem_normsReachableFromBall ht₀ ht hφ h_init))
     · refine csSup_le_csSup hbdd₂ hne ?_
       rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
-      exact ⟨φ, t₀, t, ht₀, ht, hφ, h_init.trans hs₁₂, rfl⟩
+      exact mem_normsReachableFromBall ht₀ ht hφ (h_init.trans hs₁₂)
   -- Class K majorant: exists_strictMono_upper_bound lifts ω to a strictly increasing bound
   obtain ⟨b, hb, α, hα_bound⟩ : ∃ (b : ℝ) (_ : 0 < b) (α : ClassK a b),
       ∀ r ∈ Set.Ico 0 a, ω r ≤ α.toFun r := by
@@ -101,34 +115,28 @@ lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
     exact ⟨b, hb, ClassK.of_strictMono ha hb g hg_zero hg_a hg_cont hg_mono,
       fun r hr => hg_bound r hr.1 hr.2.le⟩
   -- Chain: ‖φ t - x_eq‖ ≤ ω(‖φ t₀ - x_eq‖) ≤ α(‖φ t₀ - x_eq‖)
-  refine ⟨a, b, ha, hb, α, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
+  refine ⟨a, b, α, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
   have hr : ‖φ t₀ - x_eq‖ ∈ Set.Ico 0 a := ⟨norm_nonneg _, h_init⟩
-  exact (le_csSup (s := reachable (‖φ t₀ - x_eq‖)) (hbdd_of_le _ hr.2.le)
-      ⟨φ, t₀, t, ht₀, ht, hφ, le_rfl, rfl⟩).trans (hα_bound _ hr)
+  exact (le_csSup (s := normsReachableFromBall f x_eq (‖φ t₀ - x_eq‖)) (hbdd_of_le _ hr.2.le)
+      (mem_normsReachableFromBall ht₀ ht hφ le_rfl)).trans (hα_bound _ hr)
 
 
 lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hGUS : ∃ δ : ℝ → ℝ, (∀ ε > 0, 0 < δ ε) ∧ Filter.Tendsto δ Filter.atTop Filter.atTop ∧
       ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < δ ε → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ < ε) :
-    ∃ α : ClassKInfty,
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α.toFun (‖φ t₀ - x_eq‖) := by
+        IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ ε → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ < ε) :
+    ∃ α : ClassKInfty, HasUniformClassKInftyBound f x_eq α := by
   obtain ⟨δ, hδ_pos, hδ_top, hδ_stab⟩ := hGUS
-  let reachable (r : ℝ) : Set ℝ :=
-    {d | ∃ (φ : ℝ → ℝⁿ) (t₀ t : ℝ), 0 ≤ t₀ ∧ t₀ ≤ t ∧ IsTrajectoryNA φ f ∧
-         ‖φ t₀ - x_eq‖ ≤ r ∧ d = ‖φ t - x_eq‖}
-  let ω (r : ℝ) : ℝ := sSup (reachable r)
+  let ω (r : ℝ) : ℝ := sSup (normsReachableFromBall f x_eq r)
   -- δ(ε) → ∞ means every r-ball has a bounding M: take ε with δ(ε) > r
-  have hbdd_of_le : ∀ r ≥ 0, BddAbove (reachable r) := fun r _ => by
+  have hbdd_of_le : ∀ r ≥ 0, BddAbove (normsReachableFromBall f x_eq r) := fun r _ => by
     have h_eventual : ∀ᶠ ε in Filter.atTop, 0 < ε ∧ r < δ ε :=
       (Filter.eventually_gt_atTop 0).and (hδ_top (Filter.Ioi_mem_atTop r))
     obtain ⟨M, hM_pos, hM_gt_r⟩ := h_eventual.exists
     exact ⟨M, fun _ ⟨φ, t₀, t, ht₀, ht, hφ, h_init, heq⟩ =>
       heq ▸ (hδ_stab M hM_pos t₀ ht₀ φ hφ (by linarith) t ht).le⟩
   have hω_zero : ω 0 = 0 := by
-    rcases (reachable 0).eq_empty_or_nonempty with h | hne
+    rcases (normsReachableFromBall f x_eq 0).eq_empty_or_nonempty with h | hne
     · simp [ω, h]
     · apply le_antisymm
       · apply csSup_le hne
@@ -138,24 +146,24 @@ lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ
         exact hδ_stab ε hε t₀ ht₀ φ hφ (h0 ▸ hδ_pos ε hε) t ht
       · obtain ⟨_, φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := hne
         exact (norm_nonneg _).trans (le_csSup (hbdd_of_le 0 le_rfl)
-          ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩)
+          (mem_normsReachableFromBall ht₀ ht hφ h_init))
   have hω_mono : MonotoneOn ω (Set.Ici 0) := by
     intro r₁ hr₁ r₂ hr₂ h_le
     dsimp [ω]
-    by_cases h_empty : reachable r₁ = ∅
+    by_cases h_empty : normsReachableFromBall f x_eq r₁ = ∅
     · rw [h_empty, Real.sSup_empty]
-      rcases (reachable r₂).eq_empty_or_nonempty with h | ⟨d, hd⟩
+      rcases (normsReachableFromBall f x_eq r₂).eq_empty_or_nonempty with h | ⟨d, hd⟩
       · rw [h, Real.sSup_empty]
       · obtain ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩ := hd
         exact (norm_nonneg _).trans (le_csSup (hbdd_of_le r₂ hr₂)
-          ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩)
+          (mem_normsReachableFromBall ht₀ ht hφ h_init))
     · exact csSup_le_csSup (hbdd_of_le r₂ hr₂) (Set.nonempty_iff_ne_empty.mpr h_empty)
         fun d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, heq⟩ =>
           ⟨φ, t₀, t, ht₀, ht, hφ, h_init.trans h_le, heq⟩
   obtain ⟨α, hα_bound⟩ := exists_classKInfty_upper_bound ω hω_zero hω_mono
   exact ⟨α, fun t₀ ht₀ φ hφ t ht =>
     (le_csSup (hbdd_of_le _ (norm_nonneg _))
-      ⟨φ, t₀, t, ht₀, ht, hφ, le_rfl, rfl⟩).trans
+      (mem_normsReachableFromBall ht₀ ht hφ le_rfl)).trans
     (hα_bound _ (Set.mem_Ici.mpr (norm_nonneg _)))⟩
 
 /-- **Class-K characterization of uniform stability**: The equilibrium `x_eq` is uniformly
@@ -170,22 +178,23 @@ lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ
     $t_{0}$, such that
     \[
       \|\varphi(t) - x_{\mathrm{eq}}\| \le \alpha(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|)
-      \quad \forall\, t \ge t_{0} \ge 0,\; \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c.
-    \] -/)]
+      \quad \forall\, t \in [t_{0},t_{1}],\; t_{0} \ge 0,\;
+      \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c.
+    \]
+    Both sides quantify over solution segments; moving only one side would break the
+    equivalence, since a bound holding on globally defined trajectories says nothing
+    about a solution that escapes in finite time. -/)]
 theorem uniformlyStableNA_iff_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
     UniformlyStableNA f x_eq ↔
-    ∃ (a b : ℝ) (_ : 0 < a) (_ : 0 < b) (α : ClassK a b),
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < a →
-        ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ α (‖φ t₀ - x_eq‖) := by
+    ∃ (a b : ℝ) (α : ClassK a b), HasUniformClassKBound f x_eq α := by
   refine ⟨uniformlyStable_implies_classK f x_eq, ?_⟩
-  · rintro ⟨a, b, ha, hb, α, hα⟩ ε hε
+  · rintro ⟨a, b, α, hα⟩ ε hε
     have h_cont := α.continuous 0 ⟨le_refl 0, α.ha⟩
     rw [Metric.continuousWithinAt_iff] at h_cont
     rcases h_cont ε hε with ⟨δ_c, hδ_c_pos, hδ_c⟩
     let δ := min (δ_c / 2) (a / 2)
-    have hδ_pos : 0 < δ  := lt_min (half_pos hδ_c_pos) (half_pos ha)
-    have hδ_a   : δ < a  := (min_le_right ..).trans_lt (half_lt_self ha)
+    have hδ_pos : 0 < δ  := lt_min (half_pos hδ_c_pos) (half_pos α.ha)
+    have hδ_a   : δ < a  := (min_le_right ..).trans_lt (half_lt_self α.ha)
     have hδ_lt  : δ < δ_c := (min_le_left ..).trans_lt (half_lt_self hδ_c_pos)
     refine ⟨δ, hδ_pos, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
     have h_alpha := hδ_c ⟨hδ_pos.le, hδ_a⟩
@@ -201,15 +210,15 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
     (hUAS : UniformlyAsymptoticStableNA f x_eq) :
     ∃ (a : ℝ) (_ : 0 < a) (β : ClassKL a),
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < a →
+        IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < a →
         ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ β.toFun (‖φ t₀ - x_eq‖) (t - t₀) := by
   obtain ⟨hUS, c, hc_pos, hconv⟩ := hUAS
-  obtain ⟨a_α, b_α, ha_α, hb_α, α, hα_bound⟩ := (uniformlyStableNA_iff_classK f x_eq).mp hUS
+  obtain ⟨a_α, b_α, α, hα_bound⟩ := (uniformlyStableNA_iff_classK f x_eq).mp hUS
   let a := min (a_α / 2) c
-  have ha : 0 < a := lt_min (by linarith) hc_pos
+  have ha : 0 < a := lt_min (by linarith [α.ha]) hc_pos
   have ha_le_aα2 : a ≤ a_α / 2 := min_le_left _ _
   have ha_le_c   : a ≤ c        := min_le_right _ _
-  have ha_lt_aα  : a < a_α      := ha_le_aα2.trans_lt (half_lt_self ha_α)
+  have ha_lt_aα  : a < a_α      := ha_le_aα2.trans_lt (half_lt_self α.ha)
   have ha_c : a ∈ Set.Ioc 0 c := ⟨ha, ha_le_c⟩
   have ha_a : a ∈ Set.Ioc 0 a := ⟨ha, le_refl a⟩
   let α_res : ClassK a (α.toFun a) := α.restrict ha ha_lt_aα
@@ -248,7 +257,7 @@ theorem uniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) 
     UniformlyAsymptoticStableNA f x_eq ↔
     ∃ (a : ℝ) (_ : 0 < a) (β : ClassKL a),
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f → ‖φ t₀ - x_eq‖ < a →
+        IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < a →
         ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ β.toFun (‖φ t₀ - x_eq‖) (t - t₀) := by
   refine ⟨uniformlyAsymptoticStableNA_implies_classKL f x_eq, ?_⟩
   -- Backward: ∃ ClassKL bound → UAS
@@ -323,7 +332,7 @@ theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → 
       (∀ r ≥ 0, AntitoneOn (fun s => β r s) (Set.Ici 0)) ∧
       (∀ r ≥ 0, Filter.Tendsto (fun s => β r s) Filter.atTop (nhds 0)) ∧
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-        IsTrajectoryNA φ f →
+        IsTrajectoryNA φ f t₀ →
         ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ ≤ β (‖φ t₀ - x_eq‖) (t - t₀) := by
   constructor
   · intro hGUAS
@@ -387,7 +396,7 @@ theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → 
                 (α.symm.maps_to (Set.mem_Ici.mpr hε.le))).mpr h_init
           _ = ε                         := α.right_inv_apply (Set.mem_Ici.mpr hε.le)
     · -- Global Uniform Convergence
-      intro η hη r hr_pos
+      intro r hr_pos η hη
       have hr_ici : r ∈ Set.Ici 0 := Set.mem_Ici.mpr hr_pos.le
       obtain ⟨T, hT⟩ := Filter.eventually_atTop.mp
         (hβ_stendsto r hr_ici (Iio_mem_nhds hη))
