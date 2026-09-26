@@ -263,8 +263,8 @@ lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBa
     ∃ (b₂ : ℝ) (α₂ : ClassK r b₂), ∀ s, 0 ≤ s → s ≤ r → phi_fn V s ≤ α₂.toFun s := by
   -- Verify the two hypotheses of the upper smoothing axiom for φ
   have hφ_zero : phi_fn V 0 = 0 := phi_fn_zero hV_zero
-  have hφ_mono : ∀ s₁ s₂, 0 ≤ s₁ → s₁ ≤ s₂ → s₂ ≤ r → phi_fn V s₁ ≤ phi_fn V s₂ :=
-    fun s₁ s₂ hs1 hs_le hs2_le => phi_fn_mono hV_cont hs_le hs2_le hs1
+  have hφ_mono : MonotoneOn (phi_fn V) (Set.Icc 0 r) :=
+    fun _ hs₁ _ hs₂ hle => phi_fn_mono hV_cont hle hs₂.2 hs₁.1
   -- Apply the smoothing axiom to get a strictly monotone continuous φ ≤ f
   rcases exists_strictMono_upper_bound r hr (phi_fn V) hφ_zero hφ_mono
     with ⟨f, b₂, hb₂_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
