@@ -14,7 +14,7 @@ controllability matrix and proves its invariance under the state matrix. The
 `A ^ n` boundary term in the invariance proof is closed by Cayley--Hamilton.
 
 References:
-* João P. Hespanha, *Linear Systems Theory*.
+* João P. Hespanha, *Linear Systems Theory*, §§11.1, 11.6.
 * R. E. Kalman, “Mathematical Description of Linear Dynamical Systems,”
   *Journal of the Society for Industrial and Applied Mathematics, Series A:
   Control* 1(2), 152–192, 1963. DOI: 10.1137/0301010.
@@ -92,9 +92,25 @@ theorem reachableSubspace_eq_iSup_range
     rintro x ⟨u, rfl⟩
     exact finiteHorizonResponse_mem_reachableSubspace A B k u
 
+/-- The dimension of the reachable subspace is the rank of the
+controllability matrix.
+
+Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
+@[blueprint "thm:reachableSubspace-finrank"
+  (statement := /-- The dimension of the reachable subspace equals the rank
+    of the controllability matrix:
+    \[
+      \dim \mathcal R(A,B)=\operatorname{rank}\mathcal C(A,B).
+    \] -/)]
+theorem finrank_reachableSubspace_eq_rank_controllabilityMatrix
+    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
+    Module.finrank 𝕜 (reachableSubspace A B) =
+      Matrix.rank (controllabilityMatrix A B) := by
+  rfl
+
 /-- The image of the input matrix is contained in the reachable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*. -/
+Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
 theorem range_B_le_reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     LinearMap.range B.mulVecLin ≤ reachableSubspace A B := by
@@ -112,7 +128,7 @@ theorem range_B_le_reachableSubspace
 /-- The system is controllable exactly when its reachable subspace is the
 whole state space.
 
-Reference: Hespanha, *Linear Systems Theory*. -/
+Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
 @[blueprint "thm:reachableSubspace-eq-top-iff-controllable"
   (statement := /-- A pair $(A,B)$ is controllable if and only if its
     reachable subspace is the whole state space. -/)]
@@ -162,7 +178,7 @@ private lemma cayleyHamilton_boundary_mem_reachableSubspace
 /-- The finite-horizon reachable subspace is invariant under the state
 matrix.  The highest-power case is discharged by Cayley--Hamilton.
 
-Reference: Hespanha, *Linear Systems Theory*. -/
+Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
 @[blueprint "lem:reachableSubspace-invariant"
   (statement := /-- The reachable subspace is $A$-invariant:
     $A\mathcal R(A,B)\subseteq\mathcal R(A,B)$. -/)]
