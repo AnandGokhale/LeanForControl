@@ -47,6 +47,9 @@ jobs:
           lint: true
           mk_all-check: true
 
+      - name: Check blueprint label integrity
+        run: python3 scripts/check_blueprint_labels.py
+
       - name: Build blueprint nodes
         run: lake build :blueprint
 

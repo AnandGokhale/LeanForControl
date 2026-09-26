@@ -60,6 +60,8 @@ lemma V_NA_nonincreasing
   have hcont : ContinuousOn (fun u => V u (φ u)) (Set.Icc a b) :=
     hV_diff.continuous.comp_continuousOn
       (continuousOn_id.prodMk (htraj.continuousOn.mono hsub))
+  -- Not an instance of `antitoneOn_V_comp_traj`: `V` is time-varying here, so the derivative is
+  -- `fderiv (uncurry V) (t, φ t) (1, f t (φ t))` rather than `fderiv V (φ t) (f (φ t))`.
   apply antitoneOn_of_deriv_nonpos (convex_Icc a b) hcont
     (fun s hs => by
       rw [interior_Icc] at hs

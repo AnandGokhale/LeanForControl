@@ -18,6 +18,8 @@ See `README.md` for how to build the project and the three ways to browse it
    ```bash
    lake exe cache get   # first time only
    lake build
+   lake exe mk_all      # green `lake build` ≠ green CI: Lean tolerates duplicate
+                        # imports and a stale `LeanForControl.lean`; `mk_all` does not
    ```
 2. **No `sorry`, no `admit`.** A proof that doesn't go through isn't done.
 3. **Every public declaration needs a docstring** — the `docBlame` linter enforces this
@@ -36,7 +38,22 @@ See `README.md` for how to build the project and the three ways to browse it
      standard.
 5. **If you touch a file with `@[blueprint ...]` annotations, keep `leanblueprint
    checkdecls` passing** — it checks that blueprint labels still point at real Lean
-   declarations.
+   declarations — and run the label-integrity check:
+   ```bash
+   python3 scripts/check_blueprint_labels.py
+   ```
+   Lean checks none of this, and the three failure modes look nothing alike: a dangling
+   `\inputleannode` hard-errors the blueprint build; a dangling `\cref` degrades silently
+   to `??`; a declared-but-never-inputted node produces **no diagnostic at all** — its
+   LaTeX is written and compiled, and simply never rendered. The script catches all three
+   and runs in `blueprint.yml`. Note that `\cref`s live inside other declarations'
+   blueprint statements, not only in `content.tex`, so deleting a node can break a
+   reference buried in a neighbouring Lean docstring.
+
+   Passing these checks does **not** mean a blueprint statement is *true* of the
+   declaration it is attached to — `statement`/`proof` are hand-written prose and nothing
+   mechanical compares them against the Lean. If you change a declaration's *type*, re-read
+   its blueprint statement by hand; that is where drift comes from.
 
 ## Design conventions
 
@@ -99,6 +116,10 @@ and the codebase less consistent.
   the right ratio to aim for, not 100%). The `statement`/`proof` text is hand-written
   prose, not auto-extracted from the Lean signature — keep it tight and faithful, and
   treat the Lean source as ground truth if the two ever drift.
+- **Don't regex across Lean source in this repo.** The trajectory-predicate patterns nest,
+  so a blanket substitution over-matches: one such attempt corrupted six sites, including
+  making an `abbrev` self-referential, and a second replaced text the previous replacement
+  had just produced. Use explicit per-site edits and check the build between them.
 - **Keep a living `plan.md`** in any actively-developed subject-area directory (see
   `Stability/plan.md` for the template: a status table of what's proved vs. planned,
   file-by-file notes, and a "lessons learned" section). Update it as part of the PR that

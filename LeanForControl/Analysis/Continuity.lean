@@ -62,3 +62,57 @@ lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀
   -- By the definition of `exists_isMaxOn`, `m` is an upper bound for the set.
   have h_contra : a < a := ht_mem.1.trans_le (hr_mem.1.trans (hm_max hr_in_pre))
   linarith
+
+/-- **First hitting time of a sphere.** A continuous curve that starts strictly inside the ball of
+radius `ρ` about `x_eq` and later reaches its complement has a *first* time `τ` at which it meets
+the sphere, and it stays in the closed ball throughout `[t₀, τ]`.
+
+Pure first-exit reasoning: an arbitrary normed space, no vector field, no Lyapunov content. The
+proof takes the minimum of the closed set `Icc t₀ T ∩ ‖φ · - x_eq‖ ⁻¹' {ρ}`, which is nonempty by
+the intermediate value theorem; minimality then rules out any earlier excursion outside the ball,
+again by the intermediate value theorem.
+
+Original: first-exit infrastructure shared by `lyapunov_stable` and the Chetaev instability
+argument. -/
+theorem exists_first_sphere_hit
+    {E : Type*} [NormedAddCommGroup E]
+    {x_eq : E} {φ : ℝ → E} {ρ t₀ T t₁ : ℝ}
+    (hφ : ContinuousOn φ (Icc t₀ T))
+    (h₀ : ‖φ t₀ - x_eq‖ < ρ) (ht₁ : t₁ ∈ Icc t₀ T)
+    (hfar : ρ ≤ ‖φ t₁ - x_eq‖) :
+    ∃ τ ∈ Icc t₀ T, ‖φ τ - x_eq‖ = ρ ∧
+      ∀ s ∈ Icc t₀ τ, ‖φ s - x_eq‖ ≤ ρ := by
+  let d : ℝ → ℝ := fun t ↦ ‖φ t - x_eq‖
+  have hd : ContinuousOn d (Icc t₀ T) :=
+    continuous_norm.comp_continuousOn (hφ.sub continuousOn_const)
+  have hd₁ : ContinuousOn d (Icc t₀ t₁) := hd.mono (Icc_subset_Icc_right ht₁.2)
+  have hhit : ∃ s ∈ Icc t₀ T, d s = ρ := by
+    have hρmem : ρ ∈ Icc (d t₀) (d t₁) := ⟨h₀.le, hfar⟩
+    obtain ⟨s, hs, hsρ⟩ := (intermediate_value_Icc ht₁.1 hd₁) hρmem
+    exact ⟨s, ⟨hs.1, hs.2.trans ht₁.2⟩, hsρ⟩
+  let S : Set ℝ := Icc t₀ T ∩ d ⁻¹' {ρ}
+  have hS_closed : IsClosed S :=
+    hd.preimage_isClosed_of_isClosed isClosed_Icc isClosed_singleton
+  have hS_compact : IsCompact S :=
+    isCompact_Icc.of_isClosed_subset hS_closed inter_subset_left
+  have hS_nonempty : S.Nonempty := by
+    obtain ⟨s, hs, hsρ⟩ := hhit
+    exact ⟨s, hs, hsρ⟩
+  obtain ⟨τ, hτS, hτmin⟩ := hS_compact.exists_isMinOn hS_nonempty continuousOn_id
+  have hτIcc : τ ∈ Icc t₀ T := hτS.1
+  have hτeq : d τ = ρ := hτS.2
+  refine ⟨τ, hτIcc, hτeq, ?_⟩
+  intro s hs
+  by_contra hnot
+  have hρs : ρ < d s := lt_of_not_ge hnot
+  have hslt : s < τ :=
+    hs.2.lt_of_ne (fun h ↦ by subst s; exact (ne_of_lt hρs) hτeq.symm)
+  have hds : ContinuousOn d (Icc t₀ s) := by
+    apply hd.mono
+    intro q hq
+    exact ⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩
+  have hρmem : ρ ∈ Icc (d t₀) (d s) := ⟨h₀.le, hρs.le⟩
+  obtain ⟨q, hq, hqρ⟩ := (intermediate_value_Icc hs.1 hds) hρmem
+  have hqS : q ∈ S := ⟨⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩, hqρ⟩
+  have hτq : τ ≤ q := hτmin hqS
+  exact (not_lt_of_ge (hτq.trans hq.2)) hslt

@@ -140,6 +140,8 @@ theorem locallyExponentiallyStable_of_continuousLyapunovEquation
         linarith
   have hWanti : AntitoneOn
       (fun s : ℝ ↦ Real.exp (k * s) * V (φ s)) (Icc t₀ t₁) := by
+    -- Not an instance of `antitoneOn_V_add_linear`: the weight `exp (k * s)` is multiplicative,
+    -- not additive, so the product rule rather than the sum rule drives the derivative.
     apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
     · exact
         ((Real.continuous_exp.comp_continuousOn
@@ -148,24 +150,17 @@ theorem locallyExponentiallyStable_of_continuousLyapunovEquation
             hφ.continuousOn))
     · intro s hs
       rw [interior_Icc] at hs
-      have hsIcc : s ∈ Icc t₀ t₁ := Ioo_subset_Icc_self hs
-      have hcurve : HasDerivAt φ (f (φ s)) s :=
-        (hφ s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
-      have hVcurve : HasDerivAt (V ∘ φ)
-          (fderiv ℝ V (φ s) (f (φ s))) s :=
-        ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num) (φ s))
-          |>.hasFDerivAt.comp_hasDerivAt s hcurve
+      have hVcurve : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ s) (f (φ s))) s :=
+        hasDerivAt_V_comp_traj
+          ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)) hφ hs
       exact ((((hasDerivAt_id s).const_mul k).exp.mul hVcurve).differentiableAt)
         |>.differentiableWithinAt
     · intro s hs
       rw [interior_Icc] at hs
       have hsIcc : s ∈ Icc t₀ t₁ := Ioo_subset_Icc_self hs
-      have hcurve : HasDerivAt φ (f (φ s)) s :=
-        (hφ s hsIcc).hasDerivAt (Icc_mem_nhds hs.1 hs.2)
-      have hVcurve : HasDerivAt (V ∘ φ)
-          (fderiv ℝ V (φ s) (f (φ s))) s :=
-        ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num) (φ s))
-          |>.hasFDerivAt.comp_hasDerivAt s hcurve
+      have hVcurve : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ s) (f (φ s))) s :=
+        hasDerivAt_V_comp_traj
+          ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)) hφ hs
       have hWderiv : HasDerivAt (fun q : ℝ ↦ Real.exp (k * q) * V (φ q))
           (Real.exp (k * s) *
             (k * V (φ s) + fderiv ℝ V (φ s) (f (φ s)))) s := by

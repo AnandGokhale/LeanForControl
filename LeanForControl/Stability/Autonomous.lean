@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
+import LeanForControl.Analysis.Continuity
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.Stability.DefsAutonomous
 import Architect
@@ -52,13 +53,79 @@ lemma lie_deriv_continuous
     Continuous (fun x : ℝⁿ => fderiv ℝ V x (f x)) :=
   (hV_c1.continuous_fderiv (by norm_num)).clm_apply hf_cont
 
+/-! ## Chain rule for V along trajectories -/
+
+/-- The chain rule `(V ∘ φ)'(t) = DV(φ t)[f (φ t)]` along a solution, wherever the solution's
+interval is a neighbourhood of `t`.
+
+Every Lyapunov argument in the library opens with this composition, preceded by the same
+extraction of `HasDerivAt φ` from the integral-curve hypothesis. Stating it once keeps the
+`fderiv ℝ V (φ t) (f (φ t))` spelling — the form `hLie_nonpos` and its relatives are stated
+in — at every call site.
+
+The non-autonomous mirror is `hasDerivAt_V_comp_traj_NA` (`NonAutonomous.lean`). -/
+lemma hasDerivAt_V_comp_integralCurveOn
+    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
+    (hV_diff : Differentiable ℝ V)
+    {φ : ℝ → ℝⁿ} {s : Set ℝ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) s)
+    {t : ℝ} (hs : s ∈ nhds t) :
+    HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t :=
+  (hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t ((hφ t (mem_of_mem_nhds hs)).hasDerivAt hs)
+
+/-- The common case: a solution segment, at an interior time. -/
+lemma hasDerivAt_V_comp_traj
+    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
+    (hV_diff : Differentiable ℝ V)
+    {φ : ℝ → ℝⁿ} {t₀ t₁ : ℝ} (hφ : IsTrajectoryOn φ f t₀ t₁)
+    {t : ℝ} (ht : t ∈ Set.Ioo t₀ t₁) :
+    HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t :=
+  hasDerivAt_V_comp_integralCurveOn hV_diff hφ (Icc_mem_nhds ht.1 ht.2)
+
 /-! ## Monotonicity of V along trajectories -/
+
+/-- **Rate-bounded monotonicity.** If the Lie derivative is at most `-c` on the interior of the
+solution's interval, then `t ↦ V (φ t) + c * t` is antitone on it.
+
+The weight is what turns a *rate* bound into a bound on *elapsed time*: `V` is bounded below, so
+`V (φ t) + c * t` being antitone caps how long `φ` can spend where the rate bound holds. Taking
+`c = 0` recovers plain monotonicity (`antitoneOn_V_comp_traj`).
+
+Stated on an arbitrary convex `s` so that both the segment (`Icc t₀ t₁`) and forward-ray
+(`Ici 0`) callers are instances. -/
+lemma antitoneOn_V_add_linear
+    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
+    (hV_diff : Differentiable ℝ V) (hV_cont : Continuous V)
+    {φ : ℝ → ℝⁿ} {s : Set ℝ} (hs : Convex ℝ s)
+    (hφ : IsIntegralCurveOn φ (fun _ x => f x) s)
+    {c : ℝ} (hLie : ∀ t ∈ interior s, fderiv ℝ V (φ t) (f (φ t)) ≤ -c) :
+    AntitoneOn (fun t => V (φ t) + c * t) s := by
+  have hd : ∀ t ∈ interior s, HasDerivAt (fun u => V (φ u) + c * u)
+      (fderiv ℝ V (φ t) (f (φ t)) + c) t := fun t ht => by
+    simpa using (hasDerivAt_V_comp_integralCurveOn hV_diff hφ
+      (mem_interior_iff_mem_nhds.mp ht)).add ((hasDerivAt_id t).const_mul c)
+  apply antitoneOn_of_deriv_nonpos hs
+  · exact (hV_cont.comp_continuousOn hφ.continuousOn).add
+      (continuous_const.mul continuous_id).continuousOn
+  · exact fun t ht => (hd t ht).differentiableAt.differentiableWithinAt
+  · exact fun t ht => by rw [(hd t ht).deriv]; linarith [hLie t ht]
+
+/-- The unweighted case of `antitoneOn_V_add_linear`: `V ∘ φ` is antitone wherever the Lie
+derivative is nonpositive. -/
+lemma antitoneOn_V_comp_traj
+    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
+    (hV_diff : Differentiable ℝ V) (hV_cont : Continuous V)
+    {φ : ℝ → ℝⁿ} {s : Set ℝ} (hs : Convex ℝ s)
+    (hφ : IsIntegralCurveOn φ (fun _ x => f x) s)
+    (hLie : ∀ t ∈ interior s, fderiv ℝ V (φ t) (f (φ t)) ≤ 0) :
+    AntitoneOn (V ∘ φ) s := by
+  simpa [Function.comp_def] using
+    antitoneOn_V_add_linear hV_diff hV_cont hs hφ (c := 0) (by simpa using hLie)
 
 /-- `V` is nonincreasing on `[t₀, t₁]` when the solution segment stays in `D` on that
     interval and the Lie derivative is nonpositive on `D`.
 
-    Proof: `(V ∘ φ)'(t) = DV(φ(t))[f(φ(t))] ≤ 0` by `hLie_nonpos`,
-    then `antitoneOn_of_deriv_nonpos` applies. -/
+    The endpoint form of `antitoneOn_V_comp_traj`, with `hLie_nonpos` supplying the
+    derivative bound on the segment. -/
 lemma V_nonincreasing_on
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
     (hV : IsLocalLyapunovFunction f V x_eq D)
@@ -67,18 +134,9 @@ lemma V_nonincreasing_on
     (hle : t₀ ≤ t₁)
     (hstay : ∀ t ∈ Set.Icc t₀ t₁, φ t ∈ D) :
     V (φ t₁) ≤ V (φ t₀) := by
-  have hderiv : ∀ t ∈ Set.Ioo t₀ t₁, HasDerivAt φ (f (φ t)) t := fun t ht =>
-    (hφ t (Set.Ioo_subset_Icc_self ht)).hasDerivAt (Icc_mem_nhds ht.1 ht.2)
-  have hanti : AntitoneOn (V ∘ φ) (Set.Icc t₀ t₁) := by
-    apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
-    · exact hV.hcont.comp_continuousOn hφ.continuousOn
-    · intro t ht
+  have hanti : AntitoneOn (V ∘ φ) (Set.Icc t₀ t₁) :=
+    antitoneOn_V_comp_traj hV.hV_diff hV.hcont (convex_Icc t₀ t₁) hφ fun t ht => by
       rw [interior_Icc] at ht
-      exact ((hV.hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t (hderiv t ht)).differentiableAt
-        |>.differentiableWithinAt
-    · intro t ht
-      rw [interior_Icc] at ht
-      rw [((hV.hV_diff (φ t)).hasFDerivAt.comp_hasDerivAt t (hderiv t ht)).deriv]
       exact hV.hLie_nonpos (φ t) (hstay t (Set.Ioo_subset_Icc_self ht))
   exact hanti (Set.left_mem_Icc.mpr hle) (Set.right_mem_Icc.mpr hle) hle
 
@@ -264,52 +322,18 @@ theorem lyapunov_stable
   by_contra hnot
   push Not at hnot
   have hge_ε' : ε' ≤ ‖φ t - x_eq‖ := hε'_le_ε.trans hnot
-  set Q := {s : ℝ | s ∈ Icc t₀ t ∧ ε' ≤ ‖φ s - x_eq‖}
-  have hQ_nonempty : Q.Nonempty := ⟨t, ⟨ht.1, le_rfl⟩, hge_ε'⟩
-  have hQ_bddBelow : BddBelow Q := ⟨t₀, fun s hs => hs.1.1⟩
-  have hφ_cont : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc t₀ t) :=
-    (continuous_norm.comp_continuousOn
-      ((hφ.continuousOn.mono (Icc_subset_Icc le_rfl ht.2)).sub continuousOn_const))
-  have hQ_closed : IsClosed Q := by
-    exact isClosed_Icc.isClosed_le continuousOn_const hφ_cont
-  set Tstar := sInf Q
-  have hTstar_mem : Tstar ∈ Q := hQ_closed.csInf_mem hQ_nonempty hQ_bddBelow
-  have hTstar_pos : t₀ < Tstar := by
-    rcases lt_or_eq_of_le hTstar_mem.1.1 with hpos | hzero
-    · exact hpos
-    · exact False.elim ((not_le_of_gt hφ0ε') (by simpa [hzero] using hTstar_mem.2))
-  have hlt_ε' : ∀ s : ℝ, t₀ ≤ s → s < Tstar → ‖φ s - x_eq‖ < ε' := by
-    intro s hs0 hsT
-    by_contra hs
-    push Not at hs
-    have hs_le_t : s ≤ t := (le_of_lt hsT).trans hTstar_mem.1.2
-    exact (not_le_of_gt hsT) (csInf_le hQ_bddBelow ⟨⟨hs0, hs_le_t⟩, hs⟩)
-  have hTstar_eq : ‖φ Tstar - x_eq‖ = ε' := by
-    apply le_antisymm _ hTstar_mem.2
-    by_contra hlt
-    push Not at hlt
-    have hcont_sub : ContinuousOn (fun s => ‖φ s - x_eq‖) (Icc t₀ Tstar) :=
-      hφ_cont.mono (Icc_subset_Icc le_rfl hTstar_mem.1.2)
-    obtain ⟨s₀, hs₀_mem, hs₀_val⟩ :=
-      intermediate_value_Icc (le_of_lt hTstar_pos) hcont_sub
-        ⟨le_of_lt hφ0ε', le_of_lt hlt⟩
-    have hs₀_ge : Tstar ≤ s₀ := csInf_le hQ_bddBelow
-      ⟨⟨hs₀_mem.1, hs₀_mem.2.trans hTstar_mem.1.2⟩, ge_of_eq hs₀_val⟩
-    have hs₀_eq : s₀ = Tstar := le_antisymm hs₀_mem.2 hs₀_ge
-    exact (not_lt_of_ge (le_of_eq (hs₀_eq ▸ hs₀_val))) hlt
-  have hstay : ∀ s ∈ Icc t₀ Tstar, φ s ∈ D := by
-    intro s hs
-    apply hcBall'_sub_D
-    rw [Metric.mem_closedBall, dist_eq_norm]
-    rcases eq_or_lt_of_le hs.2 with heq | hlt
-    · subst s
-      exact le_of_eq hTstar_eq
-    · exact le_of_lt (hlt_ε' s hs.1 hlt)
-  have hVT_le : V (φ Tstar) ≤ V (φ t₀) :=
-    V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right (hTstar_mem.1.2.trans ht.2)))
-      (le_of_lt hTstar_pos) hstay
-  have hVT_ge : m ≤ V (φ Tstar) :=
-    hx_min_le (by rw [Metric.mem_sphere, dist_eq_norm]; exact hTstar_eq)
+  -- First time the solution meets the `ε'`-sphere; it stays in the closed ball up to then.
+  obtain ⟨τ, hτ_mem, hτ_eq, hτ_stay⟩ :=
+    exists_first_sphere_hit (hφ.continuousOn.mono (Icc_subset_Icc le_rfl ht.2))
+      hφ0ε' ⟨ht.1, le_rfl⟩ hge_ε'
+  have hstay : ∀ s ∈ Icc t₀ τ, φ s ∈ D := fun s hs =>
+    hcBall'_sub_D (by rw [Metric.mem_closedBall, dist_eq_norm]; exact hτ_stay s hs)
+  -- `V` cannot have decreased to `φ τ` on the sphere, where it is at least `m > V (φ t₀)`.
+  have hVT_le : V (φ τ) ≤ V (φ t₀) :=
+    V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right (hτ_mem.2.trans ht.2)))
+      hτ_mem.1 hstay
+  have hVT_ge : m ≤ V (φ τ) :=
+    hx_min_le (by rw [Metric.mem_sphere, dist_eq_norm]; exact hτ_eq)
   linarith
 
 /-! ## Consequences of local exponential stability -/
@@ -414,31 +438,16 @@ lemma time_outside_ball_le
       refine le_trans ?_ hMle
       exact V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right ht.2)) ht.1
         (fun r hr => hstayD r ⟨hr.1, hr.2.trans ht.2⟩)
-    have hW_anti : AntitoneOn (fun t => V (φ t) + γ * t) (Icc t₀ t₁) := by
-      apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
-      · exact (hV.hcont.comp_continuousOn hφ.continuousOn).add
-          (continuous_const.mul continuous_id).continuousOn
-      · intro t ht
-        rw [interior_Icc] at ht
-        have hd : HasDerivAt φ (f (φ t)) t :=
-          (hφ t (Ioo_subset_Icc_self ht)).hasDerivAt (Icc_mem_nhds ht.1 ht.2)
-        exact ((((hV_c1.differentiable (by norm_num)) (φ t)).hasFDerivAt.comp_hasDerivAt t
-          hd).add ((hasDerivAt_id t).const_mul γ)).differentiableAt.differentiableWithinAt
-      · intro t ht
-        rw [interior_Icc] at ht
-        have ht' : t ∈ Icc t₀ t₁ := Ioo_subset_Icc_self ht
-        have hd : HasDerivAt φ (f (φ t)) t :=
-          (hφ t ht').hasDerivAt (Icc_mem_nhds ht.1 ht.2)
-        have hWd : HasDerivAt (fun s => V (φ s) + γ * s)
-            (fderiv ℝ V (φ t) (f (φ t)) + γ) t := by
-          simpa using
-            ((((hV_c1.differentiable (by norm_num)) (φ t)).hasFDerivAt.comp_hasDerivAt t
-              hd).add ((hasDerivAt_id t).const_mul γ))
-        rw [hWd.deriv]
-        have hle_max : fderiv ℝ V (φ t) (f (φ t)) ≤ fderiv ℝ V x_max (f x_max) :=
-          hx_max (hmem_K (φ t) (hVle t ht') (hout t ht'))
-        rw [hγ_def]
-        linarith
+    -- Outside the ball the Lie derivative is at most `-γ`, so `V (φ t) + γ t` is antitone.
+    have hW_anti : AntitoneOn (fun t => V (φ t) + γ * t) (Icc t₀ t₁) :=
+      antitoneOn_V_add_linear (hV_c1.differentiable (by norm_num)) hV.hcont
+        (convex_Icc t₀ t₁) hφ fun t ht => by
+          rw [interior_Icc] at ht
+          have ht' : t ∈ Icc t₀ t₁ := Ioo_subset_Icc_self ht
+          have hle_max : fderiv ℝ V (φ t) (f (φ t)) ≤ fderiv ℝ V x_max (f x_max) :=
+            hx_max (hmem_K (φ t) (hVle t ht') (hout t ht'))
+          rw [hγ_def]
+          linarith
     have hstep : V (φ t₁) + γ * t₁ ≤ V (φ t₀) + γ * t₀ :=
       hW_anti (left_mem_Icc.mpr hle) (right_mem_Icc.mpr hle) hle
     have hV1_nonneg : 0 ≤ V (φ t₁) := by

@@ -264,21 +264,6 @@ lemma W_fn_tendsto_atTop (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : �
 
 /-! ## W_fn as ClassLSingular -/
 
-/-- Package `W_fn f x_eq r` as a `ClassLSingular`: it is continuous, positive, strictly
-    antitone, tends to `0` at `+∞`, and blows up near `0⁺`. -/
-noncomputable def W_fn_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}
-    (hconv : LocallyHasUniformConvergenceTime f x_eq c)
-    {a_α b_α : ℝ} (α : ClassK a_α b_α)
-    (hα_bound : HasUniformClassKBound f x_eq α)
-    {a : ℝ} (ha : 0 < a) (ha_le_c : a ≤ c) (ha_lt_aα : a < a_α)
-    {r : ℝ} (hr : r ∈ Set.Ioc 0 a) : ClassLSingular where
-  toFun        := W_fn f x_eq r
-  continuous   := W_fn_continuousOn f x_eq hconv ⟨hr.1, hr.2.trans ha_le_c⟩
-  pos _ hs     := W_pos f x_eq hconv ⟨hr.1, hr.2.trans ha_le_c⟩ hs
-  anti         := (W_fn_strictAntiOn f x_eq hconv ⟨hr.1, hr.2.trans ha_le_c⟩).antitoneOn
-  tendsto_zero := W_fn_tendsto_atTop f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα hr
-  tendsto_top  := W_fn_tendsto_nhdsGT f x_eq hconv ⟨hr.1, hr.2.trans ha_le_c⟩
-
 /-- Package `invFunOn (W_fn f x_eq a) (Ioi 0)` as a `ClassLSingular`: the radius cap at time `s`,
     continuous, positive, antitone, tending to `0` at `+∞` and to `+∞` near `0⁺`. -/
 noncomputable def W_fn_inv_classLSingular (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ}

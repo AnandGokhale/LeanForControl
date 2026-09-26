@@ -48,22 +48,11 @@ lemma V_antitoneOn_lasalle
     (hLie : ∀ x ∈ Ω, fderiv ℝ V x (f x) ≤ 0)
     {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0))
     (hphi : ∀ t ≥ 0, φ t ∈ Ω) :
-    AntitoneOn (V ∘ φ) (Set.Ici 0) := by
-  have hda : ∀ t ∈ Set.Ioi (0 : ℝ),
-      HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t := by
-    intro t ht
-    have ht' : (0 : ℝ) < t := ht
-    exact ((hV_c1.differentiable (by norm_num) (φ t)).hasFDerivAt).comp_hasDerivAt t
-      ((hφ t (Set.mem_Ici.mpr ht'.le)).hasDerivAt (Ici_mem_nhds ht'))
-  apply antitoneOn_of_deriv_nonpos (convex_Ici (0 : ℝ))
-  · exact hV_c1.continuous.comp_continuousOn hφ.continuousOn
-  · intro t ht
-    rw [interior_Ici] at ht
-    exact (hda t ht).differentiableAt.differentiableWithinAt
-  · intro t ht
-    rw [interior_Ici] at ht
-    rw [(hda t ht).deriv]
-    exact hLie (φ t) (hphi t (le_of_lt ht))
+    AntitoneOn (V ∘ φ) (Set.Ici 0) :=
+  antitoneOn_V_comp_traj (hV_c1.differentiable (by norm_num)) hV_c1.continuous
+    (convex_Ici (0 : ℝ)) hφ fun t ht => by
+      rw [interior_Ici] at ht
+      exact hLie (φ t) (hphi t (le_of_lt ht))
 
 /-! ## Lemma 2: V(φ t) converges to its infimum -/
 
