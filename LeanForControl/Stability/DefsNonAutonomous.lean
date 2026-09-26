@@ -183,11 +183,59 @@ def UniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
     IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ →
       ∀ t ≥ t₀, ‖φ t - x_eq‖ < ε
 
+/-- The equilibrium `x_eq` is **globally uniformly stable**: uniformly stable, with the
+margin `δ(ε)` growing without bound, so that the basin exhausts `ℝⁿ`.
+
+This is the stability half of Khalil's global uniform asymptotic stability. -/
+@[blueprint "def:globallyUniformlyStableNA"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly stable}
+    when it is uniformly stable (\cref{def:uniformlyStableNA}) with a margin
+    $\delta(\varepsilon)$ that can be chosen to satisfy
+    $\lim_{\varepsilon \to \infty} \delta(\varepsilon) = \infty$. -/)]
+def GloballyUniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
+  ∃ δ : ℝ → ℝ,
+    (∀ ε > 0, 0 < δ ε) ∧
+    Filter.Tendsto δ Filter.atTop Filter.atTop ∧
+    ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
+      IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ ε → ∀ t ≥ t₀, ‖φ t - x_eq‖ < ε
+
+/-- Global uniform stability is stability. -/
+lemma GloballyUniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
+    (h : GloballyUniformlyStableNA f x_eq) : StableNA f x_eq :=
+  fun ε hε t₀ ht₀ =>
+    let ⟨δ, hδ_pos, _, hstab⟩ := h; ⟨δ ε, hδ_pos ε hε, hstab ε hε t₀ ht₀⟩
+
 /-- The equilibrium `x_eq` is **unstable** if it is not stable. -/
 @[blueprint "def:unstableNA"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{unstable} when it is not
     stable (\cref{def:stableNA}). -/)]
 def UnstableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop := ¬ StableNA f x_eq
+
+/-- Uniform stability is stability: the uniform `δ` already works at every initial time. -/
+lemma UniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
+    (h : UniformlyStableNA f x_eq) : StableNA f x_eq :=
+  fun ε hε t₀ ht₀ => let ⟨δ, hδ, hstab⟩ := h ε hε; ⟨δ, hδ, hstab t₀ ht₀⟩
+
+/-- A trajectory sitting *at* a stable equilibrium cannot leave it.
+
+Note the hypothesis is stability, not `IsEquilibriumNA`. "An equilibrium stays put" does
+**not** follow from `f t x_eq = 0` alone — it also needs uniqueness of solutions. Without
+uniqueness a solution can leave an equilibrium: `ẋ = x^{2/3}` has `f 0 = 0`, yet both
+`x ≡ 0` and `x = (t/3)³` solve it from `x 0 = 0`.
+
+Stability supplies the conclusion directly and at weaker hypotheses: the trajectory is
+within `ε` of `x_eq` for *every* `ε > 0`, hence at distance zero. -/
+lemma IsTrajectoryNA.eq_of_stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {φ : ℝ → ℝⁿ} {t₀ : ℝ}
+    (hS : StableNA f x_eq) (hφ : IsTrajectoryNA φ f t₀) (ht₀ : 0 ≤ t₀)
+    (h0 : φ t₀ = x_eq) {t : ℝ} (ht : t₀ ≤ t) :
+    φ t = x_eq := by
+  have hlt : ∀ ε > 0, ‖φ t - x_eq‖ < ε := by
+    intro ε hε
+    obtain ⟨δ, hδ, hstab⟩ := hS ε hε t₀ ht₀
+    exact hstab φ hφ (by simpa [h0] using hδ) t ht
+  have : ‖φ t - x_eq‖ ≤ 0 :=
+    le_of_forall_pos_le_add fun ε hε => by simpa using (hlt ε hε).le
+  exact sub_eq_zero.mp (norm_eq_zero.mp (le_antisymm this (norm_nonneg _)))
 
 /-- The equilibrium `x_eq` is **asymptotically stable**: stable, and for each `t₀ ≥ 0`
     there is `c = c(t₀) > 0` such that every trajectory starting within `c` of `x_eq`
@@ -241,12 +289,7 @@ def UniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) 
       \forall\, t_{0} \ge 0.
     \] -/)]
 def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
-  (∃ δ : ℝ → ℝ,
-    (∀ ε > 0, 0 < δ ε) ∧
-    Filter.Tendsto δ Filter.atTop Filter.atTop ∧
-    ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
-      IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ ε → ∀ t ≥ t₀, ‖φ t - x_eq‖ < ε) ∧
-  GloballyHasUniformConvergenceTime f x_eq
+  GloballyUniformlyStableNA f x_eq ∧ GloballyHasUniformConvergenceTime f x_eq
 
 /-- The equilibrium `x_eq` is **exponentially stable**: there exist positive constants
     `c`, `k`, and `λ` such that every trajectory starting within `c` of `x_eq` satisfies

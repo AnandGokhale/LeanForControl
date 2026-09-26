@@ -424,7 +424,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
   obtain ⟨β, hβ_bound⟩ := h_beta
   -- ── Step 5: Unpack UAS Definition and Apply ───────────────────────────────
   rw [uniformlyAsymptoticStableNA_iff_classKL f 0]
-  use c, hc_pos, β
+  use c, β
   intro t₀ ht₀ φ hφ h_init t ht
   simp only [sub_zero] at h_init ⊢
   have h_φt₀_lt_r : ‖φ t₀‖ < r := h_init.trans hc_lt_r

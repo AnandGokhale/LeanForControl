@@ -34,7 +34,7 @@ axiom exists_strictMono_upper_bound_global (φ : ℝ → ℝ)
     by a strictly monotonic continuous function. -/
 lemma exists_strictMono_upper_bound (r : ℝ) (hr : 0 < r) (φ : ℝ → ℝ)
     (hφ_zero : φ 0 = 0)
-    (hφ_mono : ∀ s₁ s₂, 0 ≤ s₁ → s₁ ≤ s₂ → s₂ ≤ r → φ s₁ ≤ φ s₂) :
+    (hφ_mono : MonotoneOn φ (Set.Icc 0 r)) :
     ∃ (f : ℝ → ℝ) (b : ℝ), 0 < b ∧
       f 0 = 0 ∧ f r = b ∧
       ContinuousOn f (Set.Icc 0 r) ∧
@@ -47,8 +47,8 @@ lemma exists_strictMono_upper_bound (r : ℝ) (hr : 0 < r) (φ : ℝ → ℝ)
     intro s₁ hs₁ s₂ _ h_le
     simp only [φ_ext]
     split_ifs with h1 h2
-    · exact hφ_mono s₁ s₂ hs₁ h_le h2       -- both ≤ r
-    · exact hφ_mono s₁ r hs₁ h1 le_rfl      -- s₁ ≤ r < s₂
+    · exact hφ_mono ⟨hs₁, h_le.trans h2⟩ ⟨hs₁.trans h_le, h2⟩ h_le   -- both ≤ r
+    · exact hφ_mono ⟨hs₁, h1⟩ ⟨hr.le, le_rfl⟩ h1                     -- s₁ ≤ r < s₂
     · linarith [not_le.mp h1]                -- s₁ > r, s₂ ≤ r: impossible
     · exact le_refl _                        -- both > r
   -- Apply the global axiom to φ_ext
