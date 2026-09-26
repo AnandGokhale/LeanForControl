@@ -525,7 +525,7 @@ end OsgoodConstruction
 lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
-      ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), Continuous v →
+      ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Set.Icc t₀ t) →
         v t₀ ∈ Set.Ico 0 a →
         (∀ s ∈ Set.Ico t₀ t, v s ∈ Set.Ico 0 a) →
         (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ -α.toFun (v s)) →

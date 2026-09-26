@@ -79,7 +79,7 @@ private lemma comparison_claim_1
     (ht : t₀ < t₁)
     (hz_sol : IsIntegralSolution t₀ t₁ z u₀ (fun s x => f s x + lam))
     (hz_deriv : ∀ t ∈ Ico t₀ t₁, HasDerivWithinAt z (f t (z t) + lam) (Ici t) t)
-    (hv_cont : Continuous v)
+    (hv_cont : ContinuousOn v (Icc t₀ t₁))
     (hz_cont : ContinuousOn z (Icc t₀ t₁))
     (hDv : ∀ t ∈ Ico t₀ t₁, D⁺ v t ≤ f t (v t))
     (hv₀ : v t₀ ≤ u₀)
@@ -92,7 +92,8 @@ private lemma comparison_claim_1
     simpa [intervalIntegral.integral_same] using hz_sol t₀ left_mem_uIcc
   let diff s := v s - z s
   have h_cont_diff : ContinuousOn diff (Icc t₀ t_bad) :=
-    hv_cont.continuousOn.sub (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
+    (hv_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2).sub
+      (hz_cont.mono <| Icc_subset_Icc_right ht_bad_mem.2)
   have h_start : diff t₀ ≤ 0 := by simpa [diff, hz₀] using hv₀
   have h_end : 0 < diff t_bad := sub_pos.mpr h_bad_ineq
   have ht_lt : t₀ < t_bad := lt_of_le_of_ne ht_bad_mem.1 <| by
@@ -142,7 +143,7 @@ theorem comparison_lemma
     (hu_deriv : ∀ t ∈ Ioo t₀ t₁, HasDerivAt u (f t (u t)) t)
     (hu_cont  : ContinuousOn u (Icc t₀ t₁))
     (hu₀      : u t₀ = u₀)
-    (hv_cont  : Continuous v)
+    (hv_cont  : ContinuousOn v (Icc t₀ t₁))
     (hDv      : ∀ t ∈ Ico t₀ t₁, D⁺ v t ≤ f t (v t))
     (hv_bdd   : ∀ t ∈ Ico t₀ t₁,
         IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (t+h) - v t) / h))
