@@ -212,6 +212,29 @@ visible gap rather than an unstated assumption that this library is continuous-t
 Rule 2 keeps this list short by construction: a theorem whose hypothesis is about `A` and whose
 conclusion is about `f` is a bridge, and these five are all of them.
 
+## Status: blueprint coverage
+
+Every public declaration in the rest of the library carries a `@[blueprint]` node, every label
+resolves, and nothing is declared-but-unrendered — `scripts/check_blueprint_labels.py` enforces
+the last two on demand. **The 18 files below are the whole gap**, and they are held back
+deliberately: each needs a rewrite or a clean-interfaces pass first, and annotating one now would
+document a shape that is about to change. Seven also still carry `Original:` docstring
+boilerplate, a leftover of the first deletion pass.
+
+| Files | Blocked on |
+|---|---|
+| `Controllability/{Controllability, Defs, Hautus, Reachability}.lean` | rewrite |
+| `Observability/{Defs, Hautus, Observability}.lean` | rewrite |
+| `KalmanDecomposition/{Defs, Decomposition, DecompositionExamples}.lean` | rewrite |
+| `Stability/Continuous/{DefsHurwitz, ExponentialStability, Hurwitz, InstabilityCertificate, LyapunovEquation}.lean` | clean-interfaces pass |
+| `MatrixAlgebra/{QuadraticForm, Rank, Spectrum}.lean` | clean-interfaces pass |
+
+162 declarations between them. `MatrixAlgebra/Spectrum.lean` is the case that motivated the rule:
+everything in it went `private` → public because Lean requires that once a declaration crosses a
+file boundary, which is not the same as being *designed* as public API. Annotate after deciding
+what the interface is, not before — the audit of the rest of the library repeatedly found that a
+node written against a provisional shape is worse than no node, because it reads as settled.
+
 ## Migration map
 
 **First pass, done.** #13 and #14 merged, then one housekeeping commit moved everything

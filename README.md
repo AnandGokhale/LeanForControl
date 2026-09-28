@@ -11,12 +11,12 @@ lake exe cache get          # download mathlib's prebuilt artifacts
 lake build                  # builds the project (~minutes the first time)
 ```
 
-`lake build` green is the source of truth. No `sorry` or `admit`. Six custom `axiom`s are
-used for real-analysis constructions and ODE existence results that are standard but not yet
-in Mathlib: two smoothing results in `LeanForControl/axioms.lean`, three comparison-function
-results in `LeanForControl/Comparison/Axioms.lean`, and scalar Picard–Lindelöf on a compact
-interval in `LeanForControl/ODEs/ODE_properties.lean`. Each carries a blueprint node marked
-*assumed without proof*; `#print axioms` on any result shows which it inherits.
+`lake build` green is the source of truth. No `sorry` or `admit`. Five custom `axiom`s remain,
+all comparison-function constructions that are standard but not yet in Mathlib: two smoothing
+results in `LeanForControl/axioms.lean` and three in `LeanForControl/Comparison/Axioms.lean`.
+Each carries a blueprint node marked *assumed without proof*; `#print axioms` on any result
+shows which it inherits. ODE existence and uniqueness are **proved**, not assumed — see
+`LeanForControl/ODEs/PicardLindelof.lean`.
 
 ## Three ways to look at the project
 

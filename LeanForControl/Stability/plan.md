@@ -37,7 +37,7 @@ Files:
 | Result | Lean name | File | Status |
 |---|---|---|---|
 | Trajectories, equilibria, stability predicates | — | `DefsNonAutonomous.lean` | ✅ done |
-| Picard–Lindelöf existence/uniqueness | — | — | planned (`ODEs/PicardLindelof.lean`) |
+| Picard–Lindelöf existence on `[t₀, ∞)` | `exists_isIntegralCurveOn_Ici` | `ODEs/PicardLindelof.lean` | ✅ done, axiom-free |
 | Class-K sandwich bounds for positive-definite functions | `LyapunovClassKBounds` | `LyapunovBounds.lean` | ✅ done |
 | Class-KL solution of the scalar decay ODE `ẏ = −α(y)` | `ClassK.exists_classKL_decaySolution` | `ClassKDecay.lean` | ✅ done |
 | Comparison bound `D⁺v ≤ −α(v)` ⟹ class-KL decay | `classK_dini_bound` | `ClassKDecay.lean` | ✅ done |

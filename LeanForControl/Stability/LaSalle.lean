@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.Stability.DefsAutonomous
 import LeanForControl.Stability.Autonomous
+import LeanForControl.ODEs.PicardLindelof
 import Architect
 
 variable {n : ℕ}
@@ -88,28 +89,6 @@ lemma mem_omegaLimitTraj_iff {φ : ℝ → ℝⁿ} {y : ℝⁿ} :
 
 /-! ## Invariance of the ω-limit set -/
 
-/-- The derivative hypothesis `Mathlib`'s Grönwall estimates want (`HasDerivWithinAt` on the
-    right ray `Ici s`) from the one an integral curve on a segment supplies. Inside the segment
-    the two agree, because `[s, t₁)` is a neighbourhood of `s` within `Ici s`. -/
-private lemma hasDerivWithinAt_Ici_of_isIntegralCurveOn
-    {g : ℝⁿ → ℝⁿ} {x : ℝ → ℝⁿ} {t₀ t₁ : ℝ}
-    (hx : IsIntegralCurveOn x (fun _ y => g y) (Set.Icc t₀ t₁)) :
-    ∀ s ∈ Set.Ico t₀ t₁, HasDerivWithinAt x (g (x s)) (Set.Ici s) s := fun s hs =>
-  (hx s ⟨hs.1, hs.2.le⟩).mono_of_mem_nhdsWithin <|
-    Set.ordConnected_Icc.mem_nhdsGE ⟨hs.1, hs.2.le⟩ ⟨hs.1.trans hs.2.le, le_rfl⟩ hs.2
-
-/-- Two solutions of the same autonomous, Lipschitz field separate at most exponentially.
-
-Grönwall, specialized to the autonomous integral-curve formulation the stability track uses. -/
-private lemma dist_le_of_isIntegralCurveOn {g : ℝⁿ → ℝⁿ} {K : NNReal} (hg : LipschitzWith K g)
-    {x y : ℝ → ℝⁿ} {t₀ t₁ : ℝ}
-    (hx : IsIntegralCurveOn x (fun _ z => g z) (Set.Icc t₀ t₁))
-    (hy : IsIntegralCurveOn y (fun _ z => g z) (Set.Icc t₀ t₁)) :
-    ∀ t ∈ Set.Icc t₀ t₁, dist (x t) (y t) ≤ dist (x t₀) (y t₀) * Real.exp (K * (t - t₀)) :=
-  dist_le_of_trajectories_ODE (fun _ => hg) hx.continuousOn
-    (hasDerivWithinAt_Ici_of_isIntegralCurveOn hx) hy.continuousOn
-    (hasDerivWithinAt_Ici_of_isIntegralCurveOn hy) le_rfl
-
 /-- **The ω-limit set of a trajectory is positively invariant** (Khalil, Lemma 4.1).
 
 This is the step that makes LaSalle's principle a theorem about Lyapunov functions rather than
@@ -163,7 +142,7 @@ theorem isPositivelyInvariant_omegaLimitTraj
     refine (hφ.comp_add_autonomous (r - t₀)).mono fun s hs => ?_
     simp only [Set.mem_vadd_set_iff_neg_vadd_mem, vadd_eq_add, neg_neg, Set.mem_Ici]
     linarith [hs.1]
-  have hcmp := dist_le_of_isIntegralCurveOn hf hu hψ t ht
+  have hcmp := dist_le_of_isIntegralCurveOn_Icc (fun _ => hf) hu hψ t ht
   simp only [show t₀ + (r - t₀) = r by ring] at hcmp
   refine ⟨r + (t - t₀), by linarith [(le_max_left a 0).trans hr_ge, ht.1], hball ?_⟩
   have hexp : Real.exp (K * (t - t₀)) ≤ C := by

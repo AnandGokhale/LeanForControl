@@ -572,36 +572,3 @@ theorem continuous_dependence_parameters
     _ ≤ α * (1 + 1 / L) * Real.exp (L * (t₁ - t₀)) := by
           linarith [div_nonneg hα.le hL.le]
     _ ≤ ε := hαε
-
-/-- **Picard-Lindelöf for scalar ODEs on compact intervals**.
-
-    For a jointly continuous right-hand side `g : ℝ → ℝ → ℝ` that is globally
-    Lipschitz in the state variable (uniformly in time), for any compact interval
-    `[t₀, t₁]` and initial value `x₀ : ℝ`, there exists an integral solution `z`
-    that is continuous and has right derivatives matching `g` on `[t₀, t₁)`.
-
-    This is the scalar, compact-interval instance of the Picard-Lindelöf theorem,
-    which holds because globally Lipschitz continuity prevents finite-time blowup. -/
-@[blueprint "lem:scalar-ode-exists-interval" (latexEnv := "lemma")
-  (statement := /-- \textbf{Assumed without proof.}  Let $g : \mathbb{R} \to \mathbb{R} \to
-    \mathbb{R}$ be jointly continuous and $L$-Lipschitz in its state argument, uniformly in
-    time, and let $t_0 \le t_1$.  Then for every $x_0$ there is a $z$, continuous on
-    $[t_0, t_1]$, that is an integral solution of $\dot z = g(t, z)$ with $z(t_0) = x_0$ and
-    has right derivative $g(s, z(s))$ at each $s \in [t_0, t_1)$.
-
-    This is Picard--Lindel\"of on a compact interval, in the scalar case.  Global — rather than
-    local — Lipschitz continuity is what makes the solution reach all of $[t_0, t_1]$: it forces
-    linear growth in the state, which rules out finite-time blowup.
-
-    It is the existence hypothesis that \cref{thm:comparison-lemma} takes as an assumption
-    rather than discharging, so that the comparison lemma and everything downstream of it depend
-    on no axiom. -/)]
-axiom scalar_ode_exists_interval
-    (g : ℝ → ℝ → ℝ) (L : ℝ) (hL : 0 < L)
-    (hg_cont : Continuous (Function.uncurry g))
-    (hg_lip : ∀ t : ℝ, LipschitzWith ⟨L, hL.le⟩ (g t))
-    {t₀ t₁ x₀ : ℝ} (ht : t₀ ≤ t₁) :
-    ∃ z : ℝ → ℝ,
-      IsIntegralSolution t₀ t₁ z x₀ g ∧
-      ContinuousOn z (Set.Icc t₀ t₁) ∧
-      ∀ s ∈ Set.Ico t₀ t₁, HasDerivWithinAt z (g s (z s)) (Set.Ici s) s

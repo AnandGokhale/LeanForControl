@@ -5,6 +5,7 @@ import LeanForControl.Comparison.Axioms
 import LeanForControl.Dini.DiniDeriv
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.ODE_properties
+import LeanForControl.ODEs.PicardLindelof
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
@@ -614,8 +615,9 @@ theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
     class $\mathcal{KL}$ $\sigma$ whose sections solve $\dot y = -\beta(y)$ with
     $\sigma(r,0) = r$.  Since $v$ is a Dini subsolution of the same equation and starts at
     $\sigma(v(t_0), 0)$, \cref{thm:comparison-lemma} bounds $v$ by it — the perturbed
-    solutions that lemma requires coming from \cref{lem:scalar-ode-exists-interval}, whose
-    hypotheses hold because $\beta$'s Lipschitz extension is globally Lipschitz. -/)]
+    solutions that lemma requires coming from
+    \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz}, whose hypotheses hold because
+    $\beta$'s Lipschitz extension is globally Lipschitz. -/)]
 lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
@@ -685,7 +687,7 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
           hu_deriv hu_cont hu₀
           hv_cont hDv' hv_bdd le_rfl
           (fun lam _ =>
-            scalar_ode_exists_interval (fun _ x => -β_ext x + lam) L hL_pos
+            exists_isIntegralSolution_Icc_of_lipschitz (g := fun _ x => -β_ext x + lam)
               ((hβ_ext_cont.neg.add continuous_const).comp continuous_snd)
               (fun _ => lipschitzWith_add_const hLip_ext.neg lam) ht_lt.le)
       exact h_bound t ⟨ht_lt.le, le_rfl⟩
