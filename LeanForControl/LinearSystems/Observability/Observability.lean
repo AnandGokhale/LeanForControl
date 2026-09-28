@@ -266,7 +266,6 @@ lemma A_mulVec_mem_unobservableSubspace_of_mem
   · exact (mem_unobservableSubspace_iff v).mp hv ⟨k.val + 1, hk⟩
   · -- `k.val + 1 = n`, so use the Cayley-Hamilton helper.
     push Not at hk
-    have hk_lt : k.val < n := k.isLt
     have heq : k.val + 1 = n := by omega
     rw [heq]
     exact mulVec_aPowN_eq_zero_of_mem_unobservableSubspace hv
