@@ -71,8 +71,8 @@ initial time `t₀`, and not on which solution — after which every trajectory 
 quantifies over every `c`.
 
 This is Khalil (4.17), the attractivity half of uniform asymptotic stability. The delay is
-what makes it *uniform*: `Tbar_fn` is the least such `T`, and the whole class-`KL`
-construction is built by regularizing it. -/
+what makes it *uniform*: the class-`KL` construction is built by regularizing the least such
+`T` into a continuous, strictly decreasing function of the tolerance. -/
 @[blueprint "def:locallyHasUniformConvergenceTime"
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ starting within $c$ of
     $x_{\mathrm{eq}}$ \emph{have local uniform convergence times} when for every

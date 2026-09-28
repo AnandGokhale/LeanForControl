@@ -31,7 +31,7 @@ Lyapunov equation has a uniform negative quadratic Lie-derivative bound.
 
 Reference: adapted from the quadratic-Lyapunov proof of the stable branch of Lyapunov's
 indirect method; Khalil, *Nonlinear Systems*. -/
-theorem exists_centeredQuadraticForm_decay
+private theorem exists_centeredQuadraticForm_decay
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A P : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
@@ -42,7 +42,7 @@ theorem exists_centeredQuadraticForm_decay
       fderiv ℝ (centeredQuadraticForm P x_eq) x (f x) ≤
         -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by
   obtain ⟨r, hr, hrem⟩ :=
-    exists_abs_fderiv_centeredQuadraticForm_remainder_le A P hf heq hJac
+    exists_abs_fderiv_centeredQuadraticForm_remainder_le A P hf hJac
       (c := 1 / 2) (by norm_num)
   refine ⟨r, hr, ?_⟩
   intro x hx
@@ -73,7 +73,7 @@ finite forward solution segment.
 
 Reference: adapted from the quadratic-Lyapunov proof of the stable branch of Lyapunov's
 indirect method; Khalil, *Nonlinear Systems*. -/
-theorem locallyExponentiallyStable_of_continuousLyapunovEquation
+private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
     (hn : 0 < n) {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A P : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)

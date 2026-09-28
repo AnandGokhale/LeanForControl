@@ -155,7 +155,8 @@ private theorem exponential_lower_bound_on_forward_segment
 /-- If the exponential lower bound at the terminal time exceeds the quadratic
 upper bound on a ball, the segment must leave that ball.
 
-Original: terminal-time contradiction in the Chetaev argument. -/
+The terminal-time contradiction of the Chetaev argument: exponential growth of `V` eventually
+outruns the quadratic ceiling that holds inside the ball. -/
 private theorem exists_radius_escape_on_segment
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ}
     {φ : ℝ → ℝⁿ} {T ρ α C : ℝ}
@@ -193,7 +194,8 @@ private theorem exists_radius_escape_on_segment
 /-- The smooth-cutoff segment from a positive Chetaev seed reaches the boundary
 of the certificate ball on some finite horizon.
 
-Original: finite-continuation form of the Chetaev escape argument. -/
+The finite-continuation form of the escape argument: the cutoff field is globally Lipschitz, so
+the segment extends as far as needed rather than stopping at a blow-up time. -/
 private theorem exists_cutoff_segment_reaching_radius
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
@@ -225,7 +227,8 @@ private theorem exists_cutoff_segment_reaching_radius
 /-- Cutoff solution segments which start arbitrarily close to the equilibrium
 and reach a fixed radius witness forward instability.
 
-Original: first-exit reduction for locally valid differential equations. -/
+The first-exit reduction: a segment of the cutoff field agrees with the original field up to its
+first exit from the ball, which is all instability needs. -/
 private theorem unstable_of_cutoff_segment_escape
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ρ : ℝ} (hρ : 0 < ρ)
     (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),

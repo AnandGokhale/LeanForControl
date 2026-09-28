@@ -218,12 +218,11 @@ private lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ �
   have ha_le_aα2 : a ≤ a_α / 2 := min_le_left _ _
   have ha_le_c   : a ≤ c        := min_le_right _ _
   have ha_lt_aα  : a < a_α      := ha_le_aα2.trans_lt (half_lt_self α.ha)
-  have ha_c : a ∈ Set.Ioc 0 c := ⟨ha, ha_le_c⟩
-  have ha_a : a ∈ Set.Ioc 0 a := ⟨ha, le_refl a⟩
   -- `β := min (α_res ·) (√(α_res · * U_inv ·))` — the first factor carries the class `K`
   -- behaviour in the initial deviation, the second the decay in elapsed time.
   let α_res : ClassK a (α.toFun a) := α.restrict ha ha_lt_aα
-  let U_inv := W_fn_inv_classLSingular f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα ha_a
+  obtain ⟨U_inv, hU_decay⟩ :=
+    exists_classLSingular_decayBound hconv α hα_bound ha ha_le_c ha_lt_aα
   refine ⟨a, ClassKL.mk_singular_cap α_res U_inv, ?_⟩
   intro t₀ ht₀ φ hφ h_init t ht
   have h_α : ‖φ t - x_eq‖ ≤ α_res.toFun ‖φ t₀ - x_eq‖ :=
@@ -234,7 +233,7 @@ private lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ �
   · have h_sub_ne : t - t₀ ≠ 0 := (sub_pos.mpr ht_strict).ne'
     simp only [if_neg h_sub_ne]
     have h_U : ‖φ t - x_eq‖ ≤ U_inv.toFun (t - t₀) :=
-      U_decay_bound f x_eq hconv α hα_bound ha ha_le_c ha_lt_aα ha_a ht₀ hφ h_init ht_strict
+      hU_decay t₀ ht₀ φ hφ h_init t ht_strict
     -- Geometric-mean cap: a nonnegative `x` with `x ≤ A` and `x ≤ B` also has `x ≤ √(A·B)`,
     -- since `x² ≤ A·B`. This is what lets the two bounds be combined without losing either.
     refine le_min h_α ?_
@@ -362,13 +361,10 @@ theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → 
   · intro hGUAS
     obtain ⟨hGUS, hGUC⟩ := hGUAS
     obtain ⟨α, h_global_α_bound⟩ := globallyUniformlyStable_implies_classKInfty f x_eq hGUS
-    let U := fun r s => Function.invFunOn (W_fn f x_eq r) (Set.Ioi 0) s
+    obtain ⟨U, hU_pos, hU_anti, hU_tendsto, hU_mono_r, hU_decay⟩ :=
+      exists_decayBound_family α hGUC h_global_α_bound
     obtain ⟨β, hβ_rtendsto, hβ_at_zero, hβ_at_pos⟩ :=
-      ClassKLGlobal.of_KInfty_LSingular_family α U
-        (fun r hr s hs => guas_invFunOn_pos f x_eq α hGUC h_global_α_bound hr hs)
-        (fun r hr => (guas_invFunOn_strictAntiOn f x_eq α hGUC h_global_α_bound hr).antitoneOn)
-        (fun r hr => guas_invFunOn_tendsto_zero f x_eq α hGUC h_global_α_bound hr)
-        (fun s hs => guas_invFunOn_mono_r f x_eq α hGUC h_global_α_bound hs)
+      ClassKLGlobal.of_KInfty_LSingular_family α U hU_pos hU_anti hU_tendsto hU_mono_r
     refine ⟨β.toFun, β.map_zero, β.continuous, β.strict_mono_r, hβ_rtendsto, β.anti_s,
             β.tendsto_zero, ?_⟩
     intro t₀ ht₀ φ hφ t ht
@@ -384,8 +380,7 @@ theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → 
         simp only [h_t_zero, hr_eq]; linarith [β.map_zero (t - t₀) h_sub_pos.le]
       · -- r > 0: geometric mean bound chains to β
         have h_U : ‖φ t - x_eq‖ ≤ U (‖φ t₀ - x_eq‖ + 1) (t - t₀) :=
-          guas_U_decay_bound f x_eq α hGUC h_global_α_bound (by positivity)
-            ht₀ hφ (by linarith) ht_strict
+          hU_decay _ (by positivity) t₀ ht₀ φ hφ (by linarith) t ht_strict
         exact (le_min h_α (by
           rw [← Real.sqrt_sq (norm_nonneg _)]
           exact Real.sqrt_le_sqrt (by nlinarith [norm_nonneg (φ t - x_eq)]))).trans

@@ -5,12 +5,12 @@ tables**. To retire a file, add it to `scripts/blueprint_audit_signoff.txt`; it 
 drops out of the list below. To hold one back instead — because it needs work beyond
 annotation — add it to `scripts/blueprint_audit_defer.txt` with a reason.
 
-**7** annotated declarations left to read, across **11** files.
-Signed off so far: **27**. Library totals: 499 declarations in
-57 files, 227 annotated, 0 never `\inputleannode`d and so
+**0** annotated declarations left to read, across **0** files.
+Signed off so far: **38**. Library totals: 504 declarations in
+57 files, 245 annotated, 0 never `\inputleannode`d and so
 absent from the rendered blueprint (INVENTORY §1c).
 
-**Signed off:** `LeanForControl/Analysis/Continuity.lean`, `LeanForControl/Analysis/FrechetDerivative.lean`, `LeanForControl/Analysis/Integrals.lean`, `LeanForControl/Analysis/Limsup.lean`, `LeanForControl/Analysis/MonotoneFunctions.lean`, `LeanForControl/Analysis/SpectralRadius.lean`, `LeanForControl/Comparison/Axioms.lean`, `LeanForControl/Comparison/ClassK.lean`, `LeanForControl/Comparison/ClassKInfty.lean`, `LeanForControl/Comparison/ClassKL.lean`, `LeanForControl/Comparison/ClassL.lean`, `LeanForControl/Comparison/ComparisonFunctions.lean`, `LeanForControl/Dini/DiniDeriv.lean`, `LeanForControl/LinearSystems/Solutions/CtsLTI.lean`, `LeanForControl/LinearSystems/Solutions/CtsLTV.lean`, `LeanForControl/LinearSystems/Solutions/DefsCtsLTV.lean`, `LeanForControl/LinearSystems/Solutions/DefsDiscLTV.lean`, `LeanForControl/LinearSystems/Solutions/DiscLTV.lean`, `LeanForControl/MatrixAlgebra/Exponential.lean`, `LeanForControl/ODEs/ComparisonLemma.lean`, `LeanForControl/ODEs/GronwallBellman.lean`, `LeanForControl/ODEs/ODE_properties.lean`, `LeanForControl/Stability/Autonomous.lean`, `LeanForControl/Stability/ClassKDecay.lean`, `LeanForControl/Stability/DefsAutonomous.lean`, `LeanForControl/Stability/DefsNonAutonomous.lean`, `LeanForControl/Stability/KLCharacterization.lean`
+**Signed off:** `LeanForControl/Analysis/Continuity.lean`, `LeanForControl/Analysis/FrechetDerivative.lean`, `LeanForControl/Analysis/Integrals.lean`, `LeanForControl/Analysis/Limsup.lean`, `LeanForControl/Analysis/MonotoneFunctions.lean`, `LeanForControl/Analysis/SpectralRadius.lean`, `LeanForControl/Comparison/Axioms.lean`, `LeanForControl/Comparison/ClassK.lean`, `LeanForControl/Comparison/ClassKInfty.lean`, `LeanForControl/Comparison/ClassKL.lean`, `LeanForControl/Comparison/ClassL.lean`, `LeanForControl/Comparison/ComparisonFunctions.lean`, `LeanForControl/Dini/DiniDeriv.lean`, `LeanForControl/LinearSystems/Solutions/CtsLTI.lean`, `LeanForControl/LinearSystems/Solutions/CtsLTV.lean`, `LeanForControl/LinearSystems/Solutions/DefsCtsLTV.lean`, `LeanForControl/LinearSystems/Solutions/DefsDiscLTV.lean`, `LeanForControl/LinearSystems/Solutions/DiscLTV.lean`, `LeanForControl/MatrixAlgebra/Exponential.lean`, `LeanForControl/ODEs/ComparisonLemma.lean`, `LeanForControl/ODEs/GronwallBellman.lean`, `LeanForControl/ODEs/ODE_properties.lean`, `LeanForControl/Stability/Autonomous.lean`, `LeanForControl/Stability/ClassKDecay.lean`, `LeanForControl/Stability/DefsAutonomous.lean`, `LeanForControl/Stability/DefsNonAutonomous.lean`, `LeanForControl/Stability/KLCharacterization.lean`, `LeanForControl/Stability/KLCharacterizationTools.lean`, `LeanForControl/Stability/LaSalle.lean`, `LeanForControl/Stability/LyapunovBounds.lean`, `LeanForControl/Stability/LyapunovIndirect/Chetaev.lean`, `LeanForControl/Stability/LyapunovIndirect/DefsDynamics.lean`, `LeanForControl/Stability/LyapunovIndirect/Linearization.lean`, `LeanForControl/Stability/LyapunovIndirect/LinearizationInstability.lean`, `LeanForControl/Stability/LyapunovIndirect/Lyapunov.lean`, `LeanForControl/Stability/LyapunovIndirect/NonlinearInstability.lean`, `LeanForControl/Stability/NonAutonomous.lean`, `LeanForControl/axioms.lean`
 
 **Deferred** (18 files, 162 declarations) — held out of the audit on
 purpose, per `scripts/blueprint_audit_defer.txt`. Not read, not confirmed; annotating
@@ -55,7 +55,7 @@ The `Do` column says which case each declaration is in:
 - **read** — has a node; check the `statement` (and `proof`) is *true of the Lean*.
   Nothing mechanical verifies this. Highest yield is any declaration whose **type**
   changed in a migration.
-- **write** (48 left) — public, no node yet. Write one. The `Reach` column says
+- **write** (0 left) — public, no node yet. Write one. The `Reach` column says
   whether anything actually uses it; a public declaration nothing references is a
   deletion candidate, but keeping it to round out an API is fine — its node is then the
   record of why it stays.
@@ -89,155 +89,4 @@ the *wrong* declaration lands here, so read these first.
 | `thm:positive-real-eigenvalue-unstable` | `unstable_of_exists_complex_eigenvalue_re_pos` | `LeanForControl/Stability/LyapunovIndirect/NonlinearInstability.lean` |
 
 ---
-
-### `LeanForControl/Stability/KLCharacterizationTools.lean`
-*30 declarations, none annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| —  | `validTSet` | def · p | internal | `—` | — |
-| **write** | `Tbar_fn` | def | external | `—` | — |
-| —  | `validTSet_bddBelow` | lemma · p | internal | `—` | — |
-| —  | `validTSet_nonempty` | lemma · p | internal | `—` | — |
-| —  | `Tbar_nonneg_of` | lemma · p | internal | `—` | — |
-| —  | `Tbar_antitone` | lemma · p | internal | `—` | — |
-| —  | `Tbar_intervalIntegrable` | lemma · p | internal | `—` | — |
-| —  | `Tbar_intervalIntegrable_of_pos` | lemma · p | internal | `—` | — |
-| —  | `Tbar_zero_of_classK_bound` | lemma · p | internal | `—` | — |
-| —  | `Tbar_mono_r` | lemma · p | internal | `—` | — |
-| **write** | `W_fn` | def | external | `—` | — |
-| **write** | `W_pos` | lemma | internal | `—` | — |
-| —  | `W_ge_Tbar` | lemma · p | internal | `—` | — |
-| —  | `norm_le_of_Tbar_lt` | lemma · p | internal | `—` | — |
-| —  | `W_fn_eq` | lemma · p | internal | `—` | — |
-| **write** | `W_fn_continuousOn` | lemma | internal | `—` | — |
-| **write** | `W_fn_strictAntiOn` | lemma | internal | `—` | — |
-| **write** | `W_fn_tendsto_nhdsGT` | lemma | internal | `—` | — |
-| **write** | `W_fn_tendsto_atTop` | lemma | internal | `—` | — |
-| **write** | `W_fn_inv_classLSingular` | def | external | `—` | — |
-| **write** | `W_fn_mono_r` | lemma | internal | `—` | — |
-| **write** | `invFunOn_mono_r` | lemma | internal | `—` | — |
-| **write** | `U_decay_bound` | lemma | external | `—` | — |
-| —  | `mk_ClassK_from_KInfty` | def · p | internal | `—` | — |
-| —  | `HasUniformClassKInftyBound.toClassK` | lemma · p | external | `—` | — |
-| **write** | `guas_invFunOn_strictAntiOn` | lemma | external | `—` | — |
-| **write** | `guas_invFunOn_pos` | lemma | external | `—` | — |
-| **write** | `guas_invFunOn_tendsto_zero` | lemma | external | `—` | — |
-| **write** | `guas_U_decay_bound` | lemma | external | `—` | — |
-| **write** | `guas_invFunOn_mono_r` | lemma | external | `—` | — |
-
-### `LeanForControl/Stability/LaSalle.lean`
-*8 declarations, 3 annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `omegaLimitTraj` | def | internal | `—` | — |
-| **write** | `V_antitoneOn_lasalle` | lemma | internal | `—` | — |
-| **write** | `lasalle_V_tendsto` | lemma | internal | `—` | — |
-| **write** | `V_const_on_omegaLimit` | lemma | internal | `—` | — |
-| **write** | `omegaLimit_subset_of_invariant` | lemma | internal | `—` | — |
-| read | `lasalle_invariance_principle` | theorem | internal | `thm:lasalle-invariance-principle` | yes |
-| read | `lasalle_local_asymptotic_stable` | theorem | internal | `thm:lasalle-local-asymptotic-stable` | yes |
-| read | `lasalle_global_asymptotic_stable` | theorem | internal | `thm:lasalle-global-asymptotic-stable` | yes |
-
-### `LeanForControl/Stability/LyapunovBounds.lean`
-*13 declarations, 1 annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `annulus` | def | internal | `—` | — |
-| **write** | `psi_fn` | def | internal | `—` | — |
-| **write** | `phi_fn` | def | internal | `—` | — |
-| **write** | `psi_fn_zero` | lemma | internal | `—` | — |
-| **write** | `psi_fn_pos` | lemma | internal | `—` | — |
-| **write** | `psi_fn_mono` | lemma | internal | `—` | — |
-| **write** | `V_ge_psi` | lemma | internal | `—` | — |
-| **write** | `phi_fn_zero` | lemma | internal | `—` | — |
-| **write** | `phi_fn_mono` | lemma | internal | `—` | — |
-| **write** | `V_le_phi` | lemma | internal | `—` | — |
-| **write** | `exists_classK_lower_bound` | lemma | internal | `—` | — |
-| **write** | `exists_classK_upper_bound` | lemma | internal | `—` | — |
-| read | `LyapunovClassKBounds` | theorem | external | `thm:lyapunov-class-K-bounds` | yes |
-
-### `LeanForControl/Stability/LyapunovIndirect/Chetaev.lean`
-*7 declarations, 1 annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| —  | `exists_forward_segment_of_lipschitz_bounded` | theorem · p | internal | `—` | — |
-| —  | `exists_cutoff_forward_segment` | theorem · p | internal | `—` | — |
-| —  | `exponential_lower_bound_on_forward_segment` | theorem · p | internal | `—` | — |
-| —  | `exists_radius_escape_on_segment` | theorem · p | internal | `—` | — |
-| —  | `exists_cutoff_segment_reaching_radius` | theorem · p | internal | `—` | — |
-| —  | `unstable_of_cutoff_segment_escape` | theorem · p | internal | `—` | — |
-| read | `unstable_of_exponential_chetaev` | theorem | external | `thm:exponential-chetaev-unstable` | yes · name≉label |
-
-### `LeanForControl/Stability/LyapunovIndirect/DefsDynamics.lean`
-*1 declaration, none annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `affineLinearVectorField` | def | external | `—` | — |
-
-### `LeanForControl/Stability/LyapunovIndirect/Linearization.lean`
-*3 declarations, 1 annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `exists_centeredQuadraticForm_decay` | theorem | external | `—` | — |
-| **write** | `locallyExponentiallyStable_of_continuousLyapunovEquation` | theorem | internal | `—` | — |
-| read | `hurwitz_linearization_locally_exponentially_stable` | theorem | unused | `thm:hurwitz-linearization-locally-exponentially-stable` | yes |
-
-### `LeanForControl/Stability/LyapunovIndirect/LinearizationInstability.lean`
-*9 declarations, none annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| —  | `realEigenmode` | def · p | internal | `—` | — |
-| —  | `realMulVec` | def · p | internal | `—` | — |
-| —  | `hasDerivAt_realEigenmode` | lemma · p | internal | `—` | — |
-| —  | `realEigenmode_deriv_eq_mulVec` | lemma · p | internal | `—` | — |
-| —  | `hasDerivAt_realEigenmode_of_eigenvector` | lemma · p | internal | `—` | — |
-| —  | `norm_realPart_toLp_le` | lemma · p | internal | `—` | — |
-| —  | `abs_apply_le_euclideanNorm` | lemma · p | internal | `—` | — |
-| —  | `norm_realEigenmode_le` | lemma · p | internal | `—` | — |
-| **write** | `unstable_affineLinear_of_eigenvalue_re_pos` | theorem | unused | `—` | — |
-
-### `LeanForControl/Stability/LyapunovIndirect/Lyapunov.lean`
-*1 declaration, none annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `exists_abs_fderiv_centeredQuadraticForm_remainder_le` | theorem | external | `—` | — |
-
-### `LeanForControl/Stability/LyapunovIndirect/NonlinearInstability.lean`
-*4 declarations, 1 annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| —  | `exists_centered_quadratic_seed` | theorem · p | internal | `—` | — |
-| **write** | `unstable_of_quadratic_certificate` | theorem | external | `—` | — |
-| **write** | `unstable_of_complex_eigenvalue_re_pos` | theorem | internal | `—` | — |
-| read | `unstable_of_exists_complex_eigenvalue_re_pos` | theorem | unused | `thm:positive-real-eigenvalue-unstable` | yes · name≉label |
-
-### `LeanForControl/Stability/NonAutonomous.lean`
-*6 declarations, none annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `hasDerivAt_V_comp_traj_NA` | lemma | external | `—` | — |
-| **write** | `hasDerivWithinAt_V_comp_traj_NA` | lemma | internal | `—` | — |
-| **write** | `V_NA_nonincreasing` | lemma | internal | `—` | — |
-| —  | `NA_ball_invariant` | lemma · p | internal | `—` | — |
-| **write** | `lyapunov_uniformly_stable_NA` | theorem | unused | `—` | — |
-| **write** | `lyapunov_uniformly_asymptotic_stable_NA` | theorem | unused | `—` | — |
-
-### `LeanForControl/axioms.lean`
-*3 declarations, none annotated*
-
-| Do | Declaration | Kind | Reach | Blueprint label | Rendered / flags |
-|---|---|---|---|---|---|
-| **write** | `exists_strictMono_lower_bound` | axiom | external | `—` | — |
-| **write** | `exists_strictMono_upper_bound_global` | axiom | external | `—` | — |
-| **write** | `exists_strictMono_upper_bound` | lemma | external | `—` | — |
 

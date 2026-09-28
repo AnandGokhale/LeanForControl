@@ -570,6 +570,12 @@ solution is drained at a shared rate.
 
 \section{Lyapunov's indirect method}
 
+\inputleannode{def:affineLinearVectorField}
+
+\inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
+
+\inputleannode{thm:unstable-affineLinear-of-eigenvalue-re-pos}
+
 \inputleannode{thm:frechet-linearization-error-bound}
 
 The stable-branch theorem gives uniform local exponential decay on every finite
@@ -584,6 +590,24 @@ globally defined.
 
 \section{LaSalle's invariance principle}
 
+Lyapunov's theorems conclude stability from a strict decrease of $V$. LaSalle's principle covers
+the case $\dot{V} \le 0$, where $V$ may stall: a trajectory confined to a compact set must then
+settle into the region where $\dot{V}$ vanishes. The mechanism is the $\omega$-limit set. Along a
+trajectory $V$ is nonincreasing and bounded below, hence convergent, so $V$ is \emph{constant} on
+$\omega(\varphi)$ --- and a set on which a solution can live while $V$ stays constant is one where
+$\dot{V} = 0$. Making that last step a theorem rather than a picture is what the invariance of
+$\omega(\varphi)$ supplies, and it is the only place uniqueness of solutions is needed.
+
+\inputleannode{def:omegaLimitTraj}
+
+\inputleannode{lem:mem-omegaLimitTraj-iff}
+
+\inputleannode{lem:isPositivelyInvariant-omegaLimitTraj}
+
+\inputleannode{def:lieDerivZeroSet}
+
+\inputleannode{lem:lieDeriv-eq-zero-on-omegaLimitTraj}
+
 \inputleannode{thm:lasalle-invariance-principle}
 
 \inputleannode{thm:lasalle-local-asymptotic-stable}
@@ -591,6 +615,17 @@ globally defined.
 \inputleannode{thm:lasalle-global-asymptotic-stable}
 
 \section{Lyapunov class \texorpdfstring{$\mathcal{K}$}{K} bounds}
+
+A Lyapunov function is positive definite: a pointwise condition, awkward to combine with
+estimates. The theorem below converts it into monotone bounds in the single variable $\|x\|$,
+after which every Lyapunov argument can be run in the comparison-function calculus. The two
+smoothing results it rests on are assumed, not proved.
+
+\inputleannode{lem:exists-strictMono-lower-bound}
+
+\inputleannode{lem:exists-strictMono-upper-bound-global}
+
+\inputleannode{lem:exists-strictMono-upper-bound}
 
 \inputleannode{thm:lyapunov-class-K-bounds}
 
@@ -652,6 +687,22 @@ statements readable.
 
 \inputleannode{def:globallyExponentiallyStableNA}
 
+\section{Uniform decay envelopes}
+
+A uniform convergence-time hypothesis says that for each tolerance $\eta$ there is a delay
+$T(\eta)$ after which every trajectory is inside the $\eta$-ball. Read the other way round, it
+bounds how far a trajectory can still be after a given elapsed time — but only through a
+function of $\eta$ that may be discontinuous, and so is not yet a comparison function.
+
+The two results below do the regularization: they turn the delay into a genuine decay envelope,
+a function of elapsed time alone that is continuous, positive and vanishing at $+\infty$. That
+envelope is the time-decay half of the class $\mathcal{KL}$ bounds of the next section; the
+class $\mathcal{K}$ bound supplies the other half, the dependence on the initial deviation.
+
+\inputleannode{lem:exists-classLSingular-decayBound}
+
+\inputleannode{lem:exists-decayBound-family}
+
 \section{Comparison-function characterizations}
 
 Each stability notion above is equivalent to the existence of a comparison-function bound. These
@@ -665,6 +716,19 @@ solutions, not a relation between two.
 \inputleannode{lem:uniformlyAsymptoticStableNA-iff-classKL}
 
 \inputleannode{lem:globallyUniformlyAsymptoticStableNA-iff-classKL}
+
+\section{Lyapunov's theorems for time-varying systems}
+
+For a time-varying $V$ the Lie derivative acquires an explicit time term, and positive
+definiteness of $V(t, \cdot)$ on its own buys nothing uniform in $t_0$: $V$ could flatten as
+$t \to \infty$. Sandwiching $V$ between two positive-definite functions of the state alone is
+what restores uniformity.
+
+\inputleannode{lem:hasDerivAt-V-comp-traj-NA}
+
+\inputleannode{thm:lyapunov-uniformly-stable-NA}
+
+\inputleannode{thm:lyapunov-uniformly-asymptotic-stable-NA}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
@@ -684,6 +748,10 @@ mean-value bound and its inverse supplies the decay rate.
 \inputleannode{lem:strictAntiOnInvFunOn}
 
 \inputleannode{lem:invFunOnTendstoZero}
+
+\inputleannode{lem:invFunOnContinuousOn}
+
+\inputleannode{lem:invFunOnTendstoAtTop}
 
 \section{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions and the Osgood construction}
 

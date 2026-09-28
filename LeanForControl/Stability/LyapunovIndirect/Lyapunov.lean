@@ -1,6 +1,7 @@
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.Analysis.FrechetDerivative
 import Mathlib.Analysis.InnerProductSpace.Calculus
+import Architect
 
 /-!
 # The shared remainder-absorption step of Lyapunov's indirect method
@@ -31,11 +32,33 @@ error term against the certificate's own decay rate, and the unstable branch
 (`unstable_of_quadratic_certificate`) uses it to bound the error term against the
 shifted certificate's growth rate.
 
-Reference: adapted from the quadratic-Lyapunov proof of Lyapunov's indirect method;
-Khalil, *Nonlinear Systems*. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7 (the quadratic-Lyapunov proof of
+Lyapunov's indirect method). -/
+@[blueprint "lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le"
+  (statement := /-- Let $f$ be $C^{1}$ with $Df(x_{\mathrm{eq}}) = A$, let $M$ be a matrix, and
+    let $c > 0$.  Then there is $r > 0$ such that for every $x$ with
+    $\|x - x_{\mathrm{eq}}\| < r$,
+    \[
+      \bigl|\,D\,q_{M}(x)\,[\,f(x) - f(x_{\mathrm{eq}}) - A(x - x_{\mathrm{eq}})\,]\,\bigr|
+        \le c\,\|x - x_{\mathrm{eq}}\|^{2},
+    \]
+    where $q_{M}$ is the centred quadratic form $q_{M}(x) = \langle M(x - x_{\mathrm{eq}}),\,
+    x - x_{\mathrm{eq}}\rangle$.
+
+    The bracket is the first-order remainder of $f$ at $x_{\mathrm{eq}}$.  The point is that
+    $c$ is \emph{arbitrary}: near enough to the equilibrium the remainder perturbs
+    $\dot{q}_{M}$ by less than any prescribed multiple of
+    $\|x - x_{\mathrm{eq}}\|^{2}$, which is the order of $\dot{q}_{M}$ itself.  This is why
+    the linearization decides stability. -/)
+  (proof := /-- Write $y = x - x_{\mathrm{eq}}$ and $e$ for the remainder.  Differentiability of
+    $f$ at $x_{\mathrm{eq}}$ gives, for any $\eta > 0$, a radius within which
+    $\|e\| \le \eta\|y\|$.  The derivative of a centred quadratic form is bounded by
+    $|Dq_{M}(x)[e]| \le 2\|M\|\,\|y\|\,\|e\|$, so the product is at most
+    $2\|M\|\eta\,\|y\|^{2}$.  Choosing $\eta = c / (4(\|M\| + 1))$ makes
+    $2\|M\|\eta \le c$. -/)]
 theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} (A M : Matrix (Fin n) (Fin n) ℝ)
-    (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
+    (hf : ContDiff ℝ 1 f)
     (hJac : fderiv ℝ f x_eq = Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     {c : ℝ} (hc : 0 < c) :
     ∃ r > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
