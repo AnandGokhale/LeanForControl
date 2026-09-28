@@ -145,24 +145,31 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Controllability matrix | `controllabilityMatrix` | `Controllability/Controllability.lean` | ✅ done |
+| Controllability matrix | `controllabilityMatrix` | `Controllability/Defs.lean` | ✅ done |
 | Controllability ⟺ full row rank | `isControllable_iff_controllabilityMatrix_rank_eq` | `Controllability/Controllability.lean` | ✅ done |
-| Reachable subspace | `reachableSubspace` | `Controllability/DefsReachability.lean` | ✅ done |
+| Reachable subspace | `reachableSubspace` | `Controllability/Defs.lean` | ✅ done |
 | Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `Controllability/Reachability.lean` | ✅ done |
 | PBH test for controllability | `isControllable_iff_hautus` | `Controllability/Hautus.lean` | ✅ done |
 | Controllability/observability duality | `isControllable_iff_isObservable_transpose` | `Controllability/Hautus.lean` | ✅ done |
-| Controllable decomposition (standalone) | — | `Controllability/Decomposition.lean` | planned |
+| Controllable component on the reachable subspace | `reachableMatrices_isControllable` | `Controllability/{DefsDecomposition,Decomposition}.lean` | proved (PR #20) |
 | Stabilizability | — | `Controllability/Hautus.lean` | planned |
-| Observability matrix | `observabilityMatrix` | `Observability/Observability.lean` | ✅ done |
+| Observability matrix | `observabilityMatrix` | `Observability/Defs.lean` | ✅ done |
 | Observability ⟺ trivial kernel | `isObservable_iff_observabilityMatrix_ker_trivial` | `Observability/Observability.lean` | ✅ done |
 | Observability ⟺ full column rank | `isObservable_iff_observabilityMatrix_rank_eq` | `Observability/Observability.lean` | ✅ done |
-| Unobservable subspace, `A`-invariance | `unobservableSubspace` | `Observability/Hautus.lean` | ✅ done |
+| Unobservable subspace, `A`-invariance | `unobservableSubspace` | `Observability/{Defs,Hautus}.lean` | ✅ done |
 | PBH test for observability | `isObservable_iff_hautus` | `Observability/Hautus.lean` | ✅ done |
-| Observable decomposition (standalone) | — | `Observability/Decomposition.lean` | planned |
+| Observable component on the quotient by the unobservable subspace | `observableMatrices_isObservable` | `Observability/{DefsDecomposition,Decomposition}.lean` | proved (PR #20) |
 | Detectability | — | `Observability/Hautus.lean` | planned |
 | Kalman decomposition | `exists_kalmanDecomposition` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
 | Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
 | Minimal realizations | — | — | planned, no directory settled (needs both — see open questions) |
+
+The component modules follow Hespanha's controllable and observable decompositions.
+They retain separate definitions and theorems, following `CONTRIBUTING.md`.
+Only the component pairs are constructed here; no new ambient block similarity
+or transfer-function theorem is claimed. Restriction is field-generic. The quotient
+uses the existing complex unobservable-subspace API; generalizing that API and its
+Hautus consumers is deferred.
 
 ## Status: solutions
 

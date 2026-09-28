@@ -4,14 +4,13 @@ import Mathlib.LinearAlgebra.Dimension.Free
 import Architect
 
 /-!
-# Definitions for the observable decomposition
+# The observable component
 
-The canonical observable part of `(A,C)` is the quotient of the state space
-by `unobservableSubspace A C`.  Invariance makes the state map descend to the
-quotient, while the output map descends because it kills every unobservable
-state.  A finite quotient basis then supplies ordinary `Fin`-indexed matrices.
-
-Original: semantic decomposition infrastructure for LeanForControl.
+The state and output maps descend to the quotient by the unobservable
+subspace. In a finite basis their matrices represent the observable component
+in Hespanha, *Linear Systems Theory*, observable decomposition.
+The quotient construction is an equivalent formulation of that component;
+the basis choice is Lean coordinate infrastructure.
 -/
 
 namespace LinearSystems
@@ -20,10 +19,14 @@ open Matrix
 
 variable {n p : ℕ}
 
-/-- The state endomorphism induced on the quotient by the unobservable
-subspace.
+/-- The state map induced on the quotient by the unobservable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
+Equivalent quotient formulation of the observable component in Hespanha,
+*Linear Systems Theory*, observable decomposition. -/
+@[blueprint "def:observable-state-map"
+  (statement := /-- The invariance of $\mathcal N(A,C)$
+    (\cref{lem:unobservableSubspace-invariant}) defines a state map on
+    $\mathbb C^n/\mathcal N(A,C)$ by $A_o[x]=[Ax]$. -/)]
 noncomputable def observableStateMap
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     Module.End ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C) :=
@@ -32,46 +35,39 @@ noncomputable def observableStateMap
 
 /-- The output map induced on the quotient by the unobservable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
+Equivalent quotient formulation of the observable component in Hespanha,
+*Linear Systems Theory*, observable decomposition. -/
+@[blueprint "def:observable-output-map"
+  (statement := /-- Since $\mathcal N(A,C)\subseteq\ker C$, the output map
+    descends to $\mathbb C^n/\mathcal N(A,C)$: $C_o[x]=Cx$. -/)]
 noncomputable def observableOutputMap
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     ((Fin n → ℂ) ⧸ unobservableSubspace A C) →ₗ[ℂ] (Fin p → ℂ) :=
-  (unobservableSubspace A C).liftQ C.mulVecLin (by
-    intro x hx
-    rw [LinearMap.mem_ker]
-    by_cases hn : n = 0
-    · subst n
-      have hx0 : x = 0 := Subsingleton.elim _ _
-      rw [hx0, map_zero]
-    · have h0 :=
-        (mem_unobservableSubspace_iff x).mp hx ⟨0, Nat.pos_of_ne_zero hn⟩
-      simpa using h0)
+  (unobservableSubspace A C).liftQ C.mulVecLin (unobservableSubspace_le_ker_C A C)
 
-/-- A finite basis of the quotient by the unobservable subspace.
+/-- The matrix of the induced state map in `Module.finBasis`.
 
-Original: coordinate infrastructure for LeanForControl. -/
-noncomputable def observableStateBasis
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :=
-  Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)
-
-/-- The state matrix of the observable quotient dynamics.
-
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
+Original: Lean coordinate representation of the observable component.
+The basis is chosen, so the matrix is not canonical. -/
 noncomputable def observableStateMatrix
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     Matrix (Fin (Module.finrank ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)))
       (Fin (Module.finrank ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))) ℂ :=
-  LinearMap.toMatrix (observableStateBasis A C) (observableStateBasis A C)
+  LinearMap.toMatrix (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
+    (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
     (observableStateMap A C)
 
-/-- The output matrix of the observable quotient dynamics.
+/-- The matrix of the induced output map in `Module.finBasis`,
+with standard output coordinates.
 
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
+Original: Lean coordinate representation of the observable component.
+The basis is chosen, so the matrix is not canonical. -/
 noncomputable def observableOutputMatrix
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     Matrix (Fin p)
       (Fin (Module.finrank ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))) ℂ :=
-  LinearMap.toMatrix (observableStateBasis A C) (Pi.basisFun ℂ (Fin p))
+  LinearMap.toMatrix (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
+    (Pi.basisFun ℂ (Fin p))
     (observableOutputMap A C)
 
 end LinearSystems

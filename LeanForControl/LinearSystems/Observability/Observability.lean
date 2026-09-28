@@ -1,5 +1,6 @@
 import LeanForControl.LinearSystems.Observability.Defs
 import LeanForControl.MatrixAlgebra.Rank
+import Mathlib.Algebra.Module.Submodule.Invariant
 import Architect
 
 /-!
@@ -173,7 +174,7 @@ theorem isObservable_iff_observabilityMatrix_rank_eq
 /-- The unobservable subspace is exactly the kernel of the observability
 matrix acting by matrix-vector multiplication.
 
-Reference: Hespanha, *Linear Systems Theory*, §§15.2, 15.9. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "thm:unobservableSubspace-eq-ker-observabilityMatrix"
   (statement := /-- The unobservable subspace is the kernel of the
     observability matrix:
@@ -194,11 +195,11 @@ theorem unobservableSubspace_eq_ker_observabilityMatrix
     funext i
     exact congrFun h (k, i)
 
-/-- Rank-nullity for the observability matrix, stated in control-theoretic
-form. The additive identity avoids truncated subtraction and includes the
-zero-dimensional case without extra hypotheses.
+/-- The dimension of the unobservable subspace plus the rank of the
+observability matrix is the state dimension.
 
-Reference: Hespanha, *Linear Systems Theory*, §§15.2, 15.9. -/
+Rank-nullity applied to the unobservable-subspace description in Hespanha,
+*Linear Systems Theory*. -/
 @[blueprint "thm:unobservableSubspace-finrank-add-rank"
   (statement := /-- The dimension of the unobservable subspace plus the rank
     of the observability matrix is the state dimension:
@@ -215,5 +216,55 @@ theorem finrank_unobservableSubspace_add_rank_observabilityMatrix
   rw [Module.finrank_pi, Fintype.card_fin] at h
   unfold Matrix.rank
   omega
+
+/-- The unobservable subspace is contained in the output kernel.
+
+Derived from the unobservable-subspace description in Hespanha,
+*Linear Systems Theory*. -/
+lemma unobservableSubspace_le_ker_C
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    unobservableSubspace A C ≤ LinearMap.ker C.mulVecLin := by
+  intro x hx
+  rw [LinearMap.mem_ker]
+  by_cases hn : n = 0
+  · subst n
+    have hx0 : x = 0 := Subsingleton.elim _ _
+    rw [hx0, map_zero]
+  · have h0 :=
+      (show ∀ k : Fin n, (C * A ^ (k : ℕ)) *ᵥ x = 0 from
+        by simpa [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker] using hx)
+        ⟨0, Nat.pos_of_ne_zero hn⟩
+    simpa using h0
+
+/-- Every `A`-invariant subspace contained in the output kernel is contained
+in the unobservable subspace.
+
+Derived from the unobservable-subspace description in Hespanha,
+*Linear Systems Theory*. -/
+@[blueprint "thm:unobservableSubspace-greatest-invariant"
+  (statement := /-- Every $A$-invariant subspace contained in $\ker C$ is
+    contained in the unobservable subspace. -/)]
+theorem le_unobservableSubspace_of_invariant_of_le_ker
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
+    (S : Submodule ℂ (Fin n → ℂ))
+    (hA : S ∈ Module.End.invtSubmodule A.mulVecLin)
+    (hC : S ≤ LinearMap.ker C.mulVecLin) :
+    S ≤ unobservableSubspace A C := by
+  rw [Module.End.mem_invtSubmodule_iff_forall_mem_of_mem] at hA
+  intro x hx
+  simp only [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker]
+  intro k
+  have hpow : ∀ j : ℕ, A ^ j *ᵥ x ∈ S := by
+    intro j
+    induction j with
+    | zero => simpa using hx
+    | succ j ih =>
+        rw [pow_succ', ← Matrix.mulVec_mulVec]
+        exact hA _ ih
+  have hzero := hC (hpow k)
+  rw [LinearMap.mem_ker] at hzero
+  change (C * A ^ (k : ℕ)) *ᵥ x = 0
+  rw [← Matrix.mulVec_mulVec]
+  exact hzero
 
 end LinearSystems

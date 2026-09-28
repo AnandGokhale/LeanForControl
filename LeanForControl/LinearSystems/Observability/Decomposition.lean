@@ -1,14 +1,17 @@
 import LeanForControl.LinearSystems.Observability.DefsDecomposition
 
 /-!
-# The standalone observable decomposition
+# Observability of the observable component
 
-The unobservable subspace is the largest invariant subspace contained in the
-kernel of the output map.  Quotienting by it therefore gives a genuinely
-observable pair.  This file proves that semantic universal property and its
-matrix formulation through the existing `IsObservable` predicate.
+The state and output maps induced on the quotient by the unobservable
+subspace give an observable matrix pair. The quotient represents the
+observable component of Hespanha's observable decomposition; it does not
+choose a complementary subspace in the original state space.
 
-Reference: Hespanha, *Linear Systems Theory*, §16.1.
+The scalar field is `ℂ` because the upstream `unobservableSubspace` and
+its invariance theorem are currently defined over `ℂ`.
+
+Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
 -/
 
 namespace LinearSystems
@@ -17,60 +20,11 @@ open Matrix
 
 variable {n p : ℕ}
 
-/-- The unobservable subspace lies in the kernel of the output map, including
-when the state dimension is zero.
+/-- An invariant subspace of the quotient contained in the induced
+output kernel is zero.
 
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
-lemma unobservableSubspace_le_ker_C
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
-    unobservableSubspace A C ≤ LinearMap.ker C.mulVecLin := by
-  intro x hx
-  rw [LinearMap.mem_ker]
-  by_cases hn : n = 0
-  · subst n
-    have hx0 : x = 0 := Subsingleton.elim _ _
-    rw [hx0, map_zero]
-  · have h0 :=
-      (mem_unobservableSubspace_iff x).mp hx ⟨0, Nat.pos_of_ne_zero hn⟩
-    simpa using h0
-
-/-- The unobservable subspace is the largest `A`-invariant subspace contained
-in the kernel of `C`.
-
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
-@[blueprint "thm:unobservableSubspace-greatest-invariant"
-  (statement := /-- Every $A$-invariant subspace contained in $\ker C$ is
-    contained in the unobservable subspace. -/)]
-theorem le_unobservableSubspace_of_invariant_of_le_ker
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
-    (S : Submodule ℂ (Fin n → ℂ))
-    (hA : S ∈ Module.End.invtSubmodule A.mulVecLin)
-    (hC : S ≤ LinearMap.ker C.mulVecLin) :
-    S ≤ unobservableSubspace A C := by
-  rw [Module.End.mem_invtSubmodule_iff_forall_mem_of_mem] at hA
-  intro x hx
-  rw [mem_unobservableSubspace_iff]
-  intro k
-  have hpow : ∀ j : ℕ, A ^ j *ᵥ x ∈ S := by
-    intro j
-    induction j with
-    | zero => simpa using hx
-    | succ j ih =>
-        rw [pow_succ', ← Matrix.mulVec_mulVec]
-        exact hA _ ih
-  have hzero := hC (hpow k)
-  rw [LinearMap.mem_ker] at hzero
-  rw [← Matrix.mulVec_mulVec]
-  exact hzero
-
-/-- Universal-property form of observability for the quotient pair: its only
-invariant subspace contained in the induced output kernel is zero.
-
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
-@[blueprint "thm:observable-quotient-observable-invariant"
-  (statement := /-- The state and output maps induced on the quotient by the
-    unobservable subspace form an observable pair. -/)]
-theorem observableStateMap_observable
+Original: quotient form of the largest-invariant-subspace characterization. -/
+private theorem observable_invariant_eq_bot
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     ∀ S : Submodule ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C),
       S ∈ Module.End.invtSubmodule (observableStateMap A C) →
@@ -100,76 +54,73 @@ theorem observableStateMap_observable
 as the induced quotient state map.
 
 Original: coordinate infrastructure for LeanForControl. -/
-lemma observableStateMatrix_mulVec_coordinates
+private lemma observableStateMatrix_mulVec_coordinates
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
     (x : (Fin n → ℂ) ⧸ unobservableSubspace A C) :
-    observableStateMatrix A C *ᵥ (observableStateBasis A C).equivFun x =
-      (observableStateBasis A C).equivFun (observableStateMap A C x) := by
+    observableStateMatrix A C *ᵥ
+        (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)).equivFun x =
+      (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)).equivFun
+        (observableStateMap A C x) := by
   simpa [observableStateMatrix, Module.Basis.equivFun_apply] using
-    LinearMap.toMatrix_mulVec_repr (observableStateBasis A C)
-      (observableStateBasis A C) (observableStateMap A C) x
+    LinearMap.toMatrix_mulVec_repr (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
+      (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)) (observableStateMap A C) x
 
 /-- The observable quotient output matrix acts on basis coordinates exactly
 as the induced quotient output map.
 
 Original: coordinate infrastructure for LeanForControl. -/
-lemma observableOutputMatrix_mulVec_coordinates
+private lemma observableOutputMatrix_mulVec_coordinates
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
     (x : (Fin n → ℂ) ⧸ unobservableSubspace A C) :
-    observableOutputMatrix A C *ᵥ (observableStateBasis A C).equivFun x =
+    observableOutputMatrix A C *ᵥ
+        (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)).equivFun x =
       observableOutputMap A C x := by
   simpa [observableOutputMatrix, Module.Basis.equivFun_apply] using
-    LinearMap.toMatrix_mulVec_repr (observableStateBasis A C)
+    LinearMap.toMatrix_mulVec_repr (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
       (Pi.basisFun ℂ (Fin p)) (observableOutputMap A C) x
 
-/-- The finite matrix pair representing the quotient by the unobservable
-subspace is observable in the library's textbook sense.
+/-- The matrices of the observable component form an observable pair.
 
-Reference: Hespanha, *Linear Systems Theory*, §16.1. -/
+Equivalent formulation of the observable-component conclusion in Hespanha,
+*Linear Systems Theory*, observable decomposition. The quotient matrices
+use the chosen basis `Module.finBasis`. -/
 @[blueprint "thm:observable-matrices-observable"
-  (statement := /-- In any finite basis of the quotient by the unobservable
-    subspace, the induced state and output matrices form an observable pair. -/)]
+  (statement := /-- Let $A_o,C_o$ be the matrices of the induced maps
+    (\cref{def:observable-state-map,def:observable-output-map}) in the chosen
+    finite basis of $\mathbb C^n/\mathcal N(A,C)$. Then $(A_o,C_o)$ is observable
+    in the sense of \cref{def:isObservable}. -/)]
 theorem observableMatrices_isObservable
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     IsObservable (observableStateMatrix A C) (observableOutputMatrix A C) := by
+  let b := Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)
   rw [← unobservableSubspace_eq_bot_iff_isObservable]
   let U := unobservableSubspace (observableStateMatrix A C) (observableOutputMatrix A C)
-  let S := U.comap (observableStateBasis A C).equivFun.toLinearMap
+  let S := U.comap b.equivFun.toLinearMap
   have hA : S ∈ Module.End.invtSubmodule (observableStateMap A C) := by
     rw [Module.End.mem_invtSubmodule_iff_forall_mem_of_mem]
     intro x hx
-    change (observableStateBasis A C).equivFun (observableStateMap A C x) ∈ U
+    change b.equivFun (observableStateMap A C x) ∈ U
     rw [← observableStateMatrix_mulVec_coordinates]
     exact A_mulVec_mem_unobservableSubspace_of_mem hx
   have hC : S ≤ LinearMap.ker (observableOutputMap A C) := by
     intro x hx
     rw [LinearMap.mem_ker]
     rw [← observableOutputMatrix_mulVec_coordinates]
-    by_cases hq :
-        Module.finrank ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C) = 0
-    · have hz : (observableStateBasis A C).equivFun x = 0 := by
-        ext i
-        exact Fin.elim0 (hq ▸ i)
-      rw [hz, Matrix.mulVec_zero]
-    · have hzero := (mem_unobservableSubspace_iff
-        ((observableStateBasis A C).equivFun x)).mp hx
-        (⟨0, Nat.pos_of_ne_zero hq⟩ :
-          Fin (Module.finrank ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)))
-      simpa using hzero
-  have hS : S = ⊥ := observableStateMap_observable A C S hA hC
+    exact unobservableSubspace_le_ker_C _ _ hx
+  have hS : S = ⊥ := observable_invariant_eq_bot A C S hA hC
   rw [eq_bot_iff]
   intro z hz
-  let x := (observableStateBasis A C).equivFun.symm z
+  let x := b.equivFun.symm z
   have hx : x ∈ S := by
-    change (observableStateBasis A C).equivFun x ∈ U
-    change (observableStateBasis A C).equivFun
-      ((observableStateBasis A C).equivFun.symm z) ∈ U
+    change b.equivFun x ∈ U
+    change b.equivFun
+      (b.equivFun.symm z) ∈ U
     simpa only [LinearEquiv.apply_symm_apply] using hz
   rw [hS] at hx
   have hx0 : x = 0 := hx
   calc
-    z = (observableStateBasis A C).equivFun x := by
-      exact ((observableStateBasis A C).equivFun.apply_symm_apply z).symm
+    z = b.equivFun x := by
+      exact (b.equivFun.apply_symm_apply z).symm
     _ = 0 := by rw [hx0, map_zero]
 
 end LinearSystems

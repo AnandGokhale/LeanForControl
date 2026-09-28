@@ -74,7 +74,7 @@ kernel of the observability matrix.
 
 \inputleannode{thm:isControllable-iff-hautus}
 
-\section{Reachable subspace and Kalman decomposition}
+\section{Reachable subspace and controllable component}
 
 \inputleannode{def:reachableSubspace}
 
@@ -83,6 +83,39 @@ kernel of the observability matrix.
 \inputleannode{thm:reachableSubspace-eq-top-iff-controllable}
 
 \inputleannode{lem:reachableSubspace-invariant}
+
+The following algebraic constructions describe the controllable and observable
+components of the decompositions in Hespanha, \emph{Linear Systems Theory}.
+The controllability predicate here means reachability from the origin, expressed
+by the finite controllability matrix. The controllable component is obtained by
+restriction; the observable component is represented by a quotient. The matrices
+use chosen finite bases.
+
+\inputleannode{thm:reachableSubspace-finrank}
+
+\inputleannode{thm:reachableSubspace-least-invariant}
+
+\inputleannode{def:reachable-state-map}
+
+\inputleannode{def:reachable-input-map}
+
+\inputleannode{thm:reachable-matrices-controllable}
+
+\section{Unobservable subspace and observable component}
+
+\inputleannode{thm:unobservableSubspace-eq-ker-observabilityMatrix}
+
+\inputleannode{thm:unobservableSubspace-finrank-add-rank}
+
+\inputleannode{thm:unobservableSubspace-greatest-invariant}
+
+\inputleannode{def:observable-state-map}
+
+\inputleannode{def:observable-output-map}
+
+\inputleannode{thm:observable-matrices-observable}
+
+\section{Kalman decomposition}
 
 \inputleannode{def:kalman-decomposition}
 

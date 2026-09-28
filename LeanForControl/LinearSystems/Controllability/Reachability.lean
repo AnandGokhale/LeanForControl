@@ -14,7 +14,7 @@ controllability matrix and proves its invariance under the state matrix. The
 `A ^ n` boundary term in the invariance proof is closed by Cayley--Hamilton.
 
 References:
-* João P. Hespanha, *Linear Systems Theory*, §§11.1, 11.6.
+* João P. Hespanha, *Linear Systems Theory*.
 * R. E. Kalman, “Mathematical Description of Linear Dynamical Systems,”
   *Journal of the Society for Industrial and Applied Mathematics, Series A:
   Control* 1(2), 152–192, 1963. DOI: 10.1137/0301010.
@@ -95,7 +95,7 @@ theorem reachableSubspace_eq_iSup_range
 /-- The dimension of the reachable subspace is the rank of the
 controllability matrix.
 
-Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "thm:reachableSubspace-finrank"
   (statement := /-- The dimension of the reachable subspace equals the rank
     of the controllability matrix:
@@ -110,7 +110,7 @@ theorem finrank_reachableSubspace_eq_rank_controllabilityMatrix
 
 /-- The image of the input matrix is contained in the reachable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 theorem range_B_le_reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     LinearMap.range B.mulVecLin ≤ reachableSubspace A B := by
@@ -128,7 +128,7 @@ theorem range_B_le_reachableSubspace
 /-- The system is controllable exactly when its reachable subspace is the
 whole state space.
 
-Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "thm:reachableSubspace-eq-top-iff-controllable"
   (statement := /-- A pair $(A,B)$ is controllable if and only if its
     reachable subspace is the whole state space. -/)]
@@ -178,7 +178,7 @@ private lemma cayleyHamilton_boundary_mem_reachableSubspace
 /-- The finite-horizon reachable subspace is invariant under the state
 matrix.  The highest-power case is discharged by Cayley--Hamilton.
 
-Reference: Hespanha, *Linear Systems Theory*, §§11.1, 11.6. -/
+Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "lem:reachableSubspace-invariant"
   (statement := /-- The reachable subspace is $A$-invariant:
     $A\mathcal R(A,B)\subseteq\mathcal R(A,B)$. -/)]
@@ -199,5 +199,38 @@ theorem reachableSubspace_invariant
     have heq : k.val + 1 = n := by omega
     rw [heq]
     exact cayleyHamilton_boundary_mem_reachableSubspace A B (fun j => u (k, j))
+
+/-- Every `A`-invariant subspace containing the input range contains the
+reachable subspace. Together with `range_B_le_reachableSubspace` and
+`reachableSubspace_invariant`, this characterizes it as the smallest such subspace.
+
+Derived from the controllability-matrix description in Hespanha,
+*Linear Systems Theory*. -/
+@[blueprint "thm:reachableSubspace-least-invariant"
+  (statement := /-- If $S$ is $A$-invariant and contains $\operatorname{im}B$,
+    then $\mathcal R(A,B)\subseteq S$. Together with
+    \cref{lem:reachableSubspace-invariant} and
+    $\operatorname{im}B\subseteq\mathcal R(A,B)$, this says that the reachable
+    subspace is the smallest $A$-invariant subspace containing the input range. -/)]
+theorem reachableSubspace_le_of_invariant_of_range_le
+    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    (S : Submodule 𝕜 (Fin n → 𝕜))
+    (hA : S ∈ Module.End.invtSubmodule A.mulVecLin)
+    (hB : LinearMap.range B.mulVecLin ≤ S) :
+    reachableSubspace A B ≤ S := by
+  rw [Module.End.mem_invtSubmodule_iff_forall_mem_of_mem] at hA
+  have hpow : ∀ k : ℕ, ∀ u : Fin m → 𝕜, A ^ k *ᵥ (B *ᵥ u) ∈ S := by
+    intro k u
+    induction k with
+    | zero => simpa using hB ⟨u, rfl⟩
+    | succ k ih =>
+        rw [pow_succ', ← Matrix.mulVec_mulVec]
+        exact hA _ ih
+  rintro x hx
+  obtain ⟨u, rfl⟩ := (mem_reachableSubspace_iff x).mp hx
+  rw [controllabilityMatrix_mulVec_eq_sum]
+  exact S.sum_mem fun k _ => by
+    rw [← Matrix.mulVec_mulVec]
+    exact hpow k _
 
 end LinearSystems
