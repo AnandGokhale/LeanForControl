@@ -96,6 +96,13 @@ PR is opened rather than during review.
    directory's `Continuous` or `Discrete` half — as a subdirectory where that half has
    several files, as a single `Continuous.lean` / `Discrete.lean` where it does not.
 
+**Tie-breaker, for the Lyapunov-equation cluster.** Rule 1 read literally would send
+`SolvesContinuousLyapunovEquation` to `MatrixAlgebra/` — it quantifies only over matrices. It does
+not go there: a statement mentioning `IsHurwitz` or `SolvesContinuousLyapunovEquation` goes to
+`LinearSystems/Stability/Continuous/`; one mentioning neither, and no `f`, goes to
+`MatrixAlgebra/`. The topic table below places the Lyapunov equation explicitly, and explicit
+wins over the mechanical rule.
+
 ### Why the time split is per-topic, and controllability/observability are split apart
 
 The structural theory is genuinely time-agnostic: the controllability matrix
@@ -319,6 +326,43 @@ nonlinear side, since by Rule 2 a definition mentioning a vector field `f` is no
 needs an `(A, B, C, D)` record, and the open question below about `D` is unsettled. It stays
 in the directory tree above marked `(planned)`.
 
+## Known tech debt
+
+Not blocking anything; recorded so it is not rediscovered.
+
+### Clean-interfaces pass on `MatrixAlgebra/Spectrum.lean`
+
+Everything in that file went `private` → public purely because Lean requires it once a
+declaration crosses a file boundary. Three things to settle: whether the `bilinear_*` /
+`toBilin_*` cluster (stated over an arbitrary `[Module ℂ V]`, with no matrix in sight) belongs in
+this file at all, versus a linear-algebra-flavoured file or an upstream Mathlib contribution;
+whether `exists_eigenpair_of_mem_spectrum_exp`'s two helpers should go back to `private`; and
+naming and grouping generally, now that everything sits in one place.
+
+### The discrete-time payoff is already proved, in the wrong place
+
+`conjugationOperator C : X ↦ Cᵀ X C` **is** the discrete Lyapunov operator, and
+`tsum_conjugationOperator_pow_apply_posDef` is essentially *"`P = Σₖ (Cᵀ)ᵏ Q Cᵏ` is positive
+definite"* — the Schur-case solution. Both are `private` helpers inside
+`Stability/Continuous/LyapunovEquation.lean`, serving the continuous-time proof.
+
+Promoting these seven into a shared home (`MatrixAlgebra/Congruence.lean`, or
+`Stability/Congruence.lean` to keep them inside the track) —
+
+`conjugationOperator`, `conjugationOperator_norm_lt_one`,
+`tendsto_conjugationOperator_pow_apply_zero`, `eq_zero_of_conjugationOperator_fixed`,
+`posDef_conjugationOperator`, `summable_conjugationOperator_pow_apply`,
+`tsum_conjugationOperator_pow_apply_posDef`
+
+— would make `DefsSchur` and the discrete Lyapunov equation `AᵀPA - P = -Q` mostly assembly
+rather than new proof. Deferred deliberately: the decision was to finish the already-established
+`Stability/Continuous/` destination before opening new territory.
+
+### Small cleanup
+
+`entryCLM` and `quadraticEvalCLM` (`Stability/Continuous/LyapunovEquation.lean`) — check whether
+Mathlib's `Matrix.entryLinearMap` or existing CLM combinators already cover these.
+
 ## Open questions
 
 - **The time-split naming rule and `Solutions/` disagree.** Rule 4 says a topic's two halves
@@ -334,7 +378,10 @@ in the directory tree above marked `(planned)`.
   with `ℂ` specializations, or whether the current per-file choice is the right trade.
 - **Does `Defs.lean` carry a `D` matrix?** Nothing currently needs feedthrough, but adding
   it later is a breaking change to every consumer. Decide before the first system object
-  lands.
+  lands. Settle alongside it whether `affineLinearVectorField`
+  (`Stability/LyapunovIndirect/DefsDynamics.lean`, the whole file) moves into `Defs.lean`: by
+  Rule 2 a definition mentioning a vector field `f : E → E` belongs on the nonlinear side, which
+  is why the third migration pass left it where it is.
 - **How much does the discrete-time half share?** Some results (the Lyapunov equation
   existence argument, the Gramian positive-definiteness argument) have near-identical
   proofs in both settings. Decide whether to abstract over the two or to accept the

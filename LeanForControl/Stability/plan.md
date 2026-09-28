@@ -207,6 +207,87 @@ Public, in `Autonomous.lean` unless noted:
 The four classical LaSalle steps — `V ∘ φ` antitone, `V(φ t) → L`, `V ≡ L` on `ω(φ)`, and
 `ω(φ) ⊆ Ω` — are `private` in `LaSalle.lean`: they are steps of one proof, not results.
 
+## Known tech debt
+
+Not blocking anything; recorded so it is not rediscovered.
+
+### The class-KL construction is ~7x longer than the class-K one
+
+| half of Khalil 4.5 | method | lines |
+|---|---|---|
+| uniform stability ⟺ class `K` | build a crude monotone `ω`, majorize with `exists_strictMono_upper_bound` | **57** |
+| UAS ⟺ class `KL` | build `T̄`, hand-construct a smoothing, prove strictness, invert | **~400** |
+
+`T̄(η, r)` maps radius → time; the decay factor needs time → radius, so the construction inverts.
+Inversion needs injectivity, hence strict antitonicity, hence the half-window average (continuity)
+and the `r/η` penalty (strictness and blow-up at `0⁺`). Every `W_fn_*` lemma serves that.
+
+**The axiom route was considered and rejected — do not re-propose it.** Building time → radius
+directly and majorizing with a two-parameter analogue of `exists_strictMono_upper_bound` would
+delete ~500 lines, but that axiom *is* the Massera/Sontag majorization — the hard direction of
+Khalil 4.5 itself, which `CONTRIBUTING.md` §4 forbids axiomatizing. Keep the constructive proof.
+
+What is open is readability, in descending value:
+
+1. **`W_fn` is still written in control-theory terms.** `Analysis/MonotoneFunctions` (inversion)
+   and `Analysis/Integrals` (half-window average) are stated on bare functions; the sliding
+   average itself is not. Lifting it is the last step of the separation. The interfaces are
+   narrow — `T̄ → W` needs nonneg + antitone + eventually-zero (integrability is *derived* from
+   antitonicity); `W → inversion` needs continuous + strictly antitone + two limits; `U →` the KL
+   proof needs `ClassLSingular` + `T̄(U s) < s`.
+2. **Names.** `W_fn`, `Tbar_fn` and `validTSet` are `private`, so they no longer break the
+   no-construction-names rule from outside — but they still name nothing, and step 1 would force
+   naming them anyway. Proposed: `strictMajorant` / `strictMajorantInv`, `Tbar_fn` →
+   `uniformConvergenceTime`, `validTSet` → `uniformConvergenceTimes`.
+3. **`T̄(U s) < s` deserves a name.** It is the entire point of the construction — the step
+   converting "the elapsed time exceeds the optimal convergence time to the `U`-ball" into the
+   decay bound — and is an anonymous three-step `calc` inside `U_decay_bound`.
+4. **Argument order.** `Tbar_fn` takes `η r`, `W_fn` takes `r η` — opposite orders on adjacent
+   functions, invisible because neither name says which slot is which. Fixing it lets partial
+   application feed the abstraction with no lambda.
+
+### `ClassKLGlobal.continuous_r` concludes on the wrong set
+
+`ClassKLGlobal.continuous_r` (`Comparison/ClassKL.lean`) takes a phantom `{a : ℝ}` and concludes
+`ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a)`, but `ClassKLGlobal` is defined on `Ici 0` —
+there is no `a` in the structure. The conclusion should be `ContinuousOn … (Set.Ici 0)`; as
+written it is strictly weaker than the `continuous` field supports, and the `a` exists only to
+make the global version look like the bounded one. Its one caller in `KLCharacterization.lean`
+passes an `Ico` membership, so tightening the type means touching that site too.
+(`ClassKL.continuous_r` is fine — there the `a` is the structure's own.)
+
+### Files that should move
+
+| Declaration / file | Destination | Why |
+|---|---|---|
+| `LyapunovIndirect/Chetaev.lean` | `Stability/Chetaev.lean` | general instability tool; mentions `f`, never `A`; imports only `Autonomous` |
+| `exists_abs_fderiv_centeredQuadraticForm_remainder_le` (`LyapunovIndirect/Lyapunov.lean`) | `Stability/QuadraticRemainder.lean` *(new, small)* | both branches call it, so leaving it in `Linearization.lean` would make the unstable branch import the stable branch and invert the dependency |
+| `realMulVec` (`LyapunovIndirect/LinearizationInstability.lean`) | inline it | one-line private wrapper for `Matrix.toEuclideanCLM`, 2 call sites in its own file |
+
+`Lyapunov.lean` holds that one declaration and nothing else, so it is deleted by the same move.
+What remains in `LyapunovIndirect/` is then `Linearization.lean`, `LinearizationInstability.lean`,
+`NonlinearInstability.lean` and `DefsDynamics.lean` — all genuinely linearization, so the
+directory name stays accurate.
+
+`Chetaev.lean`'s three `private` `*_forward_segment*` lemmas are **deliberately** left alone by
+the `forward` rename sweep: there `forward` means *forward in time from 0* — a solution on
+`Icc 0 T` — which is accurate and unrelated to the retired `Forward*` stability predicates.
+
+## Open questions
+
+- **Flat vs subdirectory for the bridges.** `LinearSystems/plan.md` Rule 2 says bridges from the
+  linear track to nonlinear stability should be few. `LyapunovIndirect/` now holds six files, so
+  a growing bridge directory is a signal worth keeping visible rather than tidying away.
+
+- **Do the two trajectory abbreviations earn their keep?** `IsTrajectoryOn` (autonomous,
+  `Icc t₀ t₁`) and `IsTrajectoryNA` (non-autonomous, `Ici t₀`) sit on a genuinely separate
+  generalization axis, and **no file in the library mentions both**. `LaSalle.lean` needs both
+  shapes at once — `isPositivelyInvariant_omegaLimitTraj` takes an `Ici 0`-shaped curve and
+  concludes `IsPositivelyInvariant`, which quantifies over `Icc t₀ t₁`-shaped ones — and handles
+  it by writing `IsIntegralCurveOn` directly and calling `.mono`. So a bridge, if wanted, is a
+  one-line restriction lemma rather than a design problem; the real question is whether either
+  abbreviation is pulling its weight.
+
 ## Lessons from the Lyapunov stability proofs
 
 - **Finite-forward quantification avoids vacuity.** Global trajectories remain useful for
