@@ -15,33 +15,37 @@ LeanForControl/
     Rank.lean                   rank / kernel / surjectivity bridges
     Spectrum.lean               eigenpairs, spectral radius
     Exponential.lean            the matrix exponential as an algebraic object
-    PositiveDefinite.lean       PD / PSD forms and quadratics
+    QuadraticForm.lean          matrix quadratic forms, derivatives, PD/PSD bounds
     Jordan.lean                 Jordan normal form (planned)
 
   LinearSystems/
     Basic.lean                  shared conventions and index-type choices
-    Defs.lean                   the system object (A, B, C, D) — time-agnostic data
+    Defs.lean                   the system object (A, B, C, D) — time-agnostic data (planned)
 
     Controllability/             identical in discrete and continuous time — no split
       Controllability.lean      controllability matrix and rank test
-      DefsReachability.lean     reachable subspace
+      Defs.lean                 reachable subspace
       Reachability.lean         reachable-subspace characterizations, A-invariance
       Hautus.lean               controllability PBH test, via duality with Observability
       Decomposition.lean        standalone controllable decomposition (planned)
 
     Observability/
+      Defs.lean                 observability matrix and predicate
       Observability.lean        observability matrix, rank/kernel forms
       Hautus.lean               unobservable subspace, observability PBH test
       Decomposition.lean        standalone observable decomposition (planned)
 
     KalmanDecomposition/         needs both Controllability/ and Observability/
-      DefsDecomposition.lean    the four coordinate sectors and their lattice relations
+      Defs.lean                 the four coordinate sectors and their lattice relations
       Decomposition.lean        existence, adapted coordinates, forced block-zero pattern
       DecompositionExamples.lean
 
     Solutions/
-      Continuous.lean           e^{At}, variation of constants
-      Discrete.lean             Aᵏ, discrete variation of constants (planned)
+      DefsCtsLTV.lean           Peano-Baker series, state transition matrix
+      CtsLTV.lean               Phi solves the matrix ODE; variation of constants
+      CtsLTI.lean               the LTI case: e^{At}
+      DefsDiscLTV.lean          discrete state transition matrix (ordered product)
+      DiscLTV.lean              discrete variation of constants
 
     Stability/
       Continuous/
@@ -59,7 +63,7 @@ LeanForControl/
       Discrete.lean             Σ Aᵏ B Bᵀ (Aᵀ)ᵏ
 
   Stability/                    nonlinear ẋ = f(x) — existing track, unchanged
-    Linearization.lean          the only bridge from LinearSystems to nonlinear stability
+    LyapunovIndirect/           the only bridge from LinearSystems to nonlinear stability
 ```
 
 Note that `LinearSystems/Stability/` and the top-level `Stability/` are different subjects,
@@ -120,8 +124,11 @@ the two versions of a result adjacent, so the discrete-time gaps are visible per
 instead of hiding in one empty directory. This is also how Hespanha organizes it: the
 discrete-time case is a section within each chapter, not a separate part.
 
-Every `Discrete` half is currently empty. They are listed so the asymmetry is a visible
-gap rather than an unstated assumption that this library is continuous-time only.
+`Solutions/` now has both halves: the discrete state transition matrix is an ordered product
+rather than a series, so every proof there is an induction with no convergence, no
+differentiation and no Grönwall estimate. The remaining `Discrete` halves —
+`Stability/Discrete/` and `Gramians/` — are still empty, and are listed so the asymmetry is a
+visible gap rather than an unstated assumption that this library is continuous-time only.
 
 ## Status: matrix algebra infrastructure
 
@@ -131,7 +138,7 @@ gap rather than an unstated assumption that this library is continuous-time only
 | Surjectivity ⟺ full row rank | `mulVec_range_top_iff_rank_eq_card_rows` | `Rank.lean` | ✅ done |
 | Eigenpair real/imaginary transport, generalized-eigenspace resonance, reverse spectral mapping for `exp` | `mulVec_re`/`mulVec_im`, `matrixMulVec_re_smul_eigenpair`/`_im_smul_eigenpair`, `eigenpair_real_imag`, `bilinear_eq_zero_of_no_resonance`, `toBilin_*`, `exists_eigenpair_of_mem_spectrum_exp` | `MatrixAlgebra/Spectrum.lean` | ✅ moved (interfaces not yet reviewed) |
 | Complexification of a real matrix as a named def | — | — | retired — `A.map (algebraMap ℝ ℂ)` is inlined at each use instead. The complexification *bridges* that remain live in `MatrixAlgebra/Exponential.lean` (row below), not in `Spectrum.lean` |
-| Spectral radius of `exp A` (`spectralRadius_exp_complexification_lt_one`) | `spectralRadius_exp_complexification_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | 🔶 in review (PR #15) — still in `Stability/LyapunovIndirect/ExponentialStability.lean`, pending Step 4 |
+| Spectral radius of `exp A` | `spectralRadius_exp_complexification_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | ✅ done |
 | Quadratic forms represented by a matrix | `quadraticForm` and friends | `MatrixAlgebra/QuadraticForm.lean` | ✅ done |
 | The matrix exponential's complexification bridges | `complexification_exp`, `norm_complexification` | `MatrixAlgebra/Exponential.lean` | ✅ done |
 | A contractive power from a spectral radius bound (general Banach algebra, no matrices) | `exists_pow_norm_lt_one_of_spectralRadius_lt_one` | `Analysis/SpectralRadius.lean` | ✅ done |
@@ -147,7 +154,7 @@ gap rather than an unstated assumption that this library is continuous-time only
 |---|---|---|---|
 | Controllability matrix | `controllabilityMatrix` | `Controllability/Controllability.lean` | ✅ done |
 | Controllability ⟺ full row rank | `isControllable_iff_controllabilityMatrix_rank_eq` | `Controllability/Controllability.lean` | ✅ done |
-| Reachable subspace | `reachableSubspace` | `Controllability/DefsReachability.lean` | ✅ done |
+| Reachable subspace | `reachableSubspace` | `Controllability/Defs.lean` | ✅ done |
 | Reachable subspace ⟺ controllability | `reachableSubspace_eq_top_iff_isControllable` | `Controllability/Reachability.lean` | ✅ done |
 | PBH test for controllability | `isControllable_iff_hautus` | `Controllability/Hautus.lean` | ✅ done |
 | Controllability/observability duality | `isControllable_iff_isObservable_transpose` | `Controllability/Hautus.lean` | ✅ done |
@@ -160,6 +167,7 @@ gap rather than an unstated assumption that this library is continuous-time only
 | PBH test for observability | `isObservable_iff_hautus` | `Observability/Hautus.lean` | ✅ done |
 | Observable decomposition (standalone) | — | `Observability/Decomposition.lean` | planned |
 | Detectability | — | `Observability/Hautus.lean` | planned |
+| Four coordinate sectors | — | `KalmanDecomposition/Defs.lean` | ✅ done |
 | Kalman decomposition | `exists_kalmanDecomposition` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
 | Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
 | Minimal realizations | — | — | planned, no directory settled (needs both — see open questions) |
@@ -168,11 +176,16 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| State-space system object, `ẋ = A x + B u` | — | `../Defs.lean` | 🔶 in review (PR #15, as `DefsDynamics.lean`) |
-| Matrix exponential solution, variation of constants | — | `Continuous.lean` | planned |
-| Impulse response / transfer function | — | `Continuous.lean` | planned |
-| BIBO stability | — | `Continuous.lean` | planned |
-| Discrete-time solution `Aᵏ` | — | `Discrete.lean` | planned |
+| Peano–Baker series, state transition matrix | `peanoBakerTerm`, `stateTransitionMatrix` | `Solutions/DefsCtsLTV.lean` | ✅ done |
+| `Φ` solves `Φ̇ = A(t)Φ`, `Φ(t₀,t₀) = I`, and is unique | `hasDerivAt_stateTransitionMatrix`, `stateTransitionMatrix_mul_unique` | `Solutions/CtsLTV.lean` | ✅ done |
+| Semigroup, invertibility, composition | `stateTransitionMatrix_semigroup`, `_inv`, `_comp` | `Solutions/CtsLTV.lean` | ✅ done |
+| Variation of constants (continuous) | `hasDerivAt_variationOfConstants`, `variationOfConstants_unique` | `Solutions/CtsLTV.lean` | ✅ done |
+| The LTI case: `e^{At}` | — | `Solutions/CtsLTI.lean` | ✅ done |
+| Discrete state transition matrix (ordered product) | `discStateTransitionMatrix` | `Solutions/DefsDiscLTV.lean` | ✅ done |
+| Discrete variation of constants | `discVariationOfConstants_unique` | `Solutions/DiscLTV.lean` | ✅ done |
+| State-space system object, `ẋ = A x + B u` | — | `Defs.lean` | planned — see open questions |
+| Impulse response / transfer function | — | `Solutions/` | planned |
+| BIBO stability | — | `Solutions/` | planned |
 
 ## Status: stability of linear systems
 
@@ -190,10 +203,14 @@ gap rather than an unstated assumption that this library is continuous-time only
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Hurwitz Jacobian ⟹ local exponential stability | `hurwitz_linearization_forward_locally_exponentially_stable` | `Stability/Linearization.lean` | 🔶 in review (PR #15) |
-| Hurwitz Jacobian ⟹ local asymptotic stability | `hurwitz_linearization_local_asymptotic_stable` | `Stability/Linearization.lean` | 🔶 in review (PR #15) |
-| Unstable eigenvalue ⟹ instability | — | `Stability/LinearizationInstability.lean` | 🔶 in review (PR #15) |
-| Chetaev's instability theorem | — | `Stability/Chetaev.lean` | 🔶 in review (PR #15, also closes issue #8) |
+| Hurwitz Jacobian ⟹ local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `Stability/LyapunovIndirect/Linearization.lean` | ✅ done |
+| Unstable eigenvalue ⟹ instability (affine-linear) | `unstable_affineLinear_of_eigenvalue_re_pos` | `Stability/LyapunovIndirect/LinearizationInstability.lean` | ✅ done |
+| Unstable eigenvalue ⟹ instability (`C¹` field) | `unstable_of_exists_complex_eigenvalue_re_pos` | `Stability/LyapunovIndirect/NonlinearInstability.lean` | ✅ done |
+| Chetaev's instability theorem (exponential form) | `unstable_of_exponential_chetaev` | `Stability/LyapunovIndirect/Chetaev.lean` | ✅ done (closes issue #8) |
+| Chetaev's instability theorem (boundary form) | — | — | planned — see `Stability/plan.md` |
+
+Rule 2 keeps this list short by construction: a theorem whose hypothesis is about `A` and whose
+conclusion is about `f` is a bridge, and these five are all of them.
 
 ## Migration map
 
@@ -257,26 +274,35 @@ Both directories deliberately keep the filename `Hautus.lean` — the directory
 and a shared name for the same underlying technique (the PBH test) in its two dual forms
 reads as consistent rather than confusing.
 
-**Still pending:** PR #15 branched before #13's review landed, so it carries a stale copy
-of the Hurwitz foundation — see the ordering note below. Its own migration happens when it
-rebases, not as part of this pass.
+**Third pass, done.** PR #15 (Lyapunov's indirect method) rebased onto `main`, dropped its
+stale copy of the Hurwitz foundation, and landed. Two targets changed from what was planned
+above: the quadratic-form file became `MatrixAlgebra/QuadraticForm.lean` rather than a
+`PositiveDefinite.lean`, because what it actually contains is quadratic forms and their
+derivatives rather than a PD/PSD theory; and the affine-linear vector field stayed on the
+nonlinear side, since by Rule 2 a definition mentioning a vector field `f` is not a
+`LinearSystems/` object.
 
-| PR #15, as submitted | Target |
+| PR #15, as submitted | Landed at (third pass) |
 |---|---|
-| `LinearSystems/DefsHurwitz.lean`, `Hurwitz.lean` | drop — duplicates #13, now at `Stability/Continuous/` |
+| `LinearSystems/DefsHurwitz.lean`, `Hurwitz.lean` | dropped — duplicated #13, already at `LinearSystems/Stability/Continuous/` |
 | `LinearSystems/LyapunovEquation.lean`, `ExponentialStability.lean`, `InstabilityCertificate.lean` | `LinearSystems/Stability/Continuous/` |
-| `LinearSystems/DefsLyapunov.lean` | `MatrixAlgebra/PositiveDefinite.lean` |
-| `LinearSystems/DefsDynamics.lean` | `LinearSystems/Defs.lean` |
-| `Stability/Linearization.lean`, `Chetaev.lean`, `Forward.lean`, … | `Stability/` — unchanged |
-| `Analysis/Linearization.lean` | `Analysis/` — unchanged |
+| `LinearSystems/DefsLyapunov.lean`, `Lyapunov.lean` | split: matrix half → `MatrixAlgebra/QuadraticForm.lean`, remainder-absorption half → `Stability/LyapunovIndirect/Lyapunov.lean` |
+| `LinearSystems/DefsDynamics.lean` | `Stability/LyapunovIndirect/DefsDynamics.lean` |
+| `Stability/Linearization.lean`, `Chetaev.lean`, `LinearizationInstability.lean`, `NonlinearInstability.lean` | `Stability/LyapunovIndirect/` |
+| `Stability/DefsForward.lean`, `Forward.lean` | dropped — the `Forward*` predicates were folded into the ordinary autonomous ones |
+| `Analysis/Linearization.lean` | `Analysis/FrechetDerivative.lean` |
 
-Ordering note: PR #15 currently contains PR #13's first two commits verbatim, from before
-review, including the `complexification` wrapper that was dropped and the unattributed
-reference line that was replaced. Now that #13 is merged at its target path, #15 needs to
-rebase onto `main` and delete its own copy of the Hurwitz foundation rather than
-reconciling two versions in review.
+`LinearSystems/Defs.lean` — the time-agnostic system object — was *not* created: nothing yet
+needs an `(A, B, C, D)` record, and the open question below about `D` is unsettled. It stays
+in the directory tree above marked `(planned)`.
 
 ## Open questions
+
+- **The time-split naming rule and `Solutions/` disagree.** Rule 4 says a topic's two halves
+  are named `Continuous` / `Discrete`. `Solutions/` instead uses `CtsLTI` / `CtsLTV` /
+  `DiscLTV`, which also encodes time-invariant vs time-varying — a second axis the rule does
+  not mention. Either the rule should acknowledge that second axis, or `Solutions/` should be
+  renamed. Settle it before `Gramians/` is written, since it faces the same choice.
 
 - **Scalar generality.** `Controllability.lean` and `Observability.lean` are stated over a
   `Semiring` with a `Field`-scoped section for the rank forms; both `Hautus.lean` files are

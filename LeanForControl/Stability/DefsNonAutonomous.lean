@@ -150,8 +150,7 @@ def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (
     This is Khalil (4.16). The hypothesis `IsTrajectoryNA φ f t₀` carries the existence
     assumption that Khalil leaves ambient: the claim constrains those solutions that are
     defined on `[t₀, ∞)`, and says nothing about a system whose solutions escape. Any
-    theorem *concluding* this predicate must therefore supply that existence itself —
-    see `exists_unique_trajectory`. -/
+    theorem *concluding* this predicate must therefore supply that existence itself. -/
 @[blueprint "def:stableNA"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
     \emph{stable} when
@@ -346,39 +345,3 @@ def GloballyExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ
     ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f t₀ →
         ∀ t ≥ t₀, ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
-
-/-! ## Existence of trajectories (Picard-Lindelöf) -/
-
-/-- **Picard-Lindelöf / Lindelöf-Picard (global existence and uniqueness)**.
-
-    For a jointly continuous vector field `f : ℝ → ℝⁿ → ℝⁿ` that is locally
-    Lipschitz in the state variable, uniformly on compact time sets, through every
-    initial condition `(t₀, x₀)` there passes a **unique** global trajectory
-    satisfying `ẋ = f(t, x)`.
-
-    **Remark on global existence**: local Lipschitz continuity yields existence on a
-    maximal interval `[t₀, t_max)`.  To guarantee `t_max = +∞` (no finite-time blowup)
-    one needs an additional condition such as:
-    - linear growth `‖f(t, x)‖ ≤ C · (1 + ‖x‖)`, or
-    - a forward-invariant compact set containing the trajectory.
-
-    This axiom packages both conditions under the assumption that solutions are
-    complete; the user must verify that for any concrete `f`, e.g., by exhibiting a
-    Lyapunov bound that prevents blowup. -/
-@[blueprint "lem:exists-unique-trajectory" (latexEnv := "lemma")
-  (statement := /-- \textbf{Assumed without proof.}  Let $f$ be jointly continuous and
-    $L$-Lipschitz in the state variable, uniformly on compact time sets.  Then for every
-    $t_{0}$ and $x_{0}$ there is a \emph{unique} trajectory
-    (\cref{def:isTrajectoryNA}) $\varphi$ on $[t_{0}, \infty)$ with
-    $\varphi(t_{0}) = x_{0}$.
-
-    This is Picard--Lindel\"of together with continuation.  The Lipschitz hypothesis is
-    global in the state, uniformly on compact time sets, which forces linear growth and so
-    rules out finite escape: the solution really does reach every $t \ge t_{0}$.  The axiom
-    is therefore provable as stated, not merely plausible; see INVENTORY \S1f. -/)]
-axiom exists_unique_trajectory
-    (f : ℝ → ℝⁿ → ℝⁿ)
-    (hf_cont : Continuous (Function.uncurry f))
-    (hf_lip : ∀ K : Set ℝ, IsCompact K → ∃ L : NNReal, ∀ t ∈ K, LipschitzWith L (f t))
-    (t₀ : ℝ) (x₀ : ℝⁿ) :
-    ∃! φ : ℝ → ℝⁿ, IsTrajectoryNA φ f t₀ ∧ φ t₀ = x₀
