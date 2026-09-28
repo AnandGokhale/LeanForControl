@@ -1,5 +1,5 @@
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
-import LeanForControl.Analysis.FrechetRemainder
+import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
@@ -30,8 +30,8 @@ open Matrix
 /-- A positive value of a quadratic form gives positive points arbitrarily
 close to its center by scaling the witnessing direction.
 
-Original: seed-point infrastructure for the Chetaev cone.
--/
+Supplies the seed point of the Chetaev cone: the certificate is positive somewhere in every
+neighbourhood of the equilibrium. -/
 private theorem exists_centered_quadratic_seed
     (H : Matrix (Fin n) (Fin n) ℝ) (x_eq w : ℝⁿ) (hw : w ≠ 0)
     (hHw : 0 < MatrixAlgebra.quadraticForm H w)
@@ -64,7 +64,7 @@ on a sufficiently small ball.
 
 Reference: Hahn, *Stability of Motion* (quadratic Chetaev construction).
 -/
-theorem unstable_of_quadratic_certificate
+private theorem unstable_of_quadratic_certificate
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A H : Matrix (Fin n) (Fin n) ℝ) (α : ℝ)
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
@@ -88,7 +88,7 @@ theorem unstable_of_quadratic_certificate
     Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) H
   have hp_nonneg : 0 ≤ ‖p‖ := norm_nonneg p
   obtain ⟨r, hr, hrem⟩ :=
-    LinearSystems.exists_abs_fderiv_centeredQuadraticForm_remainder_le A H hf heq hJac
+    LinearSystems.exists_abs_fderiv_centeredQuadraticForm_remainder_le A H hf hJac
       (c := m / 2) (by linarith)
   let ρ : ℝ := r / 2
   have hρ : 0 < ρ := by dsimp [ρ]; positivity
@@ -147,7 +147,7 @@ certificate, and the nonlinear first-order remainder is absorbed locally.
 
 Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).
 -/
-theorem unstable_of_complex_eigenvalue_re_pos
+private theorem unstable_of_complex_eigenvalue_re_pos
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (A : Matrix (Fin n) (Fin n) ℝ)
     (hf : ContDiff ℝ 1 f)

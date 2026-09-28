@@ -130,15 +130,89 @@ lemma invFunOn_tendsto_zero {W : ℝ → ℝ}
   exact hU_lt_ε
 
 
+/-- A strictly antitone function on `(0, ∞)` that vanishes at `+∞` is strictly positive: it
+    stays above its own limit. -/
+private lemma pos_of_strictAntiOn_tendsto_zero {W : ℝ → ℝ}
+    (hW_anti : StrictAntiOn W (Set.Ioi 0))
+    (hW_tendsto_zero : Filter.Tendsto W Filter.atTop (nhds 0))
+    {x : ℝ} (hx : 0 < x) :
+    0 < W x := by
+  have h_nonneg : ∀ y, 0 < y → 0 ≤ W y := fun y hy =>
+    le_of_tendsto hW_tendsto_zero <| by
+      filter_upwards [Filter.eventually_ge_atTop y] with z hz
+      exact hW_anti.antitoneOn hy (hy.trans_le hz) hz
+  have hx1 : (0 : ℝ) < x + 1 := by linarith
+  have : W (x + 1) < W x := hW_anti (Set.mem_Ioi.mpr hx) (Set.mem_Ioi.mpr hx1) (by linarith)
+  linarith [h_nonneg (x + 1) hx1]
 
 
-lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
-    {U : ℝ → ℝ} (hU : Filter.Tendsto U Filter.atTop (nhds 0)) :
-    Filter.Tendsto (fun s => min c (Real.sqrt (c * U s))) Filter.atTop (nhds 0) := by
-  refine squeeze_zero
-    (fun s => le_min hc (Real.sqrt_nonneg _))
-    (fun s => min_le_right _ _)
-    ?_
-  have h_mul : Filter.Tendsto (fun s => c * U s) Filter.atTop (nhds 0) := by
-    simpa using Filter.Tendsto.const_mul c hU
-  simpa [Real.sqrt_zero] using (Real.continuous_sqrt.tendsto 0).comp h_mul
+/-- The right inverse `invFunOn W (Ioi 0)` is continuous on `(0, ∞)`.
+
+Order-theoretic, not analytic: the inverse of a strictly antitone map has no jumps precisely
+because `W` attains every positive value (`mem_image_Ioi_of_tendsto`), so both one-sided
+comparisons in `tendsto_order` can be met by transporting them through `W`. -/
+@[blueprint "lem:invFunOnContinuousOn"
+  (statement := /-- Under the conditions of \cref{lem:memImageIoiOfTendsto} and with $W$
+    strictly antitone, $\mathrm{invFunOn}\,W\,(0,\infty)$ is continuous on $(0,\infty)$. -/)]
+lemma invFunOn_continuousOn {W : ℝ → ℝ}
+    (hW_cont : ContinuousOn W (Set.Ioi 0))
+    (hW_anti : StrictAntiOn W (Set.Ioi 0))
+    (hW_tendsto_zero : Filter.Tendsto W Filter.atTop (nhds 0))
+    (hW_tendsto_top : Filter.Tendsto W (𝓝[>] 0) Filter.atTop) :
+    ContinuousOn (Function.invFunOn W (Set.Ioi 0)) (Set.Ioi 0) := by
+  have hpos : ∀ {s : ℝ}, 0 < s → 0 < Function.invFunOn W (Set.Ioi 0) s := fun hs =>
+    invFunOn_pos hW_cont hW_tendsto_zero hW_tendsto_top hs
+  have heq : ∀ {s : ℝ}, 0 < s → W (Function.invFunOn W (Set.Ioi 0) s) = s := fun hs =>
+    apply_invFunOn_eq hW_cont hW_tendsto_zero hW_tendsto_top hs
+  intro s₀ hs₀
+  apply ContinuousAt.continuousWithinAt
+  rw [ContinuousAt, tendsto_order]
+  refine ⟨fun z hz => ?_, fun z hz => ?_⟩
+  · -- `z < invFunOn W _ s₀`: either `z ≤ 0`, where positivity alone suffices, or `z > 0` and
+    -- the comparison transports to `s₀ < W z`, which is an open condition on `s`.
+    rcases le_or_gt z 0 with hz0 | hz0
+    · filter_upwards [Ioi_mem_nhds hs₀] with s hs using hz0.trans_lt (hpos hs)
+    · have h_gt : s₀ < W z := by rw [← heq hs₀]; exact hW_anti hz0 (hpos hs₀) hz
+      filter_upwards [Iio_mem_nhds h_gt, Ioi_mem_nhds hs₀] with s hs_lt hs_pos
+      by_contra h_le
+      push Not at h_le
+      have := hW_anti.antitoneOn (Set.mem_Ioi.mpr (hpos hs_pos)) (Set.mem_Ioi.mpr hz0) h_le
+      rw [heq hs_pos] at this
+      exact absurd this (not_le.mpr hs_lt)
+  · have hz_pos : 0 < z := (hpos hs₀).trans hz
+    have h_lt : W z < s₀ := by rw [← heq hs₀]; exact hW_anti (hpos hs₀) hz_pos hz
+    filter_upwards [Ioi_mem_nhds h_lt, Ioi_mem_nhds hs₀] with s hs_gt hs_pos
+    by_contra h_ge
+    push Not at h_ge
+    have := hW_anti.antitoneOn (Set.mem_Ioi.mpr hz_pos) (Set.mem_Ioi.mpr (hpos hs_pos)) h_ge
+    rw [heq hs_pos] at this
+    exact absurd this (not_le.mpr hs_gt)
+
+
+/-- The right inverse `invFunOn W (Ioi 0)` blows up as `s → 0⁺`: the two boundary behaviours of
+    `W` are exchanged by inversion. -/
+@[blueprint "lem:invFunOnTendstoAtTop"
+  (statement := /-- Under the conditions of \cref{lem:memImageIoiOfTendsto} and with $W$
+    strictly antitone, $\mathrm{invFunOn}\,W\,(0,\infty)\,s \to +\infty$ as $s \to 0^{+}$. -/)]
+lemma invFunOn_tendsto_atTop {W : ℝ → ℝ}
+    (hW_cont : ContinuousOn W (Set.Ioi 0))
+    (hW_anti : StrictAntiOn W (Set.Ioi 0))
+    (hW_tendsto_zero : Filter.Tendsto W Filter.atTop (nhds 0))
+    (hW_tendsto_top : Filter.Tendsto W (𝓝[>] 0) Filter.atTop) :
+    Filter.Tendsto (Function.invFunOn W (Set.Ioi 0)) (𝓝[>] 0) Filter.atTop := by
+  rw [Filter.tendsto_atTop]
+  intro b
+  rcases le_or_gt b 0 with hb | hb
+  · filter_upwards [self_mem_nhdsWithin] with s hs_pos
+    exact hb.trans (invFunOn_pos hW_cont hW_tendsto_zero hW_tendsto_top hs_pos).le
+  · -- For `s` below the threshold `W b > 0`, antitonicity forces `invFunOn W _ s ≥ b`.
+    have hWb_pos : 0 < W b := pos_of_strictAntiOn_tendsto_zero hW_anti hW_tendsto_zero hb
+    filter_upwards [self_mem_nhdsWithin,
+      nhdsWithin_le_nhds (Iio_mem_nhds hWb_pos)] with s hs_pos hs_lt
+    by_contra h_le
+    push Not at h_le
+    have := hW_anti.antitoneOn
+      (Set.mem_Ioi.mpr (invFunOn_pos hW_cont hW_tendsto_zero hW_tendsto_top hs_pos))
+      (Set.mem_Ioi.mpr hb) h_le.le
+    rw [apply_invFunOn_eq hW_cont hW_tendsto_zero hW_tendsto_top hs_pos] at this
+    exact absurd this (not_le.mpr hs_lt)

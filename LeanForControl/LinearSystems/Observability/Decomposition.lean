@@ -4,9 +4,8 @@ import LeanForControl.LinearSystems.Observability.DefsDecomposition
 # Observability of the observable component
 
 The state and output maps induced on the quotient by the unobservable
-subspace give an observable matrix pair. The quotient represents the
-observable component of Hespanha's observable decomposition; it does not
-choose a complementary subspace in the original state space.
+subspace give an observable matrix pair. This is a quotient-space
+construction corresponding to the observable component.
 
 The scalar field is `ℂ` because the upstream `unobservableSubspace` and
 its invariance theorem are currently defined over `ℂ`.
@@ -21,9 +20,7 @@ open Matrix
 variable {n p : ℕ}
 
 /-- An invariant subspace of the quotient contained in the induced
-output kernel is zero.
-
-Original: quotient form of the largest-invariant-subspace characterization. -/
+output kernel is zero. -/
 private theorem observable_invariant_eq_bot
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
     ∀ S : Submodule ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C),
@@ -51,50 +48,48 @@ private theorem observable_invariant_eq_bot
   exact (Submodule.Quotient.mk_eq_zero _).mpr hxN
 
 /-- The observable quotient state matrix acts on basis coordinates exactly
-as the induced quotient state map.
-
-Original: coordinate infrastructure for LeanForControl. -/
+as the induced quotient state map. -/
 private lemma observableStateMatrix_mulVec_coordinates
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
+    {r : ℕ} (b : Module.Basis (Fin r) ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
     (x : (Fin n → ℂ) ⧸ unobservableSubspace A C) :
-    observableStateMatrix A C *ᵥ
-        (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)).equivFun x =
-      (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)).equivFun
+    observableStateMatrix A C b *ᵥ
+        b.equivFun x =
+      b.equivFun
         (observableStateMap A C x) := by
   simpa [observableStateMatrix, Module.Basis.equivFun_apply] using
-    LinearMap.toMatrix_mulVec_repr (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
-      (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)) (observableStateMap A C) x
+    LinearMap.toMatrix_mulVec_repr b
+      b (observableStateMap A C) x
 
 /-- The observable quotient output matrix acts on basis coordinates exactly
-as the induced quotient output map.
-
-Original: coordinate infrastructure for LeanForControl. -/
+as the induced quotient output map. -/
 private lemma observableOutputMatrix_mulVec_coordinates
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
+    {r : ℕ} (b : Module.Basis (Fin r) ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
     (x : (Fin n → ℂ) ⧸ unobservableSubspace A C) :
-    observableOutputMatrix A C *ᵥ
-        (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)).equivFun x =
+    observableOutputMatrix A C b *ᵥ
+        b.equivFun x =
       observableOutputMap A C x := by
   simpa [observableOutputMatrix, Module.Basis.equivFun_apply] using
-    LinearMap.toMatrix_mulVec_repr (Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C))
+    LinearMap.toMatrix_mulVec_repr b
       (Pi.basisFun ℂ (Fin p)) (observableOutputMap A C) x
 
 /-- The matrices of the observable component form an observable pair.
 
-Equivalent formulation of the observable-component conclusion in Hespanha,
-*Linear Systems Theory*, observable decomposition. The quotient matrices
-use the chosen basis `Module.finBasis`. -/
+Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
+The induced quotient pair is observable in any supplied basis indexed by `Fin r`. -/
 @[blueprint "thm:observable-matrices-observable"
   (statement := /-- Let $A_o,C_o$ be the matrices of the induced maps
-    (\cref{def:observable-state-map,def:observable-output-map}) in the chosen
-    finite basis of $\mathbb C^n/\mathcal N(A,C)$. Then $(A_o,C_o)$ is observable
+    (\cref{def:observable-state-matrix} and \cref{def:observable-output-matrix}) in any
+    supplied basis of $\mathbb C^n/\mathcal N(A,C)$ indexed by $\operatorname{Fin}(r)$.
+    Then $(A_o,C_o)$ is observable
     in the sense of \cref{def:isObservable}. -/)]
 theorem observableMatrices_isObservable
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
-    IsObservable (observableStateMatrix A C) (observableOutputMatrix A C) := by
-  let b := Module.finBasis ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
+    {r : ℕ} (b : Module.Basis (Fin r) ℂ ((Fin n → ℂ) ⧸ unobservableSubspace A C)) :
+    IsObservable (observableStateMatrix A C b) (observableOutputMatrix A C b) := by
   rw [← unobservableSubspace_eq_bot_iff_isObservable]
-  let U := unobservableSubspace (observableStateMatrix A C) (observableOutputMatrix A C)
+  let U := unobservableSubspace (observableStateMatrix A C b) (observableOutputMatrix A C b)
   let S := U.comap b.equivFun.toLinearMap
   have hA : S ∈ Module.End.invtSubmodule (observableStateMap A C) := by
     rw [Module.End.mem_invtSubmodule_iff_forall_mem_of_mem]

@@ -21,9 +21,7 @@ open Matrix
 variable {𝕜 : Type*} [Field 𝕜] {n m : ℕ}
 
 /-- An invariant subspace of the restricted state space containing the
-restricted input range is the whole space.
-
-Original: restriction of the ambient smallest-invariant-subspace characterization. -/
+restricted input range is the whole space. -/
 private theorem reachable_invariant_eq_top
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     ∀ S : Submodule 𝕜 (reachableSubspace A B),
@@ -46,47 +44,45 @@ private theorem reachable_invariant_eq_top
   simpa only [hyx] using hy
 
 /-- The restricted state matrix acts on basis coordinates exactly as the
-restricted state map.
-
-Original: coordinate infrastructure for LeanForControl. -/
+restricted state map. -/
 private lemma reachableStateMatrix_mulVec_coordinates
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    {r : ℕ} (b : Module.Basis (Fin r) 𝕜 (reachableSubspace A B))
     (x : reachableSubspace A B) :
-    reachableStateMatrix A B *ᵥ (Module.finBasis 𝕜 (reachableSubspace A B)).equivFun x =
-      (Module.finBasis 𝕜 (reachableSubspace A B)).equivFun (reachableStateMap A B x) := by
+    reachableStateMatrix A B b *ᵥ b.equivFun x =
+      b.equivFun (reachableStateMap A B x) := by
   simpa [reachableStateMatrix, Module.Basis.equivFun_apply] using
-    LinearMap.toMatrix_mulVec_repr (Module.finBasis 𝕜 (reachableSubspace A B))
-      (Module.finBasis 𝕜 (reachableSubspace A B)) (reachableStateMap A B) x
+    LinearMap.toMatrix_mulVec_repr b
+      b (reachableStateMap A B) x
 
 /-- The restricted input matrix acts on standard input coordinates exactly
-as the restricted input map.
-
-Original: coordinate infrastructure for LeanForControl. -/
+as the restricted input map. -/
 private lemma reachableInputMatrix_mulVec_coordinates
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    {r : ℕ} (b : Module.Basis (Fin r) 𝕜 (reachableSubspace A B))
     (u : Fin m → 𝕜) :
-    reachableInputMatrix A B *ᵥ u =
-      (Module.finBasis 𝕜 (reachableSubspace A B)).equivFun (reachableInputMap A B u) := by
+    reachableInputMatrix A B b *ᵥ u =
+      b.equivFun (reachableInputMap A B u) := by
   simpa [reachableInputMatrix, Module.Basis.equivFun_apply] using
     LinearMap.toMatrix_mulVec_repr (Pi.basisFun 𝕜 (Fin m))
-      (Module.finBasis 𝕜 (reachableSubspace A B)) (reachableInputMap A B) u
+      b (reachableInputMap A B) u
 
 /-- The matrices of the controllable component form a controllable pair.
 
 Reference: Hespanha, *Linear Systems Theory*, controllable decomposition.
-This is the component conclusion in the chosen basis `Module.finBasis`,
-not a statement constructing an ambient similarity transformation. -/
+The component conclusion holds in any supplied basis indexed by `Fin r`. -/
 @[blueprint "thm:reachable-matrices-controllable"
   (statement := /-- Let $A_c,B_c$ be the matrices of the restricted maps
-    (\cref{def:reachable-state-map,def:reachable-input-map}) in the chosen
-    finite basis of $\mathcal R(A,B)$. Then $(A_c,B_c)$ is controllable
+    (\cref{def:reachable-state-matrix} and \cref{def:reachable-input-matrix}) in any
+    supplied basis of $\mathcal R(A,B)$ indexed by $\operatorname{Fin}(r)$.
+    Then $(A_c,B_c)$ is controllable
     in the sense of \cref{def:isControllable}. -/)]
 theorem reachableMatrices_isControllable
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
-    IsControllable (reachableStateMatrix A B) (reachableInputMatrix A B) := by
-  let b := Module.finBasis 𝕜 (reachableSubspace A B)
+    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    {r : ℕ} (b : Module.Basis (Fin r) 𝕜 (reachableSubspace A B)) :
+    IsControllable (reachableStateMatrix A B b) (reachableInputMatrix A B b) := by
   rw [← reachableSubspace_eq_top_iff_isControllable]
-  let S := reachableSubspace (reachableStateMatrix A B) (reachableInputMatrix A B)
+  let S := reachableSubspace (reachableStateMatrix A B b) (reachableInputMatrix A B b)
   let T := S.comap b.equivFun.toLinearMap
   have hB : LinearMap.range (reachableInputMap A B) ≤ T := by
     rintro x ⟨u, rfl⟩

@@ -1,3 +1,4 @@
+import LeanForControl.Analysis.Continuity
 import LeanForControl.Stability.Autonomous
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
@@ -92,56 +93,6 @@ private theorem exists_cutoff_forward_segment
     simpa [Metric.mem_closedBall, dist_eq_norm] using hball
   simpa [g, hb_one] using hφg t ht
 
-/-- A continuous curve that starts strictly inside a ball and later reaches its
-complement has a first hitting time of the sphere.  Before that time it stays in
-the closed ball.
-
-Original: first-exit infrastructure for finite forward solution segments. -/
-private theorem exists_first_sphere_hit
-    {E : Type*} [NormedAddCommGroup E]
-    {x_eq : E} {φ : ℝ → E} {ρ T t₁ : ℝ}
-    (hφ : ContinuousOn φ (Icc 0 T))
-    (h₀ : ‖φ 0 - x_eq‖ < ρ) (ht₁ : t₁ ∈ Icc (0 : ℝ) T)
-    (hfar : ρ ≤ ‖φ t₁ - x_eq‖) :
-    ∃ τ ∈ Icc (0 : ℝ) T, ‖φ τ - x_eq‖ = ρ ∧
-      ∀ s ∈ Icc (0 : ℝ) τ, ‖φ s - x_eq‖ ≤ ρ := by
-  let d : ℝ → ℝ := fun t ↦ ‖φ t - x_eq‖
-  have hd : ContinuousOn d (Icc (0 : ℝ) T) :=
-    continuous_norm.comp_continuousOn (hφ.sub continuousOn_const)
-  have hd₁ : ContinuousOn d (Icc (0 : ℝ) t₁) := by
-    exact hd.mono (Icc_subset_Icc_right ht₁.2)
-  have hhit : ∃ s ∈ Icc (0 : ℝ) T, d s = ρ := by
-    have hρmem : ρ ∈ Icc (d 0) (d t₁) := ⟨h₀.le, hfar⟩
-    obtain ⟨s, hs, hsρ⟩ := (intermediate_value_Icc ht₁.1 hd₁) hρmem
-    exact ⟨s, ⟨hs.1, hs.2.trans ht₁.2⟩, hsρ⟩
-  let S : Set ℝ := Icc (0 : ℝ) T ∩ d ⁻¹' {ρ}
-  have hS_closed : IsClosed S := by
-    exact hd.preimage_isClosed_of_isClosed isClosed_Icc isClosed_singleton
-  have hS_compact : IsCompact S :=
-    isCompact_Icc.of_isClosed_subset hS_closed inter_subset_left
-  have hS_nonempty : S.Nonempty := by
-    obtain ⟨s, hs, hsρ⟩ := hhit
-    exact ⟨s, hs, hsρ⟩
-  obtain ⟨τ, hτS, hτmin⟩ :=
-    hS_compact.exists_isMinOn hS_nonempty continuousOn_id
-  have hτIcc : τ ∈ Icc (0 : ℝ) T := hτS.1
-  have hτeq : d τ = ρ := hτS.2
-  refine ⟨τ, hτIcc, hτeq, ?_⟩
-  intro s hs
-  by_contra hnot
-  have hρs : ρ < d s := lt_of_not_ge hnot
-  have hslt : s < τ := by
-    exact hs.2.lt_of_ne (fun h ↦ by subst s; exact (ne_of_lt hρs) hτeq.symm)
-  have hds : ContinuousOn d (Icc (0 : ℝ) s) := by
-    apply hd.mono
-    intro q hq
-    exact ⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩
-  have hρmem : ρ ∈ Icc (d 0) (d s) := ⟨h₀.le, hρs.le⟩
-  obtain ⟨q, hq, hqρ⟩ := (intermediate_value_Icc hs.1 hds) hρmem
-  have hqS : q ∈ S := by
-    exact ⟨⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩, hqρ⟩
-  have hτq : τ ≤ q := hτmin hqS
-  exact (not_lt_of_ge (hτq.trans hq.2)) hslt
 
 /-- A differential Chetaev inequality on one forward segment integrates to an
 exponential lower bound at the terminal time.
@@ -166,12 +117,8 @@ private theorem exponential_lower_bound_on_forward_segment
         (hV.continuous.comp_continuousOn hφcont)
   have hWderiv : ∀ t ∈ Ioo (0 : ℝ) T, HasDerivAt W (W' t) t := by
     intro t ht
-    have hφt : HasDerivAt φ (f (φ t)) t :=
-      (hφderiv t (Ioo_subset_Icc_self ht)).hasDerivAt
-        (Icc_mem_nhds ht.1 ht.2)
-    have hVφ : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t := by
-      exact (hV.differentiable (by norm_num) (φ t)).hasFDerivAt
-        |>.comp_hasDerivAt t hφt
+    have hVφ : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t :=
+      hasDerivAt_V_comp_traj (hV.differentiable (by norm_num)) hφderiv ht
     have hexp : HasDerivAt (fun s : ℝ ↦ Real.exp (-(2 * α) * s))
         (Real.exp (-(2 * α) * t) * (-(2 * α))) t := by
       simpa only [id, mul_one] using
@@ -208,7 +155,8 @@ private theorem exponential_lower_bound_on_forward_segment
 /-- If the exponential lower bound at the terminal time exceeds the quadratic
 upper bound on a ball, the segment must leave that ball.
 
-Original: terminal-time contradiction in the Chetaev argument. -/
+The terminal-time contradiction of the Chetaev argument: exponential growth of `V` eventually
+outruns the quadratic ceiling that holds inside the ball. -/
 private theorem exists_radius_escape_on_segment
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ}
     {φ : ℝ → ℝⁿ} {T ρ α C : ℝ}
@@ -246,7 +194,8 @@ private theorem exists_radius_escape_on_segment
 /-- The smooth-cutoff segment from a positive Chetaev seed reaches the boundary
 of the certificate ball on some finite horizon.
 
-Original: finite-continuation form of the Chetaev escape argument. -/
+The finite-continuation form of the escape argument: the cutoff field is globally Lipschitz, so
+the segment extends as far as needed rather than stopping at a blow-up time. -/
 private theorem exists_cutoff_segment_reaching_radius
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
@@ -278,7 +227,8 @@ private theorem exists_cutoff_segment_reaching_radius
 /-- Cutoff solution segments which start arbitrarily close to the equilibrium
 and reach a fixed radius witness forward instability.
 
-Original: first-exit reduction for locally valid differential equations. -/
+The first-exit reduction: a segment of the cutoff field agrees with the original field up to its
+first exit from the ball, which is all instability needs. -/
 private theorem unstable_of_cutoff_segment_escape
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ρ : ℝ} (hρ : 0 < ρ)
     (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),

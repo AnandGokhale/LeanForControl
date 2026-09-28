@@ -141,11 +141,6 @@ private lemma finiteLyapunovIntegral_lyapunovOperator
           NormedSpace.exp ((m : ℝ) • A) - Q :=
       finiteLyapunovIntegral_operator A Q m
 
-private lemma finiteLyapunovIntegral_neg
-    (A Q : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) :
-    finiteLyapunovIntegral A (-Q) m = -finiteLyapunovIntegral A Q m := by
-  simp [finiteLyapunovIntegral, lyapunovKernel]
-
 private lemma conjugationOperator_norm_lt_one
     (C : Matrix (Fin n) (Fin n) ℝ) (hC : ‖C‖ < 1) :
     ‖conjugationOperator C‖ < 1 := by

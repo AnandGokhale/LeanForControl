@@ -43,25 +43,25 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 -- ─── 1. Core Definitions ──────────────────────────────────────────────────────
 
 /-- The annulus `{x | s ≤ ‖x‖ ≤ r}`, implemented as the set difference of two balls. -/
-def annulus (s r : ℝ) : Set ℝⁿ :=
+private def annulus (s r : ℝ) : Set ℝⁿ :=
   Metric.closedBall 0 r \ Metric.ball 0 s
 
 /-- `ψ(s) = inf_{x ∈ annulus s r} V(x)`.
     Tracks the minimum of `V` on the shell `{s ≤ ‖x‖ ≤ r}`; serves as the
     lower comparison function before smoothing. -/
-noncomputable def psi_fn (r : ℝ) (V : ℝⁿ → ℝ) (s : ℝ) : ℝ :=
+private noncomputable def psi_fn (r : ℝ) (V : ℝⁿ → ℝ) (s : ℝ) : ℝ :=
   sInf (V '' annulus s r)
 
 /-- `φ(s) = sup_{‖x‖ ≤ s} V(x)`.
     Tracks the maximum of `V` on the closed ball of radius `s`; serves as the
     upper comparison function before smoothing. -/
-noncomputable def phi_fn (V : ℝⁿ → ℝ) (s : ℝ) : ℝ :=
+private noncomputable def phi_fn (V : ℝⁿ → ℝ) (s : ℝ) : ℝ :=
   sSup (V '' Metric.closedBall 0 s)
 
 -- ─── 2. Properties of the Lower Comparison Function ψ ─────────────────────────
 
 /-- `ψ(0) = 0`: the annulus degenerates to `{0}`, so the infimum is `V(0) = 0`. -/
-lemma psi_fn_zero {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r) (hV_zero : V 0 = 0)
+private lemma psi_fn_zero {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r) (hV_zero : V 0 = 0)
     (hV_nonneg : ∀ x ∈ closedBall (0 : ℝⁿ) r, 0 ≤ V x) : psi_fn r V 0 = 0 := by
   unfold psi_fn
   apply le_antisymm
@@ -81,7 +81,7 @@ lemma psi_fn_zero {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r) (hV_zero : V 0 = 0
 
 /-- `ψ(s) > 0` for `0 < s ≤ r`: the Extreme Value Theorem gives a minimizer `x` in
     the compact annulus; since `‖x‖ ≥ s > 0` we have `x ≠ 0`, hence `V(x) > 0`. -/
-lemma psi_fn_pos {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
+private lemma psi_fn_pos {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
     (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
     (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall (0 : ℝⁿ) r → x ≠ 0 → 0 < V x)
     {s : ℝ} (hs_pos : 0 < s) (hs_le : s ≤ r) : 0 < psi_fn r V s := by
@@ -129,7 +129,7 @@ lemma psi_fn_pos {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
 
 /-- `ψ` is monotone: enlarging the annulus (decreasing the inner radius) can only
     decrease the infimum, since we are taking inf over a larger set. -/
-lemma psi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
+private lemma psi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
     (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
     {s₁ s₂ : ℝ} (h_le : s₁ ≤ s₂) (h_bound : s₂ ≤ r) (hs1_nonneg : 0 ≤ s₁) :
     psi_fn r V s₁ ≤ psi_fn r V s₂ := by
@@ -158,7 +158,7 @@ lemma psi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
 
 /-- `V(x) ≥ ψ(‖x‖)`: since `x` belongs to the annulus `{y | ‖x‖ ≤ ‖y‖ ≤ r}`,
     `V(x)` is an element of the set whose infimum defines `ψ(‖x‖)`. -/
-lemma V_ge_psi {r : ℝ} {V : ℝⁿ → ℝ}
+private lemma V_ge_psi {r : ℝ} {V : ℝⁿ → ℝ}
     (hV_zero : V 0 = 0)
     (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x)
     {x : ℝⁿ} (hx : ‖x‖ ≤ r) : psi_fn r V ‖x‖ ≤ V x := by
@@ -178,7 +178,7 @@ lemma V_ge_psi {r : ℝ} {V : ℝⁿ → ℝ}
 -- ─── 4. Properties of the Upper Comparison Function φ ─────────────────────────
 
 /-- `φ(0) = 0`: the closed ball of radius 0 contains only `0`, so the supremum is `V(0) = 0`. -/
-lemma phi_fn_zero {V : ℝⁿ → ℝ} (hV_zero : V 0 = 0) : phi_fn V 0 = 0 := by
+private lemma phi_fn_zero {V : ℝⁿ → ℝ} (hV_zero : V 0 = 0) : phi_fn V 0 = 0 := by
   unfold phi_fn
   apply le_antisymm
   · apply csSup_le
@@ -195,7 +195,7 @@ lemma phi_fn_zero {V : ℝⁿ → ℝ} (hV_zero : V 0 = 0) : phi_fn V 0 = 0 := b
     · exact ⟨0, Metric.mem_closedBall_self le_rfl, hV_zero⟩
 
 /-- `φ` is monotone: a larger ball contains more of `V`, so its supremum is no smaller. -/
-lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
+private lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
     {s₁ s₂ : ℝ} (h_le : s₁ ≤ s₂) (h_bound : s₂ ≤ r) (hs1_nonneg : 0 ≤ s₁) :
     phi_fn V s₁ ≤ phi_fn V s₂ := by
   unfold phi_fn
@@ -215,7 +215,7 @@ lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn V (clos
 
 /-- `V(x) ≤ φ(‖x‖)`: since `x ∈ closedBall 0 ‖x‖`, `V(x)` is an element of the
     set whose supremum defines `φ(‖x‖)`. -/
-lemma V_le_phi {r : ℝ} {V : ℝⁿ → ℝ}
+private lemma V_le_phi {r : ℝ} {V : ℝⁿ → ℝ}
     (hV_cont : ContinuousOn V (closedBall 0 r))
     {x : ℝⁿ} (hx : ‖x‖ ≤ r) : V x ≤ phi_fn V ‖x‖ := by
   unfold phi_fn
@@ -239,7 +239,8 @@ by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
 
 /-- There exists a class K function `α₁` on `[0, r]` with `α₁(s) ≤ ψ(s)`.
     Combined with `V_ge_psi`, this gives `α₁(‖x‖) ≤ V(x)`. -/
-lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
+private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
+    (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ : ℝ) (α₁ : ClassK r b₁), ∀ s, 0 ≤ s → s ≤ r → α₁.toFun s ≤ psi_fn r V s := by
   -- Derive non-negativity from V(0) = 0 and strict positivity away from 0
@@ -258,13 +259,13 @@ lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn 
 
 /-- There exists a class K function `α₂` on `[0, r]` with `φ(s) ≤ α₂(s)`.
     Combined with `V_le_phi`, this gives `V(x) ≤ α₂(‖x‖)`. -/
-lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
+private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) :
     ∃ (b₂ : ℝ) (α₂ : ClassK r b₂), ∀ s, 0 ≤ s → s ≤ r → phi_fn V s ≤ α₂.toFun s := by
   -- Verify the two hypotheses of the upper smoothing axiom for φ
   have hφ_zero : phi_fn V 0 = 0 := phi_fn_zero hV_zero
-  have hφ_mono : ∀ s₁ s₂, 0 ≤ s₁ → s₁ ≤ s₂ → s₂ ≤ r → phi_fn V s₁ ≤ phi_fn V s₂ :=
-    fun s₁ s₂ hs1 hs_le hs2_le => phi_fn_mono hV_cont hs_le hs2_le hs1
+  have hφ_mono : MonotoneOn (phi_fn V) (Set.Icc 0 r) :=
+    fun _ hs₁ _ hs₂ hle => phi_fn_mono hV_cont hle hs₂.2 hs₁.1
   -- Apply the smoothing axiom to get a strictly monotone continuous φ ≤ f
   rcases exists_strictMono_upper_bound r hr (phi_fn V) hφ_zero hφ_mono
     with ⟨f, b₂, hb₂_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
@@ -278,17 +279,27 @@ lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBa
       `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. -/
 @[blueprint "thm:lyapunov-class-K-bounds"
   (statement := /-- \textbf{Class K sandwich bounds.}
-    For any continuous positive-definite function $V : \mathbb{R}^{n} \to \mathbb{R}$
-    on $\overline{B}(0,r)$, there exist class $\mathcal{K}$ functions $\alpha_1, \alpha_2$
-    such that
+    Let $V : \mathbb{R}^{n} \to \mathbb{R}$ be continuous on $\overline{B}(0,r)$ with
+    $V(0) = 0$ and $V(x) > 0$ for every nonzero $x$ in that ball.  Then there are class
+    $\mathcal{K}$ functions $\alpha_1, \alpha_2$ on $[0, r)$ with
     \[
       \alpha_1(\|x\|) \;\le\; V(x) \;\le\; \alpha_2(\|x\|)
-      \qquad \forall\, \|x\| \le r.
-    \] -/)
-  (proof := /-- Construct $\alpha_1$ from the infimum of $V$ on annuli (lower bound),
-    and $\alpha_2$ from the supremum of $V$ on balls (upper bound). Each is sandwiched
-    by a class $\mathcal{K}$ function via the axioms in
-    \texttt{LeanForControl.axioms}. -/)]
+      \qquad \forall\, \|x\| < r.
+    \]
+    The conclusion holds on the \emph{open} ball: $\alpha_1$ and $\alpha_2$ are class
+    $\mathcal{K}$ on $[0, r)$, so neither is defined at $\|x\| = r$.
+
+    This is what lets a Lyapunov argument be run entirely in terms of comparison functions:
+    positive definiteness is a pointwise condition, and this converts it into monotone bounds
+    in the single variable $\|x\|$. -/)
+  (proof := /-- For the lower bound take $\psi(s) = \inf\{V(x) : s \le \|x\| \le r\}$,
+    the infimum of $V$ over the annulus of inner radius $s$: it vanishes at $0$, is positive for
+    $s > 0$ by compactness and positive definiteness, and is nondecreasing.  For the upper bound
+    take $\phi(s) = \sup\{V(x) : \|x\| \le s\}$, similarly nondecreasing and vanishing at
+    $0$.  Neither is continuous or strictly monotone, so smooth them:
+    \cref{lem:exists-strictMono-lower-bound} gives a class $\mathcal{K}$ minorant of $\psi$
+    and \cref{lem:exists-strictMono-upper-bound} a class $\mathcal{K}$ majorant of $\phi$.
+    Since $\psi(\|x\|) \le V(x) \le \phi(\|x\|)$ pointwise, these sandwich $V$. -/)]
 theorem LyapunovClassKBounds [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂),

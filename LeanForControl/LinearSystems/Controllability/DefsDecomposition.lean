@@ -1,15 +1,14 @@
 import LeanForControl.LinearSystems.Controllability.Reachability
 import Mathlib.LinearAlgebra.Basis.Defs
-import Mathlib.LinearAlgebra.Dimension.Free
 import Architect
 
 /-!
 # The controllable component
 
 Restrict the state and input maps to the reachable subspace. Their matrices
-represent the controllable component in a chosen finite basis, as in the
+represent the controllable component in a supplied finite basis, as in the
 controllable decomposition of Hespanha, *Linear Systems Theory*.
-The basis choice is Lean coordinate infrastructure.
+The matrix definitions take the state basis as an explicit argument.
 -/
 
 namespace LinearSystems
@@ -44,27 +43,28 @@ noncomputable def reachableInputMap
   B.mulVecLin.codRestrict (reachableSubspace A B) fun u =>
     range_B_le_reachableSubspace A B ⟨u, rfl⟩
 
-/-- The matrix of the restricted state map in `Module.finBasis`.
-
-Original: Lean coordinate representation of the controllable component.
-The basis is chosen, so the matrix is not canonical. -/
+/-- The matrix of the restricted state map in the supplied basis. -/
+@[blueprint "def:reachable-state-matrix"
+  (statement := /-- Given a basis $b$ of $\mathcal R(A,B)$ indexed by
+    $\operatorname{Fin}(r)$, let $A_c$ be the matrix of the restricted state
+    map (\cref{def:reachable-state-map}) in $b$. -/)]
 noncomputable def reachableStateMatrix
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
-    Matrix (Fin (Module.finrank 𝕜 (reachableSubspace A B)))
-      (Fin (Module.finrank 𝕜 (reachableSubspace A B))) 𝕜 :=
-  LinearMap.toMatrix (Module.finBasis 𝕜 (reachableSubspace A B))
-    (Module.finBasis 𝕜 (reachableSubspace A B))
-    (reachableStateMap A B)
+    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    {r : ℕ} (b : Module.Basis (Fin r) 𝕜 (reachableSubspace A B)) :
+    Matrix (Fin r) (Fin r) 𝕜 :=
+  LinearMap.toMatrix b b (reachableStateMap A B)
 
-/-- The matrix of the restricted input map in `Module.finBasis`,
-with standard input coordinates.
-
-Original: Lean coordinate representation of the controllable component.
-The basis is chosen, so the matrix is not canonical. -/
+/-- The matrix of the restricted input map in the supplied state basis,
+with standard input coordinates. -/
+@[blueprint "def:reachable-input-matrix"
+  (statement := /-- Given the same basis $b$ as in
+    \cref{def:reachable-state-matrix}, let $B_c$ be the matrix of the
+    restricted input map (\cref{def:reachable-input-map}) in $b$ and the
+    standard input basis. -/)]
 noncomputable def reachableInputMatrix
-    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
-    Matrix (Fin (Module.finrank 𝕜 (reachableSubspace A B))) (Fin m) 𝕜 :=
-  LinearMap.toMatrix (Pi.basisFun 𝕜 (Fin m)) (Module.finBasis 𝕜 (reachableSubspace A B))
-    (reachableInputMap A B)
+    (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    {r : ℕ} (b : Module.Basis (Fin r) 𝕜 (reachableSubspace A B)) :
+    Matrix (Fin r) (Fin m) 𝕜 :=
+  LinearMap.toMatrix (Pi.basisFun 𝕜 (Fin m)) b (reachableInputMap A B)
 
 end LinearSystems

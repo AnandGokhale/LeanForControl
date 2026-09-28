@@ -176,9 +176,15 @@ The Lie derivative DV(x)[f(x)] = fderiv ℝ V x (f x). -/
 @[blueprint "def:isLocalLyapunovFunction"
   (statement := /-- A function $V : \mathbb{R}^{n} \to \mathbb{R}$ is a
     \emph{local Lyapunov function} on an open domain $D \ni x_{\mathrm{eq}}$
-    when $V$ is smooth, $V(x_{\mathrm{eq}}) = 0$, $V > 0$ on
+    when $V$ is continuous and differentiable on all of $\mathbb{R}^n$,
+    $V(x_{\mathrm{eq}}) = 0$, $V > 0$ on
     $D \setminus \{x_{\mathrm{eq}}\}$, and the Lie derivative satisfies
-    $\dot{V}(x) = \nabla V(x) \cdot f(x) \le 0$ for all $x \in D$. -/)]
+    $\dot{V}(x) = \nabla V(x) \cdot f(x) \le 0$ for all $x \in D$.
+
+    Global regularity of $V$, with positivity and the Lie-derivative sign required only on
+    $D$, is what lets the chain-rule and intermediate-value arguments be applied uniformly.
+    Note this notion does \emph{not} require $x_{\mathrm{eq}}$ to be an equilibrium; the
+    strict variants below do. -/)]
 structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open     : IsOpen D
   hD_mem      : x_eq ∈ D
@@ -195,10 +201,12 @@ structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (
     unboundedness and holds whenever `D` is bounded or `V` grows toward `∂D`. -/
 @[blueprint "def:isStrictLocalLyapunovFunction"
   (statement := /-- A \emph{strict local Lyapunov function} on $D$ strengthens
-    \cref{def:isLocalLyapunovFunction}: the Lie derivative satisfies
-    $\dot{V}(x) < 0$ for all $x \in D \setminus \{x_{\mathrm{eq}}\}$, and
-    there exists $c > 0$ such that the compact sublevel set
-    $\Omega_{c}(V) \subseteq D$ (\cref{def:sublevelSet}). -/)]
+    \cref{def:isLocalLyapunovFunction} in three ways: $V$ is required to be $C^{1}$ rather
+    than merely differentiable; $x_{\mathrm{eq}}$ must be an equilibrium,
+    $f(x_{\mathrm{eq}}) = 0$; and the Lie derivative is strictly negative,
+    $\dot{V}(x) < 0$ for all $x \in D \setminus \{x_{\mathrm{eq}}\}$.  It additionally
+    requires a $c > 0$ with $\Omega_{c}(V) \subseteq D$ compact
+    (\cref{def:sublevelSet}), which replaces radial unboundedness in the local setting. -/)]
 structure IsStrictLocalLyapunovFunction
     (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open   : IsOpen D
@@ -218,7 +226,7 @@ structure IsStrictLocalLyapunovFunction
 @[blueprint "def:isStrictLyapunovFunction"
   (statement := /-- A \emph{global strict Lyapunov function} for $\dot{x} = f(x)$
     at $x_{\mathrm{eq}}$ is a $C^{1}$ map $V : \mathbb{R}^{n} \to \mathbb{R}$
-    with $V(x_{\mathrm{eq}}) = 0$, $V > 0$ everywhere else,
+    with $f(x_{\mathrm{eq}}) = 0$, $V(x_{\mathrm{eq}}) = 0$, $V > 0$ everywhere else,
     $\dot{V}(x) < 0$ on $\mathbb{R}^{n} \setminus \{x_{\mathrm{eq}}\}$,
     and all sublevel sets $\Omega_{c}(V)$ compact (coercivity). -/)]
 structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
@@ -235,7 +243,8 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
     via `isCompact_sublevel_set` in `Autonomous.lean`. -/
 @[blueprint "def:isAsymptoticLyapunovFunction"
   (statement := /-- The classical GAS Lyapunov certificate: a $C^{1}$ map
-    $V : \mathbb{R}^{n} \to \mathbb{R}$ with $V(x_{\mathrm{eq}}) = 0$,
+    $V : \mathbb{R}^{n} \to \mathbb{R}$ with $f(x_{\mathrm{eq}}) = 0$,
+    $V(x_{\mathrm{eq}}) = 0$,
     $V > 0$ elsewhere, $\dot{V} < 0$ on $\mathbb{R}^{n} \setminus \{x_{\mathrm{eq}}\}$,
     and radially unbounded ($V(x) \to \infty$ as $\|x\| \to \infty$).
     Implies \cref{def:isStrictLyapunovFunction} via
@@ -295,19 +304,3 @@ lemma isCompact_sublevel_set
     by_contra hxK
     have hVx : c < V x := hK (Set.mem_compl hxK)
     exact absurd hVx (not_lt.mpr hx)
-
-/-! ## Extension lemma
-
-If V₀ is C¹ on an open set D containing x₀, it can be extended to a globally
-C¹ function agreeing with V₀ on some neighborhood of x₀.
-
-Proof sketch: V = ψ · V₀ where ψ : ℝⁿ → ℝ is a ContDiffBump function with
-ψ = 1 near x₀ and supp ψ compactly contained in D. Since supp ψ ⊆ D and ψ
-vanishes near ∂D, the product ψ · V₀ is globally C¹. -/
-
--- lemma contDiffOn_extension
---     {D : Set ℝⁿ} (hD : IsOpen D) {x₀ : ℝⁿ} (hx₀ : x₀ ∈ D)
---     {V₀ : ℝⁿ → ℝ} (hV : ContDiffOn ℝ 1 V₀ D) :
---     ∃ (V : ℝⁿ → ℝ) (D' : Set ℝⁿ), IsOpen D' ∧ x₀ ∈ D' ∧ D' ⊆ D ∧
---       ContDiff ℝ 1 V ∧ Set.EqOn V V₀ D' := by
---   sorry

@@ -18,6 +18,8 @@ See `README.md` for how to build the project and the three ways to browse it
    ```bash
    lake exe cache get   # first time only
    lake build
+   lake exe mk_all      # green `lake build` ≠ green CI: Lean tolerates duplicate
+                        # imports and a stale `LeanForControl.lean`; `mk_all` does not
    ```
 2. **No `sorry`, no `admit`.** A proof that doesn't go through isn't done.
 3. **Every public declaration needs a docstring** — the `docBlame` linter enforces this
@@ -36,7 +38,22 @@ See `README.md` for how to build the project and the three ways to browse it
      standard.
 5. **If you touch a file with `@[blueprint ...]` annotations, keep `leanblueprint
    checkdecls` passing** — it checks that blueprint labels still point at real Lean
-   declarations.
+   declarations — and run the label-integrity check:
+   ```bash
+   python3 scripts/check_blueprint_labels.py
+   ```
+   Lean checks none of this, and the three failure modes look nothing alike: a dangling
+   `\inputleannode` hard-errors the blueprint build; a dangling `\cref` degrades silently
+   to `??`; a declared-but-never-inputted node produces **no diagnostic at all** — its
+   LaTeX is written and compiled, and simply never rendered. The script catches all three
+   and runs in `blueprint.yml`. Note that `\cref`s live inside other declarations'
+   blueprint statements, not only in `content.tex`, so deleting a node can break a
+   reference buried in a neighbouring Lean docstring.
+
+   Passing these checks does **not** mean a blueprint statement is *true* of the
+   declaration it is attached to — `statement`/`proof` are hand-written prose and nothing
+   mechanical compares them against the Lean. If you change a declaration's *type*, re-read
+   its blueprint statement by hand; that is where drift comes from.
 
 ## Design conventions
 
@@ -82,23 +99,58 @@ and the codebase less consistent.
   that exact edition. Refer to results by their descriptive or eponymous name instead
   (`Barbashin's theorem`, `class-K sandwich bounds`, `Osgood's construction`), the way
   the rest of the file names its own lemmas.
-- **State where every new theorem or lemma came from.** Add a `Reference:` line to its
-  doc comment (or the module docstring, if it covers the whole file) naming the textbook,
-  paper, or standard result it formalizes, using the citation style above. If the result
-  is original to this repo, say so explicitly (`Original.` or a one-line note on why it's
-  needed) instead of leaving the provenance unstated — and repeat the source in the PR
-  description too, so it's visible in review without opening every file. **This is a
-  convention, not yet a CI check** — the `docBlame` linter only verifies a docstring
-  exists, not what it says, so nothing currently fails a build over a missing
-  `Reference:` line. Most of the existing source predates this convention and doesn't
-  have one yet; treat it as required for new/changed theorems going forward, not as a
-  claim that the whole codebase already complies.
+- **Every control-theory result needs a `Reference:` line.** If a declaration states
+  something about systems, trajectories, stability, controllability, observability or
+  realizations — anything a reader could look up in a control textbook — its doc comment
+  (or the module docstring, if it covers the whole file) must name the source, using the
+  citation style above. Repeat it in the PR description so it's visible in review without
+  opening every file.
+
+  This is the one piece of documentation that makes a claim *checkable*: nothing verifies
+  that a blueprint `statement` is true of the Lean it is attached to, and a reader
+  auditing one can only do so against a source. A control-theory result with no reference
+  is unauditable by anyone who wasn't there when it was written.
+
+  **Supporting mathematics does not need one.** Real-analysis lemmas, order and topology
+  facts, matrix algebra, the comparison-function library — cite a source if there is a
+  natural one, but don't manufacture provenance for a lemma that exists because a proof
+  needed it. Say what it's for instead, in a sentence, if that isn't obvious from the
+  statement. (An earlier version of this rule asked for an explicit `Original.` marker in
+  that case; it produced twenty copies of "formalization infrastructure for LeanForControl"
+  and no information, so it's gone.)
+
+  **Not a CI check** — `docBlame` verifies a docstring exists, not what it says. Treat
+  this as required for new and changed results, not as a claim that the existing source
+  already complies.
 - **Blueprint annotations** (`@[blueprint "label" (statement := ...) (proof := ...)]`)
-  go on definitions and named/main theorems worth exposing in the readable blueprint —
-  not on every internal helper lemma (roughly a third of declarations carry one; that's
-  the right ratio to aim for, not 100%). The `statement`/`proof` text is hand-written
-  prose, not auto-extracted from the Lean signature — keep it tight and faithful, and
-  treat the Lean source as ground truth if the two ever drift.
+  follow visibility, not taste. **A public declaration gets a node** — if a result can't be
+  found, it may as well not be proved, and being public is what makes it findable at all.
+  **A `private` declaration** is a step in a proof, not a result, and needs nothing; if a
+  declaration is public only because Lean forced it across a file boundary, the question to
+  ask is whether it should be `private`, not whether to skip its node. A declaration nothing
+  uses at all is a deletion candidate — but "unused" is worth keeping if it rounds out an
+  API, in which case its node is the record of why it stays. The one carve-out: a lemma that
+  merely restates a field of a
+  structure whose definition already has a node gets nothing either, however widely it is
+  used — the definition already said it, and a node would be LaTeX overhead. (These are
+  usually `@[simp]`; see the eight `ClassK.*_iff` / `*_apply` lemmas in
+  `Comparison/ClassK.lean`.)
+
+  A node is invisible until `content.tex` has an `\inputleannode` for it, so add that in
+  the same change. `@[blueprint]` needs `import Architect` in the file; without it the
+  attribute doesn't exist and nothing in the file can be annotated at all.
+
+  On an `axiom`, pass `(latexEnv := "lemma")` and no `proof`: Architect defaults an
+  unproved declaration to `definition`, which would misrepresent an assumption as a
+  definition.
+
+  The `statement`/`proof` text is hand-written prose, not auto-extracted from the Lean
+  signature — keep it tight and faithful, and treat the Lean source as ground truth if the
+  two ever drift.
+- **Don't regex across Lean source in this repo.** The trajectory-predicate patterns nest,
+  so a blanket substitution over-matches: one such attempt corrupted six sites, including
+  making an `abbrev` self-referential, and a second replaced text the previous replacement
+  had just produced. Use explicit per-site edits and check the build between them.
 - **Keep a living `plan.md`** in any actively-developed subject-area directory (see
   `Stability/plan.md` for the template: a status table of what's proved vs. planned,
   file-by-file notes, and a "lessons learned" section). Update it as part of the PR that
@@ -110,7 +162,7 @@ and the codebase less consistent.
 - Keep it focused: one subject area per PR.
 - `lake build` green locally first (the Mathlib cache from `lake exe cache get` makes
   this fast after the first run).
-- State the source of any new theorem in the PR description (textbook/paper/original) —
-  see "State where every new theorem or lemma came from" above.
+- State the source of any new control-theory result in the PR description — see
+  "Every control-theory result needs a `Reference:` line" above.
 - If you're introducing a new subject-area directory meant for ongoing work, add a
   `plan.md` alongside it.

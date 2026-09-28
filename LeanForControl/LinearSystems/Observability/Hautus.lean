@@ -3,7 +3,6 @@ import LeanForControl.LinearSystems.Observability.Observability
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
-import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Architect
 
 /-!
@@ -19,11 +18,7 @@ project note: eigenvalues live in `ℂ`).
 
 The structure is:
 
-* `unobservableSubspace A C` — the `A`-invariant submodule of vectors that
-  are killed by every `C * A^k`.
-* Cayley-Hamilton helper: vectors in `unobservableSubspace` are killed by
-  `C * A^n` too, not just `C * A^k` for `k < n`.
-* `A`-invariance of `unobservableSubspace`.
+* Foundational unobservable-subspace facts are imported from `Observability`.
 * `hautusObservabilityMatrix A C μ` — the block-row matrix `[μI - A; C]`.
 * Failure direction: `¬ IsObservable A C → ∃ μ, witness vector` via
   eigenvector extraction on `unobservableSubspace`.
@@ -33,6 +28,8 @@ The structure is:
 The dual controllability Hautus lemma lives in
 `LinearSystems.Controllability.Hautus`, which imports this file and routes
 through the transpose rather than repeating the eigenvector argument.
+
+Reference: Hespanha, *Linear Systems Theory*, Hautus observability test.
 -/
 
 namespace LinearSystems
@@ -40,93 +37,6 @@ namespace LinearSystems
 open Matrix
 
 variable {n p : ℕ}
-
-lemma mem_unobservableSubspace_iff
-    {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
-    (v : Fin n → ℂ) :
-    v ∈ unobservableSubspace A C
-      ↔ ∀ k : Fin n, (C * A ^ (k : ℕ)) *ᵥ v = 0 := by
-  simp [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker]
-
-/-- The unobservable subspace is trivial exactly when the system is observable
-in the textbook sense `IsObservable`. -/
-@[blueprint "thm:unobservable-eq-bot-iff-observable"
-  (statement := /-- A finite-dimensional system $(A, C)$ is observable in the
-    sense of \cref{def:isObservable} if and only if its unobservable subspace
-    is trivial:
-    \[
-      \mathcal{N}(A, C) = \{0\} \iff \mathrm{IsObservable}(A, C).
-    \] -/)
-  (proof := /-- Both directions are membership unfoldings of
-    \cref{def:unobservableSubspace} against \cref{def:isObservable}. -/)]
-theorem unobservableSubspace_eq_bot_iff_isObservable
-    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
-    unobservableSubspace A C = ⊥ ↔ IsObservable A C := by
-  rw [Submodule.eq_bot_iff]
-  unfold IsObservable
-  refine ⟨fun h v hv => ?_, fun h v hv => ?_⟩
-  · exact h v ((mem_unobservableSubspace_iff v).mpr hv)
-  · exact h v ((mem_unobservableSubspace_iff v).mp hv)
-
-/-- Cayley-Hamilton consequence: a vector in the unobservable subspace is
-also annihilated by `C * A^n`, not just by `C * A^k` for `k < n`. The single
-extra power closes the gap that `A`-invariance needs. -/
-private lemma mulVec_aPowN_eq_zero_of_mem_unobservableSubspace
-    {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
-    {v : Fin n → ℂ} (hv : v ∈ unobservableSubspace A C) :
-    (C * A ^ n) *ᵥ v = 0 := by
-  rw [mem_unobservableSubspace_iff] at hv
-  -- Cayley-Hamilton in matrix form, multiplied on the left by `C` and
-  -- evaluated at `v`.
-  have hCH := Matrix.aeval_self_charpoly A
-  have h_apply : (C * Polynomial.aeval A A.charpoly) *ᵥ v = 0 := by
-    rw [hCH, Matrix.mul_zero, Matrix.zero_mulVec]
-  -- Expand `aeval` as a finite sum and use the degree of `charpoly`.
-  have hdeg : A.charpoly.natDegree = n := by
-    rw [Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
-  rw [Polynomial.aeval_eq_sum_range, hdeg, Finset.sum_range_succ] at h_apply
-  -- Isolate the leading `A^n` term using monicity of `charpoly`.
-  have hmonic : A.charpoly.coeff n = 1 := by
-    have hL := A.charpoly_monic
-    rw [Polynomial.Monic, Polynomial.leadingCoeff, hdeg] at hL
-    exact hL
-  rw [hmonic, one_smul, Matrix.mul_add, Matrix.add_mulVec] at h_apply
-  -- The remaining sum vanishes term-by-term because each `(C * A^i) *ᵥ v = 0`.
-  have hsum : (C * ∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
-    rw [Matrix.mul_sum, Matrix.sum_mulVec]
-    refine Finset.sum_eq_zero fun i hi => ?_
-    rw [Finset.mem_range] at hi
-    rw [Matrix.mul_smul, Matrix.smul_mulVec, hv ⟨i, hi⟩, smul_zero]
-  rw [hsum, zero_add] at h_apply
-  exact h_apply
-
-/-- The unobservable subspace is `A`-invariant: applying `A` to any
-unobservable state keeps it unobservable. The proof for the boundary case
-`k = n - 1` uses Cayley-Hamilton through
-`mulVec_aPowN_eq_zero_of_mem_unobservableSubspace`. -/
-@[blueprint "lem:unobservableSubspace-invariant"
-  (statement := /-- The unobservable subspace is closed under the action of
-    $A$: for every $v \in \mathcal{N}(A, C)$, also $A\, v \in \mathcal{N}(A, C)$. -/)
-  (proof := /-- For $k = 0, \dots, n-2$ this is direct from the definition.
-    For $k = n - 1$ we land at $C\, A^{n}\, v$, which Cayley-Hamilton
-    rewrites as a $\mathbb{C}$-linear combination of $C\, A^{i}\, v$ for
-    $i < n$. Each of those is zero, so the combination is zero. -/)]
-lemma A_mulVec_mem_unobservableSubspace_of_mem
-    {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
-    {v : Fin n → ℂ} (hv : v ∈ unobservableSubspace A C) :
-    A *ᵥ v ∈ unobservableSubspace A C := by
-  rw [mem_unobservableSubspace_iff]
-  intro k
-  -- Bridge `(C * A^k.val) *ᵥ (A *ᵥ v) = (C * A^(k.val + 1)) *ᵥ v`.
-  rw [Matrix.mulVec_mulVec, Matrix.mul_assoc, ← pow_succ]
-  by_cases hk : k.val + 1 < n
-  · exact (mem_unobservableSubspace_iff v).mp hv ⟨k.val + 1, hk⟩
-  · -- `k.val + 1 = n`, so use the Cayley-Hamilton helper.
-    push Not at hk
-    have hk_lt : k.val < n := k.isLt
-    have heq : k.val + 1 = n := by omega
-    rw [heq]
-    exact mulVec_aPowN_eq_zero_of_mem_unobservableSubspace hv
 
 /-- If the unobservable subspace is non-trivial, it contains a nonzero
 eigenvector of `A` (over `ℂ`). The eigenvector lifts to the ambient space
