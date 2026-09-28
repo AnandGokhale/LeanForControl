@@ -6,7 +6,9 @@ import Architect
 open MeasureTheory intervalIntegral Real Set Filter
 
 /-!
-# Gronwall's Inequality (Lemma A.1)
+# Gronwall's Inequality
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma A.1 (Appendix A).
 
 ## Proof strategy (integrating-factor / variation of parameters)
 
@@ -29,69 +31,21 @@ Multiplying by exp(M(t)) and using exp(M(t))·exp(−M(s)) = exp(∫_s^t μ):
 -/
 
 
-/-
-A wrapper for the Fundamental Theorem of Calculus.
-Given a continuous function `μ` on `[a, b]`, this lemma proves that the
-integral `x ↦ ∫ τ in a..x, μ τ` is differentiable at any interior point `t ∈ (a, b)`,
-and its derivative is `μ t`.
+/-! ## General form
+
+The two facts about primitives of continuous functions that this proof rests on —
+`hasDerivAt_integral` and `continuousOn_integral_Icc` — are general interval-integral
+statements with no Gronwall content, and live in `Analysis/Integrals.lean`.
 -/
 
-
-lemma hasDerivAt_integral {a b : ℝ} {μ : ℝ → ℝ}
-    (hμ : ContinuousOn μ (Icc a b)) (t : ℝ) (ht : t ∈ Ioo a b) :
-    HasDerivAt (fun x ↦ ∫ τ in a..x, μ τ) (μ t) t :=
-  intervalIntegral.integral_hasDerivAt_right
-    ((hμ.mono (Icc_subset_Icc_right ht.2.le)).intervalIntegrable_of_Icc ht.1.le)
-    ((hμ.mono Ioo_subset_Icc_self).stronglyMeasurableAtFilter isOpen_Ioo t ht)
-    (hμ.continuousAt (Icc_mem_nhds ht.1 ht.2))
-
-
-/-
-Continuity of the integral function on a closed, ordered interval.
-If a function `f` is integrable on `[a, t]`, the function defined by integrating `f`
-from `a` to `s` is continuous for all `s ∈ [a, t]`.
-This is a wrapper of `intervalIntegral.continuousOn_primitive_interval`
-that avoids unordered interval (`uIcc`) issues by explicitly requiring `a ≤ t`.
--/
-
-
-
-lemma continuousOn_integral_Icc {a t : ℝ} {f : ℝ → ℝ} (h : a ≤ t)
-    (hf_int : IntegrableOn f (Icc a t) volume) :
-    ContinuousOn (fun s ↦ ∫ τ in a..s, f τ) (Icc a t) := by
-  have hu : Set.uIcc a t = Set.Icc a t := Set.uIcc_of_le h
-  rw [← hu] at hf_int ⊢
-  exact intervalIntegral.continuousOn_primitive_interval hf_int
-
-
-
-
-/-! ## General form -/
-
-/-
-Gronwall-Bellman Inequality (Integral form with time-dependent coefficients).
-
-This theorem provides an explicit upper bound for a function `y` that satisfies
-a specific integral inequality. It is a fundamental tool in the analysis of
-ordinary differential equations, often used to bound the growth of solutions or
-prove uniqueness.
-
-Let `Λ` and `μ` be continuous functions on `[a, b]`, with `μ` strictly non-negative.
-If a continuous function `y` satisfies the integral inequality:
-  `y t ≤ Λ t + ∫ s in a..t, μ s * y s`  for all `t ∈ [a, b]`
-then `y` is bounded by:
-  `y t ≤ Λ t + ∫ s in a..t, Λ s * μ s * exp (∫ τ in s..t, μ τ)`
-
--/
-
-
-/-- **Lemma A.1** (Gronwall--Bellman). If $\Lambda, \mu$ are continuous on $[a,b]$ with
+/-- **Gronwall--Bellman inequality.** If $\Lambda, \mu$ are continuous on $[a,b]$ with
     $\mu \ge 0$, and $y$ is continuous satisfying
     $y(t) \le \Lambda(t) + \int_{a}^{t} \mu(s)\, y(s)\, ds$, then
     $y(t) \le \Lambda(t) + \int_{a}^{t} \Lambda(s)\,\mu(s)\,e^{\int_{s}^{t}\mu(\tau)\,d\tau}\,ds$.
--/
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma A.1. -/
 @[blueprint "thm:gronwall-bellman"
-  (statement := /-- \textbf{Gronwall--Bellman inequality.}
+  (statement := /-- \textbf{Gronwall--Bellman inequality} (Khalil, Lemma A.1).
     Let $\Lambda, \mu : [a,b] \to \mathbb{R}$ be continuous with $\mu \ge 0$, and let
     $y : [a,b] \to \mathbb{R}$ be continuous satisfying
     \[
@@ -104,7 +58,19 @@ then `y` is bounded by:
         + \int_{a}^{t} \Lambda(s)\,\mu(s)\,
             e^{\int_{s}^{t}\mu(\tau)\,\mathrm{d}\tau}\,\mathrm{d}s
       \qquad \forall\, t \in [a,b].
-    \] -/)]
+    \] -/)
+  (proof := /-- An integrating-factor argument.  Write
+    $z(t) = \int_a^t \mu y$, $M(t) = \int_a^t \mu$, and $v = z + \Lambda - y$, so that
+    $v \ge 0$ is exactly the hypothesis.  The transform $w = e^{-M}z$ has, by the product rule
+    and \cref{lem:hasDerivAt-integral},
+    \[
+      \dot w = e^{-M}\mu\,(y - z) = e^{-M}\mu\,(\Lambda - v) \;\le\; e^{-M}\mu\Lambda ,
+    \]
+    the inequality because $e^{-M}$, $\mu$ and $v$ are all nonnegative — this is the only place
+    $\mu \ge 0$ is used, and it is essential: a sign change would reverse it.  Integrating from
+    $a$, where $w(a) = 0$, gives $w(t) \le \int_a^t e^{-M(s)}\mu(s)\Lambda(s)\,ds$.  Multiplying
+    by $e^{M(t)}$ and folding $e^{M(t)}e^{-M(s)} = e^{\int_s^t \mu}$ turns this into the stated
+    bound on $z(t)$, and $y \le \Lambda + z$ finishes. -/)]
 theorem gronwall_bellman_inequality {a b : ℝ} {Λ μ y : ℝ → ℝ}
     (hΛ : ContinuousOn Λ (Icc a b))
     (hμ : ContinuousOn μ (Icc a b))
@@ -171,6 +137,20 @@ theorem gronwall_bellman_inequality {a b : ℝ} {Λ μ y : ℝ → ℝ}
 
 /-! ## Special case 1: constant Λ -/
 
+/-- **Gronwall, constant `Λ`.** If `y t ≤ C + ∫ s in a..t, μ s * y s`, then
+`y t ≤ C * exp (∫ τ in a..t, μ τ)` — the familiar exponential-growth bound. -/
+@[blueprint "lem:gronwall-const-lambda"
+  (statement := /-- Let $\mu$ be continuous and nonnegative on $[a,b]$, and let $y$ be
+    continuous with
+    \[
+      y(t) \;\le\; C + \int_{a}^{t} \mu(s)\,y(s)\,\mathrm{d}s
+      \qquad \forall\, t \in [a,b].
+    \]
+    Then $y(t) \le C\,e^{\int_{a}^{t}\mu(\tau)\,\mathrm{d}\tau}$ on $[a,b]$. -/)
+  (proof := /-- \cref{thm:gronwall-bellman} at $\Lambda \equiv C$ gives
+    $y(t) \le C + \int_a^t C\mu(s)e^{\int_s^t \mu}\,ds$, and the integral evaluates in closed
+    form: $s \mapsto -C\,e^{M(t)-M(s)}$ is an antiderivative of the integrand, so the integral
+    is $C e^{M(t)} - C$.  The two $C$'s cancel. -/)]
 theorem gronwall_const_lambda
     {a b C : ℝ} {μ y : ℝ → ℝ}
     (hμ : ContinuousOn μ (Icc a b))
@@ -211,8 +191,19 @@ theorem gronwall_const_lambda
 
 
 
-/-! ## Special case 1: constant Λ, μ -/
+/-! ## Special case 2: constant Λ and μ -/
 
+/-- **Gronwall, constant `Λ` and `μ`.** If `y t ≤ C + ∫ s in a..t, μ * y s` for a constant
+`μ ≥ 0`, then `y t ≤ C * exp (μ * (t - a))`. This is the form the ODE estimates use. -/
+@[blueprint "lem:gronwall-const"
+  (statement := /-- Let $\mu \ge 0$ be constant and let $y$ be continuous with
+    \[
+      y(t) \;\le\; C + \int_{a}^{t} \mu\,y(s)\,\mathrm{d}s
+      \qquad \forall\, t \in [a,b].
+    \]
+    Then $y(t) \le C\,e^{\mu(t-a)}$ on $[a,b]$.  This is the form the continuous-dependence
+    estimates use, and the reason their bounds carry a factor $e^{L(t-t_0)}$. -/)
+  (proof := /-- \cref{lem:gronwall-const-lambda} with $\int_a^t \mu = \mu(t-a)$. -/)]
 theorem gronwall_const
     {a b C μ : ℝ}
     (hμ_nn : 0 ≤ μ)

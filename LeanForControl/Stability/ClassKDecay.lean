@@ -5,6 +5,7 @@ import LeanForControl.Comparison.Axioms
 import LeanForControl.Dini.DiniDeriv
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.ODE_properties
+import LeanForControl.ODEs.PicardLindelof
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
@@ -17,33 +18,36 @@ Class KL bound from the scalar decay ODE `ẏ = -α(y)` with `α ∈ ClassK`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
-## Main result
+## Main results
 
-**Osgood's construction** (`ClassK.sigma_isClassKL`): Given a class K function `α : ClassK a b`
-satisfying the Osgood condition (`ClassK.EtaDiverges`), the solution `σ(r, s)` of
-`ẏ = -α(y)` with `y(0) = r` is class KL in `(r, s)`.
+* `ClassK.exists_classKL_decaySolution` — the decay ODE `ẏ = −α(y)` has a class KL solution
+  operator, for `α` at most linear near the origin.
+* `classK_dini_bound` — a continuous `v` with `D⁺v ≤ −α(v)` is bounded by that solution.
 
-## Construction
+Only these two are public. Everything else in this file is the construction behind them.
 
-The solution `σ(r, s) = η⁻¹(η(r) + s)` is built from the time-to-go integral
-`η(y) = -∫_{base}^y 1/α(x) dx` (`ClassK.eta`), which is strictly decreasing on `(0, a)`
-and satisfies `η(y) → +∞` as `y → 0⁺` (the Osgood / finite-escape-time condition
-`ClassK.EtaDiverges`). The class KL candidate is then:
+## The construction (private)
 
-  `σ(r, s) = η⁻¹(η(r) + s)`,    `σ(0, s) = 0`.
+Write `η(y) = -∫_{base}^y dx/α(x)` for the time the solution started at `base` takes to reach
+`y`. Because `α > 0` on `(0,a)`, `η` is continuous and strictly decreasing there; and because
+`α(x) ≤ Lx` near `0`, `η(y) ≥ (log base − log y)/L → +∞` as `y → 0⁺`, so the origin is never
+reached in finite time. Then `σ(r, s) = η⁻¹(η(r) + s)`, extended by `σ(0, s) = 0`, is the
+solution operator: advancing time by `s` moves `η` up by `s` and so moves the state down.
 
-Increasing `s` shifts the argument of `η⁻¹` toward `+∞`, driving the output toward `0`.
-Increasing `r` decreases `η(r)`, and since `η⁻¹` is anti-monotone, the output grows.
+`η` and `η⁻¹` are steps in building a solution, not facts about class K functions, so they are
+`private` — the two results above are the whole interface.
 
-## Key lemmas
-
-* `eta_hasDerivAt` — FTC derivative of η.
-* `eta_strictAntiOn` — η is strictly decreasing.
-* `etaInv_tendsto_zero` — η⁻¹(t) → 0 as t → +∞ (key for the KL decay condition).
-* `etaInv_continuousAt` — continuity of η⁻¹ via the order-topology IVT criterion.
+Reference for the construction: Osgood's condition; see Khalil, Appendix C.
 -/
 
 open Set Filter Topology MeasureTheory intervalIntegral
+
+/-- Adding a constant is an isometry, so it preserves a Lipschitz bound.  Mathlib has no
+`LipschitzWith.add_const`, and the perturbed field `-β_ext + λ` needs one. -/
+private lemma lipschitzWith_add_const {L : NNReal} {f : ℝ → ℝ}
+    (h : LipschitzWith L f) (c : ℝ) : LipschitzWith L (fun x => f x + c) :=
+  LipschitzWith.of_dist_le_mul fun x y => by
+    simpa [Real.dist_eq, add_sub_add_right_eq_sub] using h.dist_le_mul x y
 
 private lemma ClassK.pos_on_Ioo (α : ClassK a b) {x : ℝ} (hx : x ∈ Ioo 0 a) :
     0 < α.toFun x :=
@@ -58,25 +62,25 @@ variable {a b : ℝ}
 
 /-- The *time-to-go* integral: `η_base(y) = −∫_{base}^y 1/α(x) dx`.
     Strictly decreasing on `(0, a)` because `α > 0` makes the integrand positive. -/
-noncomputable def ClassK.eta (α : ClassK a b) (base y : ℝ) : ℝ :=
+private noncomputable def ClassK.eta (α : ClassK a b) (base y : ℝ) : ℝ :=
   -∫ x in base..y, (1 / α.toFun x)
 
 /-- The Osgood condition: `η_base(y) → +∞` as `y → 0⁺`.
     This ensures the system `ẏ = −α(y)` never reaches the origin in finite time. -/
-def ClassK.EtaDiverges (α : ClassK a b) (base : ℝ) : Prop :=
+private def ClassK.EtaDiverges (α : ClassK a b) (base : ℝ) : Prop :=
   Filter.Tendsto (α.eta base) (nhdsWithin 0 (Set.Ioi 0)) Filter.atTop
 
 open Classical in
 /-- The partial inverse of η: `etaInv base t` is the unique `r ∈ (0, a)` with `η(r) = t`,
     or `0` if no such `r` exists (outside the range of η). -/
-noncomputable def ClassK.etaInv (α : ClassK a b) (base : ℝ) : ℝ → ℝ :=
+private noncomputable def ClassK.etaInv (α : ClassK a b) (base : ℝ) : ℝ → ℝ :=
   fun t => if h : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t
            then Classical.choose h
            else 0
 
 /-- The Class KL candidate: `σ(r, s) = η⁻¹(η(r) + s)`, extended by `σ(0, s) = 0`
     to avoid the singularity of η at the origin. -/
-noncomputable def ClassK.sigma (α : ClassK a b) (base r s : ℝ) : ℝ :=
+private noncomputable def ClassK.sigma (α : ClassK a b) (base r s : ℝ) : ℝ :=
   if r = 0 then 0 else α.etaInv base (α.eta base r + s)
 
 /-! ### Properties of η -/
@@ -84,7 +88,7 @@ noncomputable def ClassK.sigma (α : ClassK a b) (base r s : ℝ) : ℝ :=
 /-- **FTC:** the derivative of `η_base` at `y ∈ (0, a)` is `−1/α(y)`.
     Requires `1/α` to be interval-integrable and strongly measurable near `y`,
     both of which follow from continuity of `1/α` on `(0, a)`. -/
-lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
+private lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     {y : ℝ} (hy : y ∈ Ioo 0 a) :
     HasDerivAt (α.eta base) (-1 / α.toFun y) y := by
@@ -112,7 +116,7 @@ lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
     ring
 
 /-- η is strictly anti-monotone on `(0, a)`: `α > 0` implies `η' = −1/α < 0` throughout. -/
-lemma eta_strictAntiOn (α : ClassK a b) (base : ℝ)
+private lemma eta_strictAntiOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a) :
     StrictAntiOn (α.eta base) (Ioo 0 a) := by
     apply strictAntiOn_of_deriv_neg (convex_Ioo 0 a)
@@ -126,14 +130,14 @@ lemma eta_strictAntiOn (α : ClassK a b) (base : ℝ)
       exact div_neg_of_neg_of_pos (by norm_num) (α.pos_on_Ioo hx)
 
 /-- η is continuous on `(0, a)` (differentiability at each point implies continuity). -/
-lemma eta_continuousOn (α : ClassK a b) (base : ℝ)
+private lemma eta_continuousOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a) :
     ContinuousOn (α.eta base) (Ioo 0 a) := fun _ hy =>
     (eta_hasDerivAt α base hbase hy).continuousAt.continuousWithinAt
 
 /-- For `r ∈ (0, a)` and `s ≥ 0`, the value `η(r) + s` lies in the range of η on `(0, a)`.
     `EtaDiverges` supplies `ε` near 0 with `η(ε) ≥ η(r) + s`; IVT on `[ε, r]` gives the witness. -/
-lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
+private lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     (hdiv : α.EtaDiverges base)
     {r : ℝ} (hr : r ∈ Ioo 0 a) {s : ℝ} (hs : 0 ≤ s) :
@@ -156,21 +160,21 @@ lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
 /-! ### Properties of η⁻¹ -/
 
 /-- If `t` is in the range of η on `(0, a)`, then `η⁻¹(t) ∈ (0, a)`. -/
-lemma etaInv_mem_Ioo (α : ClassK a b) (base : ℝ)
+private lemma etaInv_mem_Ioo (α : ClassK a b) (base : ℝ)
     {t : ℝ} (ht : ∃ r ∈ Ioo 0 a, α.eta base r = t) :
     α.etaInv base t ∈ Ioo 0 a := by
   simp only [ClassK.etaInv, dif_pos ht]
   exact (Classical.choose_spec ht).1
 
 /-- Left inverse: `η(η⁻¹(t)) = t` whenever `t` is in the range of η. -/
-lemma eta_etaInv (α : ClassK a b) (base : ℝ)
+private lemma eta_etaInv (α : ClassK a b) (base : ℝ)
     {t : ℝ} (ht : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t) :
     α.eta base (α.etaInv base t) = t := by
   simp only [ClassK.etaInv, dif_pos ht]
   exact (Classical.choose_spec ht).2
 
 /-- Right inverse: `η⁻¹(η(r)) = r` for any `r ∈ (0, a)`. -/
-lemma etaInv_eta (α : ClassK a b) (base : ℝ)
+private lemma etaInv_eta (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     {r : ℝ} (hr : r ∈ Set.Ioo 0 a) :
     α.etaInv base (α.eta base r) = r :=
@@ -180,7 +184,7 @@ lemma etaInv_eta (α : ClassK a b) (base : ℝ)
 
 /-- η⁻¹ is strictly anti-monotone on the range of η:
     `t₁ < t₂` implies `η⁻¹(t₂) < η⁻¹(t₁)`, by contrapositive from anti-monotonicity of η. -/
-lemma etaInv_strictAntiOn (α : ClassK a b) (base : ℝ)
+private lemma etaInv_strictAntiOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     {t₁ t₂ : ℝ}
     (ht₁ : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t₁)
@@ -206,7 +210,7 @@ lemma etaInv_strictAntiOn (α : ClassK a b) (base : ℝ)
 
 /-- `η⁻¹(t) → 0` as `t → +∞`: large `t` forces the preimage near 0, because η is
     strictly decreasing and `η(δ)` is a finite threshold above which `η⁻¹(t) ≤ δ`. -/
-lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
+private lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a) :
     Filter.Tendsto (α.etaInv base) Filter.atTop (nhds 0) := by
   apply tendsto_order.mpr
@@ -238,7 +242,7 @@ lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
 /-- η⁻¹ is continuous at any point in the range of η.
     Proved via the order topology: for each one-sided bound on the output, IVT on a compact
     subinterval of `(0, a)` finds a `t`-neighbourhood mapping into the desired `r`-neighbourhood. -/
-lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
+private lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     {t : ℝ} (ht : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t) :
     ContinuousAt (α.etaInv base) t := by
@@ -301,7 +305,7 @@ lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
     linarith [ht'.2, show x₂ < z₂ by grind [min_le_right a z₂]]
 
 
-lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (base : ℝ)
+private lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (L : ℝ) (hL_pos : 0 < L)
     (h_lin : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x) :
@@ -351,14 +355,7 @@ lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (base : ℝ)
 
 /-- **Osgood construction:** given `α : ClassK a b` satisfying the Osgood condition
     (`EtaDiverges`), `σ(r, s) = η⁻¹(η(r) + s)` extended by `σ(0, s) = 0` is Class KL. -/
-@[blueprint "thm:class-KL-osgood"
-  (statement := /-- \textbf{Osgood construction.}
-    Given a class $\mathcal{K}$ function $\alpha$ satisfying the Osgood condition
-    $\int_0^{\varepsilon} \frac{1}{\alpha(x)}\,dx = +\infty$,
-    the function $\sigma(r, s) = \eta^{-1}(\eta(r) + s)$, where
-    $\eta(y) = -\int_{\mathrm{base}}^{y} \frac{1}{\alpha(x)}\,dx$,
-    is a class $\mathcal{KL}$ function (\cref{def:isClassKL}). -/)]
-theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
+private theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (L : ℝ) (hL_pos : 0 < L)
     (hLip : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x) :
@@ -472,7 +469,7 @@ theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
     }, ⟨fun r _ s _ => rfl, fun s _ => by simp [ClassK.sigma]⟩⟩
 
 
-lemma ClassK.sigma_hasDerivAt {a b : ℝ} (α : ClassK a b) (base : ℝ)
+private lemma ClassK.sigma_hasDerivAt {a b : ℝ} (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (L : ℝ) (hL_pos : 0 < L)
     (hLip : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x)
@@ -512,6 +509,80 @@ lemma ClassK.sigma_hasDerivAt {a b : ℝ} (α : ClassK a b) (base : ℝ)
 end OsgoodConstruction
 
 
+/-! ## The decay ODE has a class KL solution operator -/
+
+/-- **The decay ODE `ẏ = −α(y)` admits a class KL solution operator.**
+
+If `α` is at most linear near the origin — so that the origin is not reached in finite time —
+then there is a class KL function `σ` such that `s ↦ σ(r, s)` is the solution of `ẏ = −α(y)`
+started at `r`.
+
+This is the only thing the rest of the library needs from the Osgood construction. Stating it
+this way keeps the construction itself — the time-to-reach integral, its inverse, and the
+closed form built from them — inside the proof, where it belongs: those are steps in building
+a solution, not results about class K functions. -/
+@[blueprint "thm:class-KL-osgood"
+  (statement := /-- \textbf{The decay ODE has a class $\mathcal{KL}$ solution operator.}
+    Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the origin,
+    $\alpha(x) \le Lx$ on $(0, \mathrm{base}]$.  Then there is a class $\mathcal{KL}$
+    function $\sigma$ (\cref{def:isClassKL}) with $\sigma(0, s) = 0$, $\sigma(r, 0) = r$,
+    and such that for each $r$ the map $s \mapsto \sigma(r, s)$ solves
+    \[
+      \dot y = -\alpha(y), \qquad y(0) = r .
+    \]
+    That is: the decay ODE's solution operator is itself a class $\mathcal{KL}$ function. -/)
+  (proof := /-- \textbf{Osgood's construction.}  Let
+    $\eta(y) = -\int_{\mathrm{base}}^{y} \mathrm{d}x/\alpha(x)$ be the time for the solution
+    started at $\mathrm{base}$ to reach $y$.  Since $\alpha > 0$ on $(0,a)$, $\eta$ is
+    continuous and strictly decreasing there; and since $\alpha(x) \le Lx$ near $0$,
+    \[
+      \eta(y) \;\ge\; \int_{y}^{\mathrm{base}} \frac{\mathrm{d}x}{Lx}
+        \;=\; \frac{\log(\mathrm{base}) - \log y}{L} \;\longrightarrow\; +\infty
+      \qquad (y \to 0^{+}),
+    \]
+    so the origin is not reached in finite time and every value above $\eta(r)$ is attained.
+    Setting $\sigma(r,s) := \eta^{-1}(\eta(r) + s)$, extended by $\sigma(0,s) = 0$, advancing
+    time by $s$ moves $\eta$ up by $s$ and hence moves the state down; the class
+    $\mathcal{KL}$ conditions follow from monotonicity and continuity of $\eta^{-1}$, and
+    differentiating $\eta(\sigma) = \eta(r) + s$ gives $\dot\sigma = -\alpha(\sigma)$.
+
+    The construction is local to this proof: $\eta$ and $\eta^{-1}$ are steps in building a
+    solution, not results about class $\mathcal{K}$ functions. -/)]
+theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
+    (hbase : base ∈ Set.Ioo 0 a)
+    (L : ℝ) (hL_pos : 0 < L)
+    (hLip : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x) :
+    ∃ σ : ClassKL a,
+      (∀ s ≥ 0, σ.toFun 0 s = 0) ∧
+      (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 = r) ∧
+      (∀ r ∈ Set.Ico 0 a, ∀ s > 0,
+        HasDerivAt (fun x => σ.toFun r x) (-α.toFun (σ.toFun r s)) s) := by
+  obtain ⟨σ, hσ_eq, hσ_zero_s⟩ := ClassK.sigma_isClassKL α base hbase L hL_pos hLip
+  refine ⟨σ, hσ_zero_s, fun r hr => ?_, fun r hr s hs => ?_⟩
+  · -- σ(r, 0) = r: the solution starts where it is told to (at `r = 0`, both sides vanish)
+    rcases eq_or_lt_of_le hr.1 with h_eq | hr_pos
+    · rw [← h_eq]; exact hσ_zero_s 0 le_rfl
+    · rw [hσ_eq r ⟨hr_pos, hr.2⟩ 0 le_rfl]
+      simp only [ClassK.sigma, if_neg hr_pos.ne', add_zero]
+      exact etaInv_eta α base hbase ⟨hr_pos, hr.2⟩
+  · -- σ(r, ·) solves the ODE.  At `r = 0` the solution is the constant `0`, which solves it
+    -- because `α 0 = 0`; away from `0` it is the Osgood construction.
+    rcases eq_or_lt_of_le hr.1 with h_eq | hr_pos
+    · have hconst : (fun x => σ.toFun r x) =ᶠ[nhds s] (fun _ : ℝ => (0 : ℝ)) :=
+        Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hs)
+          fun x hx => by rw [← h_eq]; exact hσ_zero_s x hx.le
+      have hzero : σ.toFun r s = 0 := by rw [← h_eq]; exact hσ_zero_s s hs.le
+      rw [hzero, α.map_zero, neg_zero]
+      exact (hasDerivAt_const s (0 : ℝ)).congr_of_eventuallyEq hconst
+    · have hr' : r ∈ Set.Ioo 0 a := ⟨hr_pos, hr.2⟩
+      have hderiv := ClassK.sigma_hasDerivAt α base hbase L hL_pos hLip r hr' s hs
+      have hfun : (fun x => σ.toFun r x) =ᶠ[nhds s] (fun x => α.sigma base r x) :=
+        Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hs)
+          fun x hx => hσ_eq r hr' x (le_of_lt hx)
+      have hval : -α.toFun (α.sigma base r s) = -α.toFun (σ.toFun r s) := by
+        rw [hσ_eq r hr' s hs.le]
+      exact (hval ▸ hderiv).congr_of_eventuallyEq hfun
+
 /-! ## Comparison bound from Dini ≤ −ClassK -/
 
 /-- **Comparison KL bound**: for any class K function `α`, there exists a class KL function `σ`
@@ -522,6 +593,31 @@ end OsgoodConstruction
     The class K decay ODE `ẏ = −α(y)` determines σ; the comparison lemma supplies the
     bound. All ODE infrastructure (Lipschitz minorant, Osgood construction,
     Picard–Lindelöf) is hidden inside. -/
+@[blueprint "thm:classK-dini-bound"
+  (statement := /-- \textbf{Comparison bound from a Dini decay condition.}  Let $\alpha$ be
+    class $\mathcal{K}$ on $[0,a)$.  Then there is a class $\mathcal{KL}$ function $\sigma$
+    with $\sigma(r,0) \le r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
+    in $[0,a)$ there, has bounded forward difference quotients, and satisfies the Dini
+    inequality
+    \[
+      D^{+}v(s) \;\le\; -\alpha(v(s)),
+    \]
+    it obeys $v(t) \le \sigma\bigl(v(t_0),\, t - t_0\bigr)$.
+
+    A differential \emph{inequality} with a class $\mathcal{K}$ decay rate therefore yields a
+    class $\mathcal{KL}$ bound — which is what converts a Lyapunov decay estimate into an
+    asymptotic stability statement.  No hypothesis is placed on $\alpha$ beyond being class
+    $\mathcal{K}$: the linear-growth condition the construction needs is obtained internally by
+    passing to a Lipschitz minorant. -/)
+  (proof := /-- Replace $\alpha$ by a class $\mathcal{K}$ minorant $\beta \le \alpha$ that is
+    Lipschitz near the origin; this only weakens the Dini hypothesis, and supplies the linear
+    bound $\beta(x) \le Lx$ that \cref{thm:class-KL-osgood} requires.  That theorem gives a
+    class $\mathcal{KL}$ $\sigma$ whose sections solve $\dot y = -\beta(y)$ with
+    $\sigma(r,0) = r$.  Since $v$ is a Dini subsolution of the same equation and starts at
+    $\sigma(v(t_0), 0)$, \cref{thm:comparison-lemma} bounds $v$ by it — the perturbed
+    solutions that lemma requires coming from
+    \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz}, whose hypotheses hold because
+    $\beta$'s Lipschitz extension is globally Lipschitz. -/)]
 lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
@@ -534,26 +630,18 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
         v t ≤ σ.toFun (v t₀) (t - t₀) := by
   obtain ⟨β, β_ext, L, hL_pos, hβ_le_α, hβ_ext_eq, hLip, hβ_ext_cont, hLip_ext⟩ :=
     exists_classK_minorant_lipschitz α (a / 2) ⟨half_pos α.ha, half_lt_self α.ha⟩
-  obtain ⟨σ, hσ_eq, hσ_zero_s⟩ := ClassK.sigma_isClassKL β (a / 2)
-    ⟨half_pos α.ha, half_lt_self α.ha⟩ L hL_pos hLip
   have h_base : a / 2 ∈ Set.Ioo 0 a := ⟨half_pos α.ha, half_lt_self α.ha⟩
-  have h_sigma_zero_at : ∀ r ∈ Set.Ioo 0 a, β.sigma (a / 2) r 0 = r := fun r hr => by
-    simp only [ClassK.sigma, if_neg hr.1.ne', add_zero]
-    exact etaInv_eta β (a / 2) h_base hr
+  obtain ⟨σ, hσ_zero_s, hσ_init, hσ_deriv⟩ :=
+    ClassK.exists_classKL_decaySolution β (a / 2) h_base L hL_pos hLip
   refine ⟨σ, ?_, ?_⟩
   · -- σ(r, 0) ≤ r for r ∈ [0, a)
     intro r hr
-    rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
-    · rw [hσ_zero_s 0 le_rfl]
-    · have hr_Ioo : r ∈ Set.Ioo 0 a := ⟨hr_pos, hr.2⟩
-      rw [hσ_eq r hr_Ioo 0 le_rfl, h_sigma_zero_at r hr_Ioo]
+    exact le_of_eq (hσ_init r hr)
   · -- Trajectory bound
     intro t₀ t ht v hv_cont hv₀ hv_range hDv hv_bdd
     rcases eq_or_lt_of_le ht with rfl | ht_lt
     · simp only [sub_self]
-      rcases eq_or_lt_of_le hv₀.1 with h_eq | hv_pos
-      · simp [show v t₀ = 0 from h_eq.symm, hσ_zero_s 0 le_rfl]
-      · rw [hσ_eq (v t₀) ⟨hv_pos, hv₀.2⟩ 0 le_rfl, h_sigma_zero_at (v t₀) ⟨hv_pos, hv₀.2⟩]
+      exact le_of_eq (hσ_init (v t₀) hv₀).symm
     · -- Strengthen: D⁺v ≤ -α(v) ≤ -β(v) = -β_ext(v)
       have hDv' : ∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ (fun _ x => -β_ext x) s (v s) := by
         intro s hs
@@ -567,54 +655,21 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
           HasDerivAt (fun x => σ.toFun (v t₀) (x - t₀))
             ((fun _ x => -β_ext x) s (σ.toFun (v t₀) (s - t₀))) s := by
         intro s hs
-        rcases eq_or_lt_of_le hv₀.1 with h_eq | hv_pos
-        · -- v t₀ = 0: σ(0, ·) = 0 everywhere
-          have hvt₀_zero : v t₀ = 0 := h_eq.symm
-          rw [hvt₀_zero]
-          have h_u_eq : (fun x => σ.toFun 0 (x - t₀)) =ᶠ[𝓝 s] (fun _ => 0) :=
-            Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hs.1) fun x hx =>
-              hσ_zero_s (x - t₀) (sub_nonneg.mpr hx.le)
-          have h_val : -β_ext (σ.toFun 0 (s - t₀)) = 0 := by
-            rw [hσ_zero_s (s - t₀) (sub_nonneg.mpr hs.1.le),
-                hβ_ext_eq 0 ⟨le_rfl, α.ha⟩, β.map_zero, neg_zero]
-          have h_final := (hasDerivAt_const s (0 : ℝ)).congr_of_eventuallyEq h_u_eq
-          change HasDerivAt (fun x => σ.toFun 0 (x - t₀)) (-β_ext (σ.toFun 0 (s - t₀))) s
-          rwa [h_val]
-        · -- v t₀ > 0: use sigma_hasDerivAt + chain rule
-          have hv₀_Ioo : v t₀ ∈ Set.Ioo 0 a := ⟨hv_pos, hv₀.2⟩
-          have hs_sub_pos : 0 < s - t₀ := sub_pos.mpr hs.1
-          -- σ(v t₀, s - t₀) stays in [0, a)
-          have h_sigma_ico : σ.toFun (v t₀) (s - t₀) ∈ Set.Ico 0 a := by
-            refine ⟨σ.nonneg _ ⟨hv₀_Ioo.1.le, hv₀_Ioo.2⟩ _ hs_sub_pos.le, ?_⟩
-            calc σ.toFun (v t₀) (s - t₀)
-                ≤ σ.toFun (v t₀) 0 :=
-                    σ.anti_s _ ⟨hv₀_Ioo.1.le, hv₀_Ioo.2⟩
-                      (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr hs_sub_pos.le) hs_sub_pos.le
-              _ = β.sigma (a / 2) (v t₀) 0 := hσ_eq (v t₀) hv₀_Ioo 0 le_rfl
-              _ = v t₀ := h_sigma_zero_at (v t₀) hv₀_Ioo
-              _ < a := hv₀_Ioo.2
-          -- β.sigma (a/2) (v t₀) (s - t₀) ∈ [0, a) (same value, rewritten form)
-          have h_sigma_ico' : β.sigma (a / 2) (v t₀) (s - t₀) ∈ Set.Ico 0 a := by
-            rw [← hσ_eq (v t₀) hv₀_Ioo (s - t₀) hs_sub_pos.le]; exact h_sigma_ico
-          -- sigma_hasDerivAt + chain rule gives derivative of σ(v t₀, · - t₀) at s
-          have h_base_deriv := ClassK.sigma_hasDerivAt β (a / 2) h_base L hL_pos hLip
-            (v t₀) hv₀_Ioo (s - t₀) hs_sub_pos
-          have h_comp := h_base_deriv.comp s ((hasDerivAt_id s).sub_const t₀)
-          simp only [mul_one] at h_comp
-          change HasDerivAt (fun x => β.sigma (a / 2) (v t₀) (x - t₀))
-            (-β.toFun (β.sigma (a / 2) (v t₀) (s - t₀))) s at h_comp
-          -- Rewrite β.sigma to σ.toFun via hσ_eq
-          have h_func_eq : (fun x => β.sigma (a / 2) (v t₀) (x - t₀)) =ᶠ[𝓝 s]
-              (fun x => σ.toFun (v t₀) (x - t₀)) :=
-            Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hs.1) fun x hx =>
-              (hσ_eq (v t₀) hv₀_Ioo (x - t₀) (sub_nonneg.mpr hx.le)).symm
-          -- Match derivative value: -β.toFun (β.sigma ...) = -β_ext (σ.toFun ...)
-          have h_val : -β.toFun (β.sigma (a / 2) (v t₀) (s - t₀)) =
-              -β_ext (σ.toFun (v t₀) (s - t₀)) := by
-            conv_rhs => rw [hσ_eq (v t₀) hv₀_Ioo (s - t₀) hs_sub_pos.le]
-            rw [hβ_ext_eq _ h_sigma_ico']
-          have h_final := h_comp.congr_of_eventuallyEq h_func_eq.symm
-          rwa [h_val] at h_final
+        have hs_sub_pos : 0 < s - t₀ := sub_pos.mpr hs.1
+        -- σ(v t₀, s - t₀) stays in [0, a), so `β` and its extension agree there
+        have h_sigma_ico : σ.toFun (v t₀) (s - t₀) ∈ Set.Ico 0 a := by
+          refine ⟨σ.nonneg _ hv₀ _ hs_sub_pos.le, ?_⟩
+          calc σ.toFun (v t₀) (s - t₀)
+              ≤ σ.toFun (v t₀) 0 :=
+                  σ.anti_s _ hv₀ (Set.mem_Ici.mpr le_rfl)
+                    (Set.mem_Ici.mpr hs_sub_pos.le) hs_sub_pos.le
+            _ = v t₀ := hσ_init (v t₀) hv₀
+            _ < a := hv₀.2
+        -- σ(v t₀, ·) solves the decay ODE; compose with the shift `· - t₀`
+        have h_comp := (hσ_deriv (v t₀) hv₀ (s - t₀) hs_sub_pos).comp s
+          ((hasDerivAt_id s).sub_const t₀)
+        simp only [mul_one] at h_comp
+        rwa [← hβ_ext_eq _ h_sigma_ico] at h_comp
       -- σ is continuous on [t₀, t]
       have hu_cont : ContinuousOn (fun s => σ.toFun (v t₀) (s - t₀)) (Set.Icc t₀ t) :=
         (σ.continuous.comp
@@ -623,10 +678,7 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
           (fun s _ => rfl)
       -- σ(v t₀, 0) = v t₀ (initial condition)
       have hu₀ : (fun s => σ.toFun (v t₀) (s - t₀)) t₀ = v t₀ := by
-        simp only [sub_self]
-        rcases eq_or_lt_of_le hv₀.1 with h_eq | hv_pos
-        · rw [show v t₀ = 0 from h_eq.symm]; exact hσ_zero_s 0 le_rfl
-        · rw [hσ_eq (v t₀) ⟨hv_pos, hv₀.2⟩ 0 le_rfl, h_sigma_zero_at (v t₀) ⟨hv_pos, hv₀.2⟩]
+        simp only [sub_self]; exact hσ_init (v t₀) hv₀
       -- Apply comparison_lemma
       have h_bound : ∀ s ∈ Set.Icc t₀ t, v s ≤ σ.toFun (v t₀) (s - t₀) :=
         comparison_lemma (f := fun _ x => -β_ext x) ht_lt hL_pos
@@ -634,18 +686,8 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
           (fun _ _ => hLip_ext.neg)
           hu_deriv hu_cont hu₀
           hv_cont hDv' hv_bdd le_rfl
-          (fun lam hlam => by
-            have hg_cont : Continuous (Function.uncurry (fun (_ : ℝ) x => -β_ext x + lam)) :=
-              (hβ_ext_cont.neg.add continuous_const).comp continuous_snd
-            have hg_lip : ∀ _ : ℝ, LipschitzWith ⟨L, hL_pos.le⟩ (fun x => -β_ext x + lam) :=
-              fun _ x y => by
-                have h_edist : edist (-β_ext x + lam) (-β_ext y + lam) =
-                    edist (β_ext x) (β_ext y) := by
-                  rw [edist_dist, edist_dist, dist_eq_norm, dist_eq_norm]; congr 1
-                  calc ‖-β_ext x + lam - (-β_ext y + lam)‖
-                      = ‖-(β_ext x - β_ext y)‖ := by congr 1; ring
-                    _ = ‖β_ext x - β_ext y‖    := norm_neg _
-                rw [h_edist]; exact hLip_ext x y
-            exact scalar_ode_exists_interval (fun _ x => -β_ext x + lam) L hL_pos
-              hg_cont hg_lip ht_lt.le)
+          (fun lam _ =>
+            exists_isIntegralSolution_Icc_of_lipschitz (g := fun _ x => -β_ext x + lam)
+              ((hβ_ext_cont.neg.add continuous_const).comp continuous_snd)
+              (fun _ => lipschitzWith_add_const hLip_ext.neg lam) ht_lt.le)
       exact h_bound t ⟨ht_lt.le, le_rfl⟩

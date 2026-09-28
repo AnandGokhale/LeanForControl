@@ -37,8 +37,10 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-! ## System primitives -/
 
-/-- A global solution `φ : ℝ → ℝⁿ` of the non-autonomous ODE `ẋ = f(t, x)`,
-    defined for all `t ∈ ℝ`. -/
+/-- A solution `φ` of the non-autonomous ODE `ẋ = f(t, x)` on the forward ray `[t₀, ∞)`.
+
+Forward-complete from `t₀`, not defined for all time: a trajectory is an integral curve on
+`Ici t₀`, so nothing is claimed about the system before its initial time. -/
 @[blueprint "def:isTrajectoryNA"
   (statement := /-- A \emph{trajectory from $t_{0}$} of the non-autonomous ODE
     $\dot{x} = f(t, x)$ is a map $\varphi$ defined and satisfying
@@ -69,8 +71,8 @@ initial time `t₀`, and not on which solution — after which every trajectory 
 quantifies over every `c`.
 
 This is Khalil (4.17), the attractivity half of uniform asymptotic stability. The delay is
-what makes it *uniform*: `Tbar_fn` is the least such `T`, and the whole class-`KL`
-construction is built by regularizing it. -/
+what makes it *uniform*: the class-`KL` construction is built by regularizing the least such
+`T` into a continuous, strictly decreasing function of the tolerance. -/
 @[blueprint "def:locallyHasUniformConvergenceTime"
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ starting within $c$ of
     $x_{\mathrm{eq}}$ \emph{have local uniform convergence times} when for every
@@ -148,8 +150,7 @@ def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (
     This is Khalil (4.16). The hypothesis `IsTrajectoryNA φ f t₀` carries the existence
     assumption that Khalil leaves ambient: the claim constrains those solutions that are
     defined on `[t₀, ∞)`, and says nothing about a system whose solutions escape. Any
-    theorem *concluding* this predicate must therefore supply that existence itself —
-    see `exists_unique_trajectory`. -/
+    theorem *concluding* this predicate must therefore supply that existence itself. -/
 @[blueprint "def:stableNA"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
     \emph{stable} when
@@ -200,6 +201,11 @@ def GloballyUniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : 
       IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ ε → ∀ t ≥ t₀, ‖φ t - x_eq‖ < ε
 
 /-- Global uniform stability is stability. -/
+@[blueprint "lem:globallyUniformlyStableNA-stableNA"
+  (statement := /-- Global uniform stability (\cref{def:globallyUniformlyStableNA}) implies
+    stability (\cref{def:stableNA}). -/)
+  (proof := /-- The margin $\delta(\varepsilon)$ is already independent of $t_{0}$, so it
+    serves at every initial time. -/)]
 lemma GloballyUniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (h : GloballyUniformlyStableNA f x_eq) : StableNA f x_eq :=
   fun ε hε t₀ ht₀ =>
@@ -212,6 +218,10 @@ lemma GloballyUniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq :
 def UnstableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop := ¬ StableNA f x_eq
 
 /-- Uniform stability is stability: the uniform `δ` already works at every initial time. -/
+@[blueprint "lem:uniformlyStableNA-stableNA"
+  (statement := /-- Uniform stability (\cref{def:uniformlyStableNA}) implies stability
+    (\cref{def:stableNA}).  The two differ only in the order of the quantifiers on $\delta$
+    and $t_{0}$, so the uniform margin serves at every initial time. -/)]
 lemma UniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ}
     (h : UniformlyStableNA f x_eq) : StableNA f x_eq :=
   fun ε hε t₀ ht₀ => let ⟨δ, hδ, hstab⟩ := h ε hε; ⟨δ, hδ, hstab t₀ ht₀⟩
@@ -225,6 +235,18 @@ uniqueness a solution can leave an equilibrium: `ẋ = x^{2/3}` has `f 0 = 0`, y
 
 Stability supplies the conclusion directly and at weaker hypotheses: the trajectory is
 within `ε` of `x_eq` for *every* `ε > 0`, hence at distance zero. -/
+@[blueprint "lem:isTrajectoryNA-eq-of-stableNA"
+  (statement := /-- Let $x_{\mathrm{eq}}$ be stable (\cref{def:stableNA}) and let $\varphi$
+    be a trajectory from $t_{0}$ with $\varphi(t_{0}) = x_{\mathrm{eq}}$.  Then
+    $\varphi(t) = x_{\mathrm{eq}}$ for every $t \ge t_{0}$: a solution sitting at a stable
+    equilibrium cannot leave it.
+
+    The hypothesis is stability, not $f(t, x_{\mathrm{eq}}) = 0$.  ``An equilibrium stays
+    put'' does \emph{not} follow from the vector field vanishing there — that also needs
+    uniqueness of solutions.  Without it a solution can leave: $\dot x = x^{2/3}$ has
+    $f(0) = 0$, yet both $x \equiv 0$ and $x = (t/3)^{3}$ start at $0$. -/)
+  (proof := /-- Stability places $\varphi(t)$ within $\varepsilon$ of $x_{\mathrm{eq}}$ for
+    every $\varepsilon > 0$, so the distance is zero. -/)]
 lemma IsTrajectoryNA.eq_of_stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {φ : ℝ → ℝⁿ} {t₀ : ℝ}
     (hS : StableNA f x_eq) (hφ : IsTrajectoryNA φ f t₀) (ht₀ : 0 ≤ t₀)
     (h0 : φ t₀ = x_eq) {t : ℝ} (ht : t₀ ≤ t) :
@@ -323,28 +345,3 @@ def GloballyExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ
     ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f t₀ →
         ∀ t ≥ t₀, ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
-
-/-! ## Existence of trajectories (Picard-Lindelöf) -/
-
-/-- **Picard-Lindelöf / Lindelöf-Picard (global existence and uniqueness)**.
-
-    For a jointly continuous vector field `f : ℝ → ℝⁿ → ℝⁿ` that is locally
-    Lipschitz in the state variable, uniformly on compact time sets, through every
-    initial condition `(t₀, x₀)` there passes a **unique** global trajectory
-    satisfying `ẋ = f(t, x)`.
-
-    **Remark on global existence**: local Lipschitz continuity yields existence on a
-    maximal interval `[t₀, t_max)`.  To guarantee `t_max = +∞` (no finite-time blowup)
-    one needs an additional condition such as:
-    - linear growth `‖f(t, x)‖ ≤ C · (1 + ‖x‖)`, or
-    - a forward-invariant compact set containing the trajectory.
-
-    This axiom packages both conditions under the assumption that solutions are
-    complete; the user must verify that for any concrete `f`, e.g., by exhibiting a
-    Lyapunov bound that prevents blowup. -/
-axiom exists_unique_trajectory
-    (f : ℝ → ℝⁿ → ℝⁿ)
-    (hf_cont : Continuous (Function.uncurry f))
-    (hf_lip : ∀ K : Set ℝ, IsCompact K → ∃ L : NNReal, ∀ t ∈ K, LipschitzWith L (f t))
-    (t₀ : ℝ) (x₀ : ℝⁿ) :
-    ∃! φ : ℝ → ℝⁿ, IsTrajectoryNA φ f t₀ ∧ φ t₀ = x₀

@@ -69,6 +69,10 @@ theorem ClassKL.anti_s_mono {a : ℝ} (β : ClassKL a) {r : ℝ} {s₁ s₂ : �
 
 /-- Product of a class K function and a class L function is class KL.
     `β(r, s) = α(r) * γ(s)`. -/
+@[blueprint "lem:classKL-mk-mul"
+  (statement := /-- If $\alpha$ is class $\mathcal{K}$ on $[0,a)$ and $\gamma$ is class
+    $\mathcal{L}$, then $\beta(r, s) := \alpha(r)\gamma(s)$ is class $\mathcal{KL}$ on
+    $[0,a)$. -/)]
 noncomputable def ClassKL.mk_mul {a b : ℝ} (α : ClassK a b) (γ : ClassL) : ClassKL a where
   ha := α.ha
   toFun r s := α.toFun r * γ.toFun s
@@ -83,18 +87,88 @@ noncomputable def ClassKL.mk_mul {a b : ℝ} (α : ClassK a b) (γ : ClassL) : C
     mul_nonneg (α.maps_to hr).1 (γ.pos s hs).le
   anti_s r hr s₁ hs₁ s₂ hs₂ hs :=
     -- Reverses direction properly because α(r) ≥ 0
-    mul_le_mul_of_nonneg_left (γ.anti hs₁ hs₂ hs) (α.maps_to hr).1
+    mul_le_mul_of_nonneg_left (γ.anti.antitoneOn hs₁ hs₂ hs) (α.maps_to hr).1
   tendsto_zero r hr := by
     -- The limit as s → ∞ of α(r) * γ(s) is α(r) * 0 = 0
     simpa only [mul_zero] using Filter.Tendsto.const_mul (α.toFun r) γ.tendsto_zero
 
 
--- /-- Pointwise min of a class KL and a class K function (in the r-argument) is class KL. -/
--- noncomputable def ClassKL.min_classK {a b : ℝ} (β : ClassKL a) (α : ClassK a b) : ClassKL a := by
---   sorry
+/-- Pointwise minimum of a class KL function and a class K function of the radius alone is
+class KL: `min(β(r,s), α(r))`.
+
+Capping a class KL bound by a function of the initial condition alone preserves the class, and
+lets a bound obtained only as a *majorant* — from a smoothing construction, say — be pulled back
+inside a prescribed range. The bounded-domain twin of `ClassKLGlobal.min_KInfty`. -/
+@[blueprint "lem:classKL-min-classK"
+  (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ is class
+    $\mathcal{K}$ on $[0,a)$, then $(r, s) \mapsto \min\bigl(\beta(r,s), \alpha(r)\bigr)$ is
+    class $\mathcal{KL}$ on $[0,a)$.
+
+    Capping a class $\mathcal{KL}$ bound by a function of the initial condition alone preserves
+    the class.  Its use is to recover a range condition: a bound obtained only as a majorant —
+    from a smoothing construction, say — carries no upper control, and capping restores it
+    without disturbing the bound, since the minimum still dominates whatever $\beta$
+    dominated. -/)
+  (proof := /-- Each field is inherited.  The minimum of two strictly increasing functions of
+    $r$ is strictly increasing; $\alpha$ does not depend on $s$, so antitonicity in $s$ survives
+    the minimum; and $\min(\beta(r,s), \alpha(r)) \to \min(0, \alpha(r)) = 0$ as
+    $s \to \infty$ because $\alpha \ge 0$. -/)]
+noncomputable def ClassKL.min_classK {a b : ℝ} (β : ClassKL a) (α : ClassK a b) : ClassKL a where
+  ha            := β.ha
+  toFun r s     := min (β.toFun r s) (α.toFun r)
+  map_zero s hs := by rw [β.map_zero s hs, α.map_zero, min_self]
+  continuous    := β.continuous.inf
+    (α.continuous.comp continuousOn_fst (fun p hp => hp.1))
+  strict_mono_r s hs x hx y hy hxy := by
+    apply lt_min
+    · exact (min_le_left _ _).trans_lt (β.strict_mono_r s hs hx hy hxy)
+    · exact (min_le_right _ _).trans_lt (α.strict_mono hx hy hxy)
+  nonneg r hr s hs := le_min (β.nonneg r hr s hs) (α.maps_to hr).1
+  anti_s r hr s₁ hs₁ s₂ hs₂ hs := min_le_min (β.anti_s r hr hs₁ hs₂ hs) le_rfl
+  tendsto_zero r hr := by
+    apply tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (β.tendsto_zero r hr)
+    · filter_upwards [eventually_ge_atTop 0] with s hs
+      exact le_min (β.nonneg r hr s hs) (α.maps_to hr).1
+    · filter_upwards [] with s; exact min_le_left _ _
+
+/-- If `U → 0` at `+∞`, then so does `s ↦ min c (√(c * U s))` for any `c ≥ 0`.  The `min` keeps
+    the bound at most `c`; the square root is what makes it vanish. -/
+@[blueprint "lem:tendstoMinSqrtMulZero"
+  (statement := /-- Let $c \ge 0$ and let $U : \mathbb{R} \to \mathbb{R}$ satisfy
+    $U(s) \to 0$ as $s \to +\infty$.  Then
+    $\min\bigl(c, \sqrt{c\,U(s)}\bigr) \to 0$ as $s \to +\infty$. -/)]
+lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
+    {U : ℝ → ℝ} (hU : Filter.Tendsto U Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun s => min c (Real.sqrt (c * U s))) Filter.atTop (nhds 0) := by
+  refine squeeze_zero
+    (fun s => le_min hc (Real.sqrt_nonneg _))
+    (fun s => min_le_right _ _)
+    ?_
+  have h_mul : Filter.Tendsto (fun s => c * U s) Filter.atTop (nhds 0) := by
+    simpa using Filter.Tendsto.const_mul c hU
+  simpa [Real.sqrt_zero] using (Real.continuous_sqrt.tendsto 0).comp h_mul
 
 /-- Sontag-style KL construction from a class K spatial bound and a singular class L time decay.
     `β(r, 0) = α(r)` and `β(r, s) = min(α(r), √(α(r) * U(s)))` for `s > 0`. -/
+@[blueprint "lem:classKL-mk-singular-cap"
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and let $U$ be a singular
+    class $\mathcal{L}$ function (positive, antitone, $U(s) \to 0$ as $s \to \infty$ and
+    $U(s) \to \infty$ as $s \to 0^{+}$).  Then
+    \[
+      \beta(r, s) := \begin{cases}
+        \alpha(r) & s = 0, \\
+        \min\bigl(\alpha(r), \sqrt{\alpha(r)U(s)}\bigr) & s > 0,
+      \end{cases}
+    \]
+    is class $\mathcal{KL}$ on $[0,a)$. -/)
+  (proof := /-- Every field but continuity is immediate from the corresponding property of
+    $\alpha$ and $U$, the decay in $s$ being \cref{lem:tendstoMinSqrtMulZero}.  Continuity is
+    checked in three regimes.  For $s > 0$ the $\min$ branch is a composition of continuous
+    maps.  At $(0,0)$ the value is squeezed between $0$ and $\alpha(r) \to 0$.  At $(r, 0)$
+    with $r > 0$, pick a buffer radius $r_1 \in (r, a)$; since $U(s) \to \infty$ as
+    $s \to 0^{+}$, on a neighbourhood we have $\alpha(r_1) < U(s)$, hence
+    $\alpha(r') \le U(s)$ and so $\alpha(r') \le \sqrt{\alpha(r')U(s)}$ — the minimum is
+    locally just $\alpha$, which is continuous. -/)]
 noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : ClassLSingular) :
     ClassKL a where
   ha := α.ha
@@ -259,21 +333,22 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
 
 
 
+/-- A class KL function is continuous in `r` for each fixed `s ≥ 0`: the section of the joint
+    continuity in the `continuous` field. -/
+@[fun_prop]
 theorem ClassKL.continuous_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s) :
     ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a) :=
   (β.continuous.comp (continuousOn_id.prodMk (continuousOn_const))
     (fun _ hr => Set.mk_mem_prod hr hs)).congr (fun _ _ => rfl)
 
 
-@[fun_prop]
-theorem ClassKL.continuousOn_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s) :
-    ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a) := β.continuous_r hs
-
-
-
-
 /-- Post-composing a class KL function with a class K∞ function yields class KL.
     (Applies `α` to the output of `β`.) -/
+@[blueprint "lem:classKL-comp-left-KInfty"
+  (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ is class
+    $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \alpha(\beta(r, s))$ is class $\mathcal{KL}$
+    on $[0,a)$.  This is \cref{lem:classKL-comp-left-K} with the range hypothesis discharged by
+    $\alpha$ being defined on all of $[0,\infty)$. -/)]
 def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : ClassKL a where
   ha            := β.ha
   toFun r s     := α.toFun (β.toFun r s)
@@ -303,6 +378,11 @@ def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : Cla
 
 /-- Post-composing a class KL function with a class K function yields class KL,
     provided the range of `β` is strictly within the domain of `α`. -/
+@[blueprint "lem:classKL-comp-left-K"
+  (statement := /-- Let $\beta$ be class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ be class
+    $\mathcal{K}$ on $[0,b)$, and suppose $\beta(r, s) < b$ for every $r \in [0,a)$ and
+    $s \ge 0$.  Then $(r, s) \mapsto \alpha(\beta(r, s))$ is class $\mathcal{KL}$ on
+    $[0,a)$. -/)]
 def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
     (h_range : ∀ r ∈ Set.Ico 0 a, ∀ s ≥ 0, β.toFun r s < b) : ClassKL a where
   ha            := β.ha
@@ -341,6 +421,10 @@ def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
 
 /-- Pre-composing a class KL function with a class K function yields class KL.
     (Applies `α` to the first argument of `β`.) -/
+@[blueprint "lem:classKL-comp-right"
+  (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,b)$ and $\alpha$ is class
+    $\mathcal{K}$ on $[0,a) \to [0,b)$, then $(r, s) \mapsto \beta(\alpha(r), s)$ is class
+    $\mathcal{KL}$ on $[0,a)$. -/)]
 def ClassKL.comp_right {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL a where
   ha            := α.ha
   toFun r s     := β.toFun (α.toFun r) s
@@ -387,6 +471,9 @@ structure ClassKLGlobal where
   tendsto_zero  : ∀ r ≥ 0, Filter.Tendsto (fun s => toFun r s) Filter.atTop (nhds 0)
   --tendsto_atTop : Filter.Tendsto (fun r => toFun r 0) Filter.atTop Filter.atTop
 
+/-- A global class KL function is continuous in `r` for each fixed `s ≥ 0`: the section of the
+    joint continuity in the `continuous` field. -/
+@[fun_prop]
 theorem ClassKLGlobal.continuous_r {a : ℝ} (β : ClassKLGlobal) {s : ℝ} (hs : 0 ≤ s) :
     ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a) := by
   apply (β.continuous.comp (continuousOn_id.prodMk continuousOn_const)
@@ -394,16 +481,13 @@ theorem ClassKLGlobal.continuous_r {a : ℝ} (β : ClassKLGlobal) {s : ℝ} (hs 
   intro x _
   simp
 
-
-
-@[fun_prop]
-theorem ClassKLGlobal.continuousOn_r {a} (β : ClassKLGlobal) {s : ℝ} (hs : 0 ≤ s) :
-    ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a) :=  β.continuous_r hs
-
-
-
 /-- Post-composing a global class KL function with a class K∞ function yields global class KL.
     (Applies `α` to the output of `β`.) -/
+@[blueprint "lem:classKLGlobal-comp-left"
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
+    $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \alpha(\beta(r, s))$ is global class
+    $\mathcal{KL}$.  No range hypothesis is needed, since $\alpha$ is defined on all of
+    $[0,\infty)$. -/)]
 def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
   toFun r s     := α.toFun (β.toFun r s)
   map_zero s hs := by simp only [β.map_zero s hs, α.map_zero]
@@ -433,6 +517,10 @@ def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlo
 
 /-- Product of a class K∞ function and a class L function is global class KL.
     `β(r, s) = α(r) * γ(s)`. -/
+@[blueprint "lem:classKLGlobal-mk-mul"
+  (statement := /-- If $\alpha$ is class $\mathcal{K}_{\infty}$ and $\gamma$ is class
+    $\mathcal{L}$, then $\beta(r, s) := \alpha(r)\gamma(s)$ is global class
+    $\mathcal{KL}$. -/)]
 noncomputable def ClassKLGlobal.mk_mul (α : ClassKInfty) (γ : ClassL) : ClassKLGlobal where
   toFun r s     := α.toFun r * γ.toFun s
   map_zero s hs := by simp [α.map_zero]
@@ -443,12 +531,17 @@ noncomputable def ClassKLGlobal.mk_mul (α : ClassKInfty) (γ : ClassL) : ClassK
     mul_lt_mul_of_pos_right (α.strict_mono hx hy hxy) (γ.pos s hs)
   nonneg r hr s hs := mul_nonneg (α.maps_to hr) (γ.pos s hs).le
   anti_s r hr s₁ hs₁ s₂ hs₂ hs :=
-    mul_le_mul_of_nonneg_left (γ.anti hs₁ hs₂ hs) (α.maps_to hr)
+    mul_le_mul_of_nonneg_left (γ.anti.antitoneOn hs₁ hs₂ hs) (α.maps_to hr)
   tendsto_zero r hr := by
     simpa only [mul_zero] using Filter.Tendsto.const_mul (α.toFun r) γ.tendsto_zero
 
 /-- Pointwise min of a global class KL and a class K∞ function (in the r-argument) is
     global class KL. -/
+@[blueprint "lem:classKLGlobal-min-KInfty"
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
+    $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \min\bigl(\beta(r, s), \alpha(r)\bigr)$ is
+    global class $\mathcal{KL}$ — capping a $\mathcal{KL}$ bound by a function of the initial
+    condition alone preserves the class. -/)]
 noncomputable def ClassKLGlobal.min_KInfty (β : ClassKLGlobal) (α : ClassKInfty) :
     ClassKLGlobal where
   toFun r s     := min (β.toFun r s) (α.toFun r)
@@ -470,6 +563,10 @@ noncomputable def ClassKLGlobal.min_KInfty (β : ClassKLGlobal) (α : ClassKInft
 
 /-- Pre-composing a global class KL function with a class K∞ function yields global class KL.
     (Applies `α` to the first argument of `β`.) -/
+@[blueprint "lem:classKLGlobal-comp-right"
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
+    $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \beta(\alpha(r), s)$ is global class
+    $\mathcal{KL}$. -/)]
 def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
   toFun r s     := β.toFun (α.toFun r) s
   map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]

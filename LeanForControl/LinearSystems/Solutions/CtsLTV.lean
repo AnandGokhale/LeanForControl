@@ -341,13 +341,14 @@ theorem stateTransitionMatrix_self (t₀ : ℝ) :
   rw [stateTransitionMatrix, tsum_congr hterm,
     tsum_ite_eq 0 (fun _ => (1 : Matrix (Fin n) (Fin n) ℝ))]
 
-/-- **Theorem 5.1 (Peano-Baker series), existence half.** `x(t) := Φ(t, t₀) *ᵥ x₀` solves the
+/-- **Peano-Baker series: existence** (Hespanha, Theorem 5.1).
+`x(t) := Φ(t, t₀) *ᵥ x₀` solves the
 initial value problem `ẋ = A(t) x` — this is `hasDerivAt_stateTransitionMatrix` pushed through
 the fixed linear map `M ↦ M *ᵥ x₀` (continuous, since the domain is finite-dimensional).
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. -/
 @[blueprint "thm:hasDerivAt-stateTransitionMatrix-mulVec"
-  (statement := /-- \textbf{Theorem 5.1} (Peano--Baker series, existence half).
+  (statement := /-- \textbf{Peano--Baker series: existence} (Hespanha, Theorem 5.1).
     $x(t) := \Phi(t,t_0)\, x_0$ solves
     \[
       \dot x(t) = A(t)\, x(t).
@@ -476,7 +477,8 @@ theorem isIntegralSolution_stateTransitionMatrix_mulVec (hA : Continuous A) {t�
   rw [hFTC]
   abel
 
-/-- **Theorem 5.1 (Peano-Baker series), uniqueness half.** Any integral solution `z` of
+/-- **Peano-Baker series: uniqueness** (Hespanha, Theorem 5.1).
+Any integral solution `z` of
 `ẋ = A(t) x`, `x(t₀) = x₀` on the segment between `t₀` and `t₁` coincides with
 `x(t) := Φ(t, t₀) *ᵥ x₀`.
 
@@ -486,7 +488,8 @@ gives collapses to `‖x t - z t‖ ≤ 0`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. -/
 @[blueprint "thm:stateTransitionMatrix-mulVec-unique"
-  (statement := /-- \textbf{Theorem 5.1} (Peano--Baker series, uniqueness half). Any solution
+  (statement := /-- \textbf{Peano--Baker series: uniqueness} (Hespanha, Theorem 5.1).
+    Any solution
     $z$ of $\dot x = A(t)\, x$, $x(t_0) = x_0$, for $t$ between $t_0$ and $t_1$, coincides with
     $x(t) := \Phi(t,t_0)\, x_0$. -/)
   (proof := /-- Apply the continuous-dependence bound of Theorem 3.4 with zero perturbation:
@@ -521,14 +524,16 @@ theorem stateTransitionMatrix_mulVec_unique (hA : Continuous A) {t₀ t₁ M : �
   have h0 : ‖stateTransitionMatrix A t t₀ *ᵥ x₀ - z t‖ ≤ 0 := by simpa using hbound t ht
   exact (sub_eq_zero.mp (norm_le_zero_iff.mp h0)).symm
 
-/-- **P5.2.** For a fixed standard basis vector `e_i`, `stateTransitionMatrix_mulVec_unique`
+/-- **Columns of the state transition matrix** (Hespanha, P5.2).
+For a fixed standard basis vector `e_i`, `stateTransitionMatrix_mulVec_unique`
 specializes to: any integral solution `z` of `ẋ = A(t) x`, `x(t₀) = e_i` on the segment between
 `t₀` and `t₁` coincides with the `i`-th column of `Φ(t, t₀)` — via
 `Φ(t, t₀) *ᵥ e_i = (Φ(t, t₀)).col i` (`Matrix.mulVec_single_one`).
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.2. -/
 @[blueprint "thm:stateTransitionMatrix-col-unique"
-  (statement := /-- \textbf{P5.2.} For every fixed $i$, the $i$-th column of $\Phi(t,t_0)$ is
+  (statement := /-- \textbf{Columns of the state transition matrix} (Hespanha, P5.2).
+    For every fixed $i$, the $i$-th column of $\Phi(t,t_0)$ is
     the unique solution of $\dot x = A(t)\, x$, $x(t_0) = e_i$, where $e_i$ is the $i$-th
     standard basis vector. -/)
   (proof := /-- Restatement of \cref{thm:stateTransitionMatrix-mulVec-unique} at
@@ -588,32 +593,24 @@ theorem stateTransitionMatrix_mul_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
   exact (sub_eq_zero.mp (norm_le_zero_iff.mp h0)).symm
 
 /-- Auxiliary re-anchoring fact: `Y(z) := Φ(z, a) * C`, an integral solution of the matrix ODE
-anchored at `a`, also satisfies the integral equation anchored at the *other* endpoint `b` of the
-segment between `a` and `b`. Unlike `IsIntegralSolution.reanchor` (which only reaches from an
-interior re-anchor point out to the *original* far endpoint, shrinking the domain), this keeps
-the *whole* segment between `a` and `b` as the domain — exactly what `stateTransitionMatrix_inv`
+anchored at `a`, also satisfies the integral equation anchored at the *other* endpoint `b`, with
+the whole segment between `a` and `b` still as the domain — what `stateTransitionMatrix_inv`
 needs to compare `Φ(·, a)` against `Φ(·, b) * Φ(b, a)` using `stateTransitionMatrix_mul_unique`
-anchored at `b`. -/
+anchored at `b`.
+
+This is `IsIntegralSolution.reanchor` at the two endpoints, `s := b` and `r := a`. -/
 private lemma isIntegralSolution_stateTransitionMatrix_mul_reanchor (hA : Continuous A) {a b M : ℝ}
     (hA_le : ∀ r ∈ Set.uIcc a b, ‖A r‖ ≤ M) (C : Matrix (Fin n) (Fin n) ℝ) :
     IsIntegralSolution b a (fun z => stateTransitionMatrix A z a * C)
-      (stateTransitionMatrix A b a * C) (fun s Y => A s * Y) := by
-  intro z hz
-  have hx_cont : ContinuousOn (fun w => stateTransitionMatrix A w a * C) (Set.uIcc b z) :=
+      (stateTransitionMatrix A b a * C) (fun s Y => A s * Y) :=
+  (isIntegralSolution_stateTransitionMatrix_mul hA hA_le C).reanchor
+    ((hA.comp continuous_fst).mul continuous_snd)
     ((continuous_fst.mul continuous_snd).comp_continuousOn
-      ((continuousOn_stateTransitionMatrix hA hA_le).prodMk continuousOn_const)).mono
-      (by rw [Set.uIcc_comm a b]; exact Set.uIcc_subset_uIcc_left hz)
-  have huIoo_sub : Set.uIoo b z ⊆ Set.uIoo a b := by
-    rw [Set.uIoo_comm a b, ← Set.Ioo_min_max, ← Set.Ioo_min_max]
-    exact Set.Ioo_subset_Ioo (le_min (min_le_left b a) hz.1) (max_le (le_max_left b a) hz.2)
-  have hFTC := intervalIntegral.integral_eq_sub_of_hasDeriv_right hx_cont
-    (fun w hw => (hasDerivAt_stateTransitionMatrix_mul hA hA_le (huIoo_sub hw) C).hasDerivWithinAt)
-    ((continuous_fst.mul continuous_snd).comp_continuousOn
-      (hA.continuousOn.prodMk hx_cont)).intervalIntegrable
-  rw [hFTC]
-  abel
+      ((continuousOn_stateTransitionMatrix hA hA_le).prodMk continuousOn_const))
+    Set.right_mem_uIcc Set.left_mem_uIcc
 
-/-- **P5.3 (semigroup property).** `Φ(t,s) * Φ(s,τ) = Φ(t,τ)` for `τ ≤ s < t`, with `A`
+/-- **Semigroup property** (Hespanha, P5.3).
+`Φ(t,s) * Φ(s,τ) = Φ(t,τ)` for `τ ≤ s < t`, with `A`
 continuous and bounded by `M` on the segment between `τ` and `t`.
 
 Proof: `Φ(·,τ)`, re-anchored at `s` (`IsIntegralSolution.reanchor`), is an integral solution of
@@ -622,7 +619,9 @@ with `Φ(·,s) * Φ(s,τ)` there by `stateTransitionMatrix_mul_unique`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.3. -/
 @[blueprint "thm:stateTransitionMatrix-semigroup"
-  (statement := /-- \textbf{P5.3} (semigroup property). For every $\tau \le s < t$,
+  (statement := /-- \textbf{Semigroup property} (Hespanha, P5.3).
+    For $A$ continuous and bounded on
+    $[\tau, t]$, and any $\tau \le s < t$,
     \[
       \Phi(t,s)\,\Phi(s,\tau) = \Phi(t,\tau).
     \] -/)
@@ -644,12 +643,14 @@ theorem stateTransitionMatrix_semigroup (hA : Continuous A) {τ s t M : ℝ} (h�
       (1 : Matrix (Fin n) (Fin n) ℝ) (fun r Y => A r * Y) := by
     simpa using isIntegralSolution_stateTransitionMatrix_mul hA hA_le_u 1
   have hre := hbase.reanchor hF_cont (continuousOn_stateTransitionMatrix hA hA_le_u) hs_mem
+    Set.right_mem_uIcc
   have hunique := stateTransitionMatrix_mul_unique hA hA_le'_u (stateTransitionMatrix A s τ) hre
     ((continuousOn_stateTransitionMatrix hA hA_le_u).mono (Set.uIcc_subset_uIcc_right hs_mem))
     t Set.right_mem_uIcc
   exact hunique.symm
 
-/-- **P5.4.** `Φ(t,τ)` is nonsingular, with `Φ(t,τ)⁻¹ = Φ(τ,t)`, for `A` continuous and bounded
+/-- **Invertibility of the state transition matrix** (Hespanha, P5.4).
+`Φ(t,τ)` is nonsingular, with `Φ(t,τ)⁻¹ = Φ(τ,t)`, for `A` continuous and bounded
 by `M` on the segment between `τ` and `t`.
 
 Proof: `Φ(·,τ)`, re-anchored at `t` (`isIntegralSolution_stateTransitionMatrix_mul_reanchor`), is
@@ -660,7 +661,9 @@ Evaluating at `τ` gives `Φ(τ,t) * Φ(t,τ) = Φ(τ,τ) = I`, so `Φ(τ,t)` is
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.4. -/
 @[blueprint "thm:stateTransitionMatrix-inv"
-  (statement := /-- \textbf{P5.4.} For every $t,\tau$, $\Phi(t,\tau)$ is nonsingular and
+  (statement := /-- \textbf{Invertibility of the state transition matrix} (Hespanha, P5.4).
+    For $A$ continuous and bounded on the segment between $\tau$
+    and $t$, $\Phi(t,\tau)$ is nonsingular and
     \[
       \Phi(t,\tau)^{-1} = \Phi(\tau,t).
     \] -/)
@@ -696,6 +699,12 @@ here because `stateTransitionMatrix_comp` below needs it at an arbitrary point.
 Proof: identical to `stateTransitionMatrix_inv`'s — `Φ(·,a)`, re-anchored at `b`
 (`isIntegralSolution_stateTransitionMatrix_mul_reanchor`), coincides with `Φ(·,b) * Φ(b,a)` on
 `[b,a]` by uniqueness (`stateTransitionMatrix_mul_unique`). -/
+@[blueprint "lem:stateTransitionMatrix-comp-of-mem"
+  (statement := /-- For every $z$ on the segment between $a$ and $b$,
+    $\Phi(z, a) = \Phi(z, b)\,\Phi(b, a)$.  Composition with the \emph{first} argument free. -/)
+  (proof := /-- $\Phi(\cdot, a)$, re-anchored at $b$, is an integral solution of
+    $\dot Y = A(r)Y$ with value $\Phi(b,a)$ at $b$; so is $\Phi(\cdot, b)\Phi(b,a)$.  They agree
+    by \cref{thm:stateTransitionMatrix-mul-unique}. -/)]
 theorem stateTransitionMatrix_comp_of_mem (hA : Continuous A) {a b M : ℝ}
     (hA_le : ∀ r ∈ Set.uIcc a b, ‖A r‖ ≤ M) {z : ℝ} (hz : z ∈ Set.uIcc a b) :
     stateTransitionMatrix A z a = stateTransitionMatrix A z b * stateTransitionMatrix A b a := by
@@ -709,7 +718,8 @@ theorem stateTransitionMatrix_comp_of_mem (hA : Continuous A) {a b M : ℝ}
       rw [Set.uIcc_comm]; exact continuousOn_stateTransitionMatrix hA hA_le)
     z (by rwa [Set.uIcc_comm] at hz)
 
-/-- **P5.3, order-free.** `Φ(t,s) * Φ(s,τ) = Φ(t,τ)` for *any* `s` on the segment between `τ`
+/-- **Semigroup property, order-free** (Hespanha, P5.3).
+`Φ(t,s) * Φ(s,τ) = Φ(t,τ)` for *any* `s` on the segment between `τ`
 and `t` — the order-free generalization of `stateTransitionMatrix_semigroup`, whose `τ ≤ s < t`
 restriction was an artifact of matching the textbook's literal statement, not a genuine
 requirement. Needed by the variation-of-constants existence proof, where `s = t₀` is fixed and
@@ -719,6 +729,20 @@ Proof: `Φ(s,τ) = Φ(s,t) * Φ(t,τ)` by `stateTransitionMatrix_comp_of_mem`; l
 `Φ(t,s)` and simplify via `Φ(t,s) * Φ(s,t) = I` (P5.4, `stateTransitionMatrix_inv`).
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.3. -/
+@[blueprint "thm:stateTransitionMatrix-comp"
+  (statement := /-- \textbf{Semigroup property, order-free} (Hespanha, P5.3).
+    For \emph{any} $s$ on the segment between $\tau$
+    and $t$,
+    \[
+      \Phi(t, s)\,\Phi(s, \tau) = \Phi(t, \tau).
+    \]
+    The $\tau \le s < t$ ordering in \cref{thm:stateTransitionMatrix-semigroup} matches the
+    textbook's literal statement but is not a genuine requirement; the variation-of-constants
+    proof needs the unordered form, where $s = t_0$ is fixed and $\tau$ ranges over the whole
+    segment. -/)
+  (proof := /-- \cref{lem:stateTransitionMatrix-comp-of-mem} gives
+    $\Phi(s,\tau) = \Phi(s,t)\Phi(t,\tau)$; left-multiply by $\Phi(t,s)$ and cancel using
+    $\Phi(t,s)\Phi(s,t) = I$ (\cref{thm:stateTransitionMatrix-inv}). -/)]
 theorem stateTransitionMatrix_comp (hA : Continuous A) {τ t M : ℝ}
     (hA_le : ∀ r ∈ Set.uIcc τ t, ‖A r‖ ≤ M) {s : ℝ} (hs : s ∈ Set.uIcc τ t) :
     stateTransitionMatrix A t s * stateTransitionMatrix A s τ = stateTransitionMatrix A t τ := by
@@ -738,6 +762,15 @@ three (there, `τ` would have to lie between the two fixed points, not the rever
 Proof: `stateTransitionMatrix_comp` (with `τ` itself as the middle point) gives
 `Φ(t,τ) * Φ(τ,t₀) = Φ(t,t₀)`; solve for `Φ(t,τ)` by right-multiplying by `Φ(t₀,τ)` and
 cancelling `Φ(τ,t₀) * Φ(t₀,τ) = I` (P5.4). -/
+@[blueprint "lem:stateTransitionMatrix-comp-base"
+  (statement := /-- For every $\tau$ on the segment between $t_0$ and $t$,
+    $\Phi(t, t_0)\,\Phi(t_0, \tau) = \Phi(t, \tau)$: composition through a fixed \emph{base}
+    point.  This differs from \cref{thm:stateTransitionMatrix-comp} in which of the three times
+    is required to lie between the others — here the two fixed integration endpoints are the
+    outer ones and $\tau$ is free, which is the shape variation of constants needs. -/)
+  (proof := /-- \cref{thm:stateTransitionMatrix-comp} with $\tau$ itself as the middle point
+    gives $\Phi(t,\tau)\Phi(\tau,t_0) = \Phi(t,t_0)$; right-multiply by $\Phi(t_0,\tau)$ and
+    cancel $\Phi(\tau,t_0)\Phi(t_0,\tau) = I$. -/)]
 theorem stateTransitionMatrix_comp_base (hA : Continuous A) {t₀ t M : ℝ}
     (hA_le : ∀ r ∈ Set.uIcc t₀ t, ‖A r‖ ≤ M) {τ : ℝ} (hτ : τ ∈ Set.uIcc t₀ t) :
     stateTransitionMatrix A t t₀ * stateTransitionMatrix A t₀ τ = stateTransitionMatrix A t τ := by
@@ -755,6 +788,14 @@ variation-of-constants formula.
 Proof: `Φ(τ,t)⁻¹ = Φ(t,τ)` by P5.4 (`stateTransitionMatrix_inv`), so `τ ↦ Φ(t,τ)` is the
 composition of `τ ↦ Φ(τ,t)` (continuous by `continuousOn_stateTransitionMatrix`) with matrix
 inversion, continuous at every unit (`continuousAt_matrix_inv`). -/
+@[blueprint "lem:continuousOn-stateTransitionMatrix-snd"
+  (statement := /-- With the first argument held fixed, $\tau \mapsto \Phi(t, \tau)$ is
+    continuous on the segment between $t$ and $t_1$ — the mirror of
+    \cref{lem:continuousOn-stateTransitionMatrix}, which varies the first argument.  Needed
+    wherever $\Phi(t, \cdot)$ is an integrand, as in variation of constants. -/)
+  (proof := /-- By \cref{thm:stateTransitionMatrix-inv}, $\Phi(t,\tau) = \Phi(\tau,t)^{-1}$, so
+    the map is $\tau \mapsto \Phi(\tau,t)$ — continuous in its first argument — followed by
+    matrix inversion, which is continuous at every unit. -/)]
 theorem continuousOn_stateTransitionMatrix_snd (hA : Continuous A) {t t₁ M : ℝ}
     (hA_le : ∀ s ∈ Set.uIcc t t₁, ‖A s‖ ≤ M) :
     ContinuousOn (fun τ => stateTransitionMatrix A t τ) (Set.uIcc t t₁) := by
@@ -881,7 +922,8 @@ private lemma hasDerivAt_variationOfConstants_mulVec (hA : Continuous A) (hB : C
   rwa [Matrix.mulVec_mulVec (B t *ᵥ u t), hcancel, Matrix.one_mulVec,
     ← Matrix.mulVec_mulVec] at hderiv
 
-/-- **Theorem 5.2 (Variation of constants), existence half.** `x(t) := Φ(t,t₀) *ᵥ x₀ +
+/-- **Variation of constants: existence** (Hespanha, Theorem 5.2).
+`x(t) := Φ(t,t₀) *ᵥ x₀ +
 ∫ τ in t₀..t, Φ(t,τ) *ᵥ (B(τ) *ᵥ u(τ))` solves the initial value problem
 `ẋ = A(t) x + B(t) u(t)`, `x(t₀) = x₀`.
 
@@ -890,6 +932,21 @@ across the pointwise equality `x(z) = Φ(z,t₀) *ᵥ w(z)` (`variationOfConstan
 on the neighborhood `Set.uIcc t₀ t₁ ∈ 𝓝 t` since `t` is interior to it.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
+@[blueprint "thm:hasDerivAt-variationOfConstants"
+  (statement := /-- \textbf{Variation of constants: existence} (Hespanha, Theorem 5.2).
+    For continuous $A$, $B$ and $u$, the
+    function
+    \[
+      x(t) := \Phi(t, t_0)x_0 + \int_{t_0}^{t} \Phi(t, \tau)B(\tau)u(\tau)\,d\tau
+    \]
+    satisfies $\dot x(t) = A(t)x(t) + B(t)u(t)$ at every interior $t$. -/)
+  (proof := /-- The obstacle is that $t$ appears in both the upper limit and the integrand.
+    Factor it out: with
+    $w(t) := x_0 + \int_{t_0}^{t}\Phi(t_0,\tau)B(\tau)u(\tau)\,d\tau$, whose integrand does not
+    depend on $t$, the fundamental theorem of calculus gives $w$ directly, and
+    \cref{lem:stateTransitionMatrix-comp-base} shows $x(t) = \Phi(t,t_0)w(t)$.  Differentiating
+    that product and cancelling $\Phi(t,t_0)\Phi(t_0,t) = I$ leaves the claim.  $\Phi$ is thus
+    only ever integrated in its second argument, never differentiated there. -/)]
 theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
     {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
@@ -906,12 +963,18 @@ theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
 
 /-- The variation-of-constants formula matches the initial value `x₀` at `t = t₀`: the forcing
 integral is over the degenerate interval `[t₀,t₀]`, and `Φ(t₀,t₀) = I`. -/
+@[blueprint "lem:variationOfConstants-self"
+  (statement := /-- The variation-of-constants formula takes the value $x_0$ at $t = t_0$: the
+    forcing integral is over the degenerate interval and $\Phi(t_0,t_0) = I$.  Together with
+    \cref{thm:hasDerivAt-variationOfConstants} this makes it a solution of the initial value
+    problem, not merely of the differential equation. -/)]
 theorem variationOfConstants_self (t₀ : ℝ) (x₀ : Fin n → ℝ) :
     stateTransitionMatrix A t₀ t₀ *ᵥ x₀ +
         ∫ τ in t₀..t₀, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ) = x₀ := by
   simp [stateTransitionMatrix_self]
 
-/-- **Theorem 5.2 (Variation of constants), uniqueness half.** Any two integral solutions of the
+/-- **Variation of constants: uniqueness** (Hespanha, Theorem 5.2).
+Any two integral solutions of the
 forced LTV system `ẋ = A(t) x + B(t) u(t)` sharing the same initial value `x₀` coincide on the
 segment between `t₀` and `t₁`.
 
@@ -920,6 +983,16 @@ is affine, hence globally Lipschitz, in `v`, so `continuous_dependence_ODE` (The
 directly with zero perturbation `g := 0`, exactly as in `stateTransitionMatrix_mulVec_unique`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
+@[blueprint "thm:variationOfConstants-unique"
+  (statement := /-- \textbf{Variation of constants: uniqueness} (Hespanha, Theorem 5.2).
+    Any two continuous integral solutions of
+    the forced system $\dot x = A(t)x + B(t)u(t)$ with the same initial value $x_0$ agree on the
+    segment between $t_0$ and $t_1$. -/)
+  (proof := /-- For fixed $t$ the right-hand side $v \mapsto A(t)v + B(t)u(t)$ is affine in $v$,
+    hence Lipschitz with constant $\max(M, 1)$ where $\|A\| \le M$.  Continuous dependence on
+    initial conditions with zero perturbation then bounds $\|z_1(t) - z_2(t)\|$ by $0$.  The
+    forcing term $B(t)u(t)$ is common to both solutions and cancels in the difference, so it
+    never enters the Lipschitz estimate. -/)]
 theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
     {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {x₀ : Fin n → ℝ}
     {z₁ z₂ : ℝ → Fin n → ℝ}
@@ -950,9 +1023,23 @@ theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu 
   have h0 : ‖z₁ t - z₂ t‖ ≤ 0 := by simpa using hbound t ht
   exact sub_eq_zero.mp (norm_le_zero_iff.mp h0)
 
-/-- **Theorem 5.2 (Variation of constants), output equation (5.8).** `y(t) := C(t) x(t) + D(t)
+/-- **Variation of constants: output equation** (Hespanha, equation (5.8)).
+`y(t) := C(t) x(t) + D(t)
 u(t)`, for `x(t)` as in `hasDerivAt_variationOfConstants`, splits into the *homogeneous response*
 `C(t) Φ(t,t₀) x₀` and the *forced response* `∫ τ in t₀..t, C(t) Φ(t,τ) B(τ) u(τ) + D(t) u(t)`. -/
+@[blueprint "lem:variationOfConstants-output"
+  (statement := /-- \textbf{Variation of constants: output equation} (Hespanha, equation (5.8)).
+    With $x$ as in
+    \cref{thm:hasDerivAt-variationOfConstants}, the output $y(t) = C(t)x(t) + D(t)u(t)$ splits
+    into the homogeneous response and the forced response:
+    \[
+      y(t) = C(t)\Phi(t,t_0)x_0
+             + \int_{t_0}^{t} C(t)\Phi(t,\tau)B(\tau)u(\tau)\,d\tau
+             + D(t)u(t).
+    \] -/)
+  (proof := /-- $v \mapsto C(t)v$ is a continuous linear map and so commutes with the interval
+    integral; the integrand is continuous by
+    \cref{lem:continuousOn-stateTransitionMatrix-snd}. -/)]
 theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
     {t₀ t M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ) :
     C t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +

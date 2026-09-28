@@ -9,6 +9,26 @@ import LeanForControl.Stability.KLCharacterization
 
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
+import Architect
+
+/-!
+# `Stability.NonAutonomous`
+
+Lyapunov's stability theorems for time-varying systems `ẋ = f(t, x)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorems 4.8 and 4.9.
+
+## Main results
+
+* `lyapunov_uniformly_stable_NA` — a time-varying `V` sandwiched between two positive-definite
+  functions of the state alone, with `V̇ ≤ 0`, gives uniform stability.
+* `lyapunov_uniformly_asymptotic_stable_NA` — strengthening `V̇ ≤ 0` to `V̇ ≤ −W₃` gives uniform
+  asymptotic stability.
+
+The sandwich `W₁(x) ≤ V(t,x) ≤ W₂(x)` is what makes the conclusions *uniform* in `t₀`: it is
+the time-varying analogue of positive definiteness, and without it a `V` could flatten out as
+`t → ∞` and buy no uniform estimate.
+-/
 
 variable {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
@@ -17,6 +37,18 @@ open Set Filter Topology Metric
 
 /-! ## Chain rule for time-varying V along trajectories -/
 
+/-- Chain rule for a time-varying `V` along a trajectory: the total derivative of
+`t ↦ V t (φ t)` pairs the explicit time dependence with the state dependence, giving
+`DV(t, φ t)[(1, f t (φ t))]`. -/
+@[blueprint "lem:hasDerivAt-V-comp-traj-NA"
+  (statement := /-- Let $V : \mathbb{R} \times \mathbb{R}^{n} \to \mathbb{R}$ be
+    differentiable and let $\varphi$ be a trajectory of $\dot{x} = f(t,x)$ on
+    $[t_{0},\infty)$ (\cref{def:isTrajectoryNA}).  Then for $t > t_{0}$,
+    \[
+      \frac{d}{dt}\,V(t, \varphi(t)) = DV(t, \varphi(t))\,[\,(1,\, f(t, \varphi(t)))\,].
+    \]
+    The first slot of the derivative picks up the explicit time dependence of $V$, which is what
+    distinguishes the non-autonomous Lie derivative from the autonomous one. -/)]
 lemma hasDerivAt_V_comp_traj_NA
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
@@ -31,7 +63,7 @@ lemma hasDerivAt_V_comp_traj_NA
 
 /-- The chain rule at the left endpoint of the solution's interval, where only a
 one-sided derivative exists. This is the form the Dini-derivative machinery consumes. -/
-lemma hasDerivWithinAt_V_comp_traj_NA
+private lemma hasDerivWithinAt_V_comp_traj_NA
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
     {φ : ℝ → ℝⁿ} {t₀ : ℝ} (htraj : IsTrajectoryNA φ f t₀) {t : ℝ} (ht : t₀ ≤ t) :
@@ -45,7 +77,7 @@ lemma hasDerivWithinAt_V_comp_traj_NA
 
 /-! ## V nonincreasing along trajectories -/
 
-lemma V_NA_nonincreasing
+private lemma V_NA_nonincreasing
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
     {φ : ℝ → ℝⁿ} {t₀ : ℝ} (htraj : IsTrajectoryNA φ f t₀)
@@ -60,6 +92,8 @@ lemma V_NA_nonincreasing
   have hcont : ContinuousOn (fun u => V u (φ u)) (Set.Icc a b) :=
     hV_diff.continuous.comp_continuousOn
       (continuousOn_id.prodMk (htraj.continuousOn.mono hsub))
+  -- Not an instance of `antitoneOn_V_comp_traj`: `V` is time-varying here, so the derivative is
+  -- `fderiv (uncurry V) (t, φ t) (1, f t (φ t))` rather than `fderiv V (φ t) (f (φ t))`.
   apply antitoneOn_of_deriv_nonpos (convex_Icc a b) hcont
     (fun s hs => by
       rw [interior_Icc] at hs
@@ -162,6 +196,32 @@ private lemma NA_ball_invariant
 -- Main theorem: Lyapunov's uniform stability theorem (non-autonomous)
 -- ─────────────────────────────────────────────────────────────────────────────
 
+/-- **Lyapunov's uniform stability theorem** for `ẋ = f(t, x)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
+@[blueprint "thm:lyapunov-uniformly-stable-NA"
+  (statement := /-- Let $r > 0$ and let $V : \mathbb{R} \times \mathbb{R}^{n} \to
+    \mathbb{R}$ be differentiable.  Suppose there are $W_{1}, W_{2}$, continuous on
+    $\overline{B}(0,r)$, vanishing at the origin and strictly positive elsewhere on it, with
+    \begin{enumerate}
+      \item $W_{1}(x) \le V(t,x) \le W_{2}(x)$ for all $t \ge 0$ and $\|x\| \le r$;
+      \item $DV(t,x)\,[\,(1, f(t,x))\,] \le 0$ for all $t \ge 0$ and $\|x\| \le r$.
+    \end{enumerate}
+    Then the origin is uniformly stable (\cref{def:uniformlyStableNA}).
+
+    The sandwich is what makes the conclusion uniform in $t_{0}$: $W_{1}$ and $W_{2}$ do not
+    depend on $t$, so the $\delta(\varepsilon)$ extracted from them does not either. -/)
+  (proof := /-- Bound $W_{1}$ below and $W_{2}$ above by class $\mathcal{K}$ functions
+    $\alpha_{1}, \alpha_{2}$ (\cref{thm:lyapunov-class-K-bounds}).  Fix a level $d$ below both
+    ranges and set $c = \alpha_{2}^{-1}(d)$, so that starting within $c$ of the origin forces
+    $V(t_{0}, \varphi(t_{0})) < d$.  Since $V$ is nonincreasing along the trajectory it stays
+    below $d$, and $\alpha_{1}(\|\varphi(t)\|) \le V \le d$ confines $\varphi$ to the ball
+    of radius $r$ --- so the estimate never leaves the region where the hypotheses hold.
+    Chaining the sandwich gives
+    $\alpha_{1}(\|\varphi(t)\|) \le \alpha_{2}(\|\varphi(t_{0})\|)$, i.e.
+    $\|\varphi(t)\| \le (\alpha_{1}^{-1} \circ \alpha_{2})(\|\varphi(t_{0})\|)$, a class
+    $\mathcal{K}$ bound; conclude by
+    \cref{lem:uniformlyStableNA-iff-classK}. -/)]
 theorem lyapunov_uniformly_stable_NA [NeZero n]
     (f : ℝ → ℝⁿ → ℝⁿ) (r : ℝ) (hr : 0 < r)
     (V : ℝ → ℝⁿ → ℝ)
@@ -177,8 +237,7 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
     (hLie_nonpos : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
         fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ 0) :
     UniformlyStableNA f 0 := by
-  -- ── Step 1: class K lower bound on W₁ (via LyapunovClassKBounds) ────────
-  -- We only need α₁ as a lower bound; W₂ is handled via continuity directly.
+  -- ── Step 1: class K bounds sandwiching W₁ and W₂ ─────────────────────────
   obtain ⟨b1_lower, b1_upper, α1, α1_upper, hW1_bounds⟩ :=
       LyapunovClassKBounds hr hW₁_cont hW₁_zero hW₁_pos
   obtain ⟨b2_lower, b2_upper, α2_lower, α2, hW2_bounds⟩ :=
@@ -194,7 +253,6 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
   have hc_lt_r : c < r := (α2.inv_maps_to ⟨hd_pos.le, hd_lt_b2⟩).2
   -- The fundamental theorem of inverse functions: α₂(c) = d
   have h_α2_c : α2.toFun c = d := α2.right_inv ⟨hd_pos.le, hd_lt_b2⟩
-  --let α2_res := α2.restrictTo hc_pos hc_lt_r h_α2_c
   let α2_res : ClassK c d :=
     ClassK.of_strictMono hc_pos hd_pos α2.toFun α2.map_zero h_α2_c
       (α2.continuous.mono (fun x hx => ⟨hx.1, hx.2.trans_lt hc_lt_r⟩))
@@ -246,6 +304,37 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
   exact h_inv_bound
 
 
+/-- **Lyapunov's uniform asymptotic stability theorem** for `ẋ = f(t, x)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9. -/
+@[blueprint "thm:lyapunov-uniformly-asymptotic-stable-NA"
+  (statement := /-- In the setting of \cref{thm:lyapunov-uniformly-stable-NA}, strengthen the
+    derivative hypothesis to
+    \[
+      DV(t,x)\,[\,(1, f(t,x))\,] \le -W_{3}(x)
+      \qquad \forall\, t \ge 0,\ \|x\| \le r,
+    \]
+    for a third $W_{3}$ continuous on $\overline{B}(0,r)$, vanishing at the origin and strictly
+    positive elsewhere on it.  Then the origin is uniformly asymptotically stable
+    (\cref{def:uniformlyAsymptoticStableNA}).
+
+    A strictly negative $\dot{V}$ alone would not do: $W_{3}$ must be bounded away from zero on
+    each annulus, which is exactly what positive definiteness of a function of $x$ alone
+    buys. -/)
+  (proof := /-- As in \cref{thm:lyapunov-uniformly-stable-NA}, take class $\mathcal{K}$ bounds
+    $\alpha_{1}, \alpha_{2}, \alpha_{3}$ for $W_{1}, W_{2}, W_{3}$.  Then
+    $\dot{V} \le -W_{3}(x) \le -\alpha_{3}(\|x\|) \le
+    -\alpha_{3}(\alpha_{2}^{-1}(V))$, so $v(t) = V(t, \varphi(t))$ satisfies the scalar
+    differential inequality $D^{+}v \le -\alpha(v)$ with
+    $\alpha = \alpha_{3} \circ \alpha_{2}^{-1}$ of class $\mathcal{K}$.
+    \cref{thm:classK-dini-bound} supplies a class $\mathcal{KL}$ function $\sigma$ with
+    $v(t) \le \sigma(v(t_{0}), t - t_{0})$.  Unwinding the sandwich,
+    \[
+      \|\varphi(t)\| \le \alpha_{1}^{-1}\bigl(\sigma(\alpha_{2}(\|\varphi(t_{0})\|),\,
+        t - t_{0})\bigr),
+    \]
+    and the right-hand side is class $\mathcal{KL}$ in its two arguments; conclude by
+    \cref{lem:uniformlyAsymptoticStableNA-iff-classKL}. -/)]
 theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
     (f : ℝ → ℝⁿ → ℝⁿ) (r : ℝ) (hr : 0 < r)
     (V : ℝ → ℝⁿ → ℝ)
@@ -268,8 +357,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       LyapunovClassKBounds hr hW₁_cont hW₁_zero hW₁_pos
   obtain ⟨b2_lower, b2_upper, α2_lower, α2, hW2_bounds⟩ :=
       LyapunovClassKBounds hr hW₂_cont hW₂_zero hW₂_pos
-  -- (You can extract α3 here if your comparison lemma setup requires it)
-  -- ── Step 2: Define d and c exactly as in Uniform Stability ────────────────
+  -- ── Step 2: `d` and `c` exactly as in the uniform-stability proof ─────────
   set d := min (b1_lower / 2) (b2_upper / 2)
   have hd_pos : 0 < d := lt_min (half_pos α1.hb) (half_pos α2.hb)
   have hd_lt_b1 : d < b1_lower := (min_le_left ..).trans_lt (half_lt_self α1.hb)
@@ -350,8 +438,8 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
           (fun t' ht' => hLie_nonpos t' (ht₀.trans ht'.1.le) (φ t')
             (h_φs_lt_r t' ⟨ht'.1.le, (ht'.2.trans hs.2).le⟩).le)).trans_lt h_Vt₀_lt_d'
       exact ⟨hV_nn, hV_lt_d⟩
-    -- KEY CONTROL THEORY: D⁺(V(·, φ(·)))(s) ≤ −α_comp(V(s, φ(s)))
-    -- Chain: V̇ ≤ −W₃(φ s) ≤ −α₃(‖φ s‖) ≤ −α₃(α₂⁻¹(V(s, φ(s)))) = −α_comp(V(s, φ(s)))
+    -- The comparison hypothesis: D⁺(V(·, φ(·)))(s) ≤ −α_comp(V(s, φ(s))), by the chain
+    -- V̇ ≤ −W₃(φ s) ≤ −α₃(‖φ s‖) ≤ −α₃(α₂⁻¹(V(s, φ(s)))) = −α_comp(V(s, φ(s))).
     have hDv : ∀ s ∈ Set.Ico t₀ t,
         D⁺ (fun s => V s (φ s)) s ≤ -α_comp.toFun (V s (φ s)) := by
       intro s hs
@@ -388,9 +476,9 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
         (continuousOn_id.prodMk
           (hφ.continuousOn.mono (fun s hs => Set.mem_Ici.mpr hs.1)))
     exact hσ_general ht (fun s => V s (φ s)) hv_cont hV_Ico_t₀ hv_range hDv hv_bdd
-  -- ── Step 4: Construct β(r, s) = α₁⁻¹(σ(α₂(r), s)) ─────────────────────────
-  -- Since your ClassKL.comp_left only takes ClassKInfty, we assert the existence
-  -- of the composed KL bound manually here for you to construct.
+  -- ── Step 4: β(r, s) = α₁⁻¹(σ(α₂(r), s)) ──────────────────────────────────
+  -- `ClassKL.comp_left` takes a `ClassKInfty`, so the composition is assembled by hand from
+  -- `comp_right` and `comp_left_K` rather than in one step.
   have h_beta : ∃ β : ClassKL c, ∀ r ∈ Set.Ico 0 c, ∀ s ≥ 0,
       α1.symm.toFun (σ.toFun (α2.toFun r) s) ≤ β.toFun r s := by
     set inner := σ.comp_right (α2.restrictTo hc_pos hc_lt_r h_α2_c)

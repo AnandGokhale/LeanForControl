@@ -6,6 +6,7 @@ import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
 import LeanForControl.Stability.Autonomous
+import Architect
 
 /-!
 # Unstable modes and finite forward segments
@@ -117,8 +118,21 @@ each selected final time, either the real or imaginary component carries at
 least half of the complex amplitude, which supplies a finite escaping solution
 segment from an arbitrarily small initial perturbation.
 
-Reference: Khalil, *Nonlinear Systems*.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
 -/
+@[blueprint "thm:unstable-affineLinear-of-eigenvalue-re-pos"
+  (statement := /-- If $A \in \mathbb{R}^{n \times n}$ has a complex eigenvalue $\mu$ with
+    $\operatorname{Re}\mu > 0$, then $x_{\mathrm{eq}}$ is an unstable equilibrium
+    (\cref{def:unstable}) of the affine-linear field $x \mapsto A(x - x_{\mathrm{eq}})$
+    (\cref{def:affineLinearVectorField}). -/)
+  (proof := /-- Let $v \ne 0$ be an eigenvector for $\mu$ and consider the real eigenmode
+    $t \mapsto x_{\mathrm{eq}} + \rho\operatorname{Re}\bigl(e^{\mu t} v\bigr)$, a genuine
+    solution of the linear equation for every $\rho > 0$.  Its initial displacement is
+    $\rho\|v\|$, which can be made smaller than any $\delta$, while some coordinate has
+    modulus growing like $\rho\,|v_{i}|\,e^{(\operatorname{Re}\mu)t}$ --- the real part
+    recovers at least half the complex amplitude over each quarter-period.  Since
+    $\operatorname{Re}\mu > 0$ this exceeds the fixed escape radius at some finite time, so no
+    $\delta$ confines every solution segment. -/)]
 theorem unstable_affineLinear_of_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) (x_eq : ℝⁿ) (mu : ℂ) (v : Fin n → ℂ)
     (hv : v ≠ 0)

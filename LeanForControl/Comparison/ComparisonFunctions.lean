@@ -4,7 +4,32 @@ import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Analysis.MonotoneFunctions
 
+import Architect
 
+/-- Any `ψ` with the stability properties — nonnegative, vanishing at `r = 0`, monotone in the
+    radius, antitone and decaying to `0` in time, continuous in the radius at `0` — is dominated
+    by a global class KL function. The usable form of
+    `exists_classKLGlobal_of_stability_properties`. -/
+@[blueprint "lem:exists-classKL-upper-bound"
+  (statement := /-- Let $\psi : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ satisfy, for all
+    $r, s \ge 0$:
+    \begin{enumerate}
+      \item $\psi(r, s) \ge 0$;
+      \item $\psi(0, s) = 0$;
+      \item $r \mapsto \psi(r, s)$ is monotone on $[0,\infty)$;
+      \item $s \mapsto \psi(r, s)$ is antitone on $[0,\infty)$;
+      \item $\psi(r, s) \to 0$ as $s \to \infty$;
+      \item $r \mapsto \psi(r, 0)$ is continuous at $0$ within $[0,\infty)$.
+    \end{enumerate}
+    Then there is a global class $\mathcal{KL}$ function $\beta$ with
+    $\psi(r,s) \le \beta(r,s)$ for all $r, s \ge 0$. -/)
+  (proof := /-- The two hypotheses of
+    \cref{lem:exists-classKLGlobal-of-stability-properties} are supplied in turn.  For uniform
+    convergence, $\psi(r, \cdot) \to 0$ gives a time $T$ beyond which $\psi(r,t) < \varepsilon$,
+    and monotonicity in the radius extends that bound to every $s \le r$.  For uniform
+    stability, continuity of $\psi(\cdot, 0)$ at $0$ gives a $\delta$ with
+    $\psi(s, 0) \le \varepsilon$ for $s \le \delta/2$, and antitonicity in time propagates it to
+    all $t \ge 0$. -/)]
 lemma exists_classKL_upper_bound (ψ : ℝ → ℝ → ℝ)
     (hψ_nonneg : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ ψ r s)
     (hψ_zero : ∀ s ≥ 0, ψ 0 s = 0)
@@ -45,6 +70,31 @@ lemma exists_classKL_upper_bound (ψ : ℝ → ℝ → ℝ)
 
     The candidate `ψ(r,s) = if s = 0 then α(r) else min(α(r), √(α(r)·U(r+1)(s)))` is
     constructed and smoothed internally; no details of `ψ` leak into the conclusion. -/
+@[blueprint "lem:classKLGlobal-of-KInfty-LSingular-family"
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}_{\infty}$ and let $U$ be a family of
+    functions such that
+    \begin{enumerate}
+      \item $U(r, s) > 0$ for all $r > 0$ and $s > 0$;
+      \item $U(r, \cdot)$ is antitone on $(0,\infty)$ for each $r > 0$;
+      \item $U(r, s) \to 0$ as $s \to \infty$, for each $r > 0$;
+      \item $r \mapsto U(r+1, s)$ is monotone on $[0,\infty)$ for each $s > 0$.
+    \end{enumerate}
+    Then there is a global class $\mathcal{KL}$ function $\beta$ such that
+    \begin{enumerate}
+      \item $\beta(r, 0) \to \infty$ as $r \to \infty$;
+      \item $\alpha(r) \le \beta(r, 0)$ for all $r \ge 0$;
+      \item $\min\bigl(\alpha(r), \sqrt{\alpha(r)U(r+1, s)}\bigr) \le \beta(r, s)$ for all
+        $r \ge 0$ and $s > 0$.
+    \end{enumerate} -/)
+  (proof := /-- Take $\psi(r, s) := \alpha(r)$ for $s = 0$ and
+    $\min\bigl(\alpha(r), \sqrt{\alpha(r)U(r+1,s)}\bigr)$ for $s > 0$, the radius being shifted
+    by $1$ so that $U$ is only ever evaluated at a strictly positive radius.  Each hypothesis of
+    \cref{lem:exists-classKL-upper-bound} holds for $\psi$: monotonicity in $r$ from that of
+    $\alpha$ and of $r \mapsto U(r+1,s)$, antitonicity in $s$ from that of $U(r+1,\cdot)$, decay
+    from \cref{lem:tendstoMinSqrtMulZero}, and continuity at $r = 0$ because
+    $\psi(\cdot, 0) = \alpha$.  The resulting $\beta$ dominates $\psi$, which gives the three
+    conclusions; $\beta(r,0) \ge \alpha(r) \to \infty$ gives the first.  No property of $\psi$
+    beyond these bounds appears in the statement. -/)]
 lemma ClassKLGlobal.of_KInfty_LSingular_family
     (α : ClassKInfty) (U : ℝ → ℝ → ℝ)
     (hU_pos : ∀ r > 0, ∀ s > 0, 0 < U r s)

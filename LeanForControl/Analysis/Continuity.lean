@@ -1,29 +1,15 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
+import Architect
 
 open MeasureTheory intervalIntegral Real Set Filter
 
-lemma sSup_mem_of_isClosed {S : Set ℝ}
-    (hS : S.Nonempty) (hBdd : BddAbove S) (hCl : IsClosed S) : sSup S ∈ S :=
-  hCl.csSup_mem hS hBdd
-
-/-- A real number that upper-bounds a norm is itself nonnegative. A one-line fact
-(`(norm_nonneg _).trans h`), but common enough — any time a bound `M` on `‖f s‖` is introduced
-as a hypothesis, `M` needs to be known nonnegative to run further estimates — that it is worth
-a name rather than re-deriving it at each call site. -/
-lemma nonneg_of_norm_le {E : Type*} [SeminormedAddGroup E] {x : E} {M : ℝ} (h : ‖x‖ ≤ M) :
-    0 ≤ M :=
-  (norm_nonneg x).trans h
-
-/-- A uniform bound `‖f s‖ ≤ M` over a nonempty `[a, b]` forces `0 ≤ M`, by evaluating the bound
-at the left endpoint `a` and applying `nonneg_of_norm_le`. The recurring shape behind any
-`hM_nonneg` derived from an `∀ s ∈ Set.Icc a b, ‖f s‖ ≤ M` hypothesis. -/
-lemma nonneg_of_forall_Icc_norm_le {E : Type*} [SeminormedAddGroup E] {f : ℝ → E} {a b M : ℝ}
-    (hab : a ≤ b) (h : ∀ s ∈ Icc a b, ‖f s‖ ≤ M) : 0 ≤ M :=
-  nonneg_of_norm_le (h a (left_mem_Icc.2 hab))
-
 /-- If a continuous function starts ≤ 0 and ends > 0, it has a last root `a` in `[t₀, t₁)`,
     after which it is strictly positive on `(a, t₁]`. -/
+@[blueprint "lem:exists-greatest-zero-of-nonpos-of-pos"
+  (statement := /-- Let $g$ be continuous on $[t_0, t_1]$ with $g(t_0) \le 0 < g(t_1)$. Then $g$
+    has a \emph{last} root: there is $a \in [t_0, t_1)$ with $g(a) = 0$ and $g(t) > 0$ for every
+    $t \in (a, t_1]$.-/)]
 lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀ t₁ : ℝ}
     (hg_cont : ContinuousOn g (Icc t₀ t₁))
     (ht : t₀ < t₁) (hg_start : g t₀ ≤ 0) (hg_end : 0 < g t₁) :
@@ -62,3 +48,61 @@ lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀
   -- By the definition of `exists_isMaxOn`, `m` is an upper bound for the set.
   have h_contra : a < a := ht_mem.1.trans_le (hr_mem.1.trans (hm_max hr_in_pre))
   linarith
+
+/-- A continuous curve that starts inside the ball of radius `ρ` and later leaves it first meets
+the sphere at some `τ`, staying in the closed ball until then. -/
+@[blueprint "thm:exists-first-sphere-hit"
+  (statement := /-- Let $\varphi$ be continuous on $[t_0, T]$ with
+    $\|\varphi(t_0) - x_{\mathrm{eq}}\| < \rho$, and suppose some $t_1 \in [t_0, T]$ satisfies
+    $\rho \le \|\varphi(t_1) - x_{\mathrm{eq}}\|$. Then there is a \emph{first} hitting time
+    $\tau \in [t_0, T]$ of the sphere of radius $\rho$:
+    \[
+      \|\varphi(\tau) - x_{\mathrm{eq}}\| = \rho, \qquad
+      \|\varphi(s) - x_{\mathrm{eq}}\| \le \rho \quad \forall\, s \in [t_0, \tau].
+    \] -/)]
+theorem exists_first_sphere_hit
+    {E : Type*} [NormedAddCommGroup E]
+    {x_eq : E} {φ : ℝ → E} {ρ t₀ T t₁ : ℝ}
+    (hφ : ContinuousOn φ (Icc t₀ T))
+    (h₀ : ‖φ t₀ - x_eq‖ < ρ) (ht₁ : t₁ ∈ Icc t₀ T)
+    (hfar : ρ ≤ ‖φ t₁ - x_eq‖) :
+    ∃ τ ∈ Icc t₀ T, ‖φ τ - x_eq‖ = ρ ∧
+      ∀ s ∈ Icc t₀ τ, ‖φ s - x_eq‖ ≤ ρ := by
+  /-- Take the minimum of the closed set $[t_0, T] \cap \|\varphi(\cdot) - x_{\mathrm{eq}}\|^{-1}
+  \{\rho\}$, which is nonempty by the intermediate value theorem. Minimality rules out an earlier
+  excursion outside the ball: one would force a second crossing before $\tau$, again by the
+  intermediate value theorem. -/
+  let d : ℝ → ℝ := fun t ↦ ‖φ t - x_eq‖
+  have hd : ContinuousOn d (Icc t₀ T) :=
+    continuous_norm.comp_continuousOn (hφ.sub continuousOn_const)
+  have hd₁ : ContinuousOn d (Icc t₀ t₁) := hd.mono (Icc_subset_Icc_right ht₁.2)
+  have hhit : ∃ s ∈ Icc t₀ T, d s = ρ := by
+    have hρmem : ρ ∈ Icc (d t₀) (d t₁) := ⟨h₀.le, hfar⟩
+    obtain ⟨s, hs, hsρ⟩ := (intermediate_value_Icc ht₁.1 hd₁) hρmem
+    exact ⟨s, ⟨hs.1, hs.2.trans ht₁.2⟩, hsρ⟩
+  let S : Set ℝ := Icc t₀ T ∩ d ⁻¹' {ρ}
+  have hS_closed : IsClosed S :=
+    hd.preimage_isClosed_of_isClosed isClosed_Icc isClosed_singleton
+  have hS_compact : IsCompact S :=
+    isCompact_Icc.of_isClosed_subset hS_closed inter_subset_left
+  have hS_nonempty : S.Nonempty := by
+    obtain ⟨s, hs, hsρ⟩ := hhit
+    exact ⟨s, hs, hsρ⟩
+  obtain ⟨τ, hτS, hτmin⟩ := hS_compact.exists_isMinOn hS_nonempty continuousOn_id
+  have hτIcc : τ ∈ Icc t₀ T := hτS.1
+  have hτeq : d τ = ρ := hτS.2
+  refine ⟨τ, hτIcc, hτeq, ?_⟩
+  intro s hs
+  by_contra hnot
+  have hρs : ρ < d s := lt_of_not_ge hnot
+  have hslt : s < τ :=
+    hs.2.lt_of_ne (fun h ↦ by subst s; exact (ne_of_lt hρs) hτeq.symm)
+  have hds : ContinuousOn d (Icc t₀ s) := by
+    apply hd.mono
+    intro q hq
+    exact ⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩
+  have hρmem : ρ ∈ Icc (d t₀) (d s) := ⟨h₀.le, hρs.le⟩
+  obtain ⟨q, hq, hqρ⟩ := (intermediate_value_Icc hs.1 hds) hρmem
+  have hqS : q ∈ S := ⟨⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩, hqρ⟩
+  have hτq : τ ≤ q := hτmin hqS
+  exact (not_lt_of_ge (hτq.trans hq.2)) hslt

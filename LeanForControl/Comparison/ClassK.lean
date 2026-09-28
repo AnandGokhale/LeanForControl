@@ -40,7 +40,7 @@ satisfying `f(0) = 0`. -/
 @[blueprint "def:isClassK"
   (statement := /-- A \emph{class $\mathcal{K}$} function on $[0,a)$ is a
     continuous strictly increasing map $\alpha : [0,a) \to [0,b)$ with
-    $\alpha(0) = 0$. The structure records both $\alpha$ and its inverse
+    $\alpha(0) = 0$. All class K functions have an inverse
     $\alpha^{-1} : [0,b) \to [0,a)$. -/)]
 structure ClassK (a b : ℝ) where
   ha : 0 < a
@@ -166,6 +166,10 @@ private lemma ClassK.surjOn_of_boundary {a b : ℝ} (ha : 0 < a)
 
 /-- Smart constructor: given `f : ℝ → ℝ` with `f(0) = 0`, `f(a) = b`, continuity and strict
     monotonicity on `[0, a]`, builds the full `ClassK a b` structure (inverse included). -/
+@[blueprint "lem:classK-of-strictMono"
+  (statement := /-- Let $f : \mathbb{R} \to \mathbb{R}$ satisfy $f(0) = 0$ and $f(a) = b$ and be
+    continuous and strictly increasing on $[0, a]$, with $a, b > 0$.  Then $f$ is a class
+    $\mathcal{K}$. -/)]
 noncomputable def ClassK.of_strictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
     (f : ℝ → ℝ) (hf_zero : f 0 = 0) (hf_a : f a = b)
     (hf_cont : ContinuousOn f (Set.Icc 0 a))
@@ -187,6 +191,10 @@ noncomputable def ClassK.of_strictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
 
 /-- Restrict a class K function `α : [0, a) → [0, b)` to the smaller domain `[0, c)`,
 producing a class K function `[0, c) → [0, α(c))`. -/
+@[blueprint "lem:classK-restrict"
+  (statement := /-- If $\alpha$ is class $\mathcal{K}$ on $[0, a) \to [0, b)$ and
+    $0 < c < a$, then $\alpha$ restricted to $[0, c)$ is class $\mathcal{K}$ on
+    $[0, c) \to [0, \alpha(c))$. -/)]
 noncomputable def ClassK.restrict {a b : ℝ} (α : ClassK a b) {c : ℝ}
     (hc_pos : 0 < c) (hc_lt : c < a) : ClassK c (α.toFun c) := by
   have hd_pos : 0 < α.toFun c := by
@@ -198,6 +206,10 @@ noncomputable def ClassK.restrict {a b : ℝ} (α : ClassK a b) {c : ℝ}
 
 /-- Variant of `ClassK.restrict` where the upper bound `e` is given explicitly via a proof
 that `α(c) = e`, avoiding a type-level `Eq.rec`. -/
+@[blueprint "lem:classK-restrictTo"
+  (statement := /-- \cref{lem:classK-restrict} with the codomain bound named: if
+    $\alpha(c) = e$, the restriction of $\alpha$ to $[0, c)$ is class $\mathcal{K}$ on
+    $[0, c) \to [0, e)$. -/)]
 noncomputable def ClassK.restrictTo {a b : ℝ} (α : ClassK a b) {c e : ℝ}
     (hc_pos : 0 < c) (hc_lt : c < a) (h_eq : α.toFun c = e) : ClassK c e :=
   h_eq ▸ α.restrict hc_pos hc_lt
@@ -206,6 +218,9 @@ noncomputable def ClassK.restrictTo {a b : ℝ} (α : ClassK a b) {c e : ℝ}
 -- ─── ClassK Operations ────────────────────────────────────────────────────────
 
 /-- The inverse of a class K function `[0,a) → [0,b)` is class K on `[0,b) → [0,a)`. -/
+@[blueprint "lem:classK-symm"
+  (statement := /-- Class $\mathcal{K}$ is closed under inversion. The inverse
+  of a class K function is also class K. -/)]
 def ClassK.symm {a b : ℝ} (α : ClassK a b) : ClassK b a where
   ha          := α.hb
   hb          := α.ha
@@ -301,6 +316,11 @@ def ClassK.symm {a b : ℝ} (α : ClassK a b) : ClassK b a where
 
 /-- Composition of two class K functions is class K
     (the composed inverse is the reverse composition of inverses). -/
+@[blueprint "lem:classK-comp"
+  (statement := /-- Class $\mathcal{K}$ is closed under composition: if $\alpha$ is class
+    $\mathcal{K}$ on $[0, a) \to [0, b)$ and $\beta$ is class $\mathcal{K}$ on
+    $[0, b) \to [0, c)$, then $\beta \circ \alpha$ is class $\mathcal{K}$ on
+    $[0, a) \to [0, c)$. -/)]
 def ClassK.comp {a b c : ℝ} (β : ClassK b c) (α : ClassK a b) : ClassK a c where
   ha          := α.ha
   hb          := β.hb
