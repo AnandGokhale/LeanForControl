@@ -50,13 +50,25 @@ kernel of the observability matrix.
 
 \inputleannode{thm:isControllable-iff-rank}
 
-\subsection{Hautus observability}
+\subsection{Unobservable subspace}
 
 \inputleannode{def:unobservableSubspace}
+
+\inputleannode{lem:mem-unobservableSubspace-iff}
 
 \inputleannode{thm:unobservable-eq-bot-iff-observable}
 
 \inputleannode{lem:unobservableSubspace-invariant}
+
+\inputleannode{thm:unobservableSubspace-eq-ker-observabilityMatrix}
+
+\inputleannode{thm:unobservableSubspace-finrank-add-rank}
+
+\inputleannode{lem:unobservableSubspace-le-ker-C}
+
+\inputleannode{thm:unobservableSubspace-greatest-invariant}
+
+\subsection{Hautus observability}
 
 \inputleannode{def:hautusObservabilityMatrix}
 
@@ -74,15 +86,54 @@ kernel of the observability matrix.
 
 \inputleannode{thm:isControllable-iff-hautus}
 
-\section{Reachable subspace and Kalman decomposition}
+\section{Reachable subspace and controllable component}
 
 \inputleannode{def:reachableSubspace}
 
 \inputleannode{lem:mem-reachableSubspace-iff}
 
+\inputleannode{thm:reachableSubspace-eq-sum-range}
+
+\inputleannode{thm:range-B-le-reachableSubspace}
+
 \inputleannode{thm:reachableSubspace-eq-top-iff-controllable}
 
 \inputleannode{lem:reachableSubspace-invariant}
+
+The following algebraic constructions describe the controllable and observable
+components of the decompositions in Hespanha, \emph{Linear Systems Theory}.
+The controllability predicate here means reachability from the origin, expressed
+by the finite controllability matrix. The controllable component is obtained by
+restriction; the observable component is represented by a quotient. The matrices
+take finite state bases as explicit arguments.
+
+\inputleannode{thm:reachableSubspace-finrank}
+
+\inputleannode{thm:reachableSubspace-least-invariant}
+
+\inputleannode{def:reachable-state-map}
+
+\inputleannode{def:reachable-input-map}
+
+\inputleannode{def:reachable-state-matrix}
+
+\inputleannode{def:reachable-input-matrix}
+
+\inputleannode{thm:reachable-matrices-controllable}
+
+\section{Observable component}
+
+\inputleannode{def:observable-state-map}
+
+\inputleannode{def:observable-output-map}
+
+\inputleannode{def:observable-state-matrix}
+
+\inputleannode{def:observable-output-matrix}
+
+\inputleannode{thm:observable-matrices-observable}
+
+\section{Kalman decomposition}
 
 \inputleannode{def:kalman-decomposition}
 
