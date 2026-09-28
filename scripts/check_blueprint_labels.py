@@ -34,13 +34,27 @@ import sys
 LEAN_ROOT = pathlib.Path("LeanForControl")
 CONTENT_TEX = pathlib.Path("blueprint/src/content.tex")
 
+def _uncommented(text: str) -> str:
+    """Blank out full-line `--` comments.
+
+    Both label scanners read Lean *source*, not what Lean elaborated, so a commented-out
+    `@[blueprint ...]` would otherwise be reported as a declared label — and an
+    `\\inputleannode` for it would pass this check while failing the blueprint build,
+    because Architect never emitted the node.
+    """
+    return "\n".join("" if line.lstrip().startswith("--") else line
+                      for line in text.splitlines())
+
 # Matches the label in `@[blueprint "foo"]` and in `@[simp, blueprint "foo"]` alike.
 LABEL_RE = re.compile(r'blueprint\s+"([^"]+)"')
 INPUT_RE = re.compile(r"\\inputleannode\{([^}]+)\}")
 CREF_RE = re.compile(r"\\cref\{([^}]+)\}")
 
-# Known dangling reference, present at 5fb1630 and predating the trajectory unification work.
-KNOWN_DANGLING_CREFS = {"lem:comparison-claim-1"}
+# Dangling `\cref`s to tolerate. Empty, and should stay that way: a dangling reference renders
+# as `??` with no diagnostic, so an entry here is a rendered defect nobody will be told about.
+# The one that used to live here pointed at a `private` lemma, which by policy gets no node —
+# the fix was to inline its content into the citing proof, not to exempt the reference.
+KNOWN_DANGLING_CREFS: set[str] = set()
 
 
 def main() -> int:
@@ -51,10 +65,18 @@ def main() -> int:
     lean_files = list(LEAN_ROOT.rglob("*.lean"))
     labels: set[str] = set()
     crefs: set[str] = set()
+    sites: dict[str, list[str]] = {}
     for f in lean_files:
-        text = f.read_text()
+        text = _uncommented(f.read_text())
         labels |= set(LABEL_RE.findall(text))
         crefs |= set(CREF_RE.findall(text))
+        for i, line in enumerate(text.splitlines(), 1):
+            for m in LABEL_RE.finditer(line):
+                sites.setdefault(m.group(1), []).append(f"{f}:{i}")
+
+    # Two declarations sharing a label is silent: the label still resolves, so nothing else here
+    # complains, but only one of them can ever be rendered by `\inputleannode`.
+    duplicates = {lab: locs for lab, locs in sites.items() if len(locs) > 1}
 
     tex = CONTENT_TEX.read_text()
     inputs = set(INPUT_RE.findall(tex))
@@ -67,12 +89,16 @@ def main() -> int:
     print(f"{len(labels)} blueprint labels across {len(lean_files)} Lean files")
     print(f"dangling \\inputleannode: {dangling_inputs or 'none'}")
     print(f"dangling \\cref:          {dangling_crefs or 'none'}")
+    print(f"duplicate labels:        {sorted(duplicates) or 'none'}")
+    for label, locs in sorted(duplicates.items()):
+        for loc in locs:
+            print(f"    {label}  {loc}")
     print(f"declared but never inputted ({len(never_inputted)}):")
     for label in never_inputted:
         print(f"    {label}")
 
-    if dangling_inputs or dangling_crefs:
-        print("\nFAIL: dangling blueprint references", file=sys.stderr)
+    if dangling_inputs or dangling_crefs or duplicates:
+        print("\nFAIL: blueprint label errors", file=sys.stderr)
         return 1
     return 0
 

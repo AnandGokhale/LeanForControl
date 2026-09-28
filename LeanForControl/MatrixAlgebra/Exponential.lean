@@ -2,6 +2,8 @@ import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 
+import Architect
+
 /-!
 # The matrix exponential as an algebraic object
 
@@ -19,9 +21,18 @@ open scoped Matrix.Norms.Frobenius
 
 variable {n : ℕ}
 
-/-- Entrywise complexification commutes with the matrix exponential.
-
-Original: compatibility bridge for the real and complex matrix exponential. -/
+/-- Entrywise complexification commutes with the matrix exponential. -/
+@[blueprint "lem:complexification-exp"
+  (statement := /-- Entrywise complexification commutes with the matrix exponential: for a real
+    matrix $A$,
+    \[
+      \overline{\exp(A)} = \exp(\overline{A}),
+    \]
+    where $\overline{\phantom{A}}$ denotes applying $\mathbb{R} \hookrightarrow \mathbb{C}$
+    entrywise.  This is the bridge used to transfer spectral facts, which live over
+    $\mathbb{C}$, to norm bounds on a real exponential. -/)
+  (proof := /-- Entrywise complexification is a continuous ring homomorphism, and $\exp$
+    commutes with any such. -/)]
 lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
     (exp A).map (algebraMap ℝ ℂ) = exp (A.map (algebraMap ℝ ℂ)) := by
   letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℝ) :=
@@ -56,12 +67,22 @@ semantics (6.1, 6.2, P6.1, P6.2) stay.
 
 variable (A : Matrix (Fin n) (Fin n) ℝ)
 
-/-- **P6.3 (semigroup property).** `e^{At} e^{Aτ} = e^{A(t+τ)}` for every `t, τ ∈ ℝ`.
+/-- **Semigroup property of the matrix exponential** (Hespanha, P6.3).
+`e^{At} e^{Aτ} = e^{A(t+τ)}` for every `t, τ ∈ ℝ`.
 
 Proof: `t • A` and `τ • A` always commute (same matrix), so `Matrix.exp_add_of_commute` applies
 directly; `add_smul` matches the exponent.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.3. -/
+@[blueprint "thm:exp-const-add"
+  (statement := /-- \textbf{Semigroup property of the matrix exponential} (Hespanha, P6.3).
+    For every $t, \tau \in \mathbb{R}$,
+    \[
+      e^{At}e^{A\tau} = e^{A(t+\tau)} .
+    \] -/)
+  (proof := /-- $tA$ and $\tau A$ commute, being scalar multiples of the same matrix, so the
+    exponential of the sum factors.  The general $e^{X}e^{Y} = e^{X+Y}$ needs commutativity and
+    is false without it; here it is free. -/)]
 theorem exp_const_add (t τ : ℝ) :
     NormedSpace.exp (t • A) * NormedSpace.exp (τ • A) = NormedSpace.exp ((t + τ) • A) := by
   have h : Commute (t • A) (τ • A) := (Commute.refl A).smul_left t |>.smul_right τ
@@ -89,7 +110,8 @@ equation (6.6), i.e. the coefficient of `X^i` in `X^k` reduced modulo `A.charpol
 private noncomputable def powModCharpolyCoeff (i : Fin n) (k : ℕ) : ℝ :=
   (X ^ k %ₘ Matrix.charpoly A).coeff i
 
-/-- **(6.6).** Every power of `A` reduces to a linear combination of `A^0,...,A^(n-1)` — a direct
+/-- **Cayley-Hamilton power reduction** (Hespanha, equation (6.6)).
+Every power of `A` reduces to a linear combination of `A^0,...,A^(n-1)` — a direct
 reading-off of `Matrix.pow_eq_aeval_mod_charpoly` (Cayley-Hamilton) via `powModCharpolyCoeff`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.6). -/
@@ -202,9 +224,10 @@ private theorem powModCharpoly_coeff_growth (i : Fin n) :
         have hpow : M ^ k ≤ max M 1 ^ k := by gcongr; exact le_max_left _ _
         exact mul_le_mul_of_nonneg_left hpow (hN_nonneg 0)
 
-/-- The scalar series defining `αᵢ(t)` converges, by comparison with the scalar exponential
-series — the same technique as `summable_peanoBakerTerm`, fed by `powModCharpoly_coeff_growth`. -/
-theorem summable_alphaCoeff (i : Fin n) (t : ℝ) :
+/-- Pure proof plumbing for P6.5, not part of its public interface: the scalar series defining
+`αᵢ(t)` converges, by comparison with the scalar exponential series — the same technique as
+`summable_peanoBakerTerm`, fed by `powModCharpoly_coeff_growth`. -/
+private theorem summable_alphaCoeff (i : Fin n) (t : ℝ) :
     Summable (fun k => t ^ k * powModCharpolyCoeff A i k / (k)!) := by
   obtain ⟨C, M0, _, hbound⟩ := powModCharpoly_coeff_growth A i
   apply Summable.of_norm_bounded (g := fun k => C * (M0 * |t|) ^ k / (k)!)
@@ -218,20 +241,51 @@ theorem summable_alphaCoeff (i : Fin n) (t : ℝ) :
       _ ≤ |t| ^ k * (C * M0 ^ k) / (k)! := by gcongr; exact hbound k
       _ = C * (M0 * |t|) ^ k / (k)! := by ring
 
-/-- **αᵢ(t)**, the scalar coefficient functions of P6.5:
-`αᵢ(t) := Σ_{k=0}^∞ tᵏ āᵢ(k) / k!`. -/
-noncomputable def alphaCoeff (i : Fin n) (t : ℝ) : ℝ :=
+/-- Pure proof plumbing for P6.5, not part of its public interface: the witness `αᵢ(t) :=
+Σ_{k=0}^∞ tᵏ āᵢ(k) / k!` for the coefficient functions. P6.5 exposes only their existence —
+the particular series is an artifact of this proof, not of the statement. -/
+private noncomputable def alphaCoeff (i : Fin n) (t : ℝ) : ℝ :=
   ∑' k, t ^ k * powModCharpolyCoeff A i k / (k)!
 
-/-- **P6.5.** `e^{At} = Σ_{i=0}^{n-1} αᵢ(t) A^i` for scalar functions `α₀,...,α_{n-1}`.
+/-- **The matrix exponential as a finite polynomial** (Hespanha, P6.5).
+`e^{At} = Σ_{i=0}^{n-1} αᵢ(t) A^i` for some scalar functions `α₀,...,α_{n-1}`:
+the matrix exponential is a *finite* polynomial in `A`, of degree less than `n`.
+
+The coefficient functions are existentially quantified rather than named. The particular series
+this proof builds is an artifact of the technique (reduce `X^k` mod the characteristic
+polynomial), not content of the statement, and the collapse to `n` terms is what P6.5 asserts.
 
 Proof: substitute (6.6) into the exponential series (via `NormedSpace.exp_eq_tsum`) and swap the
 (finite `i`, infinite `k`) order of summation, using `summable_alphaCoeff` to justify the swap.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.5) / Property
 P6.5. -/
-theorem exp_eq_sum_alphaCoeff (t : ℝ) :
-    NormedSpace.exp (t • A) = ∑ i : Fin n, alphaCoeff A i t • A ^ (i : ℕ) := by
+@[blueprint "thm:exists-exp-eq-sum-smul-pow"
+  (statement := /-- \textbf{The matrix exponential as a finite polynomial} (Hespanha, P6.5).
+    There are scalar functions
+    $\alpha_0, \dots, \alpha_{n-1} : \mathbb{R} \to \mathbb{R}$ with
+    \[
+      e^{At} = \sum_{i=0}^{n-1} \alpha_i(t)\,A^i
+      \qquad \text{for every } t .
+    \]
+    The matrix exponential — an infinite series in $A$ — is a \emph{finite} polynomial in $A$ of
+    degree less than $n$, at the cost of coefficients that are transcendental in $t$. -/)
+  (proof := /-- Cayley--Hamilton reduces every power $A^k$ to a combination of
+    $A^0, \dots, A^{n-1}$, say with coefficients $\bar a_i(k)$; substituting into the exponential
+    series and exchanging the finite sum over $i$ with the infinite sum over $k$ exhibits
+    $\alpha_i(t) = \sum_k t^k \bar a_i(k)/k!$ as a witness.
+
+    The exchange needs those series to converge, which holds because the reduced coefficients
+    grow at most geometrically, $|\bar a_i(k)| \le CM^k$, dominating each $\alpha_i$ by a scalar
+    exponential series.  That growth bound is the crux of the proof and is established by
+    iteration, not by spectral theory: ``multiply by $X$, reduce modulo the characteristic
+    polynomial'' is a fixed linear operation on the $n$-dimensional space of polynomials of
+    degree $< n$, so one step scales the $\ell^1$ size of the coefficient vector by at most a
+    constant factor.  No eigenvalues and no Jordan form appear anywhere. -/)]
+theorem exists_exp_eq_sum_smul_pow :
+    ∃ α : Fin n → ℝ → ℝ, ∀ t : ℝ,
+      NormedSpace.exp (t • A) = ∑ i : Fin n, α i t • A ^ (i : ℕ) := by
+  refine ⟨fun i t => alphaCoeff A i t, fun t => ?_⟩
   simp only [NormedSpace.exp_eq_tsum (𝕂 := ℝ)]
   have hstep : ∀ k : ℕ, ((k)!⁻¹ : ℝ) • (t • A) ^ k =
       ∑ i : Fin n, (t ^ k * powModCharpolyCoeff A i k / (k)!) • A ^ (i : ℕ) := by

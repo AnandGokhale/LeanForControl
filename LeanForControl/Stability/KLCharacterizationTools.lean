@@ -197,7 +197,10 @@ lemma W_fn_continuousOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ
     (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) : ContinuousOn (W_fn f x_eq r) (Set.Ioi 0) := by
   have h_int_cont : ContinuousOn (fun η => ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
-    (Set.Ioi 0) := continuousOn_halfWindow_integral (Tbar_intervalIntegrable_of_pos f x_eq hconv hr)
+    (Set.Ioi 0) :=
+    continuousOn_integral_endpoints (Tbar_intervalIntegrable_of_pos f x_eq hconv hr)
+      (continuousOn_id.div_const 2) continuousOn_id
+      (fun η hη => by have : (0 : ℝ) < η := hη; linarith) (fun η hη => hη)
   have h_rhs_cont : ContinuousOn
       (fun η => (2 / η) * (∫ s in (η / 2)..η, Tbar_fn f x_eq s r) + r / η) (Set.Ioi 0) := by
     refine ContinuousOn.add (ContinuousOn.mul ?_ h_int_cont) ?_ <;>
@@ -209,9 +212,17 @@ lemma W_fn_strictAntiOn (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : ℝ
     (hconv : LocallyHasUniformConvergenceTime f x_eq c)
     {r : ℝ} (hr : r ∈ Set.Ioc 0 c) : StrictAntiOn (W_fn f x_eq r) (Set.Ioi 0) := by
   have h_avg_anti : AntitoneOn (fun η => (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
-      (Set.Ioi 0) :=
-    antitoneOn_halfWindow_average (Tbar_antitone f x_eq hconv hr)
-      (Tbar_intervalIntegrable_of_pos f x_eq hconv hr)
+      (Set.Ioi 0) := by
+    refine AntitoneOn.congr (antitoneOn_integral_average
+      (f := fun s => Tbar_fn f x_eq s r) (a := fun η => η / 2) (b := fun η => η)
+      (Tbar_antitone f x_eq hconv hr) (Tbar_intervalIntegrable_of_pos f x_eq hconv hr)
+      (fun η hη => by have h : (0 : ℝ) < η := hη; linarith)
+      (fun η hη => by have h : (0 : ℝ) < η := hη; linarith)
+      (fun _ _ _ _ hxy => by linarith) (fun _ _ _ _ hxy => hxy)) ?_
+    intro η hη
+    have h : (0 : ℝ) < η := hη
+    field_simp
+    ring
   have h_r_div_strict : StrictAntiOn (fun η => r / η) (Set.Ioi 0) := fun η₁ hη₁ η₂ hη₂ h_lt =>
     (div_lt_div_iff₀ hη₂ hη₁).mpr (mul_lt_mul_of_pos_left h_lt hr.1)
   intro η₁ hη₁ η₂ hη₂ h_lt
@@ -243,16 +254,22 @@ lemma W_fn_tendsto_atTop (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {c : �
   have hr_c : r ∈ Set.Ioc 0 c := ⟨hr.1, hr.2.trans ha_le_c⟩
   have h_avg : Filter.Tendsto (fun η => (2 / η) * ∫ s in (η / 2)..η, Tbar_fn f x_eq s r)
     Filter.atTop (nhds 0) := by
-    apply tendsto_halfWindow_average_zero
-    · exact fun s hs => Tbar_nonneg_of f x_eq hconv hs hr_c
-    · exact Tbar_antitone f x_eq hconv hr_c
-    · exact Tbar_intervalIntegrable_of_pos f x_eq hconv hr_c
-    · -- For large enough η, every trajectory starting within r is already within η
-      -- (the class K bound α(r) is a finite ceiling), so Tbar = 0 eventually.
-      have h_eventually_zero : ∀ᶠ η in Filter.atTop, Tbar_fn f x_eq η r = 0 := by
-        filter_upwards [Filter.eventually_ge_atTop (α.toFun r)] with η hη
-        exact Tbar_zero_of_classK_bound f x_eq hconv α hα_bound ha_lt_aα ha_le_c hr hη
-      exact tendsto_const_nhds.congr' (h_eventually_zero.mono (fun _ h => h.symm))
+    have h := tendsto_integral_average_atTop_zero
+      (f := fun s => Tbar_fn f x_eq s r) (a := fun η => η / 2) (b := fun η => η)
+      (fun s hs => Tbar_nonneg_of f x_eq hconv hs hr_c)
+      (Tbar_antitone f x_eq hconv hr_c)
+      (Tbar_intervalIntegrable_of_pos f x_eq hconv hr_c)
+      (by -- For large enough η the class K bound α(r) is a finite ceiling, so T̄ = 0 eventually.
+        have h_eventually_zero : ∀ᶠ η in Filter.atTop, Tbar_fn f x_eq η r = 0 := by
+          filter_upwards [Filter.eventually_ge_atTop (α.toFun r)] with η hη
+          exact Tbar_zero_of_classK_bound f x_eq hconv α hα_bound ha_lt_aα ha_le_c hr hη
+        exact tendsto_const_nhds.congr' (h_eventually_zero.mono (fun _ h => h.symm)))
+      (by filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with η hη; linarith)
+      (tendsto_id.atTop_div_const zero_lt_two)
+    refine h.congr' ?_
+    filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with η hη
+    field_simp
+    ring
   have h_rdiv : Filter.Tendsto (fun η => r / η) Filter.atTop (nhds 0) := by
     simpa [div_eq_mul_inv] using Filter.Tendsto.const_mul r tendsto_inv_atTop_zero
   have h_sum := h_avg.add h_rdiv

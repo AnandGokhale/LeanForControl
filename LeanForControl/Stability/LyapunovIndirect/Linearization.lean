@@ -1,4 +1,4 @@
-import LeanForControl.Analysis.FrechetRemainder
+import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov

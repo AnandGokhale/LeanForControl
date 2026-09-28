@@ -1,0 +1,38 @@
+# Files signed off in the blueprint audit.
+#
+# A file goes here once every annotated declaration in it has been read and its `statement`
+# confirmed true of the Lean it is attached to — the check nothing mechanical can do
+# (INVENTORY §1e). `scripts/blueprint_audit_list.py` drops signed-off files from the worklist.
+#
+# Re-open a file (delete its line) if its declarations change type, which is where drift
+# comes from.
+#
+# One path per line, relative to the repository root.
+
+LeanForControl/Analysis/Continuity.lean
+LeanForControl/Analysis/FrechetDerivative.lean
+LeanForControl/Analysis/Integrals.lean
+LeanForControl/Analysis/MonotoneFunctions.lean
+LeanForControl/Analysis/SpectralRadius.lean
+LeanForControl/Comparison/Axioms.lean
+LeanForControl/Comparison/ClassK.lean
+LeanForControl/Comparison/ClassKInfty.lean
+LeanForControl/Comparison/ClassKL.lean
+LeanForControl/Comparison/ClassL.lean
+LeanForControl/Comparison/ComparisonFunctions.lean
+LeanForControl/Dini/DiniDeriv.lean
+LeanForControl/Analysis/Limsup.lean
+LeanForControl/LinearSystems/Solutions/CtsLTI.lean
+LeanForControl/LinearSystems/Solutions/CtsLTV.lean
+LeanForControl/LinearSystems/Solutions/DefsCtsLTV.lean
+LeanForControl/LinearSystems/Solutions/DefsDiscLTV.lean
+LeanForControl/LinearSystems/Solutions/DiscLTV.lean
+LeanForControl/MatrixAlgebra/Exponential.lean
+LeanForControl/ODEs/ComparisonLemma.lean
+LeanForControl/ODEs/GronwallBellman.lean
+LeanForControl/ODEs/ODE_properties.lean
+LeanForControl/Stability/Autonomous.lean
+LeanForControl/Stability/DefsAutonomous.lean
+LeanForControl/Stability/ClassKDecay.lean
+LeanForControl/Stability/DefsNonAutonomous.lean
+LeanForControl/Stability/KLCharacterization.lean

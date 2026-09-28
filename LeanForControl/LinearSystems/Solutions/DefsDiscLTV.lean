@@ -33,10 +33,13 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, equation (5.1
   (statement := /-- The discrete-time \emph{state transition matrix} $\Phi(t,t_0)$:
     \[
       \Phi(t,t_0) := \begin{cases}
-        I & t = t_0 \\
-        A(t-1)A(t-2)\cdots A(t_0+1)A(t_0) & t > t_0.
+        A(t-1)A(t-2)\cdots A(t_0+1)A(t_0) & t > t_0, \\
+        I & t \le t_0.
       \end{cases}
-    \] -/)]
+    \]
+    Formally, the ordered product of $A$ over $[t_0, t)$, which for $t \le t_0$ is the empty
+    product $I$.  The system runs forward only, so the $t < t_0$ branch carries no meaning; it
+    is there to make the definition total. -/)]
 noncomputable def discStateTransitionMatrix (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t t₀ : ℕ) :
     Matrix (Fin n) (Fin n) ℝ :=
   ((List.range (t - t₀)).map (fun k => A (t - 1 - k))).prod

@@ -28,7 +28,7 @@ Files:
 - `LyapunovIndirect/LinearizationInstability.lean` — exact affine-linear positive-mode instability
 - `LyapunovIndirect/NonlinearInstability.lean` — quadratic-certificate application and nonlinear unstable branch
 - `LyapunovIndirect/DefsDynamics.lean`, `DefsLyapunov.lean`, `Lyapunov.lean`, `LyapunovEquation.lean`,
-  `ExponentialStability.lean`, `InstabilityCertificate.lean`, `FrechetRemainder.lean` — supporting
+  `ExponentialStability.lean`, `InstabilityCertificate.lean`, `FrechetDerivative.lean` — supporting
   linear-system Lyapunov-equation and Fréchet-remainder infrastructure used by the indirect method
 
 ## Status: Non-autonomous systems (`ẋ = f(t, x)`)
@@ -87,8 +87,7 @@ with one-way compatibility theorems where the quantifiers make that sound.
 | Forward exponential stability implies legacy LAS | `ForwardLocallyExponentiallyStable.localAsymptoticStable` | `Forward.lean` | ✅ done |
 | Hurwitz exponential contractivity block | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `ExponentialStability.lean` | ✅ done |
 | Arbitrary-`Q` continuous Lyapunov equation | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `LyapunovEquation.lean` | ✅ done, axiom-free |
-| Fréchet linearization remainder | `HasFDerivAt.centered_remainder_isLittleO` | `Analysis/Linearization.lean` | ✅ done |
-| Quantitative remainder bound | `HasFDerivAt.exists_centered_remainder_bound` | `Analysis/Linearization.lean` | ✅ done |
+| Linearization-error bound, `ε`–`δ` form | `HasFDerivAt.exists_linearization_error_bound` | `Analysis/FrechetDerivative.lean` | ✅ done |
 | Hurwitz Jacobian gives forward local exponential stability | `hurwitz_linearization_forward_locally_exponentially_stable` | `Linearization.lean` | ✅ done |
 | Hurwitz Jacobian gives legacy local asymptotic stability | `hurwitz_linearization_local_asymptotic_stable` | `Linearization.lean` | ✅ done |
 | Positive-real eigenpair gives a quadratic Chetaev certificate | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `InstabilityCertificate.lean` | ✅ done, axiom-free |

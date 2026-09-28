@@ -104,6 +104,11 @@ margin, and ordinary Hurwitz stability is the zero-rate case.
 
 \inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
 
+The exponential decay estimates rest on a general Banach-algebra fact, stated with no matrices in
+it: an element of spectral radius below one has a contractive power.
+
+\inputleannode{lem:exists-pow-norm-lt-one}
+
 \section{Matrix Lyapunov equations and quadratic certificates}
 
 \inputleannode{def:solvesContinuousLyapunovEquation}
@@ -120,6 +125,11 @@ For a genuinely time-varying state matrix $A(t)$, this section constructs the st
 matrix $\Phi(t,t_0)$ as the Peano--Baker series and proves Theorem 5.1: $\Phi$ solves the
 matrix ODE $\dot\Phi(t,t_0) = A(t)\Phi(t,t_0)$ with $\Phi(t_0,t_0) = I$, and consequently
 $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
+
+\emph{Standing hypotheses.} Throughout this section $A$ is continuous and satisfies
+$\|A(s)\| \le M$ for all $s$ on the segment between the two times named in each statement. Both
+are needed: continuity to differentiate the series term by term, the bound to make it converge
+at all. Statements below do not repeat them.
 
 \inputleannode{def:peanoBakerTerm}
 
@@ -141,27 +151,278 @@ $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 
 \inputleannode{thm:hasDerivAt-stateTransitionMatrix-mulVec}
 
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-mul}
+
 \inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mulVec}
+
+\inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mul}
+
+\subsection{Uniqueness}
 
 \inputleannode{thm:stateTransitionMatrix-mulVec-unique}
 
+\inputleannode{thm:stateTransitionMatrix-col-unique}
+
+\inputleannode{thm:stateTransitionMatrix-mul-unique}
+
+\subsection{Semigroup, invertibility and composition}
+
+Uniqueness is what makes these available: two expressions that solve the same matrix initial
+value problem must agree, and each identity below is an instance of that.
+
+\inputleannode{thm:stateTransitionMatrix-semigroup}
+
+\inputleannode{thm:stateTransitionMatrix-inv}
+
+\inputleannode{lem:stateTransitionMatrix-comp-of-mem}
+
+\inputleannode{thm:stateTransitionMatrix-comp}
+
+\inputleannode{lem:stateTransitionMatrix-comp-base}
+
+\inputleannode{lem:continuousOn-stateTransitionMatrix-snd}
+
+\subsection{Variation of constants}
+
+With a forcing term $B(t)u(t)$, the solution acquires a convolution against $\Phi$. The
+difficulty is that the elapsed time appears both as the upper limit of integration and inside the
+integrand; the proof factors the two apart rather than differentiating $\Phi$ in its second
+argument.
+
+\inputleannode{thm:hasDerivAt-variationOfConstants}
+
+\inputleannode{lem:variationOfConstants-self}
+
+\inputleannode{thm:variationOfConstants-unique}
+
+\inputleannode{lem:variationOfConstants-output}
+
+\section{Discrete-time systems}
+
+For $x(t+1) = A(t)x(t)$ the state transition matrix is an ordered product rather than a series,
+and the whole theory becomes finite: every proof below is an induction, with no convergence,
+no differentiation and no Gronwall estimate. Two differences from the continuous case are
+substantive rather than merely technical. There is no standing bound on $A$ to carry, since a
+finite product always converges; and $\Phi$ need not be invertible, so the semigroup property
+genuinely requires $\tau \le s \le t$ instead of holding in any order.
+
+\inputleannode{def:discStateTransitionMatrix}
+
+\inputleannode{lem:discStateTransitionMatrix-self}
+
+\inputleannode{lem:discStateTransitionMatrix-succ}
+
+\inputleannode{thm:discStateTransitionMatrix-unique}
+
+\inputleannode{thm:discStateTransitionMatrix-mulVec-unique}
+
+\inputleannode{thm:discStateTransitionMatrix-col-unique}
+
+\inputleannode{thm:discStateTransitionMatrix-semigroup}
+
+\subsection{Discrete variation of constants}
+
+\inputleannode{lem:discVariationOfConstants-self}
+
+\inputleannode{thm:discVariationOfConstants-succ}
+
+\inputleannode{thm:discVariationOfConstants-unique}
+
+\subsection{The LTI case: the matrix exponential}
+
+For a constant state matrix the Peano--Baker series sums to the matrix exponential, which is
+Hespanha's (6.1)--(6.2). The point of proving it is economy: every property of $\Phi$ established
+above for a time-varying $A$ then holds for $e^{A(t-t_0)}$ by specialization, with no separate LTI
+theory. The two exponential facts that need no solution theory at all — the semigroup law (P6.3)
+and the finite-polynomial form via Cayley--Hamilton (P6.5) — are proved as statements about
+$\exp$ and $A$ alone.
+
+\inputleannode{lem:peanoBakerTerm-const}
+
+\inputleannode{lem:stateTransitionMatrix-const-eq-tsum}
+
+\inputleannode{thm:stateTransitionMatrix-const}
+
+\inputleannode{thm:exp-mulVec-unique}
+
+\inputleannode{thm:exp-col-unique}
+
+\subsection{The matrix exponential as an algebraic object}
+
+These say nothing about trajectories, initial times or state transition matrices — they are
+facts about $\exp$ and $A$ alone, and are proved as such. The complexification bridge is what
+lets spectral arguments, which must happen over $\mathbb{C}$, yield bounds on a real
+exponential; P6.5 collapses the exponential series to a finite polynomial in $A$.
+
+\inputleannode{lem:complexification-exp}
+
+\inputleannode{thm:exp-const-add}
+
+\inputleannode{thm:exists-exp-eq-sum-smul-pow}
+
 \chapter{Ordinary differential equations}
+
+\section{Continuity toolbox}
+
+Two facts about continuous real functions and curves, with no differential-equation content of
+their own, used throughout the chapters that follow: the comparison lemma needs the last root
+before a sign change, and the Lyapunov stability arguments need the first time a curve reaches a
+sphere.
+
+\inputleannode{lem:exists-greatest-zero-of-nonpos-of-pos}
+
+\inputleannode{thm:exists-first-sphere-hit}
+
+\section{Interval integrals}
+
+Estimates and integrability side conditions for the interval integral, used wherever a
+differential equation is handled in integral form. The last three concern an integral whose
+endpoints move: normalizing by the window length makes it a mean value, after which continuity,
+antitonicity and decay each need only a hypothesis on the endpoints themselves. They support the
+class $\mathcal{KL}$ construction in the last chapter.
+
+\inputleannode{lem:integral-sub-adjacent-intervals}
+
+\inputleannode{lem:norm-integral-le-of-norm-le-mul}
+
+\inputleannode{lem:norm-integral-le-const-mul}
+
+\inputleannode{lem:integral-const-eq}
+
+\inputleannode{lem:intervalIntegrable-comp}
+
+\inputleannode{lem:hasDerivAt-integral}
+
+\inputleannode{lem:continuousOn-integral-Icc}
+
+\inputleannode{lem:continuousOn-integral-endpoints}
+
+\inputleannode{lem:antitoneOn-integral-average}
+
+\inputleannode{lem:tendsto-integral-average-atTop-zero}
+
+\section{Limits superior}
+
+Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
+function is bounded. The facts collected here are stated over an arbitrary filter and have no
+differential-equation content; the Dini derivative of the next section is the only current
+consumer.
+
+\inputleannode{lem:limsup-add-tendsto-zero}
 
 \section{Dini derivatives}
 
+The upper right Dini derivative replaces the ordinary derivative where a function is only known
+to be continuous, which is the situation the comparison lemma is in. It is defined here as a
+$\limsup$ valued in $\mathbb{R}$ rather than in $[-\infty, +\infty]$, so most results below carry
+a hypothesis that the forward difference quotients are bounded: without it an unbounded quotient
+makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as $0$.
+
 \inputleannode{def:diniDerivRight}
+
+\subsection{Relationship to the classical derivative}
+
+\inputleannode{lem:hasDerivWithinAt-tendsto-forward-slope}
+
+\inputleannode{lem:diniDerivRight-of-hasDerivWithinAt}
+
+\subsection{Characterization by difference quotients}
+
+\inputleannode{lem:diniDerivRight-le-iff}
+
+\inputleannode{lem:le-diniDerivRight-iff}
+
+\subsection{Linearity properties}
+
+\inputleannode{lem:diniDerivRight-add-le}
+
+\inputleannode{lem:diniDerivRight-add-differentiable}
+
+\inputleannode{lem:diniDerivRight-add-linear}
+
+\inputleannode{lem:diniDerivRight-const-mul-pos}
+
+\inputleannode{lem:neg-diniDerivRight-neg-le}
+
+\subsection{The comparison step}
+
+\inputleannode{lem:le-diniDerivRight-of-upper-bound}
 
 \section{Gronwall--Bellman inequality}
 
+A function obeying an integral inequality is bounded by the solution of the corresponding
+integral equation. The two specializations are what the rest of the development actually calls:
+constant $\Lambda$ gives exponential growth, and constant $\Lambda$ and $\mu$ gives the
+$C e^{\mu(t-a)}$ bound behind every continuous-dependence estimate.
+
 \inputleannode{thm:gronwall-bellman}
+
+\inputleannode{lem:gronwall-const-lambda}
+
+\inputleannode{lem:gronwall-const}
 
 \section{Continuous dependence on parameters}
 
 \inputleannode{def:isIntegralSolution}
 
+\inputleannode{lem:isIntegralSolution-reanchor}
+
+\inputleannode{lem:isIntegralSolution-reflect}
+
+\subsection{The integral and differential formulations}
+
+An ODE can be written as a differential equation, $\dot x = F(t,x)$, or as the equivalent
+integral equation. The continuous-dependence and Gronwall arguments want the integral form, which
+presupposes no differentiability and carries its initial condition; the Lyapunov arguments want
+the differential form, so that $V \circ \varphi$ can be differentiated. The results below are the
+two directions of the fundamental theorem of calculus relating them.
+
+They are provision rather than current practice: nothing in the stability chapters has yet been
+routed through this equivalence, so it is the intended path from a trajectory to the results of
+this chapter rather than an exercised one.
+
+\inputleannode{lem:isIntegralCurveOn-isIntegralSolution}
+
+\inputleannode{lem:isIntegralSolution-isIntegralCurveOn}
+
+\inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn}
+
+\inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn-Icc}
+
+\inputleannode{lem:isIntegralCurveOn-isIntegralSolution-of-continuous}
+
+\subsection{Time invariance and local existence}
+
+An autonomous field has no preferred time origin, which is what lets the autonomous stability
+predicates fix the initial time at $0$.
+
+\inputleannode{lem:isIntegralCurveOn-comp-add-autonomous}
+
+\inputleannode{lem:isIntegralCurveOn-shift-to-zero}
+
+\inputleannode{lem:contDiffAt-exists-isIntegralCurveOn-Icc}
+
+\inputleannode{lem:scalar-ode-exists-interval}
+
+\subsection{Continuous dependence}
+
+Two solutions of the same equation, started at different points or subject to different
+perturbations, separate no faster than exponentially — at a rate fixed by the Lipschitz constant
+of the field. Everything downstream that needs uniqueness gets it from here, by taking the two
+solutions to agree initially and the perturbation to vanish, which collapses the bound to zero.
+
+\inputleannode{thm:continuous-dependence-ODE}
+
 \inputleannode{thm:continuous-dependence-parameters}
 
 \section{Comparison lemma}
+
+The comparison lemma bounds a function satisfying a differential \emph{inequality} by the
+solution of the corresponding differential \emph{equation}. The inequality is stated with the
+Dini derivative, so $v$ need only be continuous — which is what makes the lemma applicable to
+$\|x(t)\|$, not differentiable where a trajectory crosses the origin.
+
+\inputleannode{lem:isIntegralSolution-of-hasDerivAt}
 
 \inputleannode{thm:comparison-lemma}
 
@@ -176,6 +437,46 @@ $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 \inputleannode{def:isClassK}
 
 \inputleannode{def:isClassKInfty}
+
+\subsection{Building class \texorpdfstring{$\mathcal{K}$}{K} functions}
+
+A recognition criterion and the closure properties. The restatements of the definition itself
+(strict monotonicity as an iff, the two inverse equations, and so on) are left to the Lean API;
+they say nothing the definition above does not.
+
+\inputleannode{lem:classK-of-strictMono}
+
+\inputleannode{lem:classK-restrict}
+
+\inputleannode{lem:classK-restrictTo}
+
+\inputleannode{lem:classK-symm}
+
+\inputleannode{lem:classK-comp}
+
+\subsection{Building class \texorpdfstring{$\mathcal{K}_{\infty}$}{Kinfty} functions}
+
+The same recognition criterion and closure properties on the unbounded domain, together with the
+closure properties that need the global domain (sum, positive scaling, minimum), the power
+functions as the standard examples, and the restriction back to class $\mathcal{K}$.
+
+\inputleannode{lem:classKInfty-of-strictMono}
+
+\inputleannode{lem:classKInfty-symm}
+
+\inputleannode{lem:classKInfty-comp}
+
+\inputleannode{lem:classKInfty-add}
+
+\inputleannode{lem:classKInfty-smul}
+
+\inputleannode{lem:classKInfty-min-fn}
+
+\inputleannode{lem:classKInfty-power}
+
+\inputleannode{lem:classKInfty-toClassK}
+
+\inputleannode{lem:exists-classKInfty-upper-bound}
 
 \section{Stability predicates}
 
@@ -203,6 +504,8 @@ the sense of \texttt{IsTrajectoryOn}.
 
 \inputleannode{lem:isCompact-sublevel-set}
 
+\inputleannode{lem:sublevel-set-invariant}
+
 \section{Lyapunov functions}
 
 \inputleannode{def:isLocalLyapunovFunction}
@@ -212,6 +515,36 @@ the sense of \texttt{IsTrajectoryOn}.
 \inputleannode{def:isStrictLyapunovFunction}
 
 \inputleannode{def:isAsymptoticLyapunovFunction}
+
+\subsection{The hierarchy of certificates}
+
+The four notions above differ only in how much they demand; each stronger one weakens to the
+next, so a theorem proved for the weakest applies to all of them.
+
+\inputleannode{lem:asymptotic-implies-strict}
+
+\inputleannode{lem:strict-implies-semidefinite}
+
+\inputleannode{lem:strict-local-implies-semidefinite}
+
+\section{Differentiating along solutions}
+
+Every Lyapunov argument begins the same way: compose the certificate with a solution and
+differentiate. The chain rule gives the Lie derivative $DV(\varphi(t))[f(\varphi(t))]$, and a
+sign condition on it becomes a monotonicity statement about $V \circ \varphi$. Collecting that
+step here fixes one spelling of the Lie derivative for the whole development.
+
+\inputleannode{lem:lie-deriv-continuous}
+
+\inputleannode{lem:hasDerivAt-V-comp-integralCurveOn}
+
+\inputleannode{lem:hasDerivAt-V-comp-traj}
+
+\inputleannode{lem:antitoneOn-V-add-linear}
+
+\inputleannode{lem:antitoneOn-V-comp-traj}
+
+\inputleannode{lem:V-nonincreasing-on}
 
 \section{Milestone theorems for autonomous systems}
 
@@ -223,9 +556,21 @@ the sense of \texttt{IsTrajectoryOn}.
 
 \inputleannode{thm:lyapunov-global-asymptotic-stable}
 
+The asymptotic results rest on a uniformity that mere per-solution convergence does not give:
+outside a ball about the equilibrium the Lie derivative is bounded away from zero, so every
+solution is drained at a shared rate.
+
+\inputleannode{lem:time-outside-ball-le}
+
+\subsection{Stability from exponential decay, and instability from escape}
+
+\inputleannode{thm:locallyExponentiallyStable-lyapunovStable}
+
+\inputleannode{thm:unstable-of-fixed-escape}
+
 \section{Lyapunov's indirect method}
 
-\inputleannode{thm:frechet-centered-remainder-bound}
+\inputleannode{thm:frechet-linearization-error-bound}
 
 The stable-branch theorem gives uniform local exponential decay on every finite
 forward solution segment, without silently excluding solutions that are not
@@ -249,8 +594,168 @@ globally defined.
 
 \inputleannode{thm:lyapunov-class-K-bounds}
 
+\chapter{Non-autonomous systems}
+
+For $\dot x = f(t, x)$ the initial time matters, and the definitions split accordingly: a bound
+may hold at each initial time with a margin depending on it, or with one margin serving every
+initial time. That distinction — plain versus \emph{uniform} — is what the whole chapter turns
+on, and it has no counterpart in the autonomous theory, where time invariance lets the initial
+time be fixed at $0$ without loss.
+
+\section{Trajectories and equilibria}
+
+\inputleannode{def:isTrajectoryNA}
+
+\inputleannode{def:isEquilibriumNA}
+
+\inputleannode{lem:exists-unique-trajectory}
+
+\section{Uniform convergence times and comparison-function bounds}
+
+The estimates the class $\mathcal{KL}$ characterization is assembled from. Naming them here,
+rather than re-typing their quantifiers at each use, is what makes the characterization
+statements readable.
+
+\inputleannode{def:locallyHasUniformConvergenceTime}
+
+\inputleannode{def:globallyHasUniformConvergenceTime}
+
+\inputleannode{def:hasUniformClassKBound}
+
+\inputleannode{def:hasUniformClassKInftyBound}
+
+\section{Stability predicates}
+
+\inputleannode{def:stableNA}
+
+\inputleannode{def:uniformlyStableNA}
+
+\inputleannode{def:globallyUniformlyStableNA}
+
+\inputleannode{def:unstableNA}
+
+\inputleannode{lem:uniformlyStableNA-stableNA}
+
+\inputleannode{lem:globallyUniformlyStableNA-stableNA}
+
+\inputleannode{lem:isTrajectoryNA-eq-of-stableNA}
+
+\section{Asymptotic and exponential stability}
+
+\inputleannode{def:asymptoticStableNA}
+
+\inputleannode{def:uniformlyAsymptoticStableNA}
+
+\inputleannode{def:globallyUniformlyAsymptoticStableNA}
+
+\inputleannode{def:exponentiallyStableNA}
+
+\inputleannode{def:globallyExponentiallyStableNA}
+
+\section{Comparison-function characterizations}
+
+Each stability notion above is equivalent to the existence of a comparison-function bound. These
+equivalences are what let the Lyapunov theorems conclude a stability property by exhibiting a
+bound, and conversely let a stability hypothesis be used as an estimate. Both sides quantify over
+the same trajectories — those defined on $[t_0,\infty)$ — so each is a restatement of one class of
+solutions, not a relation between two.
+
+\inputleannode{lem:uniformlyStableNA-iff-classK}
+
+\inputleannode{lem:uniformlyAsymptoticStableNA-iff-classKL}
+
+\inputleannode{lem:globallyUniformlyAsymptoticStableNA-iff-classKL}
+
+\chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
+
+\section{Inverses of antitone functions}
+
+A function $W$ that is continuous and strictly antitone on $(0,\infty)$, blows up at $0^+$ and
+vanishes at $+\infty$ surjects onto $(0,\infty)$, and its right inverse has the same shape.  This
+is the mechanism behind the class $\mathcal{KL}$ construction of the next section: $W$ is a
+mean-value bound and its inverse supplies the decay rate.
+
+\inputleannode{lem:memImageIoiOfTendsto}
+
+\inputleannode{lem:applyInvFunOnEq}
+
+\inputleannode{lem:invFunOnPos}
+
+\inputleannode{lem:strictAntiOnInvFunOn}
+
+\inputleannode{lem:invFunOnTendstoZero}
+
 \section{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions and the Osgood construction}
+
+\inputleannode{def:isClassL}
+
+\inputleannode{def:isClassLSingular}
 
 \inputleannode{def:isClassKL}
 
+\inputleannode{def:isClassKLGlobal}
+
+\subsection{Building class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
+
+Two constructions and the two composition rules, in the bounded and the global setting. The
+product $\alpha(r)\gamma(s)$ of a class $\mathcal{K}$ and a class $\mathcal{L}$ function is the
+easy one; the Sontag-style cap is the one that does real work.
+
+\inputleannode{lem:classKL-mk-mul}
+
+The cap is built in the form $\min\bigl(\alpha(r), \sqrt{\alpha(r)\,U(s)}\bigr)$, so the decay
+of that particular expression is recorded first.
+
+\inputleannode{lem:tendstoMinSqrtMulZero}
+
+\inputleannode{lem:classKL-mk-singular-cap}
+
+\inputleannode{lem:classKL-comp-left-K}
+
+\inputleannode{lem:classKL-comp-left-KInfty}
+
+\inputleannode{lem:classKL-comp-right}
+
+\inputleannode{lem:classKLGlobal-mk-mul}
+
+\inputleannode{lem:classKLGlobal-comp-left}
+
+\inputleannode{lem:classKLGlobal-comp-right}
+
+\inputleannode{lem:classKL-min-classK}
+
+\inputleannode{lem:classKLGlobal-min-KInfty}
+
+\subsection{Smoothing a bound into a class \texorpdfstring{$\mathcal{KL}$}{KL} function}
+
+A candidate bound that has the right qualitative behaviour — monotone in the initial deviation,
+decaying in time — need not itself be class $\mathcal{KL}$: it may fail continuity or strict
+monotonicity. These two results replace such a candidate by a genuine class $\mathcal{KL}$
+function dominating it, which is how the stability characterizations produce their bounds.
+
+\inputleannode{lem:exists-classKL-upper-bound}
+
+\inputleannode{lem:classKLGlobal-of-KInfty-LSingular-family}
+
+\subsection{The decay ODE and the comparison bound}
+
+A class $\mathcal{K}$ decay rate produces a class $\mathcal{KL}$ bound. This is the step that
+turns a Lyapunov estimate — which controls only the \emph{rate} of decrease — into an asymptotic
+stability statement, and it is where the scalar ODE $\dot y = -\alpha(y)$ enters.
+
 \inputleannode{thm:class-KL-osgood}
+
+\inputleannode{thm:classK-dini-bound}
+
+\section{Assumed comparison-function results}
+
+The three statements below are \texttt{axiom}s in the Lean development: they are assumed, not
+proved, and every result that depends on one inherits that assumption.  They are standard
+comparison-function facts, the first being the global analogue of Lemma 9 of Kellett's
+compendium.  Discharging them is open work.
+
+\inputleannode{lem:exists-classKLGlobal-of-stability-properties}
+
+\inputleannode{lem:exists-classK-minorant-lipschitz}
+
+\inputleannode{lem:classK-exists-global-extension}

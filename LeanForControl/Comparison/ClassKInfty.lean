@@ -138,6 +138,11 @@ private lemma ClassKInfty.surjOn_of_basic (f : ℝ → ℝ) (hf_zero : f 0 = 0)
 
 /-- Smart constructor for `ClassKInfty`: requires only `f(0) = 0`, continuity on `[0,∞)`,
     strict monotonicity on `[0,∞)`, and `f(r) → ∞`. -/
+@[blueprint "lem:classKInfty-of-strictMono"
+  (statement := /-- Let $f : \mathbb{R} \to \mathbb{R}$ satisfy $f(0) = 0$, be continuous and
+    strictly increasing on $[0, \infty)$, and have $f(r) \to \infty$ as $r \to \infty$.  Then
+    $f$ is a class $\mathcal{K}_{\infty}$ function, its inverse being the inverse of $f$ on
+    $[0,\infty)$. -/)]
 noncomputable def ClassKInfty.of_strictMono (f : ℝ → ℝ)
     (hf_zero : f 0 = 0) (hf_cont : ContinuousOn f (Set.Ici 0))
     (hf_mono : StrictMonoOn f (Set.Ici 0))
@@ -176,6 +181,9 @@ private lemma ClassKInfty.invFun_zero (α : ClassKInfty) : α.invFun 0 = 0 := by
   rw [α.map_zero] at h_left; exact h_left
 
 /-- The inverse of a class K∞ function is again class K∞. -/
+@[blueprint "lem:classKInfty-symm"
+  (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under inversion: if $\alpha$ is class
+    $\mathcal{K}_{\infty}$, so is $\alpha^{-1}$. -/)]
 def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
   toFun       := α.invFun
   invFun      := α.toFun
@@ -237,6 +245,10 @@ def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
       linarith
 
 /-- Composition of two class K∞ functions is class K∞. -/
+@[blueprint "lem:classKInfty-comp"
+  (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under composition: if $\alpha$ and
+    $\beta$ are class $\mathcal{K}_{\infty}$, so is $\beta \circ \alpha$, with inverse
+    $\alpha^{-1} \circ \beta^{-1}$. -/)]
 def ClassKInfty.comp (β α : ClassKInfty) : ClassKInfty where
   toFun         := β.toFun ∘ α.toFun
   invFun        := α.invFun ∘ β.invFun
@@ -263,6 +275,9 @@ def ClassKInfty.comp (β α : ClassKInfty) : ClassKInfty where
 -- ─── ClassKInfty Closure Properties ─────────────────────────────────────────
 
 /-- The power function `r ↦ r ^ p` is class K∞ for any `p > 0`. -/
+@[blueprint "lem:classKInfty-power"
+  (statement := /-- For every $p > 0$, the map $r \mapsto r^{p}$ is class
+    $\mathcal{K}_{\infty}$. -/)]
 noncomputable def ClassKInfty.power (p : ℝ) (hp : 0 < p) : ClassKInfty :=
   ClassKInfty.of_strictMono (fun r => r ^ p)
     (Real.zero_rpow hp.ne')
@@ -271,6 +286,9 @@ noncomputable def ClassKInfty.power (p : ℝ) (hp : 0 < p) : ClassKInfty :=
     (tendsto_rpow_atTop hp)
 
 /-- Any class K∞ function restricts to a class K function on `[0, a)`. -/
+@[blueprint "lem:classKInfty-toClassK"
+  (statement := /-- Every class $\mathcal{K}_{\infty}$ function $\alpha$ restricts, for each
+    $a > 0$, to a class $\mathcal{K}$ function on $[0, a) \to [0, \alpha(a))$. -/)]
 noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a) :
     ClassK a (α.toFun a) :=
   ClassK.of_strictMono ha
@@ -282,8 +300,10 @@ noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a)
     (α.strict_mono.mono Set.Icc_subset_Ici_self)
 
 
-/-- Sum of two class K functions on the same domain is class K.
-    `(α + β)(a) = α(a) + β(a) = b + c`. -/
+/-- Pointwise sum of two class K∞ functions is class K∞. -/
+@[blueprint "lem:classKInfty-add"
+  (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under pointwise addition: if
+    $\alpha$ and $\beta$ are class $\mathcal{K}_{\infty}$, so is $\alpha + \beta$. -/)]
 noncomputable def ClassKInfty.add (α : ClassKInfty) (β : ClassKInfty) :
     ClassKInfty :=
   ClassKInfty.of_strictMono (fun x => α x + β x)
@@ -292,8 +312,10 @@ noncomputable def ClassKInfty.add (α : ClassKInfty) (β : ClassKInfty) :
     (α.strict_mono.add β.strict_mono)
     (Filter.Tendsto.atTop_add_atTop α.tendsto_atTop β.tendsto_atTop)
 
-/-- Positive scalar multiple of a class K function is class K.
-    `(c • α)(a) = c * b`. -/
+/-- Positive scalar multiple of a class K∞ function is class K∞. -/
+@[blueprint "lem:classKInfty-smul"
+  (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under multiplication by a positive
+    constant: if $\alpha$ is class $\mathcal{K}_{\infty}$ and $c > 0$, so is $c\alpha$. -/)]
 noncomputable def ClassKInfty.smul (α : ClassKInfty) (c : ℝ) (hc : 0 < c) :
     ClassKInfty :=
   ClassKInfty.of_strictMono (fun x => c * α x)
@@ -302,8 +324,10 @@ noncomputable def ClassKInfty.smul (α : ClassKInfty) (c : ℝ) (hc : 0 < c) :
     (fun x hx y hy hxy => mul_lt_mul_of_pos_left (α.strict_mono hx hy hxy) hc)
     (Filter.Tendsto.const_mul_atTop hc α.tendsto_atTop)
 
-/-- Pointwise minimum of two class K functions on the same domain is class K.
-    `min(α, β)(a) = min(b, c)`. -/
+/-- Pointwise minimum of two class K∞ functions is class K∞. -/
+@[blueprint "lem:classKInfty-min-fn"
+  (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under pointwise minimum: if $\alpha$
+    and $\beta$ are class $\mathcal{K}_{\infty}$, so is $\min(\alpha, \beta)$. -/)]
 noncomputable def ClassKInfty.min_fn (α : ClassKInfty) (β : ClassKInfty) :
     ClassKInfty :=
   ClassKInfty.of_strictMono (fun x => min (α x) (β x))
@@ -323,6 +347,15 @@ noncomputable def ClassKInfty.min_fn (α : ClassKInfty) (β : ClassKInfty) :
 
 
 
+/-- Any function on `[0, ∞)` that is monotone and vanishes at `0` is dominated by a class K∞
+    function. -/
+@[blueprint "lem:exists-classKInfty-upper-bound"
+  (statement := /-- Let $\omega : \mathbb{R} \to \mathbb{R}$ satisfy $\omega(0) = 0$ and be
+    monotone on $[0, \infty)$.  Then there is a class $\mathcal{K}_{\infty}$ function $\alpha$
+    with $\omega(r) \le \alpha(r)$ for all $r \ge 0$. -/)
+  (proof := /-- The smoothing axiom supplies a continuous, strictly increasing $f$ with
+    $f(0) = 0$, $f(r) \to \infty$ and $\omega \le f$ on $[0,\infty)$; by
+    \cref{lem:classKInfty-of-strictMono} that $f$ is class $\mathcal{K}_{\infty}$. -/)]
 lemma exists_classKInfty_upper_bound (ω : ℝ → ℝ)
     (hω_zero : ω 0 = 0)
     (hω_mono : MonotoneOn ω (Set.Ici 0)) :

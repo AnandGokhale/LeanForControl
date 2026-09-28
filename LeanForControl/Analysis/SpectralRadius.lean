@@ -1,5 +1,7 @@
 import Mathlib.Analysis.Normed.Algebra.GelfandFormula
 
+import Architect
+
 /-!
 # A contractive power from a spectral radius bound
 
@@ -17,6 +19,13 @@ open scoped Topology
 strictly below one.
 
 Reference: Rudin, *Functional Analysis* (Gelfand's spectral-radius formula). -/
+@[blueprint "lem:exists-pow-norm-lt-one"
+  (statement := /-- Let $\mathbb{A}$ be a nontrivial complete normed algebra over $\mathbb{C}$
+    and let $a \in \mathbb{A}$ have spectral radius $r(a) < 1$.  Then there is an $m > 0$ with
+    $\|a^m\| < 1$. -/)
+  (proof := /-- Gelfand's formula gives $\|a^m\|^{1/m} \to r(a)$, so $\|a^m\|^{1/m} < 1$ for all
+    large $m$; pick any such $m$ with $m \neq 0$.  Were $\|a^m\| \ge 1$, raising to the positive
+    power $1/m$ would give $\|a^m\|^{1/m} \ge 1$, a contradiction. -/)]
 lemma exists_pow_norm_lt_one_of_spectralRadius_lt_one
     {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℂ 𝔸] [CompleteSpace 𝔸]
     [Nontrivial 𝔸] (a : 𝔸) (ha : spectralRadius ℂ a < 1) :

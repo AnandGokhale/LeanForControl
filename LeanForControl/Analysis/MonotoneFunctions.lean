@@ -128,17 +128,3 @@ lemma invFunOn_tendsto_zero {W : ℝ → ℝ}
     · rw [h_eq] at hs_gt_Wε; linarith
   rw [Real.dist_eq, sub_zero, abs_of_pos hU_pos]
   exact hU_lt_ε
-
-
-
-
-lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
-    {U : ℝ → ℝ} (hU : Filter.Tendsto U Filter.atTop (nhds 0)) :
-    Filter.Tendsto (fun s => min c (Real.sqrt (c * U s))) Filter.atTop (nhds 0) := by
-  refine squeeze_zero
-    (fun s => le_min hc (Real.sqrt_nonneg _))
-    (fun s => min_le_right _ _)
-    ?_
-  have h_mul : Filter.Tendsto (fun s => c * U s) Filter.atTop (nhds 0) := by
-    simpa using Filter.Tendsto.const_mul c hU
-  simpa [Real.sqrt_zero] using (Real.continuous_sqrt.tendsto 0).comp h_mul

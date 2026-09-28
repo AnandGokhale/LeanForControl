@@ -1,5 +1,5 @@
 import LeanForControl.MatrixAlgebra.QuadraticForm
-import LeanForControl.Analysis.FrechetRemainder
+import LeanForControl.Analysis.FrechetDerivative
 import Mathlib.Analysis.InnerProductSpace.Calculus
 
 /-!
@@ -52,7 +52,7 @@ theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
   have hderiv : HasFDerivAt f
       (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A) x_eq := by
     simpa only [hJac] using (hf.differentiable (by norm_num) x_eq).hasFDerivAt
-  obtain ⟨r, hr, hrem⟩ := hderiv.exists_centered_remainder_bound hη_pos
+  obtain ⟨r, hr, hrem⟩ := hderiv.exists_linearization_error_bound hη_pos
   refine ⟨r, hr, ?_⟩
   intro x hx
   let y : ℝⁿ := x - x_eq

@@ -64,7 +64,7 @@ private lemma mem_normsReachableFromBall {f : ℝ → ℝⁿ → ℝⁿ} {x_eq :
     ‖φ t - x_eq‖ ∈ normsReachableFromBall f x_eq r :=
   ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
 
-lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
+private lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hUS : UniformlyStableNA f x_eq) :
     ∃ (a b : ℝ) (α : ClassK a b), HasUniformClassKBound f x_eq α := by
   -- Fix any tolerance — `1` will do — and take the radius `δ₀` stability supplies for it.
@@ -115,7 +115,7 @@ lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
     _ ≤ α.toFun ‖φ t₀ - x_eq‖ := hα_bound _ hr
 
 
-lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
+private lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hGUS : ∃ δ : ℝ → ℝ, (∀ ε > 0, 0 < δ ε) ∧ Filter.Tendsto δ Filter.atTop Filter.atTop ∧
       ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
         IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ ε → ∀ t : ℝ, t₀ ≤ t → ‖φ t - x_eq‖ < ε) :
@@ -160,7 +160,9 @@ lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ
     stable if and only if there exist
     a class K function `α` on `[0, c)` and a constant `c > 0` (independent of `t₀`) such that
     every trajectory with `‖φ t₀ - x_eq‖ < c` satisfies
-    `‖φ t - x_eq‖ ≤ α(‖φ t₀ - x_eq‖)` for all `t ≥ t₀ ≥ 0`. -/
+    `‖φ t - x_eq‖ ≤ α(‖φ t₀ - x_eq‖)` for all `t ≥ t₀ ≥ 0`.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:uniformlyStableNA-iff-classK"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
     \emph{uniformly stable} (\cref{def:uniformlyStableNA}) if and only if there exist a
@@ -171,9 +173,10 @@ lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ → ℝⁿ
       \quad \forall\, t \ge t_{0} \ge 0,\;
       \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < a.
     \]
-    This is Khalil (4.19). Both sides quantify over the same trajectories — those defined
-    on $[t_{0},\infty)$ — so the equivalence is between two descriptions of one class of
-    solutions, not between two classes. -/)]
+    This is the first half of Khalil's Lemma 4.5; the displayed bound is his (4.19).  Both
+    sides quantify over the same trajectories — those defined on $[t_{0},\infty)$ — so the
+    equivalence is between two descriptions of one class of solutions, not between two
+    classes. -/)]
 theorem uniformlyStableNA_iff_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
     UniformlyStableNA f x_eq ↔
     ∃ (a b : ℝ) (α : ClassK a b), HasUniformClassKBound f x_eq α := by
@@ -202,7 +205,7 @@ theorem uniformlyStableNA_iff_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝ
 
 
 /-! ### UAS → ClassKL (forward direction) -/
-lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
+private lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hUAS : UniformlyAsymptoticStableNA f x_eq) :
     ∃ (a : ℝ) (β : ClassKL a),
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
@@ -243,7 +246,9 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
     is uniformly asymptotically stable if and only
     if there exist a class KL function `β` on `[0, c)` and a constant `c > 0` (independent of
     `t₀`) such that every trajectory with `‖φ t₀ - x_eq‖ < c` satisfies
-    `‖φ t - x_eq‖ ≤ β(‖φ t₀ - x_eq‖, t − t₀)` for all `t ≥ t₀ ≥ 0`. -/
+    `‖φ t - x_eq‖ ≤ β(‖φ t₀ - x_eq‖, t − t₀)` for all `t ≥ t₀ ≥ 0`.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:uniformlyAsymptoticStableNA-iff-classKL"
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{uniformly asymptotically
     stable} (\cref{def:uniformlyAsymptoticStableNA}) if and only if there exist a class
@@ -252,7 +257,8 @@ lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ → ℝⁿ
     \[
       \|\varphi(t) - x_{\mathrm{eq}}\| \le \beta(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|,\, t - t_{0})
       \quad \forall\, t \ge t_{0} \ge 0,\; \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c.
-    \] -/)]
+    \]
+    This is the second half of Khalil's Lemma 4.5. -/)]
 theorem uniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
     UniformlyAsymptoticStableNA f x_eq ↔
     ∃ (a : ℝ) (β : ClassKL a),
@@ -305,24 +311,41 @@ theorem uniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) 
 
 
 
--- /-- **Class-KL characterization of global uniform asymptotic stability**: The equilibrium
---     `x_eq` is globally uniformly asymptotically stable
---     if and only if there exists a function `β : ℝ≥0 × ℝ≥0 → ℝ≥0` that is class K in the
---     first argument and decays to zero in the second (a global class KL bound), such that
---     `‖φ t - x_eq‖ ≤ β(‖φ t₀ - x_eq‖, t − t₀)` holds for **every** trajectory and every
---     `t ≥ t₀ ≥ 0`, with no restriction on the initial size `‖φ t₀ - x_eq‖`. -/
--- @[blueprint "lem:globallyUniformlyAsymptoticStableNA-iff-classKL"
---   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly
---     asymptotically stable} (\cref{def:globallyUniformlyAsymptoticStableNA}) if and only
---     if there exists $\beta : [0,\infty) \times [0,\infty) \to [0,\infty)$ that is class
---     $\mathcal{K}$ in the first argument and, for each fixed $r \ge 0$, is decreasing to
---     $0$ as $s \to \infty$, such that
---     \[
---       \|\varphi(t) - x_{\mathrm{eq}}\| \le \beta(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|,
---              \, t - t_{0})
---       \quad \forall\, t \ge t_{0} \ge 0,
---     \]
---     with no restriction on the initial state $\varphi(t_{0})$. -/)]
+/-- **Class-KL characterization of global uniform asymptotic stability**: the equilibrium
+`x_eq` is globally uniformly asymptotically stable if and only if there is a global class KL
+bound `β` with `‖φ t - x_eq‖ ≤ β(‖φ t₀ - x_eq‖, t − t₀)` for **every** trajectory and every
+`t ≥ t₀ ≥ 0`, with no restriction on the initial size.
+
+The conditions on `β` are spelled out rather than packaged as `ClassKLGlobal` because the two
+do not coincide: this statement needs radial unboundedness of `β(·, 0)`, which
+`ClassKLGlobal` does not carry, and does not need its `nonneg` field.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
+@[blueprint "lem:globallyUniformlyAsymptoticStableNA-iff-classKL"
+  (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly
+    asymptotically stable} (\cref{def:globallyUniformlyAsymptoticStableNA}) if and only if
+    there is a $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is
+    \begin{enumerate}
+      \item zero at the origin: $\beta(0, s) = 0$ for $s \ge 0$;
+      \item jointly continuous on $[0,\infty) \times [0,\infty)$;
+      \item strictly increasing in $r$ for each fixed $s \ge 0$;
+      \item radially unbounded: $\beta(r, 0) \to \infty$ as $r \to \infty$;
+      \item antitone in $s$ for each fixed $r \ge 0$, with $\beta(r,s) \to 0$ as
+        $s \to \infty$;
+    \end{enumerate}
+    such that
+    \[
+      \|\varphi(t) - x_{\mathrm{eq}}\| \le \beta(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|,
+             \, t - t_{0})
+      \quad \forall\, t \ge t_{0} \ge 0,
+    \]
+    with no restriction on the initial state $\varphi(t_{0})$.
+
+    Condition (4) is what makes the characterization \emph{global}: without it $\beta$ is
+    class $\mathcal{KL}$ on a bounded radius and the statement collapses to the local one
+    (\cref{lem:uniformlyAsymptoticStableNA-iff-classKL}).
+
+    This is the global case of Khalil's Lemma 4.5. -/)]
 theorem globallyUniformlyAsymptoticStableNA_iff_classKL (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) :
     GloballyUniformlyAsymptoticStableNA f x_eq ↔
     ∃ β : ℝ → ℝ → ℝ,

@@ -6,6 +6,9 @@ import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Topology.Order.Basic
 import Mathlib.Order.Filter.ENNReal
+
+import LeanForControl.Analysis.Limsup
+
 import Architect
 
 /-!
@@ -18,7 +21,7 @@ import Architect
 
 ## Main Results
 
-* `diniDerivRight_eq_deriv`         : agrees with `deriv` when `f` is differentiable
+* `diniDerivRight_of_hasDerivWithinAt` : agrees with the right derivative where one exists
 * `diniDerivRight_add_linear`       : D⁺(f + c·id)(t) = D⁺f(t) + c
 * `diniDerivRight_const_mul_pos`    : D⁺(c·f)(t) = c · D⁺f(t) for c > 0
 * `diniDerivRight_le_iff`           : characterisation via eventually-bounded quotients
@@ -60,6 +63,9 @@ notation "D⁺" => diniDerivRight
 This is the content shared by `diniDerivRight_of_hasDerivWithinAt` (which reads off the
 `limsup`) and the boundedness side condition that the comparison lemmas require, so it is
 stated once here rather than re-derived at each. -/
+@[blueprint "lem:hasDerivWithinAt-tendsto-forward-slope"
+  (statement := /-- If $f$ has right derivative $L$ at $t$, then
+    $\frac{f(t+h)-f(t)}{h} \to L$ as $h \to 0^{+}$. -/)]
 theorem HasDerivWithinAt.tendsto_forward_slope {f : ℝ → ℝ} {t L : ℝ}
     (hf : HasDerivWithinAt f L (Ici t) t) :
     Tendsto (fun h => (f (t + h) - f t) / h) (𝓝[>] 0) (𝓝 L) := by
@@ -87,6 +93,9 @@ theorem HasDerivWithinAt.tendsto_forward_slope {f : ℝ → ℝ} {t L : ℝ}
 
 /-- If `f` has a right derivative `L` at `t` (in the sense of `HasDerivWithinAt` on `Ici t`),
 then `D⁺ f t = L`. -/
+@[blueprint "lem:diniDerivRight-of-hasDerivWithinAt"
+  (statement := /-- If $f$ has right derivative $L$ at $t$, then $D^{+}f(t) = L$: the Dini
+    derivative agrees with the classical one wherever the latter exists. -/)]
 theorem diniDerivRight_of_hasDerivWithinAt {f : ℝ → ℝ} {t L : ℝ}
     (hf : HasDerivWithinAt f L (Ici t) t) :
     D⁺ f t = L := by
@@ -112,6 +121,11 @@ it explicitly assumes the difference quotient is both eventually bounded above (
 and frequently bounded below (`hcobdd`). This rules out degenerate cases (like the derivative
 shooting to `-∞`) where Lean's empty infimum would default to a mathematically false `0`.
 -/
+@[blueprint "lem:diniDerivRight-le-iff"
+  (statement := /-- Let the forward difference quotients of $f$ at $t$ be bounded above and
+    cobounded below along $h \to 0^{+}$.  Then $D^{+}f(t) \le L$ if and only if for every
+    $\varepsilon > 0$ the quotient $\frac{f(t+h)-f(t)}{h}$ is eventually at most
+    $L + \varepsilon$ as $h \to 0^{+}$. -/)]
 theorem diniDerivRight_le_iff {f : ℝ → ℝ} {t L : ℝ}
     (hbdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
     (hcobdd : IsCoboundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h)) :
@@ -138,6 +152,11 @@ theorem diniDerivRight_le_iff {f : ℝ → ℝ} {t L : ℝ}
 
 /-- `L ≤ D⁺ f t` iff for every `ε > 0`, the difference quotient exceeds `L - ε`
 on some set in the filter (frequently). -/
+@[blueprint "lem:le-diniDerivRight-iff"
+  (statement := /-- Under the same boundedness conditions as
+    \cref{lem:diniDerivRight-le-iff}, $L \le D^{+}f(t)$ if and only if for every
+    $\varepsilon > 0$ the quotient $\frac{f(t+h)-f(t)}{h}$ exceeds $L - \varepsilon$
+    frequently as $h \to 0^{+}$. -/)]
 theorem le_diniDerivRight_iff {f : ℝ → ℝ} {t L : ℝ}
     (hbdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
     (hcobdd : IsCoboundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h)) :
@@ -172,6 +191,11 @@ theorem le_diniDerivRight_iff {f : ℝ → ℝ} {t L : ℝ}
 /-- Subadditivity of the upper right Dini derivative.
 `D⁺(f + g)(t) ≤ D⁺f(t) + D⁺g(t)`.
 Requires both difference quotients to be bounded above to avoid empty infimums in `ℝ`. -/
+@[blueprint "lem:diniDerivRight-add-le"
+  (statement := /-- The upper right Dini derivative is subadditive:
+    $D^{+}(f+g)(t) \le D^{+}f(t) + D^{+}g(t)$, provided the forward difference quotients of
+    $f$ are bounded above and below and those of $g$ are bounded above and cobounded
+    below. -/)]
 theorem diniDerivRight_add_le {f g : ℝ → ℝ} {t : ℝ}
     (hf_bdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
     (hf_bdd_above : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
@@ -192,46 +216,13 @@ theorem diniDerivRight_add_le {f g : ℝ → ℝ} {t : ℝ}
   exact limsup_add_le hf_bdd_below hf_bdd_above hg_cobdd_below hg_bdd_above
 
 
-lemma limsup_add_tendsto_zero {ι : Type*} {f g : ι → ℝ} {l : Filter ι} [l.NeBot]
-    (hbdd_below : IsBoundedUnder (· ≥ ·) l f)
-    (hbdd_above : IsBoundedUnder (· ≤ ·) l f)
-    (hg : Tendsto g l (𝓝 0)) :
-    limsup (f + g) l = limsup f l := by
-  apply le_antisymm
-  · have h1 : limsup (f + g) l ≤ limsup f l + limsup g l :=
-      limsup_add_le hbdd_below hbdd_above hg.isCoboundedUnder_le hg.isBoundedUnder_le
-    rwa [hg.limsup_eq, add_zero] at h1
-  · have hneg : Tendsto (fun i => -g i) l (𝓝 0) := by simpa using hg.neg
-    have hrw : f = fun i => (f i + g i) + (-g i) := by ext i; ring
-    have hfg_bdd_below : IsBoundedUnder (· ≥ ·) l (f + g) := by
-      obtain ⟨bf, hbf⟩ := hbdd_below
-      obtain ⟨bg, hbg⟩ := hg.isBoundedUnder_ge
-      refine ⟨bf + bg, ?_⟩
-      simp only [Filter.eventually_map] at *
-      filter_upwards [hbf, hbg] with i h1 h2
-      simp [ge_iff_le] at *
-      linarith
-    have hfg_bdd_above : IsBoundedUnder (· ≤ ·) l (f + g) := by
-      obtain ⟨bf, hbf⟩ := hbdd_above
-      obtain ⟨bg, hbg⟩ := hg.isBoundedUnder_le
-      refine ⟨bf + bg, ?_⟩
-      simp only [Filter.eventually_map] at *
-      filter_upwards [hbf, hbg] with i h1 h2
-      simp only [Pi.add_apply]
-      linarith
-    have h2 : limsup (fun i => (f i + g i) + (-g i)) l ≤
-              limsup (f + g) l + limsup (fun i => -g i) l :=
-      limsup_add_le
-        hfg_bdd_below
-        hfg_bdd_above
-        hneg.isCoboundedUnder_le
-        hneg.isBoundedUnder_le
-    rw [hneg.limsup_eq, add_zero] at h2
-    rwa [← hrw] at h2
-
-
 /-- Equality version when `g` is differentiable: `D⁺(f + g)(t) = D⁺f(t) + g'(t)`.
 Requires bounds on `f` to avoid empty infimum contradictions in `ℝ`. -/
+@[blueprint "lem:diniDerivRight-add-differentiable"
+  (statement := /-- If the forward difference quotients of $f$ at $t$ are bounded above and
+    below, and $g$ is differentiable at $t$, then
+    $D^{+}(f+g)(t) = D^{+}f(t) + g'(t)$.  Subadditivity becomes equality once one summand has
+    a genuine derivative. -/)]
 theorem diniDerivRight_add_differentiable {f g : ℝ → ℝ} {t : ℝ}
     (hf_bdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0)
       (fun h => (f (t + h) - f t) / h))
@@ -294,6 +285,11 @@ theorem diniDerivRight_add_differentiable {f g : ℝ → ℝ} {t : ℝ}
 
 /-- Shifting by a linear function shifts `D⁺` by the slope:
 `D⁺(f + c·id)(t) = D⁺f(t) + c`. -/
+@[blueprint "lem:diniDerivRight-add-linear"
+  (statement := /-- If the forward difference quotients of $f$ at $t$ are bounded above and
+    below, then $D^{+}\bigl(f + c\,\mathrm{id}\bigr)(t) = D^{+}f(t) + c$ — the case
+    $g(s) = cs$ of \cref{lem:diniDerivRight-add-differentiable}, and the form the comparison
+    arguments use. -/)]
 theorem diniDerivRight_add_linear (f : ℝ → ℝ) (c t : ℝ)
     (hf_bdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
     (hf_bdd_above : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h)) :
@@ -311,6 +307,13 @@ theorem diniDerivRight_add_linear (f : ℝ → ℝ) (c t : ℝ)
   exact this
 
 /-- Scaling by a positive constant: `D⁺(c·f)(t) = c · D⁺f(t)` for `c > 0`. -/
+@[blueprint "lem:diniDerivRight-const-mul-pos"
+  (statement := /-- For $c > 0$, and forward difference quotients of $f$ at $t$ bounded above
+    and cobounded below, $D^{+}(cf)(t) = c\,D^{+}f(t)$.  Positivity is essential: a negative
+    constant reverses the order and turns the $\limsup$ into a $\liminf$. -/)
+  (proof := /-- Multiplication by $c > 0$ is an order isomorphism of $\mathbb{R}$, and a
+    $\limsup$ commutes with one.  Going through the order isomorphism rather than through the
+    defining infimum avoids the degenerate empty-$\inf$ case. -/)]
 theorem diniDerivRight_const_mul_pos {f : ℝ → ℝ} {c : ℝ} (hc : 0 < c) (t : ℝ)
     (hbdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
     (hcobdd : IsCoboundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h)) :
@@ -375,6 +378,11 @@ theorem diniDerivRight_const_mul_pos {f : ℝ → ℝ} {c : ℝ} (hc : 0 < c) (t
 
 /-- D⁺ is ≥ its negation's lower bound: `-(D⁺(-f)(t)) ≤ D⁺f(t)`
 Requires the quotient to be bounded above and below to avoid junk values. -/
+@[blueprint "lem:neg-diniDerivRight-neg-le"
+  (statement := /-- If the forward difference quotients of $f$ at $t$ are bounded above and
+    below, then $-D^{+}(-f)(t) \le D^{+}f(t)$.  The left-hand side is the \emph{lower} right
+    Dini derivative, so this is the expected inequality $D_{+}f(t) \le D^{+}f(t)$ written in
+    terms of $D^{+}$ alone. -/)]
 theorem neg_diniDerivRight_neg_le (f : ℝ → ℝ) (t : ℝ)
     (hbdd_above : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h))
     (hbdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0) (fun h => (f (t + h) - f t) / h)) :
@@ -420,6 +428,16 @@ theorem neg_diniDerivRight_neg_le (f : ℝ → ℝ) (t : ℝ)
 
 
 
+/-- If `z` touches `v` at `a` and stays strictly below it on `(a, b]`, then the right
+    derivative of `z` at `a` is at most `D⁺ v a`. The comparison-lemma step: a curve that
+    falls away from another cannot be growing faster at the contact point. -/
+@[blueprint "lem:le-diniDerivRight-of-upper-bound"
+  (statement := /-- Let $a < b$, let $z(a) = v(a)$ and $z(t) < v(t)$ for all
+    $t \in (a, b]$, let $z$ have right derivative $d_z$ at $a$, and let the forward difference
+    quotients of $v$ at $a$ be bounded above.  Then $d_z \le D^{+}v(a)$. -/)
+  (proof := /-- On $(0, b-a)$ the hypotheses give $z(a+h) - z(a) \le v(a+h) - v(a)$, so the
+    forward quotient of $z$ is eventually below that of $v$.  The quotient of $z$ converges to
+    $d_z$, so $d_z = \limsup$ of it, and $\limsup$ is monotone. -/)]
 lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b d_z : ℝ}
     (hab : a < b)
     (h_eq : z a = v a)
@@ -445,7 +463,8 @@ lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b
     rw [hasDerivWithinAt_iff_tendsto_slope] at hz_deriv
     have h_shift : Tendsto (fun h => a + h) (𝓝[>] 0) (𝓝[Ici a \ {a}] a) := by
       apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      · exact (continuous_const.add continuous_id).tendsto' 0 a (add_zero a) |>.mono_left nhdsWithin_le_nhds
+      · exact (continuous_const.add continuous_id).tendsto' 0 a (add_zero a)
+          |>.mono_left nhdsWithin_le_nhds
       · filter_upwards [self_mem_nhdsWithin] with h hh
         -- Expose the inequality here too
         have h1 : 0 < h := hh
@@ -459,7 +478,8 @@ lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b
     ring_nf
   calc d_z
     _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
-    _ ≤ limsup q_v (𝓝[>] 0) := Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le hv_bdd
+    _ ≤ limsup q_v (𝓝[>] 0) :=
+          Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le hv_bdd
     _ = D⁺ v a              := rfl
 
 end

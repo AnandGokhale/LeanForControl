@@ -12,11 +12,11 @@ import Architect
 /-!
 # `ODEs.ComparisonLemma`
 
-Comparison Lemma 3.4 for scalar ODEs: if `u` is an exact solution of `u̇ = f(t, u)` with
+The comparison lemma for scalar ODEs: if `u` is an exact solution of `u̇ = f(t, u)` with
 `u(t₀) = u₀`, and `v` is continuous with upper Dini derivative satisfying
 `D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤ u(t)` for all `t ∈ [t₀, t₁]`.
 
-## Proof strategy (Appendix C.2)
+## Proof strategy (Khalil, Appendix C.2)
 
 * **Claim 1** (`comparison_claim_1`): For any perturbed solution `z` of `ż = f(t, z) + λ`
   with `λ > 0`, we have `v(t) ≤ z(t)` on `[t₀, t₁]`. Proved by contradiction: assuming
@@ -26,16 +26,16 @@ Comparison Lemma 3.4 for scalar ODEs: if `u` is an exact solution of `u̇ = f(t,
 
 * **Claim 2** (`comparison_lemma`): `v(t) ≤ u(t)` follows by sending `λ → 0`. For each
   `λ > 0`, `v(t) ≤ z_λ(t)` by Claim 1, and `z_λ(t) ≤ u(t) + ε/2` by the
-  continuous-dependence estimate (Theorem 3.5). Since `ε > 0` is arbitrary, `v(t) ≤ u(t)`.
+  continuous-dependence estimate (Khalil, Theorem 3.5). Since `ε > 0` is arbitrary,
+  `v(t) ≤ u(t)`.
 
 ## Main declarations
 
 * `isIntegralSolution_of_hasDerivAt` — converts a pointwise derivative condition into an
   integral solution.
-* `diniDerivRight_nonneg_of_eventually_pos` — shows `D⁺w(a) ≥ 0` when `w(a) = 0` and `w`
-  is immediately positive to the right of `a`.
-* `comparison_claim_1` — the perturbed comparison inequality `v ≤ z_λ` for `λ > 0`.
 * `comparison_lemma` — the full comparison inequality `v ≤ u`.
+
+`comparison_claim_1` is a private step of the latter's proof.
 -/
 
 open Set Filter Topology
@@ -47,6 +47,15 @@ open Set Filter Topology
 If `u` has derivative `f(t, u(t))` at every interior point of `[t₀, t₁]`, is continuous on
 `[t₀, t₁]`, and satisfies `u(t₀) = u₀`, then `u` is an integral solution in the sense of
 `IsIntegralSolution`. -/
+@[blueprint "lem:isIntegralSolution-of-hasDerivAt"
+  (statement := /-- Let $u$ be continuous on $[t_0, t_1]$ with $u(t_0) = u_0$ and
+    $\dot u(t) = f(t, u(t))$ at every interior point, and let $f$ be jointly continuous.  Then
+    $u$ is an integral solution:
+    \[
+      u(s) = u_0 + \int_{t_0}^{s} f(\tau, u(\tau))\,\mathrm{d}\tau .
+    \]. -/)
+  (proof := /-- The fundamental theorem of calculus on $[t_0, s]$; the integrand is continuous
+    there, being a composition of continuous maps. -/)]
 lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → ℝ} {t₀ t₁ u₀ : ℝ}
     (ht : t₀ ≤ t₁)
     (hu_deriv : ∀ t ∈ Ioo t₀ t₁, HasDerivAt u (f t (u t)) t)
@@ -62,7 +71,7 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
     (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
     (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
 
-/-! ## Comparison Lemma 3.4 -/
+/-! ## The comparison lemma -/
 
 /-- **Claim 1** of the comparison lemma: the subsolution `v` lies below every perturbed
 solution `z` of `ż = f(t, z) + λ` when `λ > 0`.
@@ -76,7 +85,6 @@ contradicting `λ > 0`. -/
 private lemma comparison_claim_1
     {f : ℝ → ℝ → ℝ} {v z : ℝ → ℝ} {t₀ t₁ u₀ lam : ℝ}
     (hlam : 0 < lam)
-    (ht : t₀ < t₁)
     (hz_sol : IsIntegralSolution t₀ t₁ z u₀ (fun s x => f s x + lam))
     (hz_deriv : ∀ t ∈ Ico t₀ t₁, HasDerivWithinAt z (f t (z t) + lam) (Ici t) t)
     (hv_cont : ContinuousOn v (Icc t₀ t₁))
@@ -112,7 +120,7 @@ private lemma comparison_claim_1
   rw [h_eq_a] at h_chain
   linarith
 
-/-- **Comparison Lemma 3.4.**  If `u` solves `u̇ = f(t, u)` with `u(t₀) = u₀`, and `v` is
+/-- **Comparison lemma.**  If `u` solves `u̇ = f(t, u)` with `u(t₀) = u₀`, and `v` is
 continuous with `D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤ u(t)` on `[t₀, t₁]`.
 
 Hypotheses:
@@ -123,17 +131,46 @@ Hypotheses:
   (the existence hypothesis `hz_exists`).
 
 The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_dependence_parameters`
-(Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all `ε > 0`. -/
+(Khalil, Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all
+`ε > 0`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 3.4. Note this is Khalil's *Lemma* 3.4;
+his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE`. -/
 @[blueprint "thm:comparison-lemma"
-  (statement := /-- \textbf{Comparison Lemma 3.4.}
-    If $u$ solves $\dot{u} = f(t,u)$ with $u(t_0) = u_0$, and $v$ is continuous with
-    $D^{+}v(t) \le f(t,v(t))$ and $v(t_0) \le u_0$, then $v(t) \le u(t)$ for all
-    $t \in [t_0, t_1]$. -/)
-  (proof := /-- For each $\lambda > 0$, the perturbed solution $z_\lambda$ of
-    $\dot{z} = f(t,z) + \lambda$ satisfies $v \le z_\lambda$ by
-    \cref{lem:comparison-claim-1}. By \cref{thm:continuous-dependence-parameters},
-    $\|u - z_\lambda\| \le \varepsilon/2$. Since $\varepsilon > 0$ is arbitrary,
-    $v(t) \le u(t)$. -/)]
+  (statement := /-- \textbf{Comparison lemma} (Khalil, Lemma 3.4).  Let $f$ be jointly
+    continuous and $L$-Lipschitz in its state argument on $[t_0, t_1]$, and suppose
+    \begin{enumerate}
+      \item $u$ is continuous on $[t_0,t_1]$ and solves $\dot u = f(t,u)$ with $u(t_0) = u_0$;
+      \item $v$ is continuous on $[t_0,t_1]$ with $v(t_0) \le u_0$, satisfies the Dini
+        subsolution inequality $D^{+}v(t) \le f(t, v(t))$, and has forward difference quotients
+        bounded above at each $t$;
+      \item for every $\lambda > 0$ the perturbed equation
+        $\dot z = f(t,z) + \lambda$, $z(t_0) = u_0$, has a solution on $[t_0,t_1]$.
+    \end{enumerate}
+    Then $v(t) \le u(t)$ for all $t \in [t_0, t_1]$.
+
+    The perturbed solutions in (3) are not constructed here — the caller supplies them.  They do
+    exist under the hypotheses already listed, since $f + \lambda$ is Lipschitz exactly when $f$
+    is, so Picard--Lindel\"of applies on $[t_0,t_1]$; but that existence step is an axiom in this
+    development, and leaving it as a hypothesis is what keeps this theorem, and everything
+    downstream of it, free of any axiom beyond Lean's own. -/)
+  (proof := /-- Fix $\lambda > 0$ and let $z_\lambda$ be as in hypothesis (3).
+
+    \emph{Claim: $v \le z_\lambda$ on $[t_0,t_1]$.}  Otherwise $v(t_{\mathrm{bad}}) >
+    z_\lambda(t_{\mathrm{bad}})$ for some $t_{\mathrm{bad}}$, and since $v(t_0) \le
+    z_\lambda(t_0)$ the continuous difference $v - z_\lambda$ has a last zero $a <
+    t_{\mathrm{bad}}$, with $v > z_\lambda$ on $(a, t_{\mathrm{bad}}]$.  Being below $v$
+    immediately to the right of $a$ forces $\dot z_\lambda(a) \le D^{+}v(a)$, so
+    \[
+      f(a, z_\lambda(a)) + \lambda \;\le\; D^{+}v(a) \;\le\; f(a, v(a)) = f(a, z_\lambda(a)),
+    \]
+    contradicting $\lambda > 0$.
+
+    Now let $\varepsilon > 0$ and choose $\lambda$ small enough that
+    \cref{thm:continuous-dependence-parameters} — which applies because $f$ is Lipschitz in its
+    state argument, and which treats $\lambda$ as a perturbation of size $\lambda$ — gives
+    $\|u - z_\lambda\| \le \varepsilon/2$ on $[t_0,t_1]$.  Then $v \le z_\lambda \le u +
+    \varepsilon$.  As $\varepsilon$ was arbitrary, $v \le u$. -/)]
 theorem comparison_lemma
     {f : ℝ → ℝ → ℝ} {u v : ℝ → ℝ} {t₀ t₁ u₀ : ℝ} {L : ℝ}
     (ht : t₀ < t₁)
@@ -166,7 +203,7 @@ theorem comparison_lemma
       rw [hC_def]; ring]
   obtain ⟨z, hz_sol, hz_cont, hz_deriv⟩ := hz_exists lam hlam_pos
   have hv_le_z : v t ≤ z t :=
-    comparison_claim_1 hlam_pos ht hz_sol hz_deriv hv_cont hz_cont
+    comparison_claim_1 hlam_pos hz_sol hz_deriv hv_cont hz_cont
       hDv hv₀ hv_bdd t ht_mem
   have hz_close : ‖u t - z t‖ ≤ ε / 2 := by
     have hu_sol : IsIntegralSolution t₀ t₁ u u₀ f :=
