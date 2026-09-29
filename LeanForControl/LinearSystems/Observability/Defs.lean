@@ -32,6 +32,7 @@ The `(k, i)`-th row is the `i`-th row of `C · Aᵏ`, where `k : Fin n`
 ranges over `0, 1, …, n-1`. We index rows by `Fin n × Fin p` so that
 `A ^ (k : ℕ)` is available without first casting `k` through `Fin.val`. -/
 @[blueprint "def:observabilityMatrix"
+  (title := "Observability matrix")
   (statement := /-- The \emph{observability matrix} of a pair $(A, C)$
     with $A \in \mathbb{F}^{n \times n}$ and $C \in \mathbb{F}^{p \times n}$
     is the block-row matrix
@@ -53,6 +54,7 @@ def observabilityMatrix
 state. This phrasing does not mention `observabilityMatrix`, so the milestone
 theorem `isObservable_iff_observabilityMatrix_ker_trivial` has real content. -/
 @[blueprint "def:isObservable"
+  (title := "Observability")
   (statement := /-- A linear system $(A, C)$ is \emph{observable} when the only
     state $x \in \mathbb{F}^{n}$ for which
     \[
@@ -77,6 +79,7 @@ Defined as the intersection of the kernels of the linear maps
 `(C · A^k).mulVecLin` for `k : Fin n`. By Cayley–Hamilton (see
 `A_mulVec_mem_unobservableSubspace_of_mem`) this submodule is `A`-invariant. -/
 @[blueprint "def:unobservableSubspace"
+  (title := "Unobservable subspace")
   (statement := /-- The \emph{unobservable subspace} of $(A, C)$ is the
     $A$-invariant subspace
     \[
@@ -95,6 +98,7 @@ noncomputable def unobservableSubspace
 /-- The Hautus observability matrix at `μ`,
 `[μ • 1 - A; C] : Matrix (Fin n ⊕ Fin p) (Fin n) ℂ`. -/
 @[blueprint "def:hautusObservabilityMatrix"
+  (title := "Hautus observability matrix")
   (statement := /-- The \emph{Hautus observability matrix} of $(A, C)$ at
     a complex number $\mu$ is the block-row matrix
     \[

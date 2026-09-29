@@ -33,6 +33,7 @@ be used directly with PBH/Hautus arguments.
 Reference: João P. Hespanha, *Linear Systems Theory* (2nd ed.), continuous-time
 stability. The rate-indexed predicate is the strict spectral-margin variant. -/
 @[blueprint "def:isHurwitzWithRate"
+  (title := "Hurwitz with a prescribed decay rate")
   (statement := /-- A real square matrix $A$ is \emph{Hurwitz with decay rate}
     $\alpha$ when every complex eigenpair $(\mu,v)$ with $v \ne 0$ satisfies
     $\operatorname{Re}(\mu) < -\alpha$. -/)]
@@ -45,6 +46,7 @@ def IsHurwitzWithRate (α : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
 Reference: João P. Hespanha, *Linear Systems Theory* (2nd ed.), continuous-time
 stability. The rate-indexed predicate is the strict spectral-margin variant. -/
 @[blueprint "def:isHurwitz"
+  (title := "Hurwitz matrix")
   (statement := /-- A real square matrix is \emph{Hurwitz} when every complex
     eigenvalue has strictly negative real part. -/)]
 abbrev IsHurwitz (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=

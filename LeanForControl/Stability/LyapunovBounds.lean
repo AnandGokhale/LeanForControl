@@ -278,8 +278,8 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 
       `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. -/
 @[blueprint "thm:lyapunov-class-K-bounds"
-  (statement := /-- \textbf{Class K sandwich bounds.}
-    Let $V : \mathbb{R}^{n} \to \mathbb{R}$ be continuous on $\overline{B}(0,r)$ with
+  (title := "Class $\\mathcal{K}$ sandwich bounds")
+  (statement := /-- Let $V : \mathbb{R}^{n} \to \mathbb{R}$ be continuous on $\overline{B}(0,r)$ with
     $V(0) = 0$ and $V(x) > 0$ for every nonzero $x$ in that ball.  Then there are class
     $\mathcal{K}$ functions $\alpha_1, \alpha_2$ on $[0, r)$ with
     \[

@@ -11,6 +11,8 @@ import Architect
     by a global class KL function. The usable form of
     `exists_classKLGlobal_of_stability_properties`. -/
 @[blueprint "lem:exists-classKL-upper-bound"
+  (title := "Class $\\mathcal{KL}$ majorant")
+  (latexEnv := "lemma")
   (statement := /-- Let $\psi : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ satisfy, for all
     $r, s \ge 0$:
     \begin{enumerate}
@@ -71,6 +73,8 @@ lemma exists_classKL_upper_bound (ψ : ℝ → ℝ → ℝ)
     The candidate `ψ(r,s) = if s = 0 then α(r) else min(α(r), √(α(r)·U(r+1)(s)))` is
     constructed and smoothed internally; no details of `ψ` leak into the conclusion. -/
 @[blueprint "lem:classKLGlobal-of-KInfty-LSingular-family"
+  (title := "Global class $\\mathcal{KL}$ from a decay family")
+  (latexEnv := "lemma")
   (statement := /-- Let $\alpha$ be class $\mathcal{K}_{\infty}$ and let $U$ be a family of
     functions such that
     \begin{enumerate}

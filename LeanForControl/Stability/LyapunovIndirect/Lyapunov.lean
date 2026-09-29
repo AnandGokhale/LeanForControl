@@ -35,6 +35,8 @@ shifted certificate's growth rate.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7 (the quadratic-Lyapunov proof of
 Lyapunov's indirect method). -/
 @[blueprint "lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le"
+  (title := "Absorbing the linearization remainder")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be $C^{1}$ with $Df(x_{\mathrm{eq}}) = A$, let $M$ be a matrix, and
     let $c > 0$.  Then there is $r > 0$ such that for every $x$ with
     $\|x - x_{\mathrm{eq}}\| < r$,

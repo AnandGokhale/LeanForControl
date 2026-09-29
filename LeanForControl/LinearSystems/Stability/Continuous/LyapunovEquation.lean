@@ -34,6 +34,7 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 Reference: Khalil, *Nonlinear Systems*. -/
 @[blueprint "def:solvesContinuousLyapunovEquation"
+  (title := "Continuous-time Lyapunov equation")
   (statement := /-- For real square matrices $A$, $P$, and $Q$, the matrix $P$
     solves the continuous-time Lyapunov equation with forcing $Q$ when
     \[
@@ -432,6 +433,7 @@ matrix solutions.
 
 Reference: Khalil, *Nonlinear Systems*. -/
 @[blueprint "thm:hurwitz-lyapunov-equation"
+  (title := "Lyapunov equation for a Hurwitz matrix")
   (statement := /-- If a real matrix $A$ is Hurwitz, then for every positive-definite
     $Q$ there is a positive-definite matrix $P$ satisfying
     $PA+A^{\mathsf T}P=-Q$, and this $P$ is the unique matrix solution. -/)

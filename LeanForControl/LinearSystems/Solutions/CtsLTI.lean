@@ -30,6 +30,8 @@ collapses to the closed form `((t-t₀)^k / k!) • A^k`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1). -/
 @[blueprint "lem:peanoBakerTerm-const"
+  (title := "Peano--Baker terms for a constant matrix")
+  (latexEnv := "lemma")
   (statement := /-- For a constant state matrix $A$, the $k$-th Peano--Baker term collapses to
     \[
       \Phi_k(t, t_0) = \frac{(t-t_0)^k}{k!}\,A^k .
@@ -66,6 +68,8 @@ is given by the power series `Φ(t,t₀) = Σ_{k=0}^∞ ((t-t₀)^k / k!) A^k` �
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1). -/
 @[blueprint "lem:stateTransitionMatrix-const-eq-tsum"
+  (title := "The LTI state transition matrix as a series")
+  (latexEnv := "lemma")
   (statement := /-- For a constant state matrix $A$, the state transition matrix is the power
     series
     \[
@@ -89,6 +93,7 @@ characterization of `exp` (`NormedSpace.exp_eq_tsum`).
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.2). -/
 @[blueprint "thm:stateTransitionMatrix-const"
+  (title := "The LTI state transition matrix is $e^{A(t-t_{0})}$")
   (statement := /-- For a constant state matrix $A$, the state transition matrix is the matrix
     exponential:
     \[
@@ -115,6 +120,7 @@ for LTI systems is just uniqueness for LTV systems at a constant state matrix.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.1. -/
 @[blueprint "thm:exp-mulVec-unique"
+  (title := "Uniqueness of the LTI state response")
   (statement := /-- Let $A$ be constant and let $z$ be a continuous integral solution of
     $\dot x = Ax$, $x(t_0) = x_0$, on $[t_0, t_1]$.  Then
     $z(t) = e^{A(t-t_0)}x_0$ for every $t$ in that interval. -/)
@@ -138,6 +144,7 @@ of `exp_mulVec_unique`, a direct corollary of the LTV theorem `stateTransitionMa
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.2. -/
 @[blueprint "thm:exp-col-unique"
+  (title := "Columns of the LTI state transition matrix")
   (statement := /-- Let $A$ be constant.  For each $i$, the $i$-th column of $e^{A(t-t_0)}$ is
     the unique continuous integral solution of $\dot x = Ax$ with $x(t_0) = e_i$, the $i$-th
     standard basis vector.  Equivalently, the columns of the matrix exponential are the

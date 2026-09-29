@@ -22,6 +22,7 @@ A typed bridge from `Matrix.toEuclideanCLM` to the repository's `EuclideanSpace`
 convention: the linearization of a nonlinear field about `x_eq` is of this shape, which is what
 lets the indirect method transfer a spectral condition on `A` to the nonlinear system. -/
 @[blueprint "def:affineLinearVectorField"
+  (title := "Affine-linear vector field")
   (statement := /-- For a matrix $A \in \mathbb{R}^{n \times n}$ and a point
     $x_{\mathrm{eq}} \in \mathbb{R}^{n}$, the \emph{affine-linear vector field} is
     \[

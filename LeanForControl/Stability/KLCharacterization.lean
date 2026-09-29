@@ -164,6 +164,8 @@ private lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ �
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:uniformlyStableNA-iff-classK"
+  (title := "Class $\\mathcal{K}$ characterization of uniform stability")
+  (latexEnv := "lemma")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
     \emph{uniformly stable} (\cref{def:uniformlyStableNA}) if and only if there exist a
     class $\mathcal{K}$ function $\alpha$ on $[0,a)$, with $a$ independent of $t_{0}$,
@@ -249,6 +251,8 @@ private lemma uniformlyAsymptoticStableNA_implies_classKL (f : ℝ → ℝⁿ �
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:uniformlyAsymptoticStableNA-iff-classKL"
+  (title := "Class $\\mathcal{KL}$ characterization of uniform asymptotic stability")
+  (latexEnv := "lemma")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{uniformly asymptotically
     stable} (\cref{def:uniformlyAsymptoticStableNA}) if and only if there exist a class
     $\mathcal{KL}$ function $\beta$ and a positive constant $c$, independent of $t_{0}$,
@@ -321,6 +325,8 @@ do not coincide: this statement needs radial unboundedness of `β(·, 0)`, which
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:globallyUniformlyAsymptoticStableNA-iff-classKL"
+  (title := "Class $\\mathcal{KL}$ characterization, global case")
+  (latexEnv := "lemma")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly
     asymptotically stable} (\cref{def:globallyUniformlyAsymptoticStableNA}) if and only if
     there is a $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is

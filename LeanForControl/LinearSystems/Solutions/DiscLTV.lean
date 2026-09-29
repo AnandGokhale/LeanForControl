@@ -26,6 +26,8 @@ empty range `[t₀,t₀)`, hence trivially `I`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5. -/
 @[blueprint "lem:discStateTransitionMatrix-self"
+  (title := "The discrete state transition matrix at the initial time")
+  (latexEnv := "lemma")
   (statement := /-- $\Phi(t_0,t_0) = I$. -/)
   (proof := /-- The defining product is over the empty range $[t_0, t_0)$. -/)]
 theorem discStateTransitionMatrix_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ) :
@@ -41,6 +43,8 @@ Proof: unfold the definition and peel the leading factor `A(t)` off the product,
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5. -/
 @[blueprint "lem:discStateTransitionMatrix-succ"
+  (title := "One-step recursion")
+  (latexEnv := "lemma")
   (statement := /-- For $t \ge t_0$, $\Phi(t+1, t_0) = A(t)\,\Phi(t, t_0)$.  With
     \cref{lem:discStateTransitionMatrix-self} this is the existence half of Hespanha's P5.5: the
     discrete state transition matrix solves the matrix recursion. -/)
@@ -70,8 +74,8 @@ sketch describes — the base case is `discStateTransitionMatrix_self`, the indu
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5. -/
 @[blueprint "thm:discStateTransitionMatrix-unique"
-  (statement := /-- \textbf{Discrete state transition matrix: uniqueness} (Hespanha, P5.5).
-    If $Z(t_0) = I$ and
+  (title := "Discrete state transition matrix: uniqueness")
+  (statement := /-- Hespanha, P5.5.  If $Z(t_0) = I$ and
     $Z(t+1) = A(t)Z(t)$ for all $t \ge t_0$, then $Z(t) = \Phi(t,t_0)$ for all $t \ge t_0$. -/)
   (proof := /-- Induction on $t$ from $t_0$: the base case is
     \cref{lem:discStateTransitionMatrix-self} and the step chains the recursion against
@@ -93,6 +97,7 @@ to columns (`x₀ := e_i`) for P5.6.
 Proof: the same induction as `discStateTransitionMatrix_unique`, pushed through `*ᵥ x₀` via
 `discStateTransitionMatrix_succ` and `Matrix.mulVec_mulVec`. -/
 @[blueprint "thm:discStateTransitionMatrix-mulVec-unique"
+  (title := "Uniqueness of the discrete state response")
   (statement := /-- If $z(t_0) = x_0$ and $z(t+1) = A(t)z(t)$ for all $t \ge t_0$, then
     $z(t) = \Phi(t,t_0)x_0$ for all $t \ge t_0$: the vector form of
     \cref{thm:discStateTransitionMatrix-unique}. -/)]
@@ -116,8 +121,8 @@ Proof: restatement of `discStateTransitionMatrix_mulVec_unique` at `x₀ := e_i`
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.6. -/
 @[blueprint "thm:discStateTransitionMatrix-col-unique"
-  (statement := /-- \textbf{Columns of the discrete state transition matrix} (Hespanha, P5.6).
-    For each $i$, the $i$-th column of $\Phi(t,t_0)$ is the
+  (title := "Columns of the discrete state transition matrix")
+  (statement := /-- Hespanha, P5.6.  For each $i$, the $i$-th column of $\Phi(t,t_0)$ is the
     unique solution of $z(t+1) = A(t)z(t)$ with $z(t_0) = e_i$, for $t \ge t_0$. -/)
   (proof := /-- \cref{thm:discStateTransitionMatrix-mulVec-unique} at $x_0 = e_i$, using
     $\Phi(t,t_0)e_i = (\Phi(t,t_0))_{\cdot,i}$. -/)]
@@ -138,7 +143,8 @@ Proof: induction on `t` starting at `t = s` (`Nat.le_induction`) — the base ca
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.7. -/
 @[blueprint "thm:discStateTransitionMatrix-semigroup"
-  (statement := /-- \textbf{Semigroup property, discrete} (Hespanha, P5.7).  For $\tau \le s \le t$,
+  (title := "Semigroup property, discrete")
+  (statement := /-- Hespanha, P5.7.  For $\tau \le s \le t$,
     \[
       \Phi(t,s)\,\Phi(s,\tau) = \Phi(t,\tau).
     \]
@@ -167,6 +173,8 @@ value `x₀` at `t = t₀`: the forcing sum is over the empty range `[t₀,t₀)
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3 (discrete
 variation of constants). -/
 @[blueprint "lem:discVariationOfConstants-self"
+  (title := "Discrete variation of constants at the initial time")
+  (latexEnv := "lemma")
   (statement := /-- The discrete variation-of-constants formula
     \[
       x(t) := \Phi(t,t_0)x_0 + \sum_{\tau=t_0}^{t-1} \Phi(t,\tau+1)B(\tau)u(\tau)
@@ -188,7 +196,8 @@ Proof: peel the top term off `x(t+1)`'s sum (`Finset.sum_Ico_succ_top`), and fol
 (also applied once more to the leading `Φ(t,t₀)` term); the two sides then match up to
 reassociating the sum. -/
 @[blueprint "thm:discVariationOfConstants-succ"
-  (statement := /-- \textbf{Discrete variation of constants, existence.}  For $t \ge t_0$, the
+  (title := "Discrete variation of constants: existence")
+  (statement := /-- For $t \ge t_0$, the
     formula of \cref{lem:discVariationOfConstants-self} satisfies the forced recursion
     \[
       x(t+1) = A(t)\,x(t) + B(t)\,u(t).
@@ -223,7 +232,8 @@ Proof: induction on `t` starting at `t = t₀`. Unlike the continuous case
 (`variationOfConstants_unique`), this needs no Lipschitz/Gronwall machinery — the recursion pins
 each successive value directly. -/
 @[blueprint "thm:discVariationOfConstants-unique"
-  (statement := /-- \textbf{Discrete variation of constants, uniqueness.}  Any two solutions of
+  (title := "Discrete variation of constants: uniqueness")
+  (statement := /-- Any two solutions of
     $z(t+1) = A(t)z(t) + B(t)u(t)$ with the same value at $t_0$ agree for all $t \ge t_0$. -/)
   (proof := /-- Induction on $t$ from $t_0$.  Unlike
     \cref{thm:variationOfConstants-unique}, no Lipschitz condition or Gronwall estimate is

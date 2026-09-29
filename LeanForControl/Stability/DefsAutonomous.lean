@@ -47,6 +47,7 @@ Reducible, so it is the Mathlib notion rather than a wrapper around it: `hφ.con
 `hφ.mono`, and direct application `hφ t ht` all work, and a bare `IsIntegralCurveOn` is
 accepted wherever this is expected. -/
 @[blueprint "def:isTrajectoryOn"
+  (title := "Solution segment")
   (statement := /-- A \emph{solution segment} of $\dot{x} = f(x)$ on $[t_0, t_1]$ is an
     integral curve of the vector field restricted to that interval. Unlike a globally
     defined trajectory it need not exist for all time, so quantifying over segments
@@ -56,6 +57,7 @@ abbrev IsTrajectoryOn (φ : ℝ → ℝⁿ) (f : ℝⁿ → ℝⁿ) (t₀ t₁ :
 
 /-- An equilibrium point `x_eq` of `ẋ = f(x)`: `f(x_eq) = 0`. -/
 @[blueprint "def:isEquilibrium"
+  (title := "Equilibrium point")
   (statement := /-- A point $x_{\mathrm{eq}} \in \mathbb{R}^{n}$ is an
     \emph{equilibrium} of $\dot{x} = f(x)$ when $f(x_{\mathrm{eq}}) = 0$. -/)]
 def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
@@ -68,6 +70,7 @@ def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "def:lyapunovStable"
+  (title := "Lyapunov stability")
   (statement := /-- An equilibrium is Lyapunov stable when every finite
     forward solution segment starting sufficiently close remains within any
     prescribed neighborhood for its entire interval of definition. -/)]
@@ -85,6 +88,7 @@ time origin.
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "def:locallyExponentiallyStable"
+  (title := "Local exponential stability")
   (statement := /-- An equilibrium is locally exponentially stable on finite
     forward segments when nearby solutions satisfy a uniform estimate
     $\|x(t)-x_{\rm eq}\|\leq C e^{-a(t-t_0)}\|x(t_0)-x_{\rm eq}\|$. -/)]
@@ -105,6 +109,7 @@ solutions is strictly stronger and is recorded separately, for the certificates 
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "def:localAsymptoticStable"
+  (title := "Local asymptotic stability")
   (statement := /-- An equilibrium is \emph{locally asymptotically stable} when it is forward
     Lyapunov stable and there is a radius $c>0$ such that every solution defined for all
     forward time with $\|\varphi(t_0)-x_{\rm eq}\|<c$ satisfies
@@ -122,6 +127,7 @@ As `LocalAsymptoticStable` but with no basin restriction.
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "def:globalAsymptoticStable"
+  (title := "Global asymptotic stability")
   (statement := /-- An equilibrium is \emph{globally asymptotically stable} when it is forward
     Lyapunov stable and every solution defined for all forward time satisfies
     $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$. -/)]
@@ -135,6 +141,7 @@ def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "def:unstable"
+  (title := "Instability")
   (statement := /-- Instability is the negation of stability quantified
     over all finite forward solution segments. -/)]
 def Unstable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
@@ -144,6 +151,7 @@ def Unstable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 
 /-- The sublevel set `{x | V(x) ≤ c}` of `V` at level `c`. -/
 @[blueprint "def:sublevelSet"
+  (title := "Sublevel set")
   (statement := /-- The \emph{sublevel set} of $V : \mathbb{R}^{n} \to \mathbb{R}$
     at level $c \in \mathbb{R}$ is
     \[
@@ -174,6 +182,7 @@ The Lie derivative DV(x)[f(x)] = fderiv ℝ V x (f x). -/
     `D` is an open neighborhood of `x_eq`; `V` is globally smooth so that the chain rule
     and IVT arguments can be applied uniformly. -/
 @[blueprint "def:isLocalLyapunovFunction"
+  (title := "Local Lyapunov function")
   (statement := /-- A function $V : \mathbb{R}^{n} \to \mathbb{R}$ is a
     \emph{local Lyapunov function} on an open domain $D \ni x_{\mathrm{eq}}$
     when $V$ is continuous and differentiable on all of $\mathbb{R}^n$,
@@ -200,6 +209,7 @@ structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (
     `hcompact`: ∃ c > 0 with `{V ≤ c} ⊆ D` and `{V ≤ c}` compact. This replaces radial
     unboundedness and holds whenever `D` is bounded or `V` grows toward `∂D`. -/
 @[blueprint "def:isStrictLocalLyapunovFunction"
+  (title := "Strict local Lyapunov function")
   (statement := /-- A \emph{strict local Lyapunov function} on $D$ strengthens
     \cref{def:isLocalLyapunovFunction} in three ways: $V$ is required to be $C^{1}$ rather
     than merely differentiable; $x_{\mathrm{eq}}$ must be an equilibrium,
@@ -224,6 +234,7 @@ structure IsStrictLocalLyapunovFunction
 
     `hbounded_sublevel` encodes coercivity; in `ℝⁿ` this is equivalent to radial unboundedness. -/
 @[blueprint "def:isStrictLyapunovFunction"
+  (title := "Strict Lyapunov function")
   (statement := /-- A \emph{global strict Lyapunov function} for $\dot{x} = f(x)$
     at $x_{\mathrm{eq}}$ is a $C^{1}$ map $V : \mathbb{R}^{n} \to \mathbb{R}$
     with $f(x_{\mathrm{eq}}) = 0$, $V(x_{\mathrm{eq}}) = 0$, $V > 0$ everywhere else,
@@ -242,6 +253,7 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
     and radially unbounded (`V(x) → ∞` as `‖x‖ → ∞`). Implies `IsStrictLyapunovFunction`
     via `isCompact_sublevel_set` in `Autonomous.lean`. -/
 @[blueprint "def:isAsymptoticLyapunovFunction"
+  (title := "Asymptotic Lyapunov function")
   (statement := /-- The classical GAS Lyapunov certificate: a $C^{1}$ map
     $V : \mathbb{R}^{n} \to \mathbb{R}$ with $f(x_{\mathrm{eq}}) = 0$,
     $V(x_{\mathrm{eq}}) = 0$,
@@ -263,6 +275,7 @@ structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → �
 /-- A set `S` is positively invariant for `ẋ = f(x)`: every solution segment starting in `S`
     remains in `S` for its whole interval of definition. -/
 @[blueprint "def:isPositivelyInvariant"
+  (title := "Positively invariant set")
   (statement := /-- A set $S \subseteq \mathbb{R}^{n}$ is \emph{positively invariant}
     for $\dot{x} = f(x)$ when every solution segment $\varphi$ on $[t_0, t_1]$ starting
     in $S$ remains in $S$ throughout:
@@ -281,6 +294,8 @@ Proof:
 2. Bounded: coercivity gives `R` with `SublevelSet V c ⊆ closedBall 0 R`.
 3. Heine–Borel in `ℝⁿ`: closed + bounded = compact. -/
 @[blueprint "lem:isCompact-sublevel-set"
+  (title := "Sublevel sets of a radially unbounded function are compact")
+  (latexEnv := "lemma")
   (statement := /-- If $V : \mathbb{R}^{n} \to \mathbb{R}$ is continuous and
     radially unbounded ($V(x) \to \infty$ as $\|x\| \to \infty$), then every
     sublevel set $\Omega_{c}(V)$ (\cref{def:sublevelSet}) is compact. -/)

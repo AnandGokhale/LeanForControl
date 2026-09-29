@@ -244,6 +244,7 @@ finite forward solution segment.
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "thm:hurwitz-linearization-locally-exponentially-stable"
+  (title := "Lyapunov's indirect method, stable branch")
   (statement := /-- Let $f : \mathbb{R}^n \to \mathbb{R}^n$ be $C^1$, and let
     $x_{\rm eq}$ be an equilibrium. If its Jacobian $A$ at the equilibrium is
     Hurwitz, then there are uniform local constants giving exponential decay

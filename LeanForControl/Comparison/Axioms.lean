@@ -16,7 +16,8 @@ no proof, so the rendered blueprint shows them as open.
 
     This is the global analogue of Lemma 9 in Kellett, *A compendium of comparison function
     results* (2014), stated on `ℝ≥0 × ℝ≥0` with the paper's exact hypotheses. -/
-@[blueprint "lem:exists-classKLGlobal-of-stability-properties" (latexEnv := "lemma")
+@[blueprint "lem:exists-classKLGlobal-of-stability-properties"
+  (title := "Global class $\\mathcal{KL}$ majorant from stability properties") (latexEnv := "lemma")
   (statement := /-- \textbf{Assumed without proof.}  Let $\varphi : \mathbb{R} \to \mathbb{R}
     \to \mathbb{R}$ satisfy
     \begin{itemize}
@@ -42,7 +43,8 @@ axiom exists_classKLGlobal_of_stability_properties
 /-- Any class K function `α` on `[0, a)` has a class K minorant `β ≤ α` that is globally
 Lipschitz on a neighbourhood of `0`. The Lipschitz extension `β_ext` agrees with `β` on `[0, a)`
 and satisfies `β(x) ≤ L·x` near the base point. -/
-@[blueprint "lem:exists-classK-minorant-lipschitz" (latexEnv := "lemma")
+@[blueprint "lem:exists-classK-minorant-lipschitz"
+  (title := "Lipschitz class $\\mathcal{K}$ minorant") (latexEnv := "lemma")
   (statement := /-- \textbf{Assumed without proof.}  Let $\alpha$ be a class $\mathcal{K}$
     function on $[0, a)$ and let $\mathrm{base} \in (0, a)$.  Then there are a class
     $\mathcal{K}$ function $\beta$ on $[0, a)$, a function $\beta_{\mathrm{ext}} :
@@ -61,7 +63,8 @@ axiom exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) (base : ℝ
 
 /-- Every class K function `α` on `[0, a)` extends to a continuous, monotone function on all
 of `ℝ` that agrees with `α` on `[0, a)`. -/
-@[blueprint "lem:classK-exists-global-extension" (latexEnv := "lemma")
+@[blueprint "lem:classK-exists-global-extension"
+  (title := "Global extension of a class $\\mathcal{K}$ function") (latexEnv := "lemma")
   (statement := /-- \textbf{Assumed without proof.}  Every class $\mathcal{K}$ function $\alpha$
     on $[0, a)$ admits an $\alpha_{\mathrm{ext}} : \mathbb{R} \to \mathbb{R}$ that is continuous
     and monotone on all of $\mathbb{R}$ and agrees with $\alpha$ on $[0, a)$. -/)]

@@ -20,6 +20,7 @@ certificates and ISS bounds. -/
 /-- A class K∞ function: continuous, strictly increasing, `f(0) = 0`, radially unbounded
     (`f(r) → ∞`), all on `[0, ∞)`. -/
 @[blueprint "def:isClassKInfty"
+  (title := "Class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- A \emph{class $\mathcal{K}_{\infty}$} function is a continuous
     strictly increasing map $\alpha : [0,\infty) \to [0,\infty)$ with $\alpha(0) = 0$
     and $\alpha(r) \to \infty$ as $r \to \infty$. -/)]
@@ -139,6 +140,7 @@ private lemma ClassKInfty.surjOn_of_basic (f : ℝ → ℝ) (hf_zero : f 0 = 0)
 /-- Smart constructor for `ClassKInfty`: requires only `f(0) = 0`, continuity on `[0,∞)`,
     strict monotonicity on `[0,∞)`, and `f(r) → ∞`. -/
 @[blueprint "lem:classKInfty-of-strictMono"
+  (title := "Class $\\mathcal{K}_{\\infty}$ from a strictly increasing function")
   (statement := /-- Let $f : \mathbb{R} \to \mathbb{R}$ satisfy $f(0) = 0$, be continuous and
     strictly increasing on $[0, \infty)$, and have $f(r) \to \infty$ as $r \to \infty$.  Then
     $f$ is a class $\mathcal{K}_{\infty}$ function, its inverse being the inverse of $f$ on
@@ -182,6 +184,7 @@ private lemma ClassKInfty.invFun_zero (α : ClassKInfty) : α.invFun 0 = 0 := by
 
 /-- The inverse of a class K∞ function is again class K∞. -/
 @[blueprint "lem:classKInfty-symm"
+  (title := "Inverse of a class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under inversion: if $\alpha$ is class
     $\mathcal{K}_{\infty}$, so is $\alpha^{-1}$. -/)]
 def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
@@ -246,6 +249,7 @@ def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
 
 /-- Composition of two class K∞ functions is class K∞. -/
 @[blueprint "lem:classKInfty-comp"
+  (title := "Composition of class $\\mathcal{K}_{\\infty}$ functions")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under composition: if $\alpha$ and
     $\beta$ are class $\mathcal{K}_{\infty}$, so is $\beta \circ \alpha$, with inverse
     $\alpha^{-1} \circ \beta^{-1}$. -/)]
@@ -276,6 +280,7 @@ def ClassKInfty.comp (β α : ClassKInfty) : ClassKInfty where
 
 /-- The power function `r ↦ r ^ p` is class K∞ for any `p > 0`. -/
 @[blueprint "lem:classKInfty-power"
+  (title := "Powers of a class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- For every $p > 0$, the map $r \mapsto r^{p}$ is class
     $\mathcal{K}_{\infty}$. -/)]
 noncomputable def ClassKInfty.power (p : ℝ) (hp : 0 < p) : ClassKInfty :=
@@ -287,6 +292,7 @@ noncomputable def ClassKInfty.power (p : ℝ) (hp : 0 < p) : ClassKInfty :=
 
 /-- Any class K∞ function restricts to a class K function on `[0, a)`. -/
 @[blueprint "lem:classKInfty-toClassK"
+  (title := "A class $\\mathcal{K}_{\\infty}$ function restricts to class $\\mathcal{K}$")
   (statement := /-- Every class $\mathcal{K}_{\infty}$ function $\alpha$ restricts, for each
     $a > 0$, to a class $\mathcal{K}$ function on $[0, a) \to [0, \alpha(a))$. -/)]
 noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a) :
@@ -302,6 +308,7 @@ noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a)
 
 /-- Pointwise sum of two class K∞ functions is class K∞. -/
 @[blueprint "lem:classKInfty-add"
+  (title := "Sum of class $\\mathcal{K}_{\\infty}$ functions")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under pointwise addition: if
     $\alpha$ and $\beta$ are class $\mathcal{K}_{\infty}$, so is $\alpha + \beta$. -/)]
 noncomputable def ClassKInfty.add (α : ClassKInfty) (β : ClassKInfty) :
@@ -314,6 +321,7 @@ noncomputable def ClassKInfty.add (α : ClassKInfty) (β : ClassKInfty) :
 
 /-- Positive scalar multiple of a class K∞ function is class K∞. -/
 @[blueprint "lem:classKInfty-smul"
+  (title := "Positive multiple of a class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under multiplication by a positive
     constant: if $\alpha$ is class $\mathcal{K}_{\infty}$ and $c > 0$, so is $c\alpha$. -/)]
 noncomputable def ClassKInfty.smul (α : ClassKInfty) (c : ℝ) (hc : 0 < c) :
@@ -326,6 +334,7 @@ noncomputable def ClassKInfty.smul (α : ClassKInfty) (c : ℝ) (hc : 0 < c) :
 
 /-- Pointwise minimum of two class K∞ functions is class K∞. -/
 @[blueprint "lem:classKInfty-min-fn"
+  (title := "Minimum of class $\\mathcal{K}_{\\infty}$ functions")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under pointwise minimum: if $\alpha$
     and $\beta$ are class $\mathcal{K}_{\infty}$, so is $\min(\alpha, \beta)$. -/)]
 noncomputable def ClassKInfty.min_fn (α : ClassKInfty) (β : ClassKInfty) :
@@ -350,6 +359,8 @@ noncomputable def ClassKInfty.min_fn (α : ClassKInfty) (β : ClassKInfty) :
 /-- Any function on `[0, ∞)` that is monotone and vanishes at `0` is dominated by a class K∞
     function. -/
 @[blueprint "lem:exists-classKInfty-upper-bound"
+  (title := "Class $\\mathcal{K}_{\\infty}$ majorant of a monotone function")
+  (latexEnv := "lemma")
   (statement := /-- Let $\omega : \mathbb{R} \to \mathbb{R}$ satisfy $\omega(0) = 0$ and be
     monotone on $[0, \infty)$.  Then there is a class $\mathcal{K}_{\infty}$ function $\alpha$
     with $\omega(r) \le \alpha(r)$ for all $r \ge 0$. -/)

@@ -7,6 +7,8 @@ open MeasureTheory intervalIntegral Real Set Filter
 /-- If a continuous function starts ≤ 0 and ends > 0, it has a last root `a` in `[t₀, t₁)`,
     after which it is strictly positive on `(a, t₁]`. -/
 @[blueprint "lem:exists-greatest-zero-of-nonpos-of-pos"
+  (title := "Greatest zero of a sign-changing continuous function")
+  (latexEnv := "lemma")
   (statement := /-- Let $g$ be continuous on $[t_0, t_1]$ with $g(t_0) \le 0 < g(t_1)$. Then $g$
     has a \emph{last} root: there is $a \in [t_0, t_1)$ with $g(a) = 0$ and $g(t) > 0$ for every
     $t \in (a, t_1]$.-/)]
@@ -52,6 +54,7 @@ lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀
 /-- A continuous curve that starts inside the ball of radius `ρ` and later leaves it first meets
 the sphere at some `τ`, staying in the closed ball until then. -/
 @[blueprint "thm:exists-first-sphere-hit"
+  (title := "First crossing of a sphere")
   (statement := /-- Let $\varphi$ be continuous on $[t_0, T]$ with
     $\|\varphi(t_0) - x_{\mathrm{eq}}\| < \rho$, and suppose some $t_1 \in [t_0, T]$ satisfies
     $\rho \le \|\varphi(t_1) - x_{\mathrm{eq}}\|$. Then there is a \emph{first} hitting time

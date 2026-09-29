@@ -16,7 +16,8 @@ interpolation, or integrating a positive minorant), but neither is in Mathlib.
 
 /-- A monotonically non-decreasing positive function can be lower-bounded by a strictly monotonic
 continuous function. -/
-@[blueprint "lem:exists-strictMono-lower-bound" (latexEnv := "lemma")
+@[blueprint "lem:exists-strictMono-lower-bound"
+  (title := "Class $\\mathcal{K}$ minorant of a positive monotone function") (latexEnv := "lemma")
   (statement := /-- \textbf{Assumed without proof.}  Let $r > 0$ and let
     $\psi : \mathbb{R} \to \mathbb{R}$ satisfy $\psi(0) = 0$, $\psi(s) > 0$ for
     $s \in (0, r]$, and $\psi$ nondecreasing on $[0, r]$.  Then there are $b > 0$ and a
@@ -39,7 +40,8 @@ axiom exists_strictMono_lower_bound (r : ℝ) (hr : 0 < r) (ψ : ℝ → ℝ)
 
 /-- A monotonically non-decreasing function starting at 0 on all of `[0, ∞)` can be
     upper-bounded by a strictly monotonic continuous function that tends to `+∞`. -/
-@[blueprint "lem:exists-strictMono-upper-bound-global" (latexEnv := "lemma")
+@[blueprint "lem:exists-strictMono-upper-bound-global"
+  (title := "Class $\\mathcal{K}_{\\infty}$ majorant of a monotone function") (latexEnv := "lemma")
   (statement := /-- \textbf{Assumed without proof.}  Let $\varphi : \mathbb{R} \to
     \mathbb{R}$ satisfy $\varphi(0) = 0$ and be monotone on $[0, \infty)$.  Then there is an
     $f$ with $f(0) = 0$, continuous and strictly increasing on $[0, \infty)$,
@@ -64,6 +66,8 @@ axiom exists_strictMono_upper_bound_global (φ : ℝ → ℝ)
 Unlike the two axioms above this one is proved, by clamping `φ` beyond `r` and invoking the
 global axiom. -/
 @[blueprint "lem:exists-strictMono-upper-bound"
+  (title := "Class $\\mathcal{K}$ majorant on a bounded interval")
+  (latexEnv := "lemma")
   (statement := /-- Let $r > 0$ and let $\varphi$ satisfy $\varphi(0) = 0$ and be monotone on
     $[0, r]$.  Then there are $b > 0$ and an $f$ with $f(0) = 0$, $f(r) = b$, $f$ continuous and
     strictly increasing on $[0, r]$, and $\varphi(s) \le f(s)$ for all $s \in [0, r]$. -/)

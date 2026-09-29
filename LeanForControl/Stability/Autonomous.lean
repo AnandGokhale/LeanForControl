@@ -49,6 +49,8 @@ private lemma sphere_nonempty
 
 /-- The Lie derivative `x ↦ DV(x)[f(x)]` is continuous when `V` is C¹ and `f` is continuous. -/
 @[blueprint "lem:lie-deriv-continuous"
+  (title := "Continuity of the Lie derivative")
+  (latexEnv := "lemma")
   (statement := /-- If $V$ is $C^1$ and $f$ is continuous, the Lie derivative
     $x \mapsto DV(x)[f(x)]$ is continuous. -/)]
 lemma lie_deriv_continuous
@@ -69,7 +71,9 @@ in — at every call site.
 
 The non-autonomous mirror is `hasDerivAt_V_comp_traj_NA` (`NonAutonomous.lean`). -/
 @[blueprint "lem:hasDerivAt-V-comp-integralCurveOn"
-  (statement := /-- \textbf{Chain rule along a solution.}  Let $V$ be differentiable and let
+  (title := "Chain rule along a solution")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be differentiable and let
     $\varphi$ be an integral curve of $f$ on a set $s$ that is a neighbourhood of $t$.  Then
     \[
       (V \circ \varphi)'(t) \;=\; DV(\varphi(t))\,[\,f(\varphi(t))\,] .
@@ -86,6 +90,8 @@ lemma hasDerivAt_V_comp_integralCurveOn
 
 /-- The common case: a solution segment, at an interior time. -/
 @[blueprint "lem:hasDerivAt-V-comp-traj"
+  (title := "Chain rule along a trajectory")
+  (latexEnv := "lemma")
   (statement := /-- \cref{lem:hasDerivAt-V-comp-integralCurveOn} in the common case: a solution
     segment on $[t_0, t_1]$, at an interior time $t$. -/)]
 lemma hasDerivAt_V_comp_traj
@@ -108,7 +114,9 @@ The weight is what turns a *rate* bound into a bound on *elapsed time*: `V` is b
 Stated on an arbitrary convex `s` so that both the segment (`Icc t₀ t₁`) and forward-ray
 (`Ici 0`) callers are instances. -/
 @[blueprint "lem:antitoneOn-V-add-linear"
-  (statement := /-- \textbf{Rate-bounded monotonicity.}  Let $\varphi$ be an integral curve of
+  (title := "Rate-bounded monotonicity")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\varphi$ be an integral curve of
     $f$ on a convex set $s$, with $DV(\varphi(t))[f(\varphi(t))] \le -c$ at every interior
     point.  Then $t \mapsto V(\varphi(t)) + ct$ is antitone on $s$.
 
@@ -138,6 +146,8 @@ lemma antitoneOn_V_add_linear
 /-- The unweighted case of `antitoneOn_V_add_linear`: `V ∘ φ` is antitone wherever the Lie
 derivative is nonpositive. -/
 @[blueprint "lem:antitoneOn-V-comp-traj"
+  (title := "$V$ is nonincreasing along a solution")
+  (latexEnv := "lemma")
   (statement := /-- The unweighted case $c = 0$ of \cref{lem:antitoneOn-V-add-linear}:
     $V \circ \varphi$ is antitone wherever the Lie derivative is nonpositive.  This is the sense
     in which a Lyapunov function ``never increases along solutions''. -/)]
@@ -157,6 +167,8 @@ lemma antitoneOn_V_comp_traj
     The endpoint form of `antitoneOn_V_comp_traj`, with `hLie_nonpos` supplying the
     derivative bound on the segment. -/
 @[blueprint "lem:V-nonincreasing-on"
+  (title := "$V$ does not increase from the initial time")
+  (latexEnv := "lemma")
   (statement := /-- \cref{lem:antitoneOn-V-comp-traj} in endpoint form: if $V$ is a local
     Lyapunov certificate on $D$ and the solution segment stays in $D$ throughout
     $[t_0, t_1]$, then $V(\varphi(t_1)) \le V(\varphi(t_0))$. -/)]
@@ -181,6 +193,8 @@ lemma V_nonincreasing_on
     The equilibrium case uses `fderiv ℝ V x_eq (f x_eq) = fderiv ℝ V x_eq 0 = 0`
     (zero map of a continuous linear map). -/
 @[blueprint "lem:strict-implies-semidefinite"
+  (title := "A strict Lyapunov function is a Lyapunov function")
+  (latexEnv := "lemma")
   (statement := /-- A strict Lyapunov function is a local Lyapunov function on all of
     $\mathbb{R}^n$: strict negativity away from the equilibrium weakens to nonpositivity
     everywhere. -/)
@@ -205,6 +219,8 @@ lemma strict_implies_semidefinite
 /-- `IsAsymptoticLyapunovFunction` implies `IsStrictLyapunovFunction`.
     Uses `isCompact_sublevel_set` to convert radial unboundedness into compact sublevel sets. -/
 @[blueprint "lem:asymptotic-implies-strict"
+  (title := "An asymptotic Lyapunov function is strict")
+  (latexEnv := "lemma")
   (statement := /-- An asymptotic Lyapunov function is a strict one: radial unboundedness
     supplies the bounded-sublevel-set condition the strict notion requires. -/)
   (proof := /-- A continuous radially unbounded function has compact sublevel sets. -/)]
@@ -223,6 +239,8 @@ lemma asymptotic_implies_strict
 /-- `IsStrictLocalLyapunovFunction` implies `IsLocalLyapunovFunction` (on the same `D`).
     The equilibrium satisfies `Lie ≤ 0` trivially since `f(x_eq) = 0`. -/
 @[blueprint "lem:strict-local-implies-semidefinite"
+  (title := "A strict local Lyapunov function is a local one")
+  (latexEnv := "lemma")
   (statement := /-- A strict \emph{local} Lyapunov function on $D$ is a local Lyapunov function
     on the same $D$ — \cref{lem:strict-implies-semidefinite} without the global hypotheses. -/)]
 lemma strict_local_implies_semidefinite
@@ -252,7 +270,9 @@ Proof by contradiction via a first-exit-time argument:
 5. `V_nonincreasing_on` on `[0, T*]` gives `V(φ T*) ≤ V(φ 0) < c`.
 6. But `T* ∈ S` means `c ≤ V(φ T*)`. Contradiction. -/
 @[blueprint "lem:sublevel-set-invariant"
-  (statement := /-- \textbf{Forward invariance of sublevel sets.}  Let $V$ be a local Lyapunov
+  (title := "Forward invariance of sublevel sets")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be a local Lyapunov
     certificate on $D$ and let the sublevel set $\{V \le c\}$ be contained in $D$.  If
     $V(\varphi(t_0)) < c$ then $V(\varphi(t)) < c$ for every $t$ in the segment: a solution
     starting strictly inside a sublevel set contained in the certificate domain never leaves
@@ -324,8 +344,8 @@ Proof sketch:
 
 The first-exit argument runs at the segment's own left endpoint `t₀`. -/
 @[blueprint "thm:lyapunov-stable"
-  (statement := /-- \textbf{Lyapunov's stability theorem.}
-    If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
+  (title := "Lyapunov's stability theorem")
+  (statement := /-- If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
     $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
     is stable on every finite forward solution segment
     (\cref{def:lyapunovStable}). -/)
@@ -403,6 +423,7 @@ open Set in
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "thm:locallyExponentiallyStable-lyapunovStable"
+  (title := "Exponential stability implies Lyapunov stability")
   (statement := /-- Local exponential stability implies Lyapunov stability. -/)
   (proof := /-- Given $\varepsilon$, take $\delta := \min(r, \varepsilon/C)$.  The decay
     estimate $\|\varphi(t) - x_{\mathrm{eq}}\| \le C e^{-a(t-t_0)}\|\varphi(t_0) -
@@ -438,6 +459,7 @@ forward segments implies instability.
 Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "thm:unstable-of-fixed-escape"
+  (title := "Instability from a fixed escape radius")
   (statement := /-- Fix $\varepsilon > 0$.  If for every $\delta > 0$ some solution segment
     starts within $\delta$ of $x_{\mathrm{eq}}$ and reaches distance at least $\varepsilon$
     from it, then $x_{\mathrm{eq}}$ is unstable.  This is the contrapositive of stability, in
@@ -468,7 +490,9 @@ Stated for a local certificate; the global case is this with `D = univ`. That th
 in `D` is a hypothesis rather than a conclusion, since deriving it is exactly sublevel-set
 invariance, which the caller is better placed to supply. -/
 @[blueprint "lem:time-outside-ball-le"
-  (statement := /-- \textbf{Uniform entry time.}  Let $V$ be a local Lyapunov certificate on
+  (title := "Uniform entry time")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be a local Lyapunov certificate on
     $D$ with $DV(x)[f(x)] < 0$ away from the equilibrium, and let $\{V \le M\}$ be a compact
     subset of $D$.  For every $\delta > 0$ there is a $\tau \ge 0$ such that any solution
     segment starting in $\{V \le M\}$, staying in $D$, and remaining at distance at least
@@ -554,8 +578,8 @@ has entered by `t₀ + τ₀ + 1`; re-applying stability *at that entry time* �
 anchor-free form of the predicate — pins it inside the `ε`-ball from then on. The bound is in
 fact uniform over solutions; only the per-solution consequence is recorded here. -/
 @[blueprint "thm:lyapunov-asymptotic-stable"
-  (statement := /-- \textbf{Lyapunov's global asymptotic stability theorem.}
-    If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
+  (title := "Lyapunov's global asymptotic stability theorem")
+  (statement := /-- If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
     and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
     (\cref{def:globalAsymptoticStable}). -/)
   (proof := /-- Stability from \cref{thm:lyapunov-stable} fixes $\delta$ for the given
@@ -594,8 +618,8 @@ theorem lyapunov_asymptotic_stable
 /-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
     (the classical radially-unbounded form of the theorem). -/
 @[blueprint "thm:lyapunov-global-asymptotic-stable"
-  (statement := /-- \textbf{Corollary.}
-    If $V$ is a radially unbounded strict Lyapunov function
+  (title := "Global asymptotic stability from a radially unbounded $V$")
+  (statement := /-- If $V$ is a radially unbounded strict Lyapunov function
     (\cref{def:isAsymptoticLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is globally asymptotically stable on finite forward
     solution segments. -/)
@@ -625,8 +649,8 @@ Proof sketch:
 4. `time_outside_ball_le` caps the time spent outside the `δ`-ball, so the solution has entered
    it by `t₀ + τ₀ + 1`; stability re-applied at that entry time finishes. -/
 @[blueprint "thm:lyapunov-local-asymptotic-stable"
-  (statement := /-- \textbf{Lyapunov's local asymptotic stability theorem.}
-    If $V$ is a strict local Lyapunov function
+  (title := "Lyapunov's local asymptotic stability theorem")
+  (statement := /-- If $V$ is a strict local Lyapunov function
     (\cref{def:isStrictLocalLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is locally asymptotically stable
     (\cref{def:localAsymptoticStable}). -/)

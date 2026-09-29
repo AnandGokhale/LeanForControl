@@ -23,6 +23,7 @@ variable {𝕜 E F : Type*}
 /-- Differentiability, in `ε`–`δ` form: the linearization error is bounded by `ε ‖x - x₀‖` on
 an explicit ball around `x₀`. -/
 @[blueprint "thm:frechet-linearization-error-bound"
+  (title := "Quantitative linearization error bound")
   (statement := /-- Let $A$ be the Fréchet derivative of $f$ at $x_0$. For every
     $\varepsilon > 0$ there exists $\delta > 0$ such that
     \[

@@ -58,6 +58,7 @@ complements are used; no semisimplicity or spectral hypothesis is assumed.
 
 References: Hespanha, *Linear Systems Theory*; Kailath, *Linear Systems*. -/
 @[blueprint "thm:kalman-subspaces-exist"
+  (title := "Existence of the Kalman decomposition")
   (statement := /-- Every finite-dimensional complex state-space system has
     four coordinate sectors adapted to its reachable and unobservable
     subspaces. The complements are noncanonical vector-space complements and
@@ -585,6 +586,7 @@ to be invariant under `A`.
 References: Hespanha, *Linear Systems Theory*; Kalman, “Mathematical
 Description of Linear Dynamical Systems” (1963); Kailath, *Linear Systems*. -/
 @[blueprint "thm:kalman-block-matrix-zero-pattern"
+  (title := "Block-zero pattern in adapted coordinates")
   (statement := /-- In a basis adapted to the four Kalman coordinate sectors, ordered
     as controllable-unobservable, controllable-observable,
     uncontrollable-unobservable, uncontrollable-observable, the system has

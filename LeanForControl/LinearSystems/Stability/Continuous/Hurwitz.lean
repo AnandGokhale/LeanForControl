@@ -70,6 +70,7 @@ The sign is positive: an eigenvalue `μ` of `A` becomes `μ + α` for `A + α I`
 Reference: João P. Hespanha, *Linear Systems Theory* (2nd ed.), continuous-time
 stability criterion. This spectral-shift corollary is proved directly from eigenpairs. -/
 @[blueprint "thm:isHurwitzWithRate-iff-spectral-shift"
+  (title := "Rate-Hurwitz via a spectral shift")
   (statement := /-- A real matrix $A$ is Hurwitz with decay rate $\alpha$ if and only if
     the spectrally shifted matrix $A + \alpha I$ is Hurwitz. -/)
   (proof := /-- A complex eigenvalue $\mu$ of $A$ becomes $\mu + \alpha$ after the shift,

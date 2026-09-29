@@ -48,6 +48,8 @@ If `u` has derivative `f(t, u(t))` at every interior point of `[t₀, t₁]`, is
 `[t₀, t₁]`, and satisfies `u(t₀) = u₀`, then `u` is an integral solution in the sense of
 `IsIntegralSolution`. -/
 @[blueprint "lem:isIntegralSolution-of-hasDerivAt"
+  (title := "Integral form from a pointwise derivative")
+  (latexEnv := "lemma")
   (statement := /-- Let $u$ be continuous on $[t_0, t_1]$ with $u(t_0) = u_0$ and
     $\dot u(t) = f(t, u(t))$ at every interior point, and let $f$ be jointly continuous.  Then
     $u$ is an integral solution:
@@ -137,7 +139,8 @@ The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_depend
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 3.4. Note this is Khalil's *Lemma* 3.4;
 his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE`. -/
 @[blueprint "thm:comparison-lemma"
-  (statement := /-- \textbf{Comparison lemma} (Khalil, Lemma 3.4).  Let $f$ be jointly
+  (title := "Comparison lemma")
+  (statement := /-- Khalil, Lemma 3.4.  Let $f$ be jointly
     continuous and $L$-Lipschitz in its state argument on $[t_0, t_1]$, and suppose
     \begin{enumerate}
       \item $u$ is continuous on $[t_0,t_1]$ and solves $\dot u = f(t,u)$ with $u(t_0) = u_0$;

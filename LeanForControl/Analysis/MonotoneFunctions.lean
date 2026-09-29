@@ -16,6 +16,8 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 /-- A continuous function `W : ℝ → ℝ` on `(0, ∞)` that tends to `+∞` near `0⁺` and to `0`
     at `+∞` surjects onto `(0, ∞)`: every `s > 0` lies in the image `W '' (Ioi 0)`. -/
 @[blueprint "lem:memImageIoiOfTendsto"
+  (title := "Surjectivity onto $(0,\\infty)$ from the two boundary limits")
+  (latexEnv := "lemma")
   (statement := /-- Let $W : \mathbb{R} \to \mathbb{R}$ be continuous on $(0,\infty)$ with
     $W(\eta) \to +\infty$ as $\eta \to 0^+$ and $W(\eta) \to 0$ as $\eta \to +\infty$.
     Then for every $s > 0$ there exists $c > 0$ with $W(c) = s$. -/)]
@@ -46,6 +48,8 @@ lemma mem_image_Ioi_of_tendsto {W : ℝ → ℝ}
 /-- The canonical right inverse `invFunOn W (Ioi 0)` satisfies `W(invFunOn W (Ioi 0) s) = s`
     for every `s > 0`, given the surjectivity conditions. -/
 @[blueprint "lem:applyInvFunOnEq"
+  (title := "The right inverse inverts")
+  (latexEnv := "lemma")
   (statement := /-- Under the surjectivity conditions of \cref{lem:memImageIoiOfTendsto},
     $W\bigl(\mathrm{invFunOn}\,W\,(0,\infty)\,s\bigr) = s$ for all $s > 0$. -/)]
 lemma apply_invFunOn_eq {W : ℝ → ℝ}
@@ -59,6 +63,8 @@ lemma apply_invFunOn_eq {W : ℝ → ℝ}
 
 /-- The canonical right inverse `invFunOn W (Ioi 0) s` is positive for every `s > 0`. -/
 @[blueprint "lem:invFunOnPos"
+  (title := "Positivity of the right inverse")
+  (latexEnv := "lemma")
   (statement := /-- Under the surjectivity conditions of \cref{lem:memImageIoiOfTendsto},
     $\mathrm{invFunOn}\,W\,(0,\infty)\,s > 0$ for all $s > 0$. -/)]
 lemma invFunOn_pos {W : ℝ → ℝ}
@@ -73,6 +79,8 @@ lemma invFunOn_pos {W : ℝ → ℝ}
 /-- If `W` is strictly antitone on `(0, ∞)`, then so is its right inverse
     `invFunOn W (Ioi 0)`. -/
 @[blueprint "lem:strictAntiOnInvFunOn"
+  (title := "The inverse of a strictly antitone function is strictly antitone")
+  (latexEnv := "lemma")
   (statement := /-- If $W$ is strictly antitone on $(0,\infty)$, then
     $\mathrm{invFunOn}\,W\,(0,\infty)$ is strictly antitone on $(0,\infty)$. -/)]
 lemma strictAntiOn_invFunOn {W : ℝ → ℝ}
@@ -101,6 +109,8 @@ lemma strictAntiOn_invFunOn {W : ℝ → ℝ}
 /-- The right inverse `invFunOn W (Ioi 0)` tends to `0` as `s → +∞`, provided `W` satisfies
     the standard boundary conditions. -/
 @[blueprint "lem:invFunOnTendstoZero"
+  (title := "The inverse vanishes at $+\\infty$")
+  (latexEnv := "lemma")
   (statement := /-- Under the conditions of \cref{lem:memImageIoiOfTendsto} and with $W$
     strictly antitone, $\mathrm{invFunOn}\,W\,(0,\infty)\,s \to 0$ as $s \to +\infty$. -/)]
 lemma invFunOn_tendsto_zero {W : ℝ → ℝ}
@@ -152,6 +162,8 @@ Order-theoretic, not analytic: the inverse of a strictly antitone map has no jum
 because `W` attains every positive value (`mem_image_Ioi_of_tendsto`), so both one-sided
 comparisons in `tendsto_order` can be met by transporting them through `W`. -/
 @[blueprint "lem:invFunOnContinuousOn"
+  (title := "Continuity of the inverse")
+  (latexEnv := "lemma")
   (statement := /-- Under the conditions of \cref{lem:memImageIoiOfTendsto} and with $W$
     strictly antitone, $\mathrm{invFunOn}\,W\,(0,\infty)$ is continuous on $(0,\infty)$. -/)]
 lemma invFunOn_continuousOn {W : ℝ → ℝ}
@@ -192,6 +204,8 @@ lemma invFunOn_continuousOn {W : ℝ → ℝ}
 /-- The right inverse `invFunOn W (Ioi 0)` blows up as `s → 0⁺`: the two boundary behaviours of
     `W` are exchanged by inversion. -/
 @[blueprint "lem:invFunOnTendstoAtTop"
+  (title := "The inverse blows up at $0^{+}$")
+  (latexEnv := "lemma")
   (statement := /-- Under the conditions of \cref{lem:memImageIoiOfTendsto} and with $W$
     strictly antitone, $\mathrm{invFunOn}\,W\,(0,\infty)\,s \to +\infty$ as $s \to 0^{+}$. -/)]
 lemma invFunOn_tendsto_atTop {W : ℝ → ℝ}

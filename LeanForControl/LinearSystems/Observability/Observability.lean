@@ -26,6 +26,8 @@ variable {n p : ℕ}
 /-- Block-row shape lemma: row `(k, i)` of the observability matrix at
 column `j` is the `(i, j)` entry of `C · Aᵏ`. Holds definitionally. -/
 @[simp, blueprint "lem:observabilityMatrix-apply"
+  (title := "Entries of the observability matrix")
+  (latexEnv := "lemma")
   (statement := /-- Block-row entry shape: at row $(k, i)$ and column $j$,
     the observability matrix coincides with the $(i, j)$ entry of $C\, A^{k}$:
     \[
@@ -43,6 +45,8 @@ lemma observabilityMatrix_apply
 coordinate of `(C · Aᵏ) *ᵥ x`. Holds definitionally and is the workhorse
 behind the milestone theorem. -/
 @[blueprint "lem:observabilityMatrix-mulVec-apply"
+  (title := "Action of the observability matrix")
+  (latexEnv := "lemma")
   (statement := /-- For every state $x \in \mathbb{F}^{n}$ and every
     $(k, i) \in \mathrm{Fin}\, n \times \mathrm{Fin}\, p$,
     \[
@@ -65,6 +69,7 @@ A finite-dimensional linear system `(A, C)` is observable in the textbook
 sense (`IsObservable`) iff the observability matrix has trivial kernel under
 `*ᵥ`. -/
 @[blueprint "thm:isObservable-iff-ker-trivial"
+  (title := "Observability via a trivial kernel")
   (statement := /-- A finite-dimensional linear system $(A, C)$ is observable
     in the sense of \cref{def:isObservable} if and only if the observability
     matrix $\mathcal{O}(A, C)$ has trivial kernel under matrix-vector
@@ -150,6 +155,7 @@ variable {𝕜 : Type*} [Field 𝕜] {n p : ℕ}
 observability matrix having full column rank. Chains the kernel-form
 milestone with the matrix bridge from `MatrixAlgebra.Rank`. -/
 @[blueprint "thm:isObservable-iff-rank"
+  (title := "Observability rank test")
   (statement := /-- A finite-dimensional system $(A, C)$ is observable if
     and only if the observability matrix $\mathcal{O}(A, C)$ has full column
     rank, i.e.

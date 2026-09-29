@@ -30,6 +30,7 @@ product, in order, of `A` over `[t₀, t)`; for `t ≤ t₀` this degenerates to
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, equation (5.11). -/
 @[blueprint "def:discStateTransitionMatrix"
+  (title := "Discrete state transition matrix")
   (statement := /-- The discrete-time \emph{state transition matrix} $\Phi(t,t_0)$:
     \[
       \Phi(t,t_0) := \begin{cases}

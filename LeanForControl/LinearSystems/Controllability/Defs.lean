@@ -33,6 +33,7 @@ variable {n m : ℕ}
 The `(k, j)`-th column is the `j`-th column of `Aᵏ · B`, where `k : Fin n`
 ranges over `0, 1, …, n-1`. -/
 @[blueprint "def:controllabilityMatrix"
+  (title := "Controllability matrix")
   (statement := /-- The \emph{controllability matrix} of a pair $(A, B)$
     with $A \in \mathbb{F}^{n \times n}$ and $B \in \mathbb{F}^{n \times m}$
     is the block-column matrix
@@ -54,6 +55,7 @@ every state can be reached from the origin in `n` steps via some sequence
 of inputs. Phrased in matrix-power language so the bridge theorem
 `isControllable_iff_controllabilityMatrix_rank_eq` has real content. -/
 @[blueprint "def:isControllable"
+  (title := "Controllability")
   (statement := /-- A linear system $(A, B)$ is \emph{controllable} when
     every target state $x \in \mathbb{F}^{n}$ is reachable from the origin
     in $n$ steps: there exist input vectors
@@ -80,6 +82,7 @@ finite-horizon controllability matrix.
 
 Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "def:reachableSubspace"
+  (title := "Reachable subspace")
   (statement := /-- The reachable subspace of a pair $(A,B)$ is the column
     span of its controllability matrix:
     \[
@@ -99,6 +102,7 @@ variable {n m : ℕ}
 
 /-- The Hautus controllability matrix at `μ`, `[μI - A | B]`. -/
 @[blueprint "def:hautusControllabilityMatrix"
+  (title := "Hautus controllability matrix")
   (statement := /-- The \emph{Hautus controllability matrix} of $(A, B)$
     at a complex number $\mu$ is the block-column matrix
     \[

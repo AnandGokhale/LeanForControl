@@ -121,6 +121,7 @@ segment from an arbitrarily small initial perturbation.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
 -/
 @[blueprint "thm:unstable-affineLinear-of-eigenvalue-re-pos"
+  (title := "Instability of an affine-linear system")
   (statement := /-- If $A \in \mathbb{R}^{n \times n}$ has a complex eigenvalue $\mu$ with
     $\operatorname{Re}\mu > 0$, then $x_{\mathrm{eq}}$ is an unstable equilibrium
     (\cref{def:unstable}) of the affine-linear field $x \mapsto A(x - x_{\mathrm{eq}})$

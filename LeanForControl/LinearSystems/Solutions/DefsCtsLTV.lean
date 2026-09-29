@@ -38,6 +38,7 @@ variable {n : ℕ}
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5 (Peano-Baker series). -/
 @[blueprint "def:peanoBakerTerm"
+  (title := "Peano--Baker term")
   (statement := /-- The $k$-th term of the Peano--Baker series for a time-varying state
     matrix $A(t)$:
     \[
@@ -55,6 +56,7 @@ Peano-Baker series `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1
 (Peano-Baker series). -/
 @[blueprint "def:stateTransitionMatrix"
+  (title := "State transition matrix")
   (statement := /-- The \emph{state transition matrix} $\Phi(t,t_0)$, given by the
     Peano--Baker series
     \[

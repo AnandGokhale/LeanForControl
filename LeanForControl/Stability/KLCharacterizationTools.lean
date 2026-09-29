@@ -360,6 +360,8 @@ private lemma U_decay_bound {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {c :
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:exists-classLSingular-decayBound"
+  (title := "Local uniform decay envelope")
+  (latexEnv := "lemma")
   (statement := /-- Suppose the trajectories of $\dot{x} = f(t,x)$ have local uniform
     convergence times on the ball of radius $c$ (\cref{def:locallyHasUniformConvergenceTime})
     and admit a uniform class $\mathcal{K}$ bound $\alpha$ defined on $[0, a_\alpha)$
@@ -440,6 +442,8 @@ private lemma HasUniformClassKInftyBound.toClassK
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5 (global case). -/
 @[blueprint "lem:exists-decayBound-family"
+  (title := "Global uniform decay envelope")
+  (latexEnv := "lemma")
   (statement := /-- Suppose the trajectories of $\dot{x} = f(t,x)$ have global uniform
     convergence times (\cref{def:globallyHasUniformConvergenceTime}) and admit a uniform class
     $\mathcal{K}_{\infty}$ bound (\cref{def:hasUniformClassKInftyBound}).  Then there is a

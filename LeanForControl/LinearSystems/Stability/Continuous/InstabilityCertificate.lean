@@ -226,6 +226,7 @@ imaginary parts of the eigenvector provide the positive direction.
 
 Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*. -/
 @[blueprint "thm:positive-real-eigenvalue-quadratic-certificate"
+  (title := "Quadratic instability certificate from an unstable eigenpair")
   (statement := /-- A complex eigenpair of a real matrix $A$ with
     $\operatorname{Re}\mu>0$ yields a Hermitian real matrix $H$, a shift
     $\alpha>0$, and a direction $w$ such that $w^{\mathsf T}Hw>0$ and

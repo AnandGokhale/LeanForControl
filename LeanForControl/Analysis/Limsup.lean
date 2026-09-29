@@ -20,6 +20,8 @@ open Filter
 /-- Adding a null function does not change a `limsup`, provided the other summand is bounded
     both above and below. -/
 @[blueprint "lem:limsup-add-tendsto-zero"
+  (title := "Limsup is unchanged by adding a null term")
+  (latexEnv := "lemma")
   (statement := /-- Let $l$ be a nontrivial filter, let $f$ be bounded above and below along
     $l$, and let $g \to 0$ along $l$.  Then
     $\limsup_{l}(f + g) = \limsup_{l} f$. -/)

@@ -38,6 +38,7 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 Reference: standard quadratic Lyapunov-function construction. -/
 @[blueprint "def:quadraticForm"
+  (title := "Matrix quadratic form")
   (statement := /-- A real matrix $P$ represents the quadratic form
     $x \mapsto x^{\mathsf T}Px$ on Euclidean state space. -/)]
 noncomputable def quadraticForm

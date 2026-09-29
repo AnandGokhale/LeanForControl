@@ -26,6 +26,7 @@ It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖
 /-- A class KL function `β : [0,a) × [0,∞) → ℝ`:
     class K in the first argument, antitone and tending to 0 in the second. -/
 @[blueprint "def:isClassKL"
+  (title := "Class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{class $\mathcal{KL}$} function on $[0,a) \times [0,\infty)$
     is continuous, class $\mathcal{K}$ in the first argument, and for each fixed $r > 0$
     is strictly decreasing and tends to $0$ as $s \to \infty$. It arises as the bound
@@ -70,6 +71,7 @@ theorem ClassKL.anti_s_mono {a : ℝ} (β : ClassKL a) {r : ℝ} {s₁ s₂ : �
 /-- Product of a class K function and a class L function is class KL.
     `β(r, s) = α(r) * γ(s)`. -/
 @[blueprint "lem:classKL-mk-mul"
+  (title := "Class $\\mathcal{KL}$ from a class $\\mathcal{K}$ times a class $\\mathcal{L}$")
   (statement := /-- If $\alpha$ is class $\mathcal{K}$ on $[0,a)$ and $\gamma$ is class
     $\mathcal{L}$, then $\beta(r, s) := \alpha(r)\gamma(s)$ is class $\mathcal{KL}$ on
     $[0,a)$. -/)]
@@ -100,6 +102,7 @@ Capping a class KL bound by a function of the initial condition alone preserves 
 lets a bound obtained only as a *majorant* — from a smoothing construction, say — be pulled back
 inside a prescribed range. The bounded-domain twin of `ClassKLGlobal.min_KInfty`. -/
 @[blueprint "lem:classKL-min-classK"
+  (title := "Capping a class $\\mathcal{KL}$ function by a class $\\mathcal{K}$ function")
   (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ is class
     $\mathcal{K}$ on $[0,a)$, then $(r, s) \mapsto \min\bigl(\beta(r,s), \alpha(r)\bigr)$ is
     class $\mathcal{KL}$ on $[0,a)$.
@@ -134,6 +137,8 @@ noncomputable def ClassKL.min_classK {a b : ℝ} (β : ClassKL a) (α : ClassK a
 /-- If `U → 0` at `+∞`, then so does `s ↦ min c (√(c * U s))` for any `c ≥ 0`.  The `min` keeps
     the bound at most `c`; the square root is what makes it vanish. -/
 @[blueprint "lem:tendstoMinSqrtMulZero"
+  (title := "Decay of a geometric-mean cap")
+  (latexEnv := "lemma")
   (statement := /-- Let $c \ge 0$ and let $U : \mathbb{R} \to \mathbb{R}$ satisfy
     $U(s) \to 0$ as $s \to +\infty$.  Then
     $\min\bigl(c, \sqrt{c\,U(s)}\bigr) \to 0$ as $s \to +\infty$. -/)]
@@ -151,6 +156,7 @@ lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
 /-- Sontag-style KL construction from a class K spatial bound and a singular class L time decay.
     `β(r, 0) = α(r)` and `β(r, s) = min(α(r), √(α(r) * U(s)))` for `s > 0`. -/
 @[blueprint "lem:classKL-mk-singular-cap"
+  (title := "Class $\\mathcal{KL}$ from a singular class $\\mathcal{L}$ cap")
   (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and let $U$ be a singular
     class $\mathcal{L}$ function (positive, antitone, $U(s) \to 0$ as $s \to \infty$ and
     $U(s) \to \infty$ as $s \to 0^{+}$).  Then
@@ -345,6 +351,7 @@ theorem ClassKL.continuous_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s)
 /-- Post-composing a class KL function with a class K∞ function yields class KL.
     (Applies `α` to the output of `β`.) -/
 @[blueprint "lem:classKL-comp-left-KInfty"
+  (title := "Post-composition with a class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \alpha(\beta(r, s))$ is class $\mathcal{KL}$
     on $[0,a)$.  This is \cref{lem:classKL-comp-left-K} with the range hypothesis discharged by
@@ -379,6 +386,7 @@ def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : Cla
 /-- Post-composing a class KL function with a class K function yields class KL,
     provided the range of `β` is strictly within the domain of `α`. -/
 @[blueprint "lem:classKL-comp-left-K"
+  (title := "Post-composition with a class $\\mathcal{K}$ function")
   (statement := /-- Let $\beta$ be class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ be class
     $\mathcal{K}$ on $[0,b)$, and suppose $\beta(r, s) < b$ for every $r \in [0,a)$ and
     $s \ge 0$.  Then $(r, s) \mapsto \alpha(\beta(r, s))$ is class $\mathcal{KL}$ on
@@ -422,6 +430,7 @@ def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
 /-- Pre-composing a class KL function with a class K function yields class KL.
     (Applies `α` to the first argument of `β`.) -/
 @[blueprint "lem:classKL-comp-right"
+  (title := "Pre-composition in the radius argument")
   (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,b)$ and $\alpha$ is class
     $\mathcal{K}$ on $[0,a) \to [0,b)$, then $(r, s) \mapsto \beta(\alpha(r), s)$ is class
     $\mathcal{KL}$ on $[0,a)$. -/)]
@@ -455,6 +464,7 @@ zero at zero, radially unbounded), antitone and tending to 0 in the second. -/
 /-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K∞ in the first argument,
     antitone and tending to 0 in the second. -/
 @[blueprint "def:isClassKLGlobal"
+  (title := "Global class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{global class $\mathcal{KL}$} function is a map
     $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is class
     $\mathcal{K}_{\infty}$ in the first argument (continuous, strictly increasing,
@@ -484,6 +494,7 @@ theorem ClassKLGlobal.continuous_r {a : ℝ} (β : ClassKLGlobal) {s : ℝ} (hs 
 /-- Post-composing a global class KL function with a class K∞ function yields global class KL.
     (Applies `α` to the output of `β`.) -/
 @[blueprint "lem:classKLGlobal-comp-left"
+  (title := "Post-composition, global case")
   (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \alpha(\beta(r, s))$ is global class
     $\mathcal{KL}$.  No range hypothesis is needed, since $\alpha$ is defined on all of
@@ -518,6 +529,7 @@ def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlo
 /-- Product of a class K∞ function and a class L function is global class KL.
     `β(r, s) = α(r) * γ(s)`. -/
 @[blueprint "lem:classKLGlobal-mk-mul"
+  (title := "Global class $\\mathcal{KL}$ from a product")
   (statement := /-- If $\alpha$ is class $\mathcal{K}_{\infty}$ and $\gamma$ is class
     $\mathcal{L}$, then $\beta(r, s) := \alpha(r)\gamma(s)$ is global class
     $\mathcal{KL}$. -/)]
@@ -538,6 +550,7 @@ noncomputable def ClassKLGlobal.mk_mul (α : ClassKInfty) (γ : ClassL) : ClassK
 /-- Pointwise min of a global class KL and a class K∞ function (in the r-argument) is
     global class KL. -/
 @[blueprint "lem:classKLGlobal-min-KInfty"
+  (title := "Capping a global class $\\mathcal{KL}$ function")
   (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \min\bigl(\beta(r, s), \alpha(r)\bigr)$ is
     global class $\mathcal{KL}$ — capping a $\mathcal{KL}$ bound by a function of the initial
@@ -564,6 +577,7 @@ noncomputable def ClassKLGlobal.min_KInfty (β : ClassKLGlobal) (α : ClassKInft
 /-- Pre-composing a global class KL function with a class K∞ function yields global class KL.
     (Applies `α` to the first argument of `β`.) -/
 @[blueprint "lem:classKLGlobal-comp-right"
+  (title := "Pre-composition in the radius argument, global case")
   (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \beta(\alpha(r), s)$ is global class
     $\mathcal{KL}$. -/)]

@@ -42,6 +42,7 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 Forward-complete from `t₀`, not defined for all time: a trajectory is an integral curve on
 `Ici t₀`, so nothing is claimed about the system before its initial time. -/
 @[blueprint "def:isTrajectoryNA"
+  (title := "Trajectory of a time-varying system")
   (statement := /-- A \emph{trajectory from $t_{0}$} of the non-autonomous ODE
     $\dot{x} = f(t, x)$ is a map $\varphi$ defined and satisfying
     $\dot{\varphi}(t) = f(t,\varphi(t))$ for every $t \ge t_{0}$. This is the object
@@ -52,6 +53,7 @@ abbrev IsTrajectoryNA (φ : ℝ → ℝⁿ) (f : ℝ → ℝⁿ → ℝⁿ) (t�
 
 /-- The point `x_eq` is an equilibrium of `ẋ = f(t, x)` when `f(t, x_eq) = 0` for all `t`. -/
 @[blueprint "def:isEquilibriumNA"
+  (title := "Equilibrium of a time-varying system")
   (statement := /-- A point $x_{\mathrm{eq}} \in \mathbb{R}^{n}$ is an
     \emph{equilibrium} of the non-autonomous ODE $\dot{x} = f(t, x)$ when
     $f(t, x_{\mathrm{eq}}) = 0$ for every $t \in \mathbb{R}$. -/)]
@@ -74,6 +76,7 @@ This is Khalil (4.17), the attractivity half of uniform asymptotic stability. Th
 what makes it *uniform*: the class-`KL` construction is built by regularizing the least such
 `T` into a continuous, strictly decreasing function of the tolerance. -/
 @[blueprint "def:locallyHasUniformConvergenceTime"
+  (title := "Local uniform convergence times")
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ starting within $c$ of
     $x_{\mathrm{eq}}$ \emph{have local uniform convergence times} when for every
     $\eta > 0$ there
@@ -95,6 +98,7 @@ spelling the quantifiers out again, is what makes it usable: applying it at a ra
 *is* the local property there, so the narrowing step that the global proofs need becomes
 a function application instead of a hand-built term. -/
 @[blueprint "def:globallyHasUniformConvergenceTime"
+  (title := "Global uniform convergence times")
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ \emph{have global uniform
     convergence times} when they have local uniform convergence times
     (\cref{def:locallyHasUniformConvergenceTime}) from every radius $c > 0$. The delay may
@@ -116,6 +120,7 @@ type of the bound.
 
 This is Khalil (4.19), the estimate that characterizes uniform stability. -/
 @[blueprint "def:hasUniformClassKBound"
+  (title := "Uniform class $\\mathcal{K}$ bound")
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ \emph{have the uniform class
     $\mathcal{K}$ bound} $\alpha$ about $x_{\mathrm{eq}}$ when
     \[
@@ -132,6 +137,7 @@ function is defined on all of `[0, ∞)`, so no radius restriction survives.
 
 This is Khalil (4.20) in its class `K∞` form, the estimate behind the *global* results. -/
 @[blueprint "def:hasUniformClassKInftyBound"
+  (title := "Uniform class $\\mathcal{K}_{\\infty}$ bound")
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ \emph{have the uniform class
     $\mathcal{K}_{\infty}$ bound} $\alpha$ about $x_{\mathrm{eq}}$ when
     $\|\varphi(t) - x_{\mathrm{eq}}\| \le \alpha(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|)$
@@ -152,6 +158,7 @@ def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (
     defined on `[t₀, ∞)`, and says nothing about a system whose solutions escape. Any
     theorem *concluding* this predicate must therefore supply that existence itself. -/
 @[blueprint "def:stableNA"
+  (title := "Stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
     \emph{stable} when
     \[
@@ -170,6 +177,7 @@ def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 
 /-- The equilibrium `x_eq` is **uniformly stable**: `δ` can be chosen independently of `t₀`. -/
 @[blueprint "def:uniformlyStableNA"
+  (title := "Uniform stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{uniformly stable} when
     $\delta$ in \cref{def:stableNA} can be chosen independently of $t_{0}$:
     \[
@@ -189,6 +197,7 @@ margin `δ(ε)` growing without bound, so that the basin exhausts `ℝⁿ`.
 
 This is the stability half of Khalil's global uniform asymptotic stability. -/
 @[blueprint "def:globallyUniformlyStableNA"
+  (title := "Global uniform stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly stable}
     when it is uniformly stable (\cref{def:uniformlyStableNA}) with a margin
     $\delta(\varepsilon)$ that can be chosen to satisfy
@@ -202,6 +211,8 @@ def GloballyUniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : 
 
 /-- Global uniform stability is stability. -/
 @[blueprint "lem:globallyUniformlyStableNA-stableNA"
+  (title := "Global uniform stability implies stability")
+  (latexEnv := "lemma")
   (statement := /-- Global uniform stability (\cref{def:globallyUniformlyStableNA}) implies
     stability (\cref{def:stableNA}). -/)
   (proof := /-- The margin $\delta(\varepsilon)$ is already independent of $t_{0}$, so it
@@ -213,12 +224,15 @@ lemma GloballyUniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq :
 
 /-- The equilibrium `x_eq` is **unstable** if it is not stable. -/
 @[blueprint "def:unstableNA"
+  (title := "Instability, time-varying")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{unstable} when it is not
     stable (\cref{def:stableNA}). -/)]
 def UnstableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop := ¬ StableNA f x_eq
 
 /-- Uniform stability is stability: the uniform `δ` already works at every initial time. -/
 @[blueprint "lem:uniformlyStableNA-stableNA"
+  (title := "Uniform stability implies stability")
+  (latexEnv := "lemma")
   (statement := /-- Uniform stability (\cref{def:uniformlyStableNA}) implies stability
     (\cref{def:stableNA}).  The two differ only in the order of the quantifiers on $\delta$
     and $t_{0}$, so the uniform margin serves at every initial time. -/)]
@@ -236,6 +250,8 @@ uniqueness a solution can leave an equilibrium: `ẋ = x^{2/3}` has `f 0 = 0`, y
 Stability supplies the conclusion directly and at weaker hypotheses: the trajectory is
 within `ε` of `x_eq` for *every* `ε > 0`, hence at distance zero. -/
 @[blueprint "lem:isTrajectoryNA-eq-of-stableNA"
+  (title := "Trajectories from a stable equilibrium")
+  (latexEnv := "lemma")
   (statement := /-- Let $x_{\mathrm{eq}}$ be stable (\cref{def:stableNA}) and let $\varphi$
     be a trajectory from $t_{0}$ with $\varphi(t_{0}) = x_{\mathrm{eq}}$.  Then
     $\varphi(t) = x_{\mathrm{eq}}$ for every $t \ge t_{0}$: a solution sitting at a stable
@@ -263,6 +279,7 @@ lemma IsTrajectoryNA.eq_of_stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝ�
     there is `c = c(t₀) > 0` such that every trajectory starting within `c` of `x_eq`
     at `t₀` converges to `x_eq` as `t → ∞`. -/
 @[blueprint "def:asymptoticStableNA"
+  (title := "Asymptotic stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{asymptotically stable}
     when it is stable (\cref{def:stableNA}) and for each $t_{0} \ge 0$ there exists
     $c = c(t_{0}) > 0$ such that every solution defined for all forward time with
@@ -282,6 +299,7 @@ def AsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
     `T = T(η) > 0` with `‖φ(t) - x_eq‖ < η` for all `t ≥ t₀ + T(η)`, uniformly over
     trajectories starting within `c` and all `t₀ ≥ 0`. -/
 @[blueprint "def:uniformlyAsymptoticStableNA"
+  (title := "Uniform asymptotic stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{uniformly asymptotically
     stable} when it is uniformly stable (\cref{def:uniformlyStableNA}) and there exists
     $c > 0$ (independent of $t_{0}$) such that for each $\eta > 0$ there is
@@ -300,6 +318,7 @@ def UniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) 
     pair `η, c > 0` there is `T = T(η, c) > 0` such that `‖φ(t) - x_eq‖ < η` for all
     `t ≥ t₀ + T(η, c)` and all trajectories starting within `c` of `x_eq`. -/
 @[blueprint "def:globallyUniformlyAsymptoticStableNA"
+  (title := "Global uniform asymptotic stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly
     asymptotically stable} when it is uniformly stable with $\delta(\varepsilon) \to \infty$
     as $\varepsilon \to \infty$, and for each pair of positive numbers $\eta$ and $c$
@@ -320,6 +339,7 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.). -/
 @[blueprint "def:exponentiallyStableNA"
+  (title := "Exponential stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{exponentially stable}
     when there exist positive constants $c$, $k$, and $\lambda$ such that
     \[
@@ -337,6 +357,7 @@ def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop
 /-- The equilibrium `x_eq` is **globally exponentially stable**: the exponential bound
     holds for any initial state, with no restriction on `‖φ(t₀) - x_eq‖`. -/
 @[blueprint "def:globallyExponentiallyStableNA"
+  (title := "Global exponential stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally exponentially
     stable} when the bound in \cref{def:exponentiallyStableNA} holds for every initial
     state $\varphi(t_{0}) \in \mathbb{R}^{n}$, i.e., $c = \infty$. -/)]

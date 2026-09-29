@@ -61,6 +61,7 @@ Mathlib's `omegaLimit` is stated for a family of maps indexed by a set; a single
 the degenerate case where the index set is `Unit`, which is what the `fun (t : ℝ) (_ : Unit)`
 and `Set.univ` below encode. -/
 @[blueprint "def:omegaLimitTraj"
+  (title := "$\\omega$-limit set of a trajectory") (title := "$\\omega$-limit set of a trajectory")
   (statement := /-- The \emph{$\omega$-limit set} of a trajectory $\varphi$ is
     \[
       \omega(\varphi) = \bigcap_{T \ge 0} \overline{\{\varphi(t) : t \ge T\}},
@@ -76,6 +77,8 @@ noncomputable def omegaLimitTraj (φ : ℝ → ℝⁿ) : Set ℝⁿ :=
 Mathlib's `mem_omegaLimit_iff_frequently` is stated for a family of maps, so its right-hand side
 asks for a nonempty intersection with `Set.univ`; over `Unit` that collapses to membership. -/
 @[blueprint "lem:mem-omegaLimitTraj-iff"
+  (title := "Membership in the $\\omega$-limit set")
+  (latexEnv := "lemma")
   (statement := /-- $y \in \omega(\varphi)$ (\cref{def:omegaLimitTraj}) if and only if for
     every neighbourhood $U$ of $y$ there are arbitrarily large $t$ with
     $\varphi(t) \in U$. -/)]
@@ -96,6 +99,8 @@ a fact about compact sets: it is what turns `V ≡ a` on `ω(φ)` into `V̇ = 0`
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1. -/
 @[blueprint "lem:isPositivelyInvariant-omegaLimitTraj"
+  (title := "The $\\omega$-limit set is positively invariant")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be Lipschitz and let $\varphi$ be a solution of $\dot{x} = f(x)$ on
     $[0,\infty)$.  Then the $\omega$-limit set $\omega(\varphi)$ (\cref{def:omegaLimitTraj}) is
     positively invariant (\cref{def:isPositivelyInvariant}): every solution segment starting in
@@ -284,6 +289,8 @@ private lemma omegaLimit_subset_of_invariant
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.4. -/
 @[blueprint "lem:lieDeriv-eq-zero-on-omegaLimitTraj"
+  (title := "The Lie derivative vanishes on the $\\omega$-limit set")
+  (latexEnv := "lemma")
   (statement := /-- Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with
     $f$ of class $C^{1}$ and Lipschitz, let $V \in C^{1}$ satisfy $\dot{V} \le 0$ on $\Omega$,
     and let $\varphi$ be a solution on $[0,\infty)$ with $\varphi(0) \in \Omega$.  Then
@@ -336,6 +343,7 @@ theorem lieDeriv_eq_zero_on_omegaLimitTraj
 LaSalle's principle localizes a trajectory's limiting behaviour inside this set: `V̇ ≤ 0` on `Ω`
 says `V` never increases, and `E` is where it momentarily stops decreasing. -/
 @[blueprint "def:lieDerivZeroSet"
+  (title := "The set where the Lie derivative vanishes")
   (statement := /-- For $\dot{x} = f(x)$, a function $V$ and a set $\Omega$, put
     \[
       E = \{x \in \Omega : \dot{V}(x) = DV(x)\,[\,f(x)\,] = 0\},
@@ -350,8 +358,8 @@ Let Ω be compact and positively invariant for ẋ = f(x), V : ℝⁿ → ℝ a 
 with V̇(x) = DV(x)[f(x)] ≤ 0 on Ω, and M any set large enough to contain every positively
 invariant subset of `LieDerivZeroSet f V Ω`. Then φ(t) → M. -/
 @[blueprint "thm:lasalle-invariance-principle"
-  (statement := /-- \textbf{LaSalle's invariance principle.}
-    Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with $f$ of class
+  (title := "LaSalle's invariance principle")
+  (statement := /-- Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with $f$ of class
     $C^{1}$ and Lipschitz, let $V \in C^{1}$ satisfy $\dot{V}(x) \le 0$ on $\Omega$, and put
     \[
       E = \{x \in \Omega : \dot{V}(x) = 0\}
@@ -420,8 +428,8 @@ theorem lasalle_invariance_principle
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.1. -/
 @[blueprint "thm:lasalle-local-asymptotic-stable"
-  (statement := /-- \textbf{Barbashin's theorem.}
-    Let $V \in C^{1}$ be a local Lyapunov function for $\dot{x} = f(x)$ on a domain $D$
+  (title := "Barbashin's theorem")
+  (statement := /-- Let $V \in C^{1}$ be a local Lyapunov function for $\dot{x} = f(x)$ on a domain $D$
     (\cref{def:isLocalLyapunovFunction}).  Suppose for some $c > 0$ the sublevel set
     $\Omega_{c} = \{V \le c\}$ is contained in $D$, compact, and positively invariant, that
     $f$ is $C^{1}$ and Lipschitz, and that $\{x_{\mathrm{eq}}\}$ is the only positively
@@ -474,8 +482,8 @@ theorem lasalle_local_asymptotic_stable
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.2. -/
 @[blueprint "thm:lasalle-global-asymptotic-stable"
-  (statement := /-- \textbf{Krasovskii's theorem.}
-    If $V \in C^{1}$ is positive definite, $\dot{V} \le 0$ on $\mathbb{R}^{n}$ and radially
+  (title := "Krasovskii's theorem")
+  (statement := /-- If $V \in C^{1}$ is positive definite, $\dot{V} \le 0$ on $\mathbb{R}^{n}$ and radially
     unbounded, $f$ is $C^{1}$ and Lipschitz, and for every $c$ the only positively invariant
     subset of $E_{c} = \{x \in \Omega_{c} : \dot{V}(x) = 0\}$ (\cref{def:lieDerivZeroSet})
     is $\{x_{\mathrm{eq}}\}$, then $x_{\mathrm{eq}}$ is globally asymptotically stable

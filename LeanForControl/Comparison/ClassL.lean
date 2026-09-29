@@ -23,6 +23,7 @@ estimate: multiplying one by a class K function gives a class KL bound
 /-- A class L function `σ : [0,∞) → ℝ`: continuous, strictly positive, strictly decreasing,
     and tending to `0` at `+∞`. -/
 @[blueprint "def:isClassL"
+  (title := "Class $\\mathcal{L}$ function")
   (statement := /-- A \emph{class $\mathcal{L}$} function on $[0,\infty)$ is continuous,
     strictly positive, and strictly decreasing, and satisfies $\sigma(s) \to 0$ as
     $s \to \infty$. It carries the time decay of an asymptotic stability estimate: the
@@ -47,6 +48,7 @@ characterization of asymptotic stability (`exists_classLSingular_decayBound`). -
 tends to `0` at `+∞`, and is allowed to blow up near `0`. Arises as the inverse of
 the sliding-window function in the KL characterization of asymptotic stability. -/
 @[blueprint "def:isClassLSingular"
+  (title := "Singular class $\\mathcal{L}$ function")
   (statement := /-- A \emph{singular class $\mathcal{L}$} function on $(0,\infty)$ is
     continuous, strictly positive and antitone, with $U(s) \to 0$ as $s \to \infty$ and
     $U(s) \to \infty$ as $s \to 0^{+}$.  It differs from class $\mathcal{L}$ in two ways: the

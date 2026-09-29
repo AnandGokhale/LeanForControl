@@ -174,6 +174,7 @@ matching the repository's matrix spectral API.
 Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).
 -/
 @[blueprint "thm:positive-real-eigenvalue-unstable"
+  (title := "Lyapunov's indirect method, unstable branch")
   (statement := /-- Let $f:\mathbb R^n\to\mathbb R^n$ be $C^1$ with
     $f(x_{\rm eq})=0$.  If the Jacobian at $x_{\rm eq}$ has a complex
     eigenvalue with positive real part, then $x_{\rm eq}$ is unstable when

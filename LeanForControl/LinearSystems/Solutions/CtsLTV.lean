@@ -28,6 +28,8 @@ variable {n : ℕ} {A : ℝ → Matrix (Fin n) (Fin n) ℝ}
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:continuous-peanoBakerTerm"
+  (title := "Continuity of the Peano--Baker terms")
+  (latexEnv := "lemma")
   (statement := /-- Each term $P_k(t,t_0)$ of the Peano--Baker series is continuous in $t$,
     for $A$ continuous. -/)
   (proof := /-- Induction on $k$: $P_0$ is constant, and $P_{k+1}$ is the primitive of a
@@ -55,6 +57,8 @@ of `s - t₀`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:norm-peanoBakerTerm-le"
+  (title := "Factorial bound on the Peano--Baker terms")
+  (latexEnv := "lemma")
   (statement := /-- If $\|A(s)\| \le M$ for all $s$ between $t_0$ and $t_1$, then
     \[
       \|P_k(t,t_0)\| \;\le\; \|I\| \cdot \frac{(M|t-t_0|)^k}{k!}
@@ -158,6 +162,8 @@ the whole interval, not a different (tighter) bound at each point.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:norm-peanoBakerTerm-le-of-mem"
+  (title := "Factorial bound on a subinterval")
+  (latexEnv := "lemma")
   (statement := /-- The bound in \cref{lem:norm-peanoBakerTerm-le}, uniformized to the worst
     case $t = t_1$:
     \[
@@ -196,6 +202,8 @@ Proof: compare against the exponential series `∑ (M(t-t₀))^k / k!` (summable
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:summable-peanoBakerTerm"
+  (title := "Summability of the Peano--Baker series")
+  (latexEnv := "lemma")
   (statement := /-- The Peano--Baker series $\sum_{k=0}^\infty P_k(t,t_0)$ converges absolutely,
     for $A$ bounded between $t_0$ and $t$ (in either order). -/)
   (proof := /-- Compare against the exponential series $\sum_k (M|t-t_0|)^k/k!$ via
@@ -217,6 +225,8 @@ both endpoints), for `A` continuous and bounded by `M` there. This is needed alo
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:continuousOn-stateTransitionMatrix"
+  (title := "Continuity of the state transition matrix")
+  (latexEnv := "lemma")
   (statement := /-- $\Phi(\cdot, t_0)$ is continuous on the segment between $t_0$ and $t_1$
     (including both endpoints), for $A$ continuous and bounded by $M$ there. -/)
   (proof := /-- Each term $P_k(\cdot,t_0)$ is continuous (\cref{lem:continuous-peanoBakerTerm})
@@ -252,6 +262,7 @@ Proof outline:
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:hasDerivAt-stateTransitionMatrix"
+  (title := "The state transition matrix solves the matrix ODE")
   (statement := /-- The state transition matrix solves the matrix ODE
     \[
       \dot\Phi(t,t_0) = A(t)\,\Phi(t,t_0)
@@ -327,6 +338,7 @@ integrates a function over the degenerate interval `[t₀, t₀]`, hence vanishe
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:stateTransitionMatrix-self"
+  (title := "The state transition matrix at the initial time")
   (statement := /-- $\Phi(t_0,t_0) = I$. -/)
   (proof := /-- Every term of the Peano--Baker series beyond $k=0$ integrates over the
     degenerate interval $[t_0,t_0]$ and vanishes. -/)]
@@ -348,8 +360,8 @@ the fixed linear map `M ↦ M *ᵥ x₀` (continuous, since the domain is finite
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. -/
 @[blueprint "thm:hasDerivAt-stateTransitionMatrix-mulVec"
-  (statement := /-- \textbf{Peano--Baker series: existence} (Hespanha, Theorem 5.1).
-    $x(t) := \Phi(t,t_0)\, x_0$ solves
+  (title := "Peano--Baker series: existence")
+  (statement := /-- Hespanha, Theorem 5.1.  $x(t) := \Phi(t,t_0)\, x_0$ solves
     \[
       \dot x(t) = A(t)\, x(t).
     \] -/)
@@ -376,6 +388,7 @@ a vector.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:hasDerivAt-stateTransitionMatrix-mul"
+  (title := "Matrix-valued solutions")
   (statement := /-- For a constant matrix $C$, $Y(t) := \Phi(t,t_0)\, C$ solves
     \[
       \dot Y(t) = A(t)\, Y(t).
@@ -396,6 +409,8 @@ between `t₀` and `t₁` with initial value `C`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:isIntegralSolution-stateTransitionMatrix-mul"
+  (title := "Integral form, matrix-valued")
+  (latexEnv := "lemma")
   (statement := /-- For a constant matrix $C$, $Y(t) := \Phi(t,t_0)\, C$ satisfies the integral
     equation
     \[
@@ -440,6 +455,8 @@ fundamental theorem of calculus. This is what lets uniqueness reuse `continuous_
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:isIntegralSolution-stateTransitionMatrix-mulVec"
+  (title := "Integral form, vector-valued")
+  (latexEnv := "lemma")
   (statement := /-- $x(t) := \Phi(t,t_0)\, x_0$ satisfies the integral equation
     \[
       x(t) = x_0 + \int_{t_0}^{t} A(s)\, x(s)\,\mathrm{d}s
@@ -488,8 +505,8 @@ gives collapses to `‖x t - z t‖ ≤ 0`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. -/
 @[blueprint "thm:stateTransitionMatrix-mulVec-unique"
-  (statement := /-- \textbf{Peano--Baker series: uniqueness} (Hespanha, Theorem 5.1).
-    Any solution
+  (title := "Peano--Baker series: uniqueness")
+  (statement := /-- Hespanha, Theorem 5.1.  Any solution
     $z$ of $\dot x = A(t)\, x$, $x(t_0) = x_0$, for $t$ between $t_0$ and $t_1$, coincides with
     $x(t) := \Phi(t,t_0)\, x_0$. -/)
   (proof := /-- Apply the continuous-dependence bound of Theorem 3.4 with zero perturbation:
@@ -532,8 +549,8 @@ specializes to: any integral solution `z` of `ẋ = A(t) x`, `x(t₀) = e_i` on 
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.2. -/
 @[blueprint "thm:stateTransitionMatrix-col-unique"
-  (statement := /-- \textbf{Columns of the state transition matrix} (Hespanha, P5.2).
-    For every fixed $i$, the $i$-th column of $\Phi(t,t_0)$ is
+  (title := "Columns of the state transition matrix")
+  (statement := /-- Hespanha, P5.2.  For every fixed $i$, the $i$-th column of $\Phi(t,t_0)$ is
     the unique solution of $\dot x = A(t)\, x$, $x(t_0) = e_i$, where $e_i$ is the $i$-th
     standard basis vector. -/)
   (proof := /-- Restatement of \cref{thm:stateTransitionMatrix-mulVec-unique} at
@@ -557,6 +574,7 @@ is identical.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:stateTransitionMatrix-mul-unique"
+  (title := "Uniqueness of matrix-valued solutions")
   (statement := /-- Any solution $Y$ of $\dot Y = A(t)\, Y$, $Y(t_0) = C$, for $t$ between $t_0$
     and $t_1$, coincides with $\Phi(t,t_0)\, C$. -/)
   (proof := /-- Apply the continuous-dependence bound of Theorem 3.4 with zero perturbation:
@@ -619,8 +637,8 @@ with `Φ(·,s) * Φ(s,τ)` there by `stateTransitionMatrix_mul_unique`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.3. -/
 @[blueprint "thm:stateTransitionMatrix-semigroup"
-  (statement := /-- \textbf{Semigroup property} (Hespanha, P5.3).
-    For $A$ continuous and bounded on
+  (title := "Semigroup property")
+  (statement := /-- Hespanha, P5.3.  For $A$ continuous and bounded on
     $[\tau, t]$, and any $\tau \le s < t$,
     \[
       \Phi(t,s)\,\Phi(s,\tau) = \Phi(t,\tau).
@@ -661,8 +679,8 @@ Evaluating at `τ` gives `Φ(τ,t) * Φ(t,τ) = Φ(τ,τ) = I`, so `Φ(τ,t)` is
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.4. -/
 @[blueprint "thm:stateTransitionMatrix-inv"
-  (statement := /-- \textbf{Invertibility of the state transition matrix} (Hespanha, P5.4).
-    For $A$ continuous and bounded on the segment between $\tau$
+  (title := "Invertibility of the state transition matrix")
+  (statement := /-- Hespanha, P5.4.  For $A$ continuous and bounded on the segment between $\tau$
     and $t$, $\Phi(t,\tau)$ is nonsingular and
     \[
       \Phi(t,\tau)^{-1} = \Phi(\tau,t).
@@ -700,6 +718,8 @@ Proof: identical to `stateTransitionMatrix_inv`'s — `Φ(·,a)`, re-anchored at
 (`isIntegralSolution_stateTransitionMatrix_mul_reanchor`), coincides with `Φ(·,b) * Φ(b,a)` on
 `[b,a]` by uniqueness (`stateTransitionMatrix_mul_unique`). -/
 @[blueprint "lem:stateTransitionMatrix-comp-of-mem"
+  (title := "Composition on a subinterval")
+  (latexEnv := "lemma")
   (statement := /-- For every $z$ on the segment between $a$ and $b$,
     $\Phi(z, a) = \Phi(z, b)\,\Phi(b, a)$.  Composition with the \emph{first} argument free. -/)
   (proof := /-- $\Phi(\cdot, a)$, re-anchored at $b$, is an integral solution of
@@ -730,8 +750,8 @@ Proof: `Φ(s,τ) = Φ(s,t) * Φ(t,τ)` by `stateTransitionMatrix_comp_of_mem`; l
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.3. -/
 @[blueprint "thm:stateTransitionMatrix-comp"
-  (statement := /-- \textbf{Semigroup property, order-free} (Hespanha, P5.3).
-    For \emph{any} $s$ on the segment between $\tau$
+  (title := "Semigroup property, order-free")
+  (statement := /-- Hespanha, P5.3.  For \emph{any} $s$ on the segment between $\tau$
     and $t$,
     \[
       \Phi(t, s)\,\Phi(s, \tau) = \Phi(t, \tau).
@@ -763,6 +783,8 @@ Proof: `stateTransitionMatrix_comp` (with `τ` itself as the middle point) gives
 `Φ(t,τ) * Φ(τ,t₀) = Φ(t,t₀)`; solve for `Φ(t,τ)` by right-multiplying by `Φ(t₀,τ)` and
 cancelling `Φ(τ,t₀) * Φ(t₀,τ) = I` (P5.4). -/
 @[blueprint "lem:stateTransitionMatrix-comp-base"
+  (title := "Change of base time")
+  (latexEnv := "lemma")
   (statement := /-- For every $\tau$ on the segment between $t_0$ and $t$,
     $\Phi(t, t_0)\,\Phi(t_0, \tau) = \Phi(t, \tau)$: composition through a fixed \emph{base}
     point.  This differs from \cref{thm:stateTransitionMatrix-comp} in which of the three times
@@ -789,6 +811,8 @@ Proof: `Φ(τ,t)⁻¹ = Φ(t,τ)` by P5.4 (`stateTransitionMatrix_inv`), so `τ 
 composition of `τ ↦ Φ(τ,t)` (continuous by `continuousOn_stateTransitionMatrix`) with matrix
 inversion, continuous at every unit (`continuousAt_matrix_inv`). -/
 @[blueprint "lem:continuousOn-stateTransitionMatrix-snd"
+  (title := "Continuity in the initial time")
+  (latexEnv := "lemma")
   (statement := /-- With the first argument held fixed, $\tau \mapsto \Phi(t, \tau)$ is
     continuous on the segment between $t$ and $t_1$ — the mirror of
     \cref{lem:continuousOn-stateTransitionMatrix}, which varies the first argument.  Needed
@@ -933,8 +957,8 @@ on the neighborhood `Set.uIcc t₀ t₁ ∈ 𝓝 t` since `t` is interior to it.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
 @[blueprint "thm:hasDerivAt-variationOfConstants"
-  (statement := /-- \textbf{Variation of constants: existence} (Hespanha, Theorem 5.2).
-    For continuous $A$, $B$ and $u$, the
+  (title := "Variation of constants: existence")
+  (statement := /-- Hespanha, Theorem 5.2.  For continuous $A$, $B$ and $u$, the
     function
     \[
       x(t) := \Phi(t, t_0)x_0 + \int_{t_0}^{t} \Phi(t, \tau)B(\tau)u(\tau)\,d\tau
@@ -964,6 +988,8 @@ theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
 /-- The variation-of-constants formula matches the initial value `x₀` at `t = t₀`: the forcing
 integral is over the degenerate interval `[t₀,t₀]`, and `Φ(t₀,t₀) = I`. -/
 @[blueprint "lem:variationOfConstants-self"
+  (title := "Variation of constants at the initial time")
+  (latexEnv := "lemma")
   (statement := /-- The variation-of-constants formula takes the value $x_0$ at $t = t_0$: the
     forcing integral is over the degenerate interval and $\Phi(t_0,t_0) = I$.  Together with
     \cref{thm:hasDerivAt-variationOfConstants} this makes it a solution of the initial value
@@ -984,8 +1010,8 @@ directly with zero perturbation `g := 0`, exactly as in `stateTransitionMatrix_m
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
 @[blueprint "thm:variationOfConstants-unique"
-  (statement := /-- \textbf{Variation of constants: uniqueness} (Hespanha, Theorem 5.2).
-    Any two continuous integral solutions of
+  (title := "Variation of constants: uniqueness")
+  (statement := /-- Hespanha, Theorem 5.2.  Any two continuous integral solutions of
     the forced system $\dot x = A(t)x + B(t)u(t)$ with the same initial value $x_0$ agree on the
     segment between $t_0$ and $t_1$. -/)
   (proof := /-- For fixed $t$ the right-hand side $v \mapsto A(t)v + B(t)u(t)$ is affine in $v$,
@@ -1028,7 +1054,9 @@ theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu 
 u(t)`, for `x(t)` as in `hasDerivAt_variationOfConstants`, splits into the *homogeneous response*
 `C(t) Φ(t,t₀) x₀` and the *forced response* `∫ τ in t₀..t, C(t) Φ(t,τ) B(τ) u(τ) + D(t) u(t)`. -/
 @[blueprint "lem:variationOfConstants-output"
-  (statement := /-- \textbf{Variation of constants: output equation} (Hespanha, equation (5.8)).
+  (title := "Variation of constants: output equation")
+  (latexEnv := "lemma")
+  (statement := /-- (Hespanha, equation (5.8)).
     With $x$ as in
     \cref{thm:hasDerivAt-variationOfConstants}, the output $y(t) = C(t)x(t) + D(t)u(t)$ splits
     into the homogeneous response and the forced response:

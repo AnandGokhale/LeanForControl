@@ -167,6 +167,7 @@ all of `[t₀, t₁]`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2. -/
 @[blueprint "thm:exists-isIntegralCurveOn-Icc"
+  (title := "Picard--Lindel\\\"of on a compact interval")
   (statement := /-- Let $f : \mathbb{R} \to E \to E$ be jointly continuous and $K$-Lipschitz in
     the state variable, uniformly in time, on a Banach space $E$.  Then for every $t_0 \le t_1$
     and every $x_0 \in E$ there is an $\alpha$ with $\alpha(t_0) = x_0$ solving
@@ -214,6 +215,8 @@ omit [CompleteSpace E] in
 on the right ray `Ici s` — from the one an integral curve on a segment supplies. Inside the
 segment the two agree, because `[s, t₁)` is a neighbourhood of `s` within `Ici s`. -/
 @[blueprint "lem:hasDerivWithinAt-Ici-of-isIntegralCurveOn"
+  (title := "Right derivatives of an integral curve")
+  (latexEnv := "lemma")
   (statement := /-- If $\alpha$ is an integral curve of $f$ on $[t_0, t_1]$, then for every
     $s \in [t_0, t_1)$ it has right derivative $f(s, \alpha(s))$ at $s$, i.e.
     $\alpha$ has derivative $f(s,\alpha(s))$ within $[s,\infty)$ at $s$. -/)]
@@ -228,6 +231,8 @@ omit [CompleteSpace E] in
 /-- **Grönwall separation.** Two integral curves of a Lipschitz field separate at most
 exponentially in the elapsed time. -/
 @[blueprint "lem:dist-le-of-isIntegralCurveOn-Icc"
+  (title := "Gronwall separation of two solutions")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be $K$-Lipschitz in the state variable, uniformly in time, and let
     $\alpha, \beta$ be integral curves of $f$ on $[t_0, t_1]$.  Then
     \[
@@ -250,6 +255,8 @@ omit [CompleteSpace E] in
 /-- **Uniqueness.** Two integral curves of a Lipschitz field agreeing at the left endpoint agree
 throughout the interval. -/
 @[blueprint "lem:eqOn-of-isIntegralCurveOn-Icc"
+  (title := "Uniqueness of solutions")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be $K$-Lipschitz in the state variable, uniformly in time, and let
     $\alpha, \beta$ be integral curves of $f$ on $[t_0, t_1]$ with
     $\alpha(t_0) = \beta(t_0)$.  Then $\alpha = \beta$ on $[t_0, t_1]$. -/)
@@ -271,6 +278,7 @@ lemma eqOn_of_isIntegralCurveOn_Icc
 The form the comparison lemma consumes: a solution in the integral sense, continuous on the
 closed interval, with right derivatives matching `g` on the half-open one. -/
 @[blueprint "thm:exists-isIntegralSolution-Icc-of-lipschitz"
+  (title := "Picard--Lindel\\\"of, scalar integral form")
   (statement := /-- Let $g : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ be jointly continuous and
     $L$-Lipschitz in its state argument, uniformly in time, and let $t_0 \le t_1$.  Then for
     every $x_0$ there is a $z$, continuous on $[t_0, t_1]$, that is an integral solution of
@@ -310,6 +318,7 @@ Uniqueness is stated as agreement *on `Ici t₀`* rather than as `∃!`. That is
 predicate built from `HasDerivWithinAt _ _ (Ici t₀)` constrains a function only on `Ici t₀`, so
 two solutions may differ freely below `t₀` and `∃!` over `ℝ → E` would be false. -/
 @[blueprint "thm:exists-isIntegralCurveOn-Ici"
+  (title := "Picard--Lindel\\\"of on the forward ray")
   (statement := /-- Let $f$ be jointly continuous and $K$-Lipschitz in the state variable,
     uniformly in time.  Then for every $t_0$ and $x_0$ there is an $\alpha$ with
     $\alpha(t_0) = x_0$ solving $\dot\alpha = f(t,\alpha)$ on all of $[t_0,\infty)$, and any

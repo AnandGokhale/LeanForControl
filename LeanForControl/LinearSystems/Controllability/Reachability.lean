@@ -34,6 +34,8 @@ the product of `controllabilityMatrix A B` with a vector indexed by
 
 Original: formalization infrastructure for LeanForControl. -/
 @[blueprint "lem:mem-reachableSubspace-iff"
+  (title := "Membership in the reachable subspace")
+  (latexEnv := "lemma")
   (statement := /-- Let $A\in\mathbb{F}^{n\times n}$ and
     $B\in\mathbb{F}^{n\times m}$, and let
     $\mathcal C(A,B)\in\mathbb{F}^{n\times(nm)}$ be their controllability
@@ -114,6 +116,7 @@ whole state space.
 
 Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "thm:reachableSubspace-eq-top-iff-controllable"
+  (title := "Controllability via the reachable subspace")
   (statement := /-- A pair $(A,B)$ is controllable if and only if its
     reachable subspace is the whole state space. -/)]
 theorem reachableSubspace_eq_top_iff_isControllable
@@ -164,6 +167,8 @@ matrix.  The highest-power case is discharged by Cayley--Hamilton.
 
 Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "lem:reachableSubspace-invariant"
+  (title := "$A$-invariance of the reachable subspace")
+  (latexEnv := "lemma")
   (statement := /-- The reachable subspace is $A$-invariant:
     $A\mathcal R(A,B)\subseteq\mathcal R(A,B)$. -/)]
 theorem reachableSubspace_invariant

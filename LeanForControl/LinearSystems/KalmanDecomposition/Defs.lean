@@ -42,6 +42,7 @@ References: Hespanha, *Linear Systems Theory*; Kailath, *Linear Systems*.
 
 Original: this structure packages the data for the LeanForControl API. -/
 @[blueprint "def:kalman-decomposition"
+  (title := "Kalman decomposition")
   (statement := /-- A Kalman decomposition of $(A,B,C)$ records four
     coordinate sectors adapted to the reachable and unobservable subspaces.
     Their direct sums recover those subspaces and the full state space. The
@@ -140,6 +141,7 @@ original state space.
 
 Original: formalization infrastructure for LeanForControl. -/
 @[blueprint "def:kalman-adapted-equivalence"
+  (title := "Adapted coordinate equivalence")
   (statement := /-- Addition of the four Kalman coordinate sectors defines a linear
     equivalence
     $X_{c\bar o}\times X_{co}\times X_{\bar c\bar o}\times X_{\bar c o}

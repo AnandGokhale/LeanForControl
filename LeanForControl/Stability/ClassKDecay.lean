@@ -522,8 +522,8 @@ this way keeps the construction itself — the time-to-reach integral, its inver
 closed form built from them — inside the proof, where it belongs: those are steps in building
 a solution, not results about class K functions. -/
 @[blueprint "thm:class-KL-osgood"
-  (statement := /-- \textbf{The decay ODE has a class $\mathcal{KL}$ solution operator.}
-    Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the origin,
+  (title := "The decay ODE has a class $\\mathcal{KL}$ solution operator")
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the origin,
     $\alpha(x) \le Lx$ on $(0, \mathrm{base}]$.  Then there is a class $\mathcal{KL}$
     function $\sigma$ (\cref{def:isClassKL}) with $\sigma(0, s) = 0$, $\sigma(r, 0) = r$,
     and such that for each $r$ the map $s \mapsto \sigma(r, s)$ solves
@@ -594,7 +594,8 @@ theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
     bound. All ODE infrastructure (Lipschitz minorant, Osgood construction,
     Picard–Lindelöf) is hidden inside. -/
 @[blueprint "thm:classK-dini-bound"
-  (statement := /-- \textbf{Comparison bound from a Dini decay condition.}  Let $\alpha$ be
+  (title := "Comparison bound from a Dini decay condition")
+  (statement := /-- Let $\alpha$ be
     class $\mathcal{K}$ on $[0,a)$.  Then there is a class $\mathcal{KL}$ function $\sigma$
     with $\sigma(r,0) \le r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
     in $[0,a)$ there, has bounded forward difference quotients, and satisfies the Dini

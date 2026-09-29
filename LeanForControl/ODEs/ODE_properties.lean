@@ -38,6 +38,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     order) with initial value `x₀`: for every `t` on that segment,
     `x(t) = x₀ + ∫_{t₀}^{t} F(s, x(s)) ds`. -/
 @[blueprint "def:isIntegralSolution"
+  (title := "Integral solution")
   (statement := /-- A function $x$, defined on the segment between $t_0$ and $t_1$, is an
     \emph{integral solution} of $\dot{x} = F(t,x)$ with initial value $x_0$ when
     \[
@@ -61,6 +62,8 @@ Both endpoints are free, so the re-anchored domain need not shrink: taking `s` a
 two original endpoints re-anchors at one end while keeping the whole segment, which is what the
 state-transition matrix's invertibility argument needs. -/
 @[blueprint "lem:isIntegralSolution-reanchor"
+  (title := "Re-anchoring an integral solution")
+  (latexEnv := "lemma")
   (statement := /-- Let $x$ be a continuous integral solution of $\dot x = F(t,x)$ with initial
     value $x_0$ on the segment between $t_0$ and $t_1$, with $F$ jointly continuous.  Then for
     any $s, r$ on that segment, $x$ is an integral solution on the segment between $s$ and $r$,
@@ -94,6 +97,8 @@ The reflection is an involution on the segment, so this swaps the two endpoints 
 it converts a statement anchored at `t₀` and running to `t₁` into one anchored at `t₁` and running
 to `t₀`. That is what lets a forward-time argument be reused verbatim in backward time. -/
 @[blueprint "lem:isIntegralSolution-reflect"
+  (title := "Time reflection of an integral solution")
+  (latexEnv := "lemma")
   (statement := /-- Let $x$ be an integral solution of $\dot x = F(t,x)$ with initial value
     $x_0$ on the segment between $t_0$ and $t_1$.  Then
     $\sigma \mapsto x(t_0 + t_1 - \sigma)$ is an integral solution, with the same initial value
@@ -156,6 +161,8 @@ variable [CompleteSpace E]
 
 Continuity of `x` is not assumed: it follows from the differentiability hypothesis. -/
 @[blueprint "lem:isIntegralCurveOn-isIntegralSolution"
+  (title := "Integral curves are integral solutions")
+  (latexEnv := "lemma")
   (statement := /-- Let $x$ be an integral curve of $F$ on the segment between $t_0$ and $t_1$,
     with $s \mapsto F(s, x(s))$ continuous there.  Then $x$ is an integral solution on that
     segment, anchored at its own value $x(t_0)$:
@@ -190,6 +197,8 @@ theorem IsIntegralCurveOn.isIntegralSolution
 /-- **Integral form implies differential form.** An integral solution on the segment between `t₀`
 and `t₁` is an integral curve there, provided `s ↦ F s (x s)` is continuous along it. -/
 @[blueprint "lem:isIntegralSolution-isIntegralCurveOn"
+  (title := "Integral solutions are integral curves")
+  (latexEnv := "lemma")
   (statement := /-- Let $x$ be an integral solution of $\dot x = F(t,x)$ on the segment between
     $t_0$ and $t_1$, with $s \mapsto F(s, x(s))$ continuous there.  Then $x$ is an integral
     curve of $F$ on that segment: it is differentiable, with $\dot x(t) = F(t, x(t))$. -/)
@@ -211,6 +220,8 @@ theorem IsIntegralSolution.isIntegralCurveOn
 
 /-- The two formulations agree, given continuity of `F` along `x`. -/
 @[blueprint "lem:isIntegralSolution-iff-isIntegralCurveOn"
+  (title := "Integral and differential forms agree")
+  (latexEnv := "lemma")
   (statement := /-- Given continuity of $s \mapsto F(s, x(s))$ on the segment between $t_0$ and
     $t_1$, the two formulations agree: $x$ is an integral solution anchored at $x(t_0)$ if and
     only if it is an integral curve of $F$ there.  Continuity of $F$ along $x$ is exactly the
@@ -227,6 +238,8 @@ theorem isIntegralSolution_iff_isIntegralCurveOn
 rather than `uIcc t₀ t₁`. This is the form the finite-forward stability predicates are phrased
 in (with `t₀ = 0`). -/
 @[blueprint "lem:isIntegralSolution-iff-isIntegralCurveOn-Icc"
+  (title := "Integral and differential forms agree, forward time")
+  (latexEnv := "lemma")
   (statement := /-- \cref{lem:isIntegralSolution-iff-isIntegralCurveOn} in forward time: for
     $t_0 \le t_1$, the equivalence holds over $[t_0, t_1]$.  This is the interval the
     finite-forward stability predicates are phrased over, so this is the form the stability
@@ -244,7 +257,9 @@ an integral curve translates its interval of definition and nothing else.
 This is Mathlib's `IsIntegralCurveOn.comp_add` with the time-dependence removed — for
 `fun _ y => g y` the translated field `v ∘ (· + dt)` is the field itself. -/
 @[blueprint "lem:isIntegralCurveOn-comp-add-autonomous"
-  (statement := /-- \textbf{Time invariance.}  If $x$ is an integral curve of an autonomous
+  (title := "Time invariance")
+  (latexEnv := "lemma")
+  (statement := /-- If $x$ is an integral curve of an autonomous
     field $g$ on a set $s$, then $t \mapsto x(t + \Delta t)$ is an integral curve of the same
     $g$ on $s - \Delta t$, for every $\Delta t$.
 
@@ -260,6 +275,8 @@ omit [CompleteSpace E] in
 /-- Time invariance in the form the finite-segment predicates need: a segment on `[t₀, t₁]`
 re-anchored to `[0, t₁ - t₀]`. -/
 @[blueprint "lem:isIntegralCurveOn-shift-to-zero"
+  (title := "Shifting a solution segment to the origin")
+  (latexEnv := "lemma")
   (statement := /-- \cref{lem:isIntegralCurveOn-comp-add-autonomous} in the form the
     finite-segment predicates need: a solution segment of an autonomous field on $[t_0, t_1]$
     becomes one on $[0, t_1 - t_0]$ under $s \mapsto x(s + t_0)$.
@@ -280,6 +297,8 @@ The continuity of `x` that the integral formulation needs comes for free from th
 hypothesis; only continuity of the field is assumed. Specializes
 `isIntegralSolution_iff_isIntegralCurveOn_Icc`. -/
 @[blueprint "lem:isIntegralCurveOn-isIntegralSolution-of-continuous"
+  (title := "Integral form for an autonomous field")
+  (latexEnv := "lemma")
   (statement := /-- Let $g$ be a continuous \emph{autonomous} field and let $x$ be an integral
     curve of $g$ on $[t_0,t_1]$, $t_0 \le t_1$.  Then $x$ is an integral solution there,
     anchored at $x(t_0)$.
@@ -303,6 +322,8 @@ from any anchor follows.
 
 Reference: the Picard--Lindelöf local existence theorem. -/
 @[blueprint "lem:contDiffAt-exists-isIntegralCurveOn-Icc"
+  (title := "Local existence for a $C^{1}$ field")
+  (latexEnv := "lemma")
   (statement := /-- Let $g$ be an autonomous field that is $C^1$ at $x_0$.  Then there is a
     $T > 0$ and a curve $\varphi$ with $\varphi(0) = x_0$ that is an integral curve of $g$ on
     $[0, T]$: a nontrivial solution segment exists from every point at which the field is
@@ -345,8 +366,8 @@ backward instance into a forward one on `[t₁, t₀]`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.4. -/
 @[blueprint "thm:continuous-dependence-ODE"
-  (statement := /-- \textbf{Continuous dependence on initial states and parameters}
-    (Khalil, Theorem 3.4).  Let $f$ be jointly continuous and $L$-Lipschitz in its state
+  (title := "Continuous dependence on initial states and parameters")
+  (statement := /-- Khalil, Theorem 3.4.  Let $f$ be jointly continuous and $L$-Lipschitz in its state
     argument on the segment between $t_0$ and $t_1$, let $y$ be an integral solution of
     $\dot y = f(t,y)$ with
     $y(t_0) = y_0$, and let $z$ be an integral solution of the perturbed equation
@@ -524,8 +545,9 @@ The `α`-condition plays the role of `δ` from the classical statement.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.5. -/
 @[blueprint "thm:continuous-dependence-parameters"
-  (statement := /-- \textbf{Continuous dependence on parameters} (Khalil, Theorem 3.5).
-    If $y$ solves $\dot{y} = f(t,y)$ and $z$ solves $\dot{z} = f(t,z) + g(t,z)$
+  (title := "Continuous dependence on parameters")
+  (statement := /-- Khalil, Theorem 3.5.  If $y$ solves $\dot{y} = f(t,y)$ and $z$ solves $\dot{z} = f(t,z) +
+    g(t,z)$
     with $\|g(t,x)\| \le \alpha$ and $\|z_0 - y_0\| \le \alpha$, and
     $\alpha(1 + 1/L)e^{L(t_1-t_0)} \le \varepsilon$, then
     $\|y(t) - z(t)\| \le \varepsilon$ for all $t \in [t_0, t_1]$. -/)

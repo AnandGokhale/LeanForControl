@@ -260,6 +260,7 @@ differential inequality to rule out remaining inside the sphere forever.
 
 Reference: Hahn, *Stability of Motion* (Chetaev's instability method). -/
 @[blueprint "thm:exponential-chetaev-unstable"
+  (title := "Exponential Chetaev instability criterion")
   (statement := /-- Suppose the vector field $f$ and certificate $V$ are $C^1$,
     $V$ is quadratically bounded on a ball, its positive set accumulates at the
     base point, and its Lie derivative satisfies $\dot V\geq 2\alpha V$ there

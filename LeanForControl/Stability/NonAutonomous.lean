@@ -41,6 +41,8 @@ open Set Filter Topology Metric
 `t ↦ V t (φ t)` pairs the explicit time dependence with the state dependence, giving
 `DV(t, φ t)[(1, f t (φ t))]`. -/
 @[blueprint "lem:hasDerivAt-V-comp-traj-NA"
+  (title := "Chain rule for a time-varying $V$")
+  (latexEnv := "lemma")
   (statement := /-- Let $V : \mathbb{R} \times \mathbb{R}^{n} \to \mathbb{R}$ be
     differentiable and let $\varphi$ be a trajectory of $\dot{x} = f(t,x)$ on
     $[t_{0},\infty)$ (\cref{def:isTrajectoryNA}).  Then for $t > t_{0}$,
@@ -200,6 +202,7 @@ private lemma NA_ball_invariant
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
 @[blueprint "thm:lyapunov-uniformly-stable-NA"
+  (title := "Lyapunov's uniform stability theorem")
   (statement := /-- Let $r > 0$ and let $V : \mathbb{R} \times \mathbb{R}^{n} \to
     \mathbb{R}$ be differentiable.  Suppose there are $W_{1}, W_{2}$, continuous on
     $\overline{B}(0,r)$, vanishing at the origin and strictly positive elsewhere on it, with
@@ -308,6 +311,7 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9. -/
 @[blueprint "thm:lyapunov-uniformly-asymptotic-stable-NA"
+  (title := "Lyapunov's uniform asymptotic stability theorem")
   (statement := /-- In the setting of \cref{thm:lyapunov-uniformly-stable-NA}, strengthen the
     derivative hypothesis to
     \[

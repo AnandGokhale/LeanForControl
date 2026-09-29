@@ -51,6 +51,7 @@ lemma mem_unobservableSubspace_iff
 /-- The unobservable subspace is trivial exactly when the system is observable
 in the textbook sense `IsObservable`. -/
 @[blueprint "thm:unobservable-eq-bot-iff-observable"
+  (title := "Observability via the unobservable subspace")
   (statement := /-- A finite-dimensional system $(A, C)$ is observable in the
     sense of \cref{def:isObservable} if and only if its unobservable subspace
     is trivial:
@@ -105,6 +106,8 @@ unobservable state keeps it unobservable. The proof for the boundary case
 `k = n - 1` uses Cayley-Hamilton through
 `mulVec_aPowN_eq_zero_of_mem_unobservableSubspace`. -/
 @[blueprint "lem:unobservableSubspace-invariant"
+  (title := "$A$-invariance of the unobservable subspace")
+  (latexEnv := "lemma")
   (statement := /-- The unobservable subspace is closed under the action of
     $A$: for every $v \in \mathcal{N}(A, C)$, also $A\, v \in \mathcal{N}(A, C)$. -/)
   (proof := /-- For $k = 0, \dots, n-2$ this is direct from the definition.
@@ -173,6 +176,8 @@ private theorem exists_eigenvector_of_unobservableSubspace_neBot
 /-- A vector `v` is in the kernel of `H_{A, C}(μ) *ᵥ ·` iff `v` is an
 eigenvector (or zero) of `A` with eigenvalue `μ` and is annihilated by `C`. -/
 @[blueprint "lem:hautus-mulVec-eq-zero-iff"
+  (title := "Kernel of the Hautus matrix")
+  (latexEnv := "lemma")
   (statement := /-- For every $\mu \in \mathbb{C}$ and $v \in \mathbb{C}^{n}$,
     \[
       H_{A, C}(\mu) \cdot v = 0
@@ -212,6 +217,7 @@ lemma hautusObservabilityMatrix_mulVec_eq_zero_iff
 admits a complex Hautus failure: some `μ ∈ ℂ` and a nonzero vector `v` such
 that `[μ I - A; C] · v = 0`. -/
 @[blueprint "thm:not-isObservable-implies-hautus-failure"
+  (title := "Unobservability gives a Hautus rank drop")
   (statement := /-- If $(A, C)$ is not observable, then there exists
     $\mu \in \mathbb{C}$ and a nonzero vector $v \in \mathbb{C}^{n}$ such that
     \[
@@ -242,6 +248,7 @@ theorem not_isObservable_implies_hautus_failure
 /-- **Converse direction of observability Hautus.** A Hautus failure at any
 `μ ∈ ℂ` with witness `v ≠ 0` implies the system is not observable. -/
 @[blueprint "thm:hautus-failure-implies-not-isObservable"
+  (title := "A Hautus rank drop gives unobservability")
   (statement := /-- If $\mu \in \mathbb{C}$ and $v \neq 0$ satisfy
     $H_{A, C}(\mu) \cdot v = 0$, then $(A, C)$ is not observable. -/)
   (proof := /-- The witness gives $A v = \mu v$ and $C v = 0$. By induction
@@ -274,6 +281,7 @@ theorem hautus_failure_implies_not_isObservable
 over `ℂ`, the system is observable if and only if for every `μ ∈ ℂ`, the
 Hautus block `[μ I - A; C]` has trivial kernel. -/
 @[blueprint "thm:isObservable-iff-hautus"
+  (title := "Hautus (PBH) test for observability")
   (statement := /-- A finite-dimensional system $(A, C)$ over $\mathbb{C}$
     is observable if and only if for every $\mu \in \mathbb{C}$ the Hautus
     matrix $H_{A, C}(\mu)$ has trivial kernel:

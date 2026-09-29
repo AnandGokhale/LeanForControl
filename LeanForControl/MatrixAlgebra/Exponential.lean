@@ -23,6 +23,8 @@ variable {n : ℕ}
 
 /-- Entrywise complexification commutes with the matrix exponential. -/
 @[blueprint "lem:complexification-exp"
+  (title := "Complexification commutes with the matrix exponential")
+  (latexEnv := "lemma")
   (statement := /-- Entrywise complexification commutes with the matrix exponential: for a real
     matrix $A$,
     \[
@@ -75,8 +77,8 @@ directly; `add_smul` matches the exponent.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.3. -/
 @[blueprint "thm:exp-const-add"
-  (statement := /-- \textbf{Semigroup property of the matrix exponential} (Hespanha, P6.3).
-    For every $t, \tau \in \mathbb{R}$,
+  (title := "Semigroup property of the matrix exponential")
+  (statement := /-- Hespanha, P6.3.  For every $t, \tau \in \mathbb{R}$,
     \[
       e^{At}e^{A\tau} = e^{A(t+\tau)} .
     \] -/)
@@ -261,8 +263,8 @@ Proof: substitute (6.6) into the exponential series (via `NormedSpace.exp_eq_tsu
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.5) / Property
 P6.5. -/
 @[blueprint "thm:exists-exp-eq-sum-smul-pow"
-  (statement := /-- \textbf{The matrix exponential as a finite polynomial} (Hespanha, P6.5).
-    There are scalar functions
+  (title := "The matrix exponential as a finite polynomial")
+  (statement := /-- Hespanha, P6.5.  There are scalar functions
     $\alpha_0, \dots, \alpha_{n-1} : \mathbb{R} \to \mathbb{R}$ with
     \[
       e^{At} = \sum_{i=0}^{n-1} \alpha_i(t)\,A^i
