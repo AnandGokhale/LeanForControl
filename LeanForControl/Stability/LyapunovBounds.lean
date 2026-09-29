@@ -276,7 +276,13 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 /-- **Class K sandwich bounds**: For any continuous positive-definite `V` on `B(0, r)`,
     there exist class K functions `α₁`, `α₂` such that
 
-      `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. -/
+      `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. 
+      
+      Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
+      Differences:
+      - The bound holds on the open ball `‖x‖ < r`, with `α₁, α₂` class `K` on `[0, r)`; Khalil
+        states it on `[0, r]`.
+      - The radially unbounded `K∞` case is not derived here. -/
 @[blueprint "thm:lyapunov-class-K-bounds"
   (title := "Class $\\mathcal{K}$ sandwich bounds")
   (statement := /-- Let $V : \mathbb{R}^{n} \to \mathbb{R}$ be continuous on $\overline{B}(0,r)$ with
@@ -291,7 +297,13 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 
     This is what lets a Lyapunov argument be run entirely in terms of comparison functions:
     positive definiteness is a pointwise condition, and this converts it into monotone bounds
-    in the single variable $\|x\|$. -/)
+    in the single variable $\|x\|$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
+    Differences: \begin{itemize} \item The bound holds on the open ball $\|x\| < r$, with $\alpha_1,
+    \alpha_2$ class $\mathcal{K}$ on $[0,r)$; Khalil states it on $[0,r]$. \item The radially
+    unbounded $\mathcal{K}_{\infty}$ case is not derived here. \end{itemize}
+  -/)
   (proof := /-- For the lower bound take $\psi(s) = \inf\{V(x) : s \le \|x\| \le r\}$,
     the infimum of $V$ over the annulus of inner radius $s$: it vanishes at $0$, is positive for
     $s > 0$ by compactness and positive definiteness, and is nondecreasing.  For the upper bound

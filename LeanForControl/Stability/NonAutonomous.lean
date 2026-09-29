@@ -200,7 +200,8 @@ private lemma NA_ball_invariant
 
 /-- **Lyapunov's uniform stability theorem** for `ẋ = f(t, x)`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8, hypotheses (4.22) and
+(4.23). -/
 @[blueprint "thm:lyapunov-uniformly-stable-NA"
   (title := "Lyapunov's uniform stability theorem")
   (statement := /-- Let $r > 0$ and let $V : \mathbb{R} \times \mathbb{R}^{n} \to
@@ -215,7 +216,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
     The sandwich is what makes the conclusion uniform in $t_{0}$: $W_{1}$ and $W_{2}$ do not
     depend on $t$, so the $\delta(\varepsilon)$ extracted from them does not either.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.8.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.8, hypotheses (4.22)
+    and (4.23).
   -/)
   (proof := /-- Bound $W_{1}$ below and $W_{2}$ above by class $\mathcal{K}$ functions
     $\alpha_{1}, \alpha_{2}$ (\cref{thm:lyapunov-class-K-bounds}).  Fix a level $d$ below both
@@ -312,7 +314,11 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
 
 /-- **Lyapunov's uniform asymptotic stability theorem** for `ẋ = f(t, x)`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9, hypothesis (4.24). Khalil's
+two "moreover" clauses are not part of this conclusion:
+- the explicit bound `‖x(t)‖ ≤ β(‖x(t₀)‖, t − t₀)` — available here via
+  `uniformlyAsymptoticStableNA_iff_classKL`;
+- the global case, when `D = ℝⁿ` and `W₁` is radially unbounded. -/
 @[blueprint "thm:lyapunov-uniformly-asymptotic-stable-NA"
   (title := "Lyapunov's uniform asymptotic stability theorem")
   (statement := /-- In the setting of \cref{thm:lyapunov-uniformly-stable-NA}, strengthen the
@@ -329,7 +335,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9. -/
     each annulus, which is exactly what positive definiteness of a function of $x$ alone
     buys.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.9.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.9, hypothesis (4.24).
+    Khalil's two ``moreover'' clauses are not part of this conclusion:
+    \begin{itemize}
+      \item the explicit bound $\|x(t)\| \le \beta(\|x(t_{0})\|, t - t_{0})$, available here
+        via \cref{lem:uniformlyAsymptoticStableNA-iff-classKL};
+      \item the global case, when $D = \mathbb{R}^{n}$ and $W_{1}$ is radially unbounded.
+    \end{itemize}
   -/)
   (proof := /-- As in \cref{thm:lyapunov-uniformly-stable-NA}, take class $\mathcal{K}$ bounds
     $\alpha_{1}, \alpha_{2}, \alpha_{3}$ for $W_{1}, W_{2}, W_{3}$.  Then

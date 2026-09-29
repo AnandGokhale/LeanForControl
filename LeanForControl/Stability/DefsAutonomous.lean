@@ -67,7 +67,11 @@ def IsEquilibrium (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 
 /-- Lyapunov stability, quantified over all finite forward solution segments.
 
-Reference: Khalil, *Nonlinear Systems*.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.1 (*stable*), for `ẋ = f(x)`.
+Differences:
+- Khalil fixes `t₀ = 0`; here it is arbitrary. Immaterial for an autonomous field.
+- Khalil presumes solutions on `[0, ∞)`; here the quantification is over finite forward
+  segments, so the predicate is not vacuous when solutions escape in finite time.
 -/
 @[blueprint "def:lyapunovStable"
   (title := "Lyapunov stability")
@@ -75,7 +79,13 @@ Reference: Khalil, *Nonlinear Systems*.
     forward solution segment starting sufficiently close remains within any
     prescribed neighborhood for its entire interval of definition.
 
-    Reference: Khalil, \emph{Nonlinear Systems}.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.1 (\emph{stable}), for
+    $\dot{x} = f(x)$.  Differences:
+    \begin{itemize}
+      \item Khalil fixes $t_0 = 0$; here it is arbitrary.  Immaterial for an autonomous field.
+      \item Khalil presumes solutions on $[0,\infty)$; here the quantification is over finite
+        forward segments, so the predicate is not vacuous when solutions escape in finite time.
+    \end{itemize}
   -/)]
 def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ),
@@ -112,7 +122,10 @@ The completeness restriction is harmless because the stability conjunct guards i
 solutions escape in finite time `LyapunovStable` already fails. A `τ` uniform over
 solutions is strictly stronger and is recorded separately, for the certificates that supply it.
 
-Reference: Khalil, *Nonlinear Systems*.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.1 (*asymptotically stable*), for
+`ẋ = f(x)`. Differences:
+- Khalil reuses the stability `δ` as the attractivity radius; here `c` is separate.
+- Convergence is asserted only of forward-complete solutions.
 -/
 @[blueprint "def:localAsymptoticStable"
   (title := "Local asymptotic stability")
@@ -121,7 +134,13 @@ Reference: Khalil, *Nonlinear Systems*.
     forward time with $\|\varphi(t_0)-x_{\rm eq}\|<c$ satisfies
     $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$.
 
-    Reference: Khalil, \emph{Nonlinear Systems}.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.1
+    (\emph{asymptotically stable}), for $\dot{x} = f(x)$.  Differences:
+    \begin{itemize}
+      \item Khalil reuses the stability $\delta$ as the attractivity radius; here $c$ is
+        separate.
+      \item Convergence is asserted only of forward-complete solutions.
+    \end{itemize}
   -/)]
 def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
@@ -150,14 +169,15 @@ def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 
 /-- Instability is the negation of forward Lyapunov stability.
 
-Reference: Khalil, *Nonlinear Systems*.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.1 (*unstable*), for `ẋ = f(x)`.
 -/
 @[blueprint "def:unstable"
   (title := "Instability")
   (statement := /-- Instability is the negation of stability quantified
     over all finite forward solution segments.
 
-    Reference: Khalil, \emph{Nonlinear Systems}.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.1 (\emph{unstable}), for
+    $\dot{x} = f(x)$.
   -/)]
 def Unstable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ¬ LyapunovStable f x_eq
@@ -208,7 +228,11 @@ The Lie derivative DV(x)[f(x)] = fderiv ℝ V x (f x). -/
     Global regularity of $V$, with positivity and the Lie-derivative sign required only on
     $D$, is what lets the chain-rule and intermediate-value arguments be applied uniformly.
     Note this notion does \emph{not} require $x_{\mathrm{eq}}$ to be an equilibrium; the
-    strict variants below do. -/)]
+    strict variants below do.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.1, hypotheses (4.2) and (4.3),
+    for $\dot{x} = f(x)$.
+  -/)]
 structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open     : IsOpen D
   hD_mem      : x_eq ∈ D
@@ -231,7 +255,13 @@ structure IsLocalLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (
     $f(x_{\mathrm{eq}}) = 0$; and the Lie derivative is strictly negative,
     $\dot{V}(x) < 0$ for all $x \in D \setminus \{x_{\mathrm{eq}}\}$.  It additionally
     requires a $c > 0$ with $\Omega_{c}(V) \subseteq D$ compact
-    (\cref{def:sublevelSet}), which replaces radial unboundedness in the local setting. -/)]
+    (\cref{def:sublevelSet}), which replaces radial unboundedness in the local setting.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.1, hypotheses (4.2) and (4.4),
+    for $\dot{x} = f(x)$.  The equilibrium and compact-sublevel-set fields are additional: Khalil
+    obtains the compact set inside the proof, and leaves $f(x_{\mathrm{eq}}) = 0$ to the standing
+    setup of (4.1).
+  -/)]
 structure IsStrictLocalLyapunovFunction
     (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) (D : Set ℝⁿ) : Prop where
   hD_open   : IsOpen D
@@ -247,14 +277,24 @@ structure IsStrictLocalLyapunovFunction
 /-- Global strict Lyapunov certificate: `V` is C¹, positive definite, with strictly negative Lie
     derivative on all of `ℝⁿ`, and all sublevel sets are compact (coercivity). Implies GAS.
 
-    `hbounded_sublevel` encodes coercivity; in `ℝⁿ` this is equivalent to radial unboundedness. -/
+    `hbounded_sublevel` encodes coercivity; in `ℝⁿ` this is equivalent to radial unboundedness.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2, hypotheses (4.5) and (4.7),
+    with (4.6) in its compact-sublevel-set form. -/
 @[blueprint "def:isStrictLyapunovFunction"
   (title := "Strict Lyapunov function")
   (statement := /-- A \emph{global strict Lyapunov function} for $\dot{x} = f(x)$
     at $x_{\mathrm{eq}}$ is a $C^{1}$ map $V : \mathbb{R}^{n} \to \mathbb{R}$
     with $f(x_{\mathrm{eq}}) = 0$, $V(x_{\mathrm{eq}}) = 0$, $V > 0$ everywhere else,
     $\dot{V}(x) < 0$ on $\mathbb{R}^{n} \setminus \{x_{\mathrm{eq}}\}$,
-    and all sublevel sets $\Omega_{c}(V)$ compact (coercivity). -/)]
+    and all sublevel sets $\Omega_{c}(V)$ compact (coercivity).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.2, hypotheses (4.5) and (4.7),
+    for $\dot{x} = f(x)$.  Differences: \begin{itemize} \item Radial unboundedness (4.6) is replaced
+    by compactness of every sublevel set, which for continuous $V$ it implies
+    (\cref{lem:isCompact-sublevel-set}). \item The equilibrium field $f(x_{\mathrm{eq}}) = 0$ is
+    additional. \end{itemize}
+  -/)]
 structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
   hcont             : Continuous V
   hV_c1             : ContDiff ℝ 1 V
@@ -266,7 +306,10 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
 
 /-- Classical GAS Lyapunov certificate: C¹, positive definite, strictly negative Lie derivative,
     and radially unbounded (`V(x) → ∞` as `‖x‖ → ∞`). Implies `IsStrictLyapunovFunction`
-    via `isCompact_sublevel_set` in `Autonomous.lean`. -/
+    via `isCompact_sublevel_set` in `Autonomous.lean`.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2, hypotheses (4.5), (4.6),
+    (4.7). -/
 @[blueprint "def:isAsymptoticLyapunovFunction"
   (title := "Asymptotic Lyapunov function")
   (statement := /-- The classical GAS Lyapunov certificate: a $C^{1}$ map
@@ -275,7 +318,12 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
     $V > 0$ elsewhere, $\dot{V} < 0$ on $\mathbb{R}^{n} \setminus \{x_{\mathrm{eq}}\}$,
     and radially unbounded ($V(x) \to \infty$ as $\|x\| \to \infty$).
     Implies \cref{def:isStrictLyapunovFunction} via
-    \cref{lem:isCompact-sublevel-set}. -/)]
+    \cref{lem:isCompact-sublevel-set}.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.2, hypotheses (4.5), (4.6) and
+    (4.7), for $\dot{x} = f(x)$.  The equilibrium field $f(x_{\mathrm{eq}}) = 0$ is additional, left
+    by Khalil to the standing setup of (4.1).
+  -/)]
 structure IsAsymptoticLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (x_eq : ℝⁿ) : Prop where
   hcont    : Continuous V
   hV_c1    : ContDiff ℝ 1 V

@@ -18,12 +18,19 @@ A *class K∞* function is like class K but defined globally on `[0, ∞)` and s
 certificates and ISS bounds. -/
 
 /-- A class K∞ function: continuous, strictly increasing, `f(0) = 0`, radially unbounded
-    (`f(r) → ∞`), all on `[0, ∞)`. -/
+    (`f(r) → ∞`), all on `[0, ∞)`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.2 (class `K∞`). The inverse is
+    bundled as data rather than derived. -/
 @[blueprint "def:isClassKInfty"
   (title := "Class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- A \emph{class $\mathcal{K}_{\infty}$} function is a continuous
     strictly increasing map $\alpha : [0,\infty) \to [0,\infty)$ with $\alpha(0) = 0$
-    and $\alpha(r) \to \infty$ as $r \to \infty$. -/)]
+    and $\alpha(r) \to \infty$ as $r \to \infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.2 (class
+    $\mathcal{K}_{\infty}$).  The inverse is bundled as data rather than derived.
+  -/)]
 structure ClassKInfty where
   /-- The forward function of a class K∞ function. -/
   toFun : ℝ → ℝ
@@ -182,11 +189,16 @@ private lemma ClassKInfty.invFun_zero (α : ClassKInfty) : α.invFun 0 = 0 := by
   have h_left := α.left_inv h0
   rw [α.map_zero] at h_left; exact h_left
 
-/-- The inverse of a class K∞ function is again class K∞. -/
+/-- The inverse of a class K∞ function is again class K∞. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, second bullet. -/
 @[blueprint "lem:classKInfty-symm"
   (title := "Inverse of a class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under inversion: if $\alpha$ is class
-    $\mathcal{K}_{\infty}$, so is $\alpha^{-1}$. -/)]
+    $\mathcal{K}_{\infty}$, so is $\alpha^{-1}$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, second bullet.
+  -/)]
 def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
   toFun       := α.invFun
   invFun      := α.toFun
@@ -247,12 +259,17 @@ def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
       have hinv_b : α.invFun (α.toFun b) = b := α.left_inv hb_ici
       linarith
 
-/-- Composition of two class K∞ functions is class K∞. -/
+/-- Composition of two class K∞ functions is class K∞. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, fourth bullet. -/
 @[blueprint "lem:classKInfty-comp"
   (title := "Composition of class $\\mathcal{K}_{\\infty}$ functions")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under composition: if $\alpha$ and
     $\beta$ are class $\mathcal{K}_{\infty}$, so is $\beta \circ \alpha$, with inverse
-    $\alpha^{-1} \circ \beta^{-1}$. -/)]
+    $\alpha^{-1} \circ \beta^{-1}$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fourth bullet.
+  -/)]
 def ClassKInfty.comp (β α : ClassKInfty) : ClassKInfty where
   toFun         := β.toFun ∘ α.toFun
   invFun        := α.invFun ∘ β.invFun

@@ -46,6 +46,7 @@ Files:
 | Class-KL characterization of global uniform asymptotic stability | `globallyUniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
 | Lyapunov's uniform stability theorem | `lyapunov_uniformly_stable_NA` | `NonAutonomous.lean` | ✅ done |
 | Lyapunov's uniform asymptotic stability theorem | `lyapunov_uniformly_asymptotic_stable_NA` | `NonAutonomous.lean` | ✅ done |
+| Exponential stability from a power-law Lyapunov sandwich | — | — | planned — Khalil Theorem 4.10; `ExponentiallyStableNA` is defined but nothing concludes it |
 
 Files:
 

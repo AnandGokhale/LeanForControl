@@ -520,7 +520,12 @@ started at `r`.
 This is the only thing the rest of the library needs from the Osgood construction. Stating it
 this way keeps the construction itself — the time-to-reach integral, its inverse, and the
 closed form built from them — inside the proof, where it belongs: those are steps in building
-a solution, not results about class K functions. -/
+a solution, not results about class K functions. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4. Differences:
+- Khalil assumes `α` locally Lipschitz; here the hypothesis is the linear bound `α(x) ≤ L·x`
+  near the origin, which is what the construction uses.
+- Uniqueness of the solution is not asserted, only existence of the class `KL` operator `σ`. -/
 @[blueprint "thm:class-KL-osgood"
   (title := "The decay ODE has a class $\\mathcal{KL}$ solution operator")
   (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the origin,
@@ -530,7 +535,14 @@ a solution, not results about class K functions. -/
     \[
       \dot y = -\alpha(y), \qquad y(0) = r .
     \]
-    That is: the decay ODE's solution operator is itself a class $\mathcal{KL}$ function. -/)
+    That is: the decay ODE's solution operator is itself a class $\mathcal{KL}$ function.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.4.  Differences: \begin{itemize}
+    \item Khalil assumes $\alpha$ locally Lipschitz; here the hypothesis is the linear bound
+    $\alpha(x) \le Lx$ near the origin, which is what the construction uses. \item Uniqueness of the
+    solution is not asserted, only existence of the class $\mathcal{KL}$ operator $\sigma$.
+    \end{itemize}
+  -/)
   (proof := /-- \textbf{Osgood's construction.}  Let
     $\eta(y) = -\int_{\mathrm{base}}^{y} \mathrm{d}x/\alpha(x)$ be the time for the solution
     started at $\mathrm{base}$ to reach $y$.  Since $\alpha > 0$ on $(0,a)$, $\eta$ is

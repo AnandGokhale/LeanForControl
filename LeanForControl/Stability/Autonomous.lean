@@ -333,13 +333,19 @@ Proof sketch:
    where `Q = {t ∈ [t₀, t*] | ε' ≤ ‖φ t − x_eq‖}`.
 5. `V_nonincreasing_on` on `[t₀, T*]` gives `V(φ T*) ≤ V(φ t₀) < m ≤ V(φ T*)`. Contradiction.
 
-The first-exit argument runs at the segment's own left endpoint `t₀`. -/
+The first-exit argument runs at the segment's own left endpoint `t₀`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.1, first conclusion. -/
 @[blueprint "thm:lyapunov-stable"
   (title := "Lyapunov's stability theorem")
   (statement := /-- If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
     $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
     is stable on every finite forward solution segment
-    (\cref{def:lyapunovStable}). -/)
+    (\cref{def:lyapunovStable}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.1, first conclusion ($x = 0$ is
+    stable under (4.2) and (4.3)).
+  -/)
   (proof := /-- Pick $\varepsilon_{0}$ so $\overline{B}(x_{\mathrm{eq}},\varepsilon_{0})
     \subseteq D$. Let $m = \min_{S_{\varepsilon'}} V > 0$. Choose $\delta$ with
     $V < m$ on $B(x_{\mathrm{eq}},\delta)$. If $\|\varphi(t^{*})-x_{\mathrm{eq}}\|
@@ -573,12 +579,19 @@ Proof sketch: stability supplies a radius `δ` from which a solution can no long
 `ε`-ball. `time_outside_ball_le` bounds how long a solution can stay outside that `δ`-ball, so it
 has entered by `t₀ + τ₀ + 1`; re-applying stability *at that entry time* — which needs the
 anchor-free form of the predicate — pins it inside the `ε`-ball from then on. The bound is in
-fact uniform over solutions; only the per-solution consequence is recorded here. -/
+fact uniform over solutions; only the per-solution consequence is recorded here.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2, with (4.6) in its
+compact-sublevel-set form. -/
 @[blueprint "thm:lyapunov-asymptotic-stable"
   (title := "Lyapunov's global asymptotic stability theorem")
   (statement := /-- If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
     and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
-    (\cref{def:globalAsymptoticStable}). -/)
+    (\cref{def:globalAsymptoticStable}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.2, with radial unboundedness
+    (4.6) in its compact-sublevel-set form.
+  -/)
   (proof := /-- Stability from \cref{thm:lyapunov-stable} fixes $\delta$ for the given
     $\varepsilon$. On the compact set $\{V \le M\} \cap \{\delta \le \|x-x_{\rm eq}\|\}$ the Lie
     derivative is at most $-\gamma < 0$, so $V$ is drained at a definite rate and the
@@ -613,13 +626,18 @@ theorem lyapunov_asymptotic_stable
     linarith
 
 /-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
-    (the classical radially-unbounded form of the theorem). -/
+    (the classical radially-unbounded form of the theorem).
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2 (Barbashin–Krasovskii). -/
 @[blueprint "thm:lyapunov-global-asymptotic-stable"
   (title := "Global asymptotic stability from a radially unbounded $V$")
   (statement := /-- If $V$ is a radially unbounded strict Lyapunov function
     (\cref{def:isAsymptoticLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is globally asymptotically stable on finite forward
-    solution segments. -/)
+    solution segments.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.2 (Barbashin--Krasovskii).
+  -/)
   (proof := /-- Radial unboundedness gives compact sublevel sets
     (\cref{lem:isCompact-sublevel-set}), so $V$ satisfies
     \cref{def:isStrictLyapunovFunction}; apply
@@ -644,13 +662,19 @@ Proof sketch:
 3. Continuity of `V` at `x_eq` gives the basin `δ₀`: starting within it forces `V (φ t₀) < c₀`,
    and `sublevel_set_invariant` then keeps the solution inside `D`.
 4. `time_outside_ball_le` caps the time spent outside the `δ`-ball, so the solution has entered
-   it by `t₀ + τ₀ + 1`; stability re-applied at that entry time finishes. -/
+   it by `t₀ + τ₀ + 1`; stability re-applied at that entry time finishes.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.1, second conclusion. -/
 @[blueprint "thm:lyapunov-local-asymptotic-stable"
   (title := "Lyapunov's local asymptotic stability theorem")
   (statement := /-- If $V$ is a strict local Lyapunov function
     (\cref{def:isStrictLocalLyapunovFunction}) and $f$ is continuous, then
     $x_{\mathrm{eq}}$ is locally asymptotically stable
-    (\cref{def:localAsymptoticStable}). -/)
+    (\cref{def:localAsymptoticStable}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.1, second conclusion
+    (strengthening (4.3) to (4.4) gives asymptotic stability).
+  -/)
   (proof := /-- The compact sublevel set $\Omega_{c_{0}} \subseteq D$ is positively
     invariant, so the Lie derivative is at most $-\gamma < 0$ off any ball around
     $x_{\mathrm{eq}}$, draining $V$ at a definite rate; the $\delta$-ball supplied by

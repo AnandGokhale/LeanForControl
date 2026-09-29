@@ -36,13 +36,23 @@ A *class K* function is a strictly increasing continuous bijection `f : [0,a) �
 satisfying `f(0) = 0`. -/
 
 /-- A class K function on `[0,a)`: continuous, strictly increasing, zero at zero,
-    together with a stored inverse that witnesses the bijection `[0,a) ↔ [0,b)`. -/
+    together with a stored inverse that witnesses the bijection `[0,a) ↔ [0,b)`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.2 (class `K`). Differences:
+    - Khalil writes the codomain as `[0, ∞)`; here the bound `b` is tracked in the type.
+    - The inverse is bundled as data rather than derived. -/
 @[blueprint "def:isClassK"
   (title := "Class $\\mathcal{K}$ function")
   (statement := /-- A \emph{class $\mathcal{K}$} function on $[0,a)$ is a
     continuous strictly increasing map $\alpha : [0,a) \to [0,b)$ with
     $\alpha(0) = 0$. All class K functions have an inverse
-    $\alpha^{-1} : [0,b) \to [0,a)$. -/)]
+    $\alpha^{-1} : [0,b) \to [0,a)$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.2 (class $\mathcal{K}$).
+    Differences: \begin{itemize} \item Khalil writes the codomain as $[0,\infty)$; here the bound
+    $b$ is tracked in the type. \item The inverse is bundled as data rather than derived.
+    \end{itemize}
+  -/)]
 structure ClassK (a b : ℝ) where
   ha : 0 < a
   hb : 0 < b
@@ -221,11 +231,18 @@ noncomputable def ClassK.restrictTo {a b : ℝ} (α : ClassK a b) {c e : ℝ}
 
 -- ─── ClassK Operations ────────────────────────────────────────────────────────
 
-/-- The inverse of a class K function `[0,a) → [0,b)` is class K on `[0,b) → [0,a)`. -/
+/-- The inverse of a class K function `[0,a) → [0,b)` is class K on `[0,b) → [0,a)`. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, first bullet. Khalil's domain
+`[0, α(a))` is the codomain bound `b` carried by the type. -/
 @[blueprint "lem:classK-symm"
   (title := "Inverse of a class $\\mathcal{K}$ function")
   (statement := /-- Class $\mathcal{K}$ is closed under inversion. The inverse
-  of a class K function is also class K. -/)]
+  of a class K function is also class K.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, first bullet.  Khalil's domain
+    $[0, \alpha(a))$ is the codomain bound $b$ carried by the type.
+  -/)]
 def ClassK.symm {a b : ℝ} (α : ClassK a b) : ClassK b a where
   ha          := α.hb
   hb          := α.ha
@@ -320,13 +337,18 @@ def ClassK.symm {a b : ℝ} (α : ClassK a b) : ClassK b a where
       rw [α.right_inv hy₂, α.right_inv hy₁] at h_apply; linarith
 
 /-- Composition of two class K functions is class K
-    (the composed inverse is the reverse composition of inverses). -/
+    (the composed inverse is the reverse composition of inverses). 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, third bullet. -/
 @[blueprint "lem:classK-comp"
   (title := "Composition of class $\\mathcal{K}$ functions")
   (statement := /-- Class $\mathcal{K}$ is closed under composition: if $\alpha$ is class
     $\mathcal{K}$ on $[0, a) \to [0, b)$ and $\beta$ is class $\mathcal{K}$ on
     $[0, b) \to [0, c)$, then $\beta \circ \alpha$ is class $\mathcal{K}$ on
-    $[0, a) \to [0, c)$. -/)]
+    $[0, a) \to [0, c)$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, third bullet.
+  -/)]
 def ClassK.comp {a b c : ℝ} (β : ClassK b c) (α : ClassK a b) : ClassK a c where
   ha          := α.ha
   hb          := β.hb

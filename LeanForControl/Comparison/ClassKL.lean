@@ -24,13 +24,23 @@ fixed `r` it is strictly decreasing in `s` and tends to zero as `s → ∞`.
 It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖x₀‖, t)`. -/
 
 /-- A class KL function `β : [0,a) × [0,∞) → ℝ`:
-    class K in the first argument, antitone and tending to 0 in the second. -/
+    class K in the first argument, antitone and tending to 0 in the second. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.3. Differences:
+    - Khalil says `β(·, s)` is class `K`; here `map_zero`, `continuous` and `strict_mono_r` spell
+      that out, so no `ClassK` instance is required for each `s`.
+    - Continuity is joint on `[0,a) × [0,∞)`, matching Khalil's `β` continuous. -/
 @[blueprint "def:isClassKL"
   (title := "Class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{class $\mathcal{KL}$} function on $[0,a) \times [0,\infty)$
     is continuous, class $\mathcal{K}$ in the first argument, and for each fixed $r > 0$
     is strictly decreasing and tends to $0$ as $s \to \infty$. It arises as the bound
-    $\|x(t)\| \le \beta(\|x_0\|, t)$ in asymptotic stability estimates. -/)]
+    $\|x(t)\| \le \beta(\|x_0\|, t)$ in asymptotic stability estimates.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.3.  Difference: Khalil says
+    $\beta(\cdot, s)$ is class $\mathcal{K}$; here that is spelled out as separate fields, so no
+    class $\mathcal{K}$ instance is required for each $s$.
+  -/)]
 structure ClassKL (a : ℝ) where
   ha : 0 < a
   /-- The forward function of a class KL function. -/
@@ -349,13 +359,20 @@ theorem ClassKL.continuous_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s)
 
 
 /-- Post-composing a class KL function with a class K∞ function yields class KL.
-    (Applies `α` to the output of `β`.) -/
+    (Applies `α` to the output of `β`.) 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, fifth bullet, with `α₁` of class
+    `K∞` — no range hypothesis is then needed. -/
 @[blueprint "lem:classKL-comp-left-KInfty"
   (title := "Post-composition with a class $\\mathcal{K}_{\\infty}$ function")
   (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \alpha(\beta(r, s))$ is class $\mathcal{KL}$
     on $[0,a)$.  This is \cref{lem:classKL-comp-left-K} with the range hypothesis discharged by
-    $\alpha$ being defined on all of $[0,\infty)$. -/)]
+    $\alpha$ being defined on all of $[0,\infty)$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet, with $\alpha_1$
+    of class $\mathcal{K}_{\infty}$; no range hypothesis is then needed.
+  -/)]
 def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : ClassKL a where
   ha            := β.ha
   toFun r s     := α.toFun (β.toFun r s)
@@ -384,13 +401,22 @@ def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : Cla
     rwa [α.map_zero] at h
 
 /-- Post-composing a class KL function with a class K function yields class KL,
-    provided the range of `β` is strictly within the domain of `α`. -/
+    provided the range of `β` is strictly within the domain of `α`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, fifth bullet (the outer `α₁`).
+    The `h_range` hypothesis is additional: `α₁` is only defined on `[0,b)`, so `β`'s values must
+    land there. Khalil leaves that implicit. -/
 @[blueprint "lem:classKL-comp-left-K"
   (title := "Post-composition with a class $\\mathcal{K}$ function")
   (statement := /-- Let $\beta$ be class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ be class
     $\mathcal{K}$ on $[0,b)$, and suppose $\beta(r, s) < b$ for every $r \in [0,a)$ and
     $s \ge 0$.  Then $(r, s) \mapsto \alpha(\beta(r, s))$ is class $\mathcal{KL}$ on
-    $[0,a)$. -/)]
+    $[0,a)$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the outer
+    $\alpha_1$).  The range hypothesis is additional: $\alpha_1$ is defined only on $[0,b)$, so
+    $\beta$'s values must land there, which Khalil leaves implicit.
+  -/)]
 def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
     (h_range : ∀ r ∈ Set.Ico 0 a, ∀ s ≥ 0, β.toFun r s < b) : ClassKL a where
   ha            := β.ha
@@ -428,12 +454,18 @@ def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
 
 
 /-- Pre-composing a class KL function with a class K function yields class KL.
-    (Applies `α` to the first argument of `β`.) -/
+    (Applies `α` to the first argument of `β`.) 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, fifth bullet (the inner `α₂`). -/
 @[blueprint "lem:classKL-comp-right"
   (title := "Pre-composition in the radius argument")
   (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,b)$ and $\alpha$ is class
     $\mathcal{K}$ on $[0,a) \to [0,b)$, then $(r, s) \mapsto \beta(\alpha(r), s)$ is class
-    $\mathcal{KL}$ on $[0,a)$. -/)]
+    $\mathcal{KL}$ on $[0,a)$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the inner
+    $\alpha_2$).
+  -/)]
 def ClassKL.comp_right {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL a where
   ha            := α.ha
   toFun r s     := β.toFun (α.toFun r) s
@@ -462,14 +494,19 @@ A *global class KL* function `β(r, s)` is like `ClassKL` but defined on all of
 zero at zero, radially unbounded), antitone and tending to 0 in the second. -/
 
 /-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K∞ in the first argument,
-    antitone and tending to 0 in the second. -/
+    antitone and tending to 0 in the second. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.3 with `a = ∞`. -/
 @[blueprint "def:isClassKLGlobal"
   (title := "Global class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{global class $\mathcal{KL}$} function is a map
     $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is class
     $\mathcal{K}_{\infty}$ in the first argument (continuous, strictly increasing,
     zero at zero, radially unbounded) and, for each fixed $r \ge 0$, is antitone
-    and tends to $0$ as $s \to \infty$. -/)]
+    and tends to $0$ as $s \to \infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.3 with $a = \infty$.
+  -/)]
 structure ClassKLGlobal where
   /-- The forward function. -/
   toFun : ℝ → ℝ → ℝ

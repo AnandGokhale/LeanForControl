@@ -59,7 +59,10 @@ open scoped Pointwise
 
 Mathlib's `omegaLimit` is stated for a family of maps indexed by a set; a single trajectory is
 the degenerate case where the index set is `Unit`, which is what the `fun (t : ℝ) (_ : Unit)`
-and `Set.univ` below encode. -/
+and `Set.univ` below encode.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), §4.2, where it is `L⁺`, the *positive limit
+set*. -/
 @[blueprint "def:omegaLimitTraj"
   (title := "$\\omega$-limit set of a trajectory") (title := "$\\omega$-limit set of a trajectory")
   (statement := /-- The \emph{$\omega$-limit set} of a trajectory $\varphi$ is
@@ -67,7 +70,11 @@ and `Set.univ` below encode. -/
       \omega(\varphi) = \bigcap_{T \ge 0} \overline{\{\varphi(t) : t \ge T\}},
     \]
     the set of points $y$ such that $\varphi(t)$ is frequently in every neighbourhood of $y$ as
-    $t \to \infty$. -/)]
+    $t \to \infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), \S4.2, where it is written $L^{+}$ and
+    called the \emph{positive limit set}.
+  -/)]
 noncomputable def omegaLimitTraj (φ : ℝ → ℝⁿ) : Set ℝⁿ :=
   omegaLimit Filter.atTop (fun (t : ℝ) (_ : Unit) => φ t) Set.univ
 
@@ -81,7 +88,12 @@ asks for a nonempty intersection with `Set.univ`; over `Unit` that collapses to 
   (latexEnv := "lemma")
   (statement := /-- $y \in \omega(\varphi)$ (\cref{def:omegaLimitTraj}) if and only if for
     every neighbourhood $U$ of $y$ there are arbitrarily large $t$ with
-    $\varphi(t) \in U$. -/)]
+    $\varphi(t) \in U$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), \S4.2.  Khalil characterizes $L^{+}$ by
+    convergent sequences $x(t_i) \to y$ with $t_i \to \infty$; the frequently-in-every-neighbourhood
+    form above is the same condition stated with filters.
+  -/)]
 lemma mem_omegaLimitTraj_iff {φ : ℝ → ℝⁿ} {y : ℝⁿ} :
     y ∈ omegaLimitTraj φ ↔ ∀ U ∈ 𝓝 y, ∃ᶠ t in Filter.atTop, φ t ∈ U := by
   rw [omegaLimitTraj, mem_omegaLimit_iff_frequently]
@@ -344,14 +356,19 @@ theorem lieDeriv_eq_zero_on_omegaLimitTraj
 /-- `E = {x ∈ Ω | V̇(x) = 0}`, the set where the Lie derivative of `V` along `f` vanishes.
 
 LaSalle's principle localizes a trajectory's limiting behaviour inside this set: `V̇ ≤ 0` on `Ω`
-says `V` never increases, and `E` is where it momentarily stops decreasing. -/
+says `V` never increases, and `E` is where it momentarily stops decreasing.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.4, where it is the set `E`. -/
 @[blueprint "def:lieDerivZeroSet"
   (title := "The set where the Lie derivative vanishes")
   (statement := /-- For $\dot{x} = f(x)$, a function $V$ and a set $\Omega$, put
     \[
       E = \{x \in \Omega : \dot{V}(x) = DV(x)\,[\,f(x)\,] = 0\},
     \]
-    the subset of $\Omega$ on which the Lie derivative of $V$ along $f$ vanishes. -/)]
+    the subset of $\Omega$ on which the Lie derivative of $V$ along $f$ vanishes.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.4, where it is the set $E$.
+  -/)]
 def LieDerivZeroSet (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (Ω : Set ℝⁿ) : Set ℝⁿ :=
   {x ∈ Ω | fderiv ℝ V x (f x) = 0}
 
@@ -359,7 +376,9 @@ def LieDerivZeroSet (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) (Ω : Set ℝ�
 
 Let Ω be compact and positively invariant for ẋ = f(x), V : ℝⁿ → ℝ a C¹ Lyapunov function
 with V̇(x) = DV(x)[f(x)] ≤ 0 on Ω, and M any set large enough to contain every positively
-invariant subset of `LieDerivZeroSet f V Ω`. Then φ(t) → M. -/
+invariant subset of `LieDerivZeroSet f V Ω`. Then φ(t) → M.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.4. -/
 @[blueprint "thm:lasalle-invariance-principle"
   (title := "LaSalle's invariance principle")
   (statement := /-- Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with $f$ of class
@@ -375,7 +394,10 @@ invariant subset of `LieDerivZeroSet f V Ω`. Then φ(t) → M. -/
     every \emph{positively} invariant subset, which is a larger family, so the hypothesis on
     $M$ is correspondingly stronger; what is proved about $\omega(\varphi)$ is forward
     invariance (\cref{lem:isPositivelyInvariant-omegaLimitTraj}), and backward invariance would
-    require solutions through every $\omega$-limit point to extend backwards in time. -/)
+    require solutions through every $\omega$-limit point to extend backwards in time.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.4.
+  -/)
   (proof := /-- The $\omega$-limit set lies in $\Omega$, because $\Omega$ is closed and
     $\varphi$ stays in it, and $\dot{V}$ vanishes on it
     (\cref{lem:lieDeriv-eq-zero-on-omegaLimitTraj}); hence

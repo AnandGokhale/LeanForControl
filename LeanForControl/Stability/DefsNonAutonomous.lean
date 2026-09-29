@@ -169,7 +169,10 @@ def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (
     This is Khalil (4.16). The hypothesis `IsTrajectoryNA φ f t₀` carries the existence
     assumption that Khalil leaves ambient: the claim constrains those solutions that are
     defined on `[t₀, ∞)`, and says nothing about a system whose solutions escape. Any
-    theorem *concluding* this predicate must therefore supply that existence itself. -/
+    theorem *concluding* this predicate must therefore supply that existence itself. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*stable*), estimate (4.16),
+    for `ẋ = f(t, x)`. Khalil places the equilibrium at the origin; here it is a general `x_eq`. -/
 @[blueprint "def:stableNA"
   (title := "Stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of $\dot{x} = f(t,x)$ is
@@ -184,6 +187,9 @@ def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (
     \]
 
     Reference: This is Khalil (4.16).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{stable}), estimate
+    (4.16).  Khalil places the equilibrium at the origin; here it is a general $x_{\mathrm{eq}}$.
   -/)]
 def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ →
@@ -191,7 +197,11 @@ def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
       IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ →
         ∀ t ≥ t₀, ‖φ t - x_eq‖ < ε
 
-/-- The equilibrium `x_eq` is **uniformly stable**: `δ` can be chosen independently of `t₀`. -/
+/-- The equilibrium `x_eq` is **uniformly stable**: `δ` can be chosen independently of `t₀`. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*uniformly stable*): (4.16)
+with `δ = δ(ε)` independent of `t₀`. Only the quantifier order distinguishes it from
+`StableNA`. -/
 @[blueprint "def:uniformlyStableNA"
   (title := "Uniform stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{uniformly stable} when
@@ -202,7 +212,11 @@ def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
       \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < \delta
       \;\Rightarrow\; \forall t \ge t_{0},\;
       \|\varphi(t) - x_{\mathrm{eq}}\| < \varepsilon.
-    \] -/)]
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{uniformly stable}):
+    (4.16) with $\delta = \delta(\varepsilon)$ independent of $t_{0}$.
+  -/)]
 def UniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
     IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < δ →
@@ -211,13 +225,21 @@ def UniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 /-- The equilibrium `x_eq` is **globally uniformly stable**: uniformly stable, with the
 margin `δ(ε)` growing without bound, so that the basin exhausts `ℝⁿ`.
 
-This is the stability half of Khalil's global uniform asymptotic stability. -/
+This is the stability half of Khalil's global uniform asymptotic stability. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4, the first clause of
+*globally uniformly asymptotically stable*: uniformly stable with `δ(ε) → ∞`. -/
 @[blueprint "def:globallyUniformlyStableNA"
   (title := "Global uniform stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly stable}
     when it is uniformly stable (\cref{def:uniformlyStableNA}) with a margin
     $\delta(\varepsilon)$ that can be chosen to satisfy
-    $\lim_{\varepsilon \to \infty} \delta(\varepsilon) = \infty$. -/)]
+    $\lim_{\varepsilon \to \infty} \delta(\varepsilon) = \infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4, the first clause of
+    \emph{globally uniformly asymptotically stable}: uniformly stable with $\delta(\varepsilon) \to
+    \infty$.
+  -/)]
 def GloballyUniformlyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ δ : ℝ → ℝ,
     (∀ ε > 0, 0 < δ ε) ∧
@@ -238,11 +260,16 @@ lemma GloballyUniformlyStableNA.stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq :
   fun ε hε t₀ ht₀ =>
     let ⟨δ, hδ_pos, _, hstab⟩ := h; ⟨δ ε, hδ_pos ε hε, hstab ε hε t₀ ht₀⟩
 
-/-- The equilibrium `x_eq` is **unstable** if it is not stable. -/
+/-- The equilibrium `x_eq` is **unstable** if it is not stable. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*unstable*). -/
 @[blueprint "def:unstableNA"
   (title := "Instability, time-varying")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{unstable} when it is not
-    stable (\cref{def:stableNA}). -/)]
+    stable (\cref{def:stableNA}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{unstable}).
+  -/)]
 def UnstableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop := ¬ StableNA f x_eq
 
 /-- Uniform stability is stability: the uniform `δ` already works at every initial time. -/
@@ -293,7 +320,10 @@ lemma IsTrajectoryNA.eq_of_stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝ�
 
 /-- The equilibrium `x_eq` is **asymptotically stable**: stable, and for each `t₀ ≥ 0`
     there is `c = c(t₀) > 0` such that every trajectory starting within `c` of `x_eq`
-    at `t₀` converges to `x_eq` as `t → ∞`. -/
+    at `t₀` converges to `x_eq` as `t → ∞`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*asymptotically stable*):
+    stable, with an attractivity radius `c = c(t₀)` that may depend on the initial time. -/
 @[blueprint "def:asymptoticStableNA"
   (title := "Asymptotic stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{asymptotically stable}
@@ -303,7 +333,12 @@ lemma IsTrajectoryNA.eq_of_stableNA {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝ�
     $\varphi(t) \to x_{\mathrm{eq}}$ as $t \to \infty$.
 
     Attractivity quantifies over forward-complete solutions, as convergence must; the
-    completeness restriction is harmless because the stability conjunct guards it. -/)]
+    completeness restriction is harmless because the stability conjunct guards it.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{asymptotically
+    stable}): stable, with an attractivity radius $c = c(t_{0})$ that may depend on the initial
+    time.
+  -/)]
 def AsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   StableNA f x_eq ∧
   ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ c > 0, ∀ φ : ℝ → ℝⁿ,
@@ -313,7 +348,11 @@ def AsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
 /-- The equilibrium `x_eq` is **uniformly asymptotically stable**: uniformly stable, and
     there is `c > 0`, independent of `t₀`, such that for each `η > 0` there is
     `T = T(η) > 0` with `‖φ(t) - x_eq‖ < η` for all `t ≥ t₀ + T(η)`, uniformly over
-    trajectories starting within `c` and all `t₀ ≥ 0`. -/
+    trajectories starting within `c` and all `t₀ ≥ 0`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*uniformly asymptotically
+    stable*), estimate (4.17). Khalil writes the convergence-time clause inline; here it is
+    factored out as `LocallyHasUniformConvergenceTime`. -/
 @[blueprint "def:uniformlyAsymptoticStableNA"
   (title := "Uniform asymptotic stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{uniformly asymptotically
@@ -325,14 +364,23 @@ def AsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
       \forall\, t \ge t_{0}+T(\eta),\;
       \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c,\;
       \forall\, t_{0} \ge 0.
-    \] -/)]
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{uniformly
+    asymptotically stable}), estimate (4.17).  Khalil writes the convergence-time clause inline;
+    here it is factored out as \cref{def:locallyHasUniformConvergenceTime}.
+  -/)]
 def UniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   UniformlyStableNA f x_eq ∧ ∃ c > 0, LocallyHasUniformConvergenceTime f x_eq c
 
 /-- The equilibrium `x_eq` is **globally uniformly asymptotically stable**: uniformly stable
     with `δ(ε) → ∞` as `ε → ∞` (so the attraction basin is all of `ℝⁿ`), and for each
     pair `η, c > 0` there is `T = T(η, c) > 0` such that `‖φ(t) - x_eq‖ < η` for all
-    `t ≥ t₀ + T(η, c)` and all trajectories starting within `c` of `x_eq`. -/
+    `t ≥ t₀ + T(η, c)` and all trajectories starting within `c` of `x_eq`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*globally uniformly
+    asymptotically stable*), estimate (4.18). The two clauses are factored as
+    `GloballyUniformlyStableNA` (his `δ(ε) → ∞`) and `GloballyHasUniformConvergenceTime`. -/
 @[blueprint "def:globallyUniformlyAsymptoticStableNA"
   (title := "Global uniform asymptotic stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally uniformly
@@ -344,7 +392,12 @@ def UniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) 
       \forall\, t \ge t_{0}+T(\eta,c),\;
       \forall\, \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c,\;
       \forall\, t_{0} \ge 0.
-    \] -/)]
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{globally uniformly
+    asymptotically stable}), estimate (4.18).  The two clauses are factored as
+    \cref{def:globallyUniformlyStableNA} and \cref{def:globallyHasUniformConvergenceTime}.
+  -/)]
 def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   GloballyUniformlyStableNA f x_eq ∧ GloballyHasUniformConvergenceTime f x_eq
 
@@ -353,7 +406,8 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
     the exponential bound `‖φ(t) - x_eq‖ ≤ k ‖φ(t₀) - x_eq‖ · exp(-λ(t - t₀))`
     for all `t ≥ t₀`.
 
-    Reference: Khalil, *Nonlinear Systems* (3rd ed.). -/
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5, estimate (4.21).
+    The rate is written `γ` here and `λ` by Khalil. -/
 @[blueprint "def:exponentiallyStableNA"
   (title := "Exponential stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{exponentially stable}
@@ -366,6 +420,9 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
     with $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.5, estimate (4.21).  The
+    rate is written $\gamma$ here and $\lambda$ by Khalil.
   -/)]
 def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ c > 0, ∃ k > 0, ∃ γ > 0,
@@ -374,12 +431,19 @@ def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop
         ∀ t ≥ t₀, ‖φ t - x_eq‖ ≤ k * ‖φ t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
 
 /-- The equilibrium `x_eq` is **globally exponentially stable**: the exponential bound
-    holds for any initial state, with no restriction on `‖φ(t₀) - x_eq‖`. -/
+    holds for any initial state, with no restriction on `‖φ(t₀) - x_eq‖`. 
+    
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5, the global case: (4.21)
+    holding for any initial state, i.e. with no radius `c`. -/
 @[blueprint "def:globallyExponentiallyStableNA"
   (title := "Global exponential stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is \emph{globally exponentially
     stable} when the bound in \cref{def:exponentiallyStableNA} holds for every initial
-    state $\varphi(t_{0}) \in \mathbb{R}^{n}$, i.e., $c = \infty$. -/)]
+    state $\varphi(t_{0}) \in \mathbb{R}^{n}$, i.e., $c = \infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.5, the global case: (4.21)
+    holding for any initial state, i.e. with no radius $c$.
+  -/)]
 def GloballyExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ k > 0, ∃ γ > 0,
     ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
