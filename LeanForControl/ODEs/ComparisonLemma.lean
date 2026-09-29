@@ -1,4 +1,4 @@
-import LeanForControl.Dini.DiniDeriv
+import LeanForControl.Analysis.DiniDeriv
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Mathlib.Order.Filter.Basic

@@ -1,5 +1,7 @@
 import LeanForControl.Analysis.Continuity
+import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.Analysis.FrechetDerivative
+import LeanForControl.Analysis.IntegralCurves
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
@@ -10,7 +12,6 @@ import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Comparison.ClassL
 import LeanForControl.Comparison.ComparisonFunctions
-import LeanForControl.Dini.DiniDeriv
 import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Controllability.Defs
@@ -28,10 +29,12 @@ import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.Continuous.DefsLyapunovLTV
 import LeanForControl.LinearSystems.Stability.Continuous.ExponentialStability
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
+import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
 import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank

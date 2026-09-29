@@ -143,7 +143,8 @@ theorem gronwall_bellman_inequality {a b : ℝ} {Λ μ y : ℝ → ℝ}
 @[blueprint "lem:gronwall-const-lambda"
   (title := "Gronwall--Bellman with a constant rate")
   (latexEnv := "lemma")
-  (statement := /-- Let $\mu$ be continuous and nonnegative on $[a,b]$, and let $y$ be
+  (statement := /-- Khalil, Lemma A.1 (the case $\Lambda(t) \equiv \Lambda$ constant).
+    Let $\mu$ be continuous and nonnegative on $[a,b]$, and let $y$ be
     continuous with
     \[
       y(t) \;\le\; C + \int_{a}^{t} \mu(s)\,y(s)\,\mathrm{d}s
@@ -201,7 +202,8 @@ theorem gronwall_const_lambda
 @[blueprint "lem:gronwall-const"
   (title := "Gronwall--Bellman with constant data")
   (latexEnv := "lemma")
-  (statement := /-- Let $\mu \ge 0$ be constant and let $y$ be continuous with
+  (statement := /-- Khalil, Lemma A.1 (the case $\Lambda$ and $\mu \ge 0$ both constant).
+    Let $\mu \ge 0$ be constant and let $y$ be continuous with
     \[
       y(t) \;\le\; C + \int_{a}^{t} \mu\,y(s)\,\mathrm{d}s
       \qquad \forall\, t \in [a,b].

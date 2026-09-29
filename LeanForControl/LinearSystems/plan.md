@@ -215,9 +215,17 @@ visible gap rather than an unstated assumption that this library is continuous-t
 | Unstable eigenvalue ⟹ instability (`C¹` field) | `unstable_of_exists_complex_eigenvalue_re_pos` | `Stability/LyapunovIndirect/NonlinearInstability.lean` | ✅ done |
 | Chetaev's instability theorem (exponential form) | `unstable_of_exponential_chetaev` | `Stability/LyapunovIndirect/Chetaev.lean` | ✅ done (closes issue #8) |
 | Chetaev's instability theorem (boundary form) | — | — | planned — see `Stability/plan.md` |
+| Hespanha Def. 8.1 for `ẋ = A(t)x` ⟺ the `*NA` stability predicates | `stableNA_linearVectorField_iff`, `asymptoticStableNA_linearVectorField_iff`, `exponentiallyStableNA_linearVectorField_iff`, `unstableNA_linearVectorField_iff` | `Stability/LinearTimeVarying.lean` | ✅ done |
 
 Rule 2 keeps this list short by construction: a theorem whose hypothesis is about `A` and whose
-conclusion is about `f` is a bridge, and these five are all of them.
+conclusion is about `f` is a bridge, and these six are all of them.
+
+The last row is a bridge of a different kind from the five above it: those transfer a spectral
+condition on `A` to a nonlinear conclusion, whereas this one says that the *definition* of
+stability used in `LinearSystems/` — Hespanha's Definition 8.1, stated on `Φ(t, t₀)` — is the
+definition already in `Stability/DefsNonAutonomous.lean`, not a second one. It lives in
+`Stability/` by Rule 2 (its statements mention a vector field) and it is why
+`LinearSystems/Stability/` needs no stability predicate of its own.
 
 ## Status: blueprint coverage
 

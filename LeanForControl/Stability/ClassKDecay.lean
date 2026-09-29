@@ -2,7 +2,7 @@ import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Comparison.Axioms
-import LeanForControl.Dini.DiniDeriv
+import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
