@@ -331,7 +331,10 @@ Reference: the Picard--Lindelöf local existence theorem. -/
 
     The anchor $0$ is a construction choice rather than a restriction — by
     \cref{lem:isIntegralCurveOn-comp-add-autonomous} a segment from any other anchor
-    follows. -/)
+    follows.
+
+    Reference: the Picard--Lindelöf local existence theorem.
+  -/)
   (proof := /-- Picard--Lindel\"of local existence: being $C^1$ at $x_0$ gives a closed ball on
     which $g$ is Lipschitz, and hence a solution on some $(-\varepsilon, \varepsilon)$; take
     $T := \varepsilon/2$. -/)]

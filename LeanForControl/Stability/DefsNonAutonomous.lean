@@ -86,7 +86,10 @@ what makes it *uniform*: the class-`KL` construction is built by regularizing th
       \qquad \forall\, t \ge t_{0} + T(\eta),
     \]
     for every $t_{0} \ge 0$ and every trajectory $\varphi$ on $[t_{0},\infty)$ with
-    $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$. -/)]
+    $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$.
+
+    Reference: This is Khalil (4.17), the attractivity half of uniform asymptotic stability.
+  -/)]
 def LocallyHasUniformConvergenceTime (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (c : ℝ) : Prop :=
   ∀ η > 0, ∃ T > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
     IsTrajectoryNA φ f t₀ → ‖φ t₀ - x_eq‖ < c → ∀ t : ℝ, t₀ + T ≤ t → ‖φ t - x_eq‖ < η
@@ -102,7 +105,10 @@ a function application instead of a hand-built term. -/
   (statement := /-- The trajectories of $\dot{x} = f(t,x)$ \emph{have global uniform
     convergence times} when they have local uniform convergence times
     (\cref{def:locallyHasUniformConvergenceTime}) from every radius $c > 0$. The delay may
-    depend on the radius as well as the tolerance, $T = T(\eta, c)$. -/)]
+    depend on the radius as well as the tolerance, $T = T(\eta, c)$.
+
+    Reference: This is Khalil (4.18).
+  -/)]
 def GloballyHasUniformConvergenceTime (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ c > 0, LocallyHasUniformConvergenceTime f x_eq c
 
@@ -127,7 +133,10 @@ This is Khalil (4.19), the estimate that characterizes uniform stability. -/
       \|\varphi(t) - x_{\mathrm{eq}}\| \le \alpha(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|)
     \]
     for every $t_{0} \ge 0$, every trajectory $\varphi$ on $[t_{0},\infty)$ with
-    $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < a$, and every $t \ge t_{0}$. -/)]
+    $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < a$, and every $t \ge t_{0}$.
+
+    Reference: This is Khalil (4.19), the estimate that characterizes uniform stability.
+  -/)]
 def HasUniformClassKBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) {a b : ℝ} (α : ClassK a b) : Prop :=
   ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f t₀ →
     ‖φ t₀ - x_eq‖ < a → ∀ t ≥ t₀, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖
@@ -142,7 +151,11 @@ This is Khalil (4.20) in its class `K∞` form, the estimate behind the *global*
     $\mathcal{K}_{\infty}$ bound} $\alpha$ about $x_{\mathrm{eq}}$ when
     $\|\varphi(t) - x_{\mathrm{eq}}\| \le \alpha(\|\varphi(t_{0}) - x_{\mathrm{eq}}\|)$
     for every $t_{0} \ge 0$, every trajectory $\varphi$ on $[t_{0},\infty)$, and every
-    $t \ge t_{0}$, with no restriction on the initial state. -/)]
+    $t \ge t_{0}$, with no restriction on the initial state.
+
+    Reference: This is Khalil (4.20) in its class \texttt{K∞} form, the estimate behind the
+    \emph{global} results.
+  -/)]
 def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (α : ClassKInfty) : Prop :=
   ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f t₀ →
     ∀ t ≥ t₀, ‖φ t - x_eq‖ ≤ α.toFun ‖φ t₀ - x_eq‖
@@ -168,7 +181,10 @@ def HasUniformClassKInftyBound (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) (
       \|\varphi(t_{0}) - x_{\mathrm{eq}}\| < \delta
       \;\Rightarrow\; \forall t \ge t_{0},\;
       \|\varphi(t) - x_{\mathrm{eq}}\| < \varepsilon.
-    \] -/)]
+    \]
+
+    Reference: This is Khalil (4.16).
+  -/)]
 def StableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ →
     ∃ δ > 0, ∀ φ : ℝ → ℝⁿ,
@@ -347,7 +363,10 @@ def GloballyUniformlyAsymptoticStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : 
       e^{-\lambda(t - t_{0})}
     \]
     for all $t \ge t_{0} \ge 0$ and all trajectories $\varphi$ on $[t_{0},\infty)$
-    with $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$. -/)]
+    with $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < c$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.).
+  -/)]
 def ExponentiallyStableNA (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ c > 0, ∃ k > 0, ∃ γ > 0,
     ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,

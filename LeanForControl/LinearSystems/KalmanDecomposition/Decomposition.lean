@@ -62,7 +62,10 @@ References: Hespanha, *Linear Systems Theory*; Kailath, *Linear Systems*. -/
   (statement := /-- Every finite-dimensional complex state-space system has
     four coordinate sectors adapted to its reachable and unobservable
     subspaces. The complements are noncanonical vector-space complements and
-    are not individually asserted to be invariant under $A$. -/)]
+    are not individually asserted to be invariant under $A$.
+
+    References: Hespanha, \emph{Linear Systems Theory}; Kailath, \emph{Linear Systems}.
+  -/)]
 theorem exists_kalmanDecomposition
     (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ)
     (C : Matrix (Fin p) (Fin n) ℂ) :
@@ -598,7 +601,11 @@ Description of Linear Dynamical Systems” (1963); Kailath, *Linear Systems*. -/
     \]
     Every displayed zero is asserted entrywise; no vanishing claim is made
     for the starred blocks. The chosen complement sectors are not individually
-    asserted to be invariant under $A$. -/)
+    asserted to be invariant under $A$.
+
+    References: Hespanha, \emph{Linear Systems Theory}; Kalman, ``Mathematical Description of Linear
+    Dynamical Systems'' (1963); Kailath, \emph{Linear Systems}.
+  -/)
   (proof := /-- Reachable-subspace invariance forces the lower-left state and
     input zeros, unobservable-subspace invariance forces the remaining state
     zeros, and the zeroth observability condition forces the output zeros.

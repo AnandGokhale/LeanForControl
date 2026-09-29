@@ -40,7 +40,10 @@ Reference: standard quadratic Lyapunov-function construction. -/
 @[blueprint "def:quadraticForm"
   (title := "Matrix quadratic form")
   (statement := /-- A real matrix $P$ represents the quadratic form
-    $x \mapsto x^{\mathsf T}Px$ on Euclidean state space. -/)]
+    $x \mapsto x^{\mathsf T}Px$ on Euclidean state space.
+
+    Reference: standard quadratic Lyapunov-function construction.
+  -/)]
 noncomputable def quadraticForm
     (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝⁿ) : ℝ :=
   inner ℝ x (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P x)

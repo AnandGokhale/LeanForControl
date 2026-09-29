@@ -72,7 +72,11 @@ stability criterion. This spectral-shift corollary is proved directly from eigen
 @[blueprint "thm:isHurwitzWithRate-iff-spectral-shift"
   (title := "Rate-Hurwitz via a spectral shift")
   (statement := /-- A real matrix $A$ is Hurwitz with decay rate $\alpha$ if and only if
-    the spectrally shifted matrix $A + \alpha I$ is Hurwitz. -/)
+    the spectrally shifted matrix $A + \alpha I$ is Hurwitz.
+
+    Reference: João P. Hespanha, \emph{Linear Systems Theory} (2nd ed.), continuous-time stability
+    criterion. This spectral-shift corollary is proved directly from eigenpairs.
+  -/)
   (proof := /-- A complex eigenvalue $\mu$ of $A$ becomes $\mu + \alpha$ after the shift,
     and $\operatorname{Re}(\mu) < -\alpha$ is equivalent to
     $\operatorname{Re}(\mu + \alpha) < 0$. -/)]

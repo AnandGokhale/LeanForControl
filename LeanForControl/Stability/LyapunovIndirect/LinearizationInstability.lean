@@ -125,7 +125,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
   (statement := /-- If $A \in \mathbb{R}^{n \times n}$ has a complex eigenvalue $\mu$ with
     $\operatorname{Re}\mu > 0$, then $x_{\mathrm{eq}}$ is an unstable equilibrium
     (\cref{def:unstable}) of the affine-linear field $x \mapsto A(x - x_{\mathrm{eq}})$
-    (\cref{def:affineLinearVectorField}). -/)
+    (\cref{def:affineLinearVectorField}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.7.
+  -/)
   (proof := /-- Let $v \ne 0$ be an eigenvector for $\mu$ and consider the real eigenmode
     $t \mapsto x_{\mathrm{eq}} + \rho\operatorname{Re}\bigl(e^{\mu t} v\bigr)$, a genuine
     solution of the linear equation for every $\rho > 0$.  Its initial displacement is

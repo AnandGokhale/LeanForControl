@@ -44,7 +44,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5 (Peano-Baker s
     \[
       P_0(t,t_0) := I, \qquad
       P_{k+1}(t,t_0) := \int_{t_0}^{t} A(s)\, P_k(s,t_0)\,\mathrm{d}s.
-    \] -/)]
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5 (Peano-Baker series).
+  -/)]
 noncomputable def peanoBakerTerm (A : ℝ → Matrix (Fin n) (Fin n) ℝ) :
     ℕ → ℝ → ℝ → Matrix (Fin n) (Fin n) ℝ
   | 0,     _, _  => 1
@@ -61,7 +64,11 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1
     Peano--Baker series
     \[
       \Phi(t,t_0) := \sum_{k=0}^{\infty} P_k(t,t_0).
-    \] -/)]
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.1 (Peano-Baker
+    series).
+  -/)]
 noncomputable def stateTransitionMatrix (A : ℝ → Matrix (Fin n) (Fin n) ℝ) (t t₀ : ℝ) :
     Matrix (Fin n) (Fin n) ℝ :=
   ∑' k, peanoBakerTerm A k t t₀

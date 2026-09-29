@@ -249,7 +249,10 @@ Reference: Khalil, *Nonlinear Systems*.
     $x_{\rm eq}$ be an equilibrium. If its Jacobian $A$ at the equilibrium is
     Hurwitz, then there are uniform local constants giving exponential decay
     along every finite forward solution segment that starts sufficiently close
-    to $x_{\rm eq}$. -/)
+    to $x_{\rm eq}$.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)
   (proof := /-- Solve the identity-forced Lyapunov equation for a positive-definite
     $P$, use $V(x)=(x-x_{\rm eq})^{\mathsf T}P(x-x_{\rm eq})$, absorb the
     $o(\|x-x_{\rm eq}\|)$ linearization remainder on a small ball, and apply a

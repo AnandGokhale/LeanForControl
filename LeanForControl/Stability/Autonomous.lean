@@ -47,19 +47,15 @@ private lemma sphere_nonempty
   rw [Metric.mem_sphere, dist_eq_norm]
   simp [PiLp.norm_single, abs_of_pos hε]
 
+
+/-! ## Chain rule for V along trajectories -/
+
 /-- The Lie derivative `x ↦ DV(x)[f(x)]` is continuous when `V` is C¹ and `f` is continuous. -/
-@[blueprint "lem:lie-deriv-continuous"
-  (title := "Continuity of the Lie derivative")
-  (latexEnv := "lemma")
-  (statement := /-- If $V$ is $C^1$ and $f$ is continuous, the Lie derivative
-    $x \mapsto DV(x)[f(x)]$ is continuous. -/)]
-lemma lie_deriv_continuous
+private lemma lie_deriv_continuous
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
     (hV_c1 : ContDiff ℝ 1 V) (hf_cont : Continuous f) :
     Continuous (fun x : ℝⁿ => fderiv ℝ V x (f x)) :=
   (hV_c1.continuous_fderiv (by norm_num)).clm_apply hf_cont
-
-/-! ## Chain rule for V along trajectories -/
 
 /-- The chain rule `(V ∘ φ)'(t) = DV(φ t)[f (φ t)]` along a solution, wherever the solution's
 interval is a neighbourhood of `t`.
@@ -70,17 +66,7 @@ extraction of `HasDerivAt φ` from the integral-curve hypothesis. Stating it onc
 in — at every call site.
 
 The non-autonomous mirror is `hasDerivAt_V_comp_traj_NA` (`NonAutonomous.lean`). -/
-@[blueprint "lem:hasDerivAt-V-comp-integralCurveOn"
-  (title := "Chain rule along a solution")
-  (latexEnv := "lemma")
-  (statement := /-- Let $V$ be differentiable and let
-    $\varphi$ be an integral curve of $f$ on a set $s$ that is a neighbourhood of $t$.  Then
-    \[
-      (V \circ \varphi)'(t) \;=\; DV(\varphi(t))\,[\,f(\varphi(t))\,] .
-    \]
-    Every Lyapunov argument in the library opens with this composition; stating it once fixes
-    the spelling of the Lie derivative at every call site. -/)]
-lemma hasDerivAt_V_comp_integralCurveOn
+private lemma hasDerivAt_V_comp_integralCurveOn
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ V)
     {φ : ℝ → ℝⁿ} {s : Set ℝ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) s)
@@ -92,8 +78,13 @@ lemma hasDerivAt_V_comp_integralCurveOn
 @[blueprint "lem:hasDerivAt-V-comp-traj"
   (title := "Chain rule along a trajectory")
   (latexEnv := "lemma")
-  (statement := /-- \cref{lem:hasDerivAt-V-comp-integralCurveOn} in the common case: a solution
-    segment on $[t_0, t_1]$, at an interior time $t$. -/)]
+  (statement := /-- Let $V$ be differentiable and let $\varphi$ be a solution segment on
+    $[t_0, t_1]$.  Then at every interior time $t$,
+    \[
+      (V \circ \varphi)'(t) \;=\; DV(\varphi(t))\,[\,f(\varphi(t))\,] .
+    \]
+    Every Lyapunov argument in the library opens with this composition; stating it once fixes
+    the spelling of the Lie derivative at every call site. -/)]
 lemma hasDerivAt_V_comp_traj
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ V)
@@ -123,8 +114,8 @@ Stated on an arbitrary convex `s` so that both the segment (`Icc t₀ t₁`) and
     The weight is what turns a bound on the \emph{rate} into a bound on \emph{elapsed time}:
     since $V$ is bounded below, antitonicity of $V \circ \varphi + ct$ caps how long $\varphi$
     can remain where the rate bound holds.  Taking $c = 0$ gives plain monotonicity. -/)
-  (proof := /-- Differentiate: the derivative is $DV(\varphi(t))[f(\varphi(t))] + c \le 0$ by
-    \cref{lem:hasDerivAt-V-comp-integralCurveOn} and the rate bound; a function with
+  (proof := /-- Differentiate: by the chain rule along the solution the derivative is
+    $DV(\varphi(t))[f(\varphi(t))] + c \le 0$ by the rate bound, and a function with
     nonpositive derivative on a convex set is antitone there. -/)]
 lemma antitoneOn_V_add_linear
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
@@ -424,7 +415,10 @@ Reference: Khalil, *Nonlinear Systems*.
 -/
 @[blueprint "thm:locallyExponentiallyStable-lyapunovStable"
   (title := "Exponential stability implies Lyapunov stability")
-  (statement := /-- Local exponential stability implies Lyapunov stability. -/)
+  (statement := /-- Local exponential stability implies Lyapunov stability.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)
   (proof := /-- Given $\varepsilon$, take $\delta := \min(r, \varepsilon/C)$.  The decay
     estimate $\|\varphi(t) - x_{\mathrm{eq}}\| \le C e^{-a(t-t_0)}\|\varphi(t_0) -
     x_{\mathrm{eq}}\|$ and $e^{-a(t-t_0)} \le 1$ for $t \ge t_0$ give
@@ -463,7 +457,10 @@ Reference: Khalil, *Nonlinear Systems*.
   (statement := /-- Fix $\varepsilon > 0$.  If for every $\delta > 0$ some solution segment
     starts within $\delta$ of $x_{\mathrm{eq}}$ and reaches distance at least $\varepsilon$
     from it, then $x_{\mathrm{eq}}$ is unstable.  This is the contrapositive of stability, in
-    the form the instability theorems produce their witnesses. -/)]
+    the form the instability theorems produce their witnesses.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 theorem unstable_of_fixed_escape
     {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ε : ℝ} (hε : 0 < ε)
     (hescape : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),

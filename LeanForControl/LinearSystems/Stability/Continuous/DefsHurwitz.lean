@@ -36,7 +36,11 @@ stability. The rate-indexed predicate is the strict spectral-margin variant. -/
   (title := "Hurwitz with a prescribed decay rate")
   (statement := /-- A real square matrix $A$ is \emph{Hurwitz with decay rate}
     $\alpha$ when every complex eigenpair $(\mu,v)$ with $v \ne 0$ satisfies
-    $\operatorname{Re}(\mu) < -\alpha$. -/)]
+    $\operatorname{Re}(\mu) < -\alpha$.
+
+    Reference: João P. Hespanha, \emph{Linear Systems Theory} (2nd ed.), continuous-time stability.
+    The rate-indexed predicate is the strict spectral-margin variant.
+  -/)]
 def IsHurwitzWithRate (α : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ (μ : ℂ) (v : Fin n → ℂ), v ≠ 0 →
     A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v → μ.re < -α
@@ -48,7 +52,11 @@ stability. The rate-indexed predicate is the strict spectral-margin variant. -/
 @[blueprint "def:isHurwitz"
   (title := "Hurwitz matrix")
   (statement := /-- A real square matrix is \emph{Hurwitz} when every complex
-    eigenvalue has strictly negative real part. -/)]
+    eigenvalue has strictly negative real part.
+
+    Reference: João P. Hespanha, \emph{Linear Systems Theory} (2nd ed.), continuous-time stability.
+    The rate-indexed predicate is the strict spectral-margin variant.
+  -/)]
 abbrev IsHurwitz (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   IsHurwitzWithRate 0 A
 

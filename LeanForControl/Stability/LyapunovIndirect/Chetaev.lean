@@ -266,7 +266,10 @@ Reference: Hahn, *Stability of Motion* (Chetaev's instability method). -/
     base point, and its Lie derivative satisfies $\dot V\geq 2\alpha V$ there
     for some $\alpha>0$.
     Then the base point is unstable with respect to finite forward solution
-    segments. -/)
+    segments.
+
+    Reference: Hahn, \emph{Stability of Motion} (Chetaev's instability method).
+  -/)
   (proof := /-- Globalize the vector field by a smooth cutoff, integrate the
     differential inequality on a sufficiently long finite segment, and stop
     the curve at its first crossing of the certificate ball. -/)]

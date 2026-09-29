@@ -35,7 +35,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1
   (statement := /-- For a constant state matrix $A$, the $k$-th Peano--Baker term collapses to
     \[
       \Phi_k(t, t_0) = \frac{(t-t_0)^k}{k!}\,A^k .
-    \] -/)
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.1).
+  -/)
   (proof := /-- Induction on $k$.  The $k = 0$ term is the identity.  For the step,
     $\Phi_{k+1}(t,t_0) = \int_{t_0}^{t} A\,\Phi_k(s,t_0)\,ds$; substituting the inductive
     hypothesis pulls $A^{k+1}$ out of the integral and leaves
@@ -74,7 +77,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1
     series
     \[
       \Phi(t, t_0) = \sum_{k=0}^{\infty} \frac{(t-t_0)^k}{k!}\,A^k .
-    \] -/)
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.1).
+  -/)
   (proof := /-- Sum \cref{lem:peanoBakerTerm-const} termwise; the Peano--Baker series converges
     for any continuous state matrix, a constant one included. -/)]
 theorem stateTransitionMatrix_const_eq_tsum (t t₀ : ℝ) :
@@ -101,7 +107,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.2
     \]
     This is the bridge that lets every property already proved for $\Phi$ in the time-varying
     setting — existence, uniqueness, the semigroup law, invertibility, variation of constants —
-    be reused for LTI systems by specialization rather than reproved. -/)
+    be reused for LTI systems by specialization rather than reproved.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.2).
+  -/)
   (proof := /-- Both sides are power series in $A$: \cref{lem:stateTransitionMatrix-const-eq-tsum}
     for the left, the defining series of $\exp$ for the right.  Match them termwise. -/)]
 theorem stateTransitionMatrix_const (t t₀ : ℝ) :
@@ -123,7 +132,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.1
   (title := "Uniqueness of the LTI state response")
   (statement := /-- Let $A$ be constant and let $z$ be a continuous integral solution of
     $\dot x = Ax$, $x(t_0) = x_0$, on $[t_0, t_1]$.  Then
-    $z(t) = e^{A(t-t_0)}x_0$ for every $t$ in that interval. -/)
+    $z(t) = e^{A(t-t_0)}x_0$ for every $t$ in that interval.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, Property P6.1.
+  -/)
   (proof := /-- The time-varying uniqueness theorem applied at the constant state matrix
     $A(\cdot) \equiv A$, whose bound $\|A(t)\| \le \|A\|$ is immediate, then rewritten through
     \cref{thm:stateTransitionMatrix-const}.  There is no new ODE content: uniqueness for LTI is
@@ -148,7 +160,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.2
   (statement := /-- Let $A$ be constant.  For each $i$, the $i$-th column of $e^{A(t-t_0)}$ is
     the unique continuous integral solution of $\dot x = Ax$ with $x(t_0) = e_i$, the $i$-th
     standard basis vector.  Equivalently, the columns of the matrix exponential are the
-    solutions from the standard basis. -/)
+    solutions from the standard basis.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, Property P6.2.
+  -/)
   (proof := /-- \cref{thm:exp-mulVec-unique} at $x_0 = e_i$, in the column form supplied by the
     time-varying column-uniqueness theorem. -/)]
 theorem exp_col_unique {t₀ t₁ : ℝ} (i : Fin n)

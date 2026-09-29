@@ -51,7 +51,11 @@ Lyapunov's indirect method). -/
     $c$ is \emph{arbitrary}: near enough to the equilibrium the remainder perturbs
     $\dot{q}_{M}$ by less than any prescribed multiple of
     $\|x - x_{\mathrm{eq}}\|^{2}$, which is the order of $\dot{q}_{M}$ itself.  This is why
-    the linearization decides stability. -/)
+    the linearization decides stability.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.7 (the quadratic-Lyapunov proof
+    of Lyapunov's indirect method).
+  -/)
   (proof := /-- Write $y = x - x_{\mathrm{eq}}$ and $e$ for the remainder.  Differentiability of
     $f$ at $x_{\mathrm{eq}}$ gives, for any $\eta > 0$, a radius within which
     $\|e\| \le \eta\|y\|$.  The derivative of a centred quadratic form is bounded by

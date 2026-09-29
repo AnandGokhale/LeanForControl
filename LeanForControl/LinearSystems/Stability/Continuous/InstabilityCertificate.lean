@@ -233,7 +233,10 @@ Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*. -/
     \[
       HA+A^{\mathsf T}H-2\alpha H
     \]
-    is positive definite. -/)
+    is positive definite.
+
+    Reference: Hahn, \emph{Stability of Motion}; Khalil, \emph{Nonlinear Systems}.
+  -/)
   (proof := /-- Choose a shift avoiding the finitely many pairwise spectral
     resonances, solve the resulting Lyapunov--Sylvester equation by
     finite-dimensional injectivity, and extract $w$ from the real or imaginary

@@ -178,7 +178,10 @@ Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).
   (statement := /-- Let $f:\mathbb R^n\to\mathbb R^n$ be $C^1$ with
     $f(x_{\rm eq})=0$.  If the Jacobian at $x_{\rm eq}$ has a complex
     eigenvalue with positive real part, then $x_{\rm eq}$ is unstable when
-    stability is quantified over every finite forward solution segment. -/)
+    stability is quantified over every finite forward solution segment.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (Lyapunov's indirect method).
+  -/)
   (proof := /-- Build the real quadratic certificate supplied by
     \cref{thm:positive-real-eigenvalue-quadratic-certificate}, absorb the
     first-order nonlinear remainder on a small ball, and apply the exponential

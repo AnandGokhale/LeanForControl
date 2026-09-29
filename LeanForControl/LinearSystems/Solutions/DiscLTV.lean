@@ -28,7 +28,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5
 @[blueprint "lem:discStateTransitionMatrix-self"
   (title := "The discrete state transition matrix at the initial time")
   (latexEnv := "lemma")
-  (statement := /-- $\Phi(t_0,t_0) = I$. -/)
+  (statement := /-- $\Phi(t_0,t_0) = I$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Property P5.5.
+  -/)
   (proof := /-- The defining product is over the empty range $[t_0, t_0)$. -/)]
 theorem discStateTransitionMatrix_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ) :
     discStateTransitionMatrix A t₀ t₀ = 1 := by
@@ -180,7 +183,11 @@ variation of constants). -/
       x(t) := \Phi(t,t_0)x_0 + \sum_{\tau=t_0}^{t-1} \Phi(t,\tau+1)B(\tau)u(\tau)
     \]
     takes the value $x_0$ at $t = t_0$: the forcing sum is over the empty range and
-    $\Phi(t_0,t_0) = I$. -/)]
+    $\Phi(t_0,t_0) = I$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Section 5.3 (discrete
+    variation of constants).
+  -/)]
 theorem discVariationOfConstants_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ)
     (x₀ : Fin n → ℝ) :
     discStateTransitionMatrix A t₀ t₀ *ᵥ x₀ +

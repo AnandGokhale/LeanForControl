@@ -31,7 +31,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
   (title := "Continuity of the Peano--Baker terms")
   (latexEnv := "lemma")
   (statement := /-- Each term $P_k(t,t_0)$ of the Peano--Baker series is continuous in $t$,
-    for $A$ continuous. -/)
+    for $A$ continuous.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Induction on $k$: $P_0$ is constant, and $P_{k+1}$ is the primitive of a
     continuous integrand (\cref{def:peanoBakerTerm}), hence continuous by the fundamental
     theorem of calculus. -/)]
@@ -63,7 +66,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \[
       \|P_k(t,t_0)\| \;\le\; \|I\| \cdot \frac{(M|t-t_0|)^k}{k!}
       \qquad \text{for every } t \text{ between } t_0 \text{ and } t_1.
-    \] -/)
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Induction on $k$: bound the integrand $A(s) P_k(s,t_0)$ pointwise on the segment
     between $t_0$ and $t$, using submultiplicativity of the matrix norm and the induction
     hypothesis. Split on whether $t_0 \le t$ or $t \le t_0$ and integrate the majorant via the
@@ -169,7 +175,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \[
       \|P_k(t,t_0)\| \;\le\; \|I\| \cdot \frac{(M|t_1-t_0|)^k}{k!}
       \qquad \text{for every } t \text{ between } t_0 \text{ and } t_1.
-    \] -/)
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Monotonicity of $t \mapsto (M|t-t_0|)^k$ on the segment between $t_0$ and $t_1$,
     combined with \cref{lem:norm-peanoBakerTerm-le}. -/)]
 theorem norm_peanoBakerTerm_le_of_mem {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
@@ -205,7 +214,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
   (title := "Summability of the Peano--Baker series")
   (latexEnv := "lemma")
   (statement := /-- The Peano--Baker series $\sum_{k=0}^\infty P_k(t,t_0)$ converges absolutely,
-    for $A$ bounded between $t_0$ and $t$ (in either order). -/)
+    for $A$ bounded between $t_0$ and $t$ (in either order).
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Compare against the exponential series $\sum_k (M|t-t_0|)^k/k!$ via
     \cref{lem:norm-peanoBakerTerm-le} and the comparison test. -/)]
 theorem summable_peanoBakerTerm {t t₀ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) :
@@ -228,7 +240,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
   (title := "Continuity of the state transition matrix")
   (latexEnv := "lemma")
   (statement := /-- $\Phi(\cdot, t_0)$ is continuous on the segment between $t_0$ and $t_1$
-    (including both endpoints), for $A$ continuous and bounded by $M$ there. -/)
+    (including both endpoints), for $A$ continuous and bounded by $M$ there.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Each term $P_k(\cdot,t_0)$ is continuous (\cref{lem:continuous-peanoBakerTerm})
     with a summable, point-independent bound (\cref{lem:norm-peanoBakerTerm-le-of-mem}); apply
     the Weierstrass $M$-test for continuity of a series. -/)]
@@ -267,7 +282,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \[
       \dot\Phi(t,t_0) = A(t)\,\Phi(t,t_0)
     \]
-    for $t$ strictly between $t_0$ and $t_1$. -/)
+    for $t$ strictly between $t_0$ and $t_1$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Differentiate the Peano--Baker series term by term, using
     \cref{lem:norm-peanoBakerTerm-le} as the uniform bound needed for term-by-term
     differentiation of a series. The $k=0$ term is constant, so peel it off and match the
@@ -339,7 +357,10 @@ integrates a function over the degenerate interval `[t₀, t₀]`, hence vanishe
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:stateTransitionMatrix-self"
   (title := "The state transition matrix at the initial time")
-  (statement := /-- $\Phi(t_0,t_0) = I$. -/)
+  (statement := /-- $\Phi(t_0,t_0) = I$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Every term of the Peano--Baker series beyond $k=0$ integrates over the
     degenerate interval $[t_0,t_0]$ and vanishes. -/)]
 theorem stateTransitionMatrix_self (t₀ : ℝ) :
@@ -392,7 +413,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
   (statement := /-- For a constant matrix $C$, $Y(t) := \Phi(t,t_0)\, C$ solves
     \[
       \dot Y(t) = A(t)\, Y(t).
-    \] -/)
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Right-multiply \cref{thm:hasDerivAt-stateTransitionMatrix} by the constant $C$
     (\texttt{HasDerivAt.mul\_const}), then reassociate. -/)]
 theorem hasDerivAt_stateTransitionMatrix_mul (hA : Continuous A) {t₀ t₁ M : ℝ}
@@ -416,7 +440,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \[
       Y(t) = C + \int_{t_0}^{t} A(s)\, Y(s)\,\mathrm{d}s
     \]
-    for every $t$ between $t_0$ and $t_1$. -/)
+    for every $t$ between $t_0$ and $t_1$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- The fundamental theorem of calculus applied to
     \cref{thm:hasDerivAt-stateTransitionMatrix-mul}, using $\Phi(t_0,t_0) = I$
     (\cref{thm:stateTransitionMatrix-self}) to fix the initial value. -/)]
@@ -461,7 +488,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \[
       x(t) = x_0 + \int_{t_0}^{t} A(s)\, x(s)\,\mathrm{d}s
     \]
-    for every $t$ between $t_0$ and $t_1$. -/)
+    for every $t$ between $t_0$ and $t_1$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- The fundamental theorem of calculus applied to
     \cref{thm:hasDerivAt-stateTransitionMatrix-mulVec}, using $\Phi(t_0,t_0) = I$
     (\cref{thm:stateTransitionMatrix-self}) to fix the initial value. -/)]
@@ -576,7 +606,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:stateTransitionMatrix-mul-unique"
   (title := "Uniqueness of matrix-valued solutions")
   (statement := /-- Any solution $Y$ of $\dot Y = A(t)\, Y$, $Y(t_0) = C$, for $t$ between $t_0$
-    and $t_1$, coincides with $\Phi(t,t_0)\, C$. -/)
+    and $t_1$, coincides with $\Phi(t,t_0)\, C$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
+  -/)
   (proof := /-- Apply the continuous-dependence bound of Theorem 3.4 with zero perturbation:
     since both solutions share the initial value $C$, the resulting bound on
     $\|Y(t) - Z(t)\|$ collapses to $0$. -/)]

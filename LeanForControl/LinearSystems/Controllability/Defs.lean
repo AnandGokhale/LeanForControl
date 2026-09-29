@@ -88,7 +88,10 @@ Reference: Hespanha, *Linear Systems Theory*. -/
     \[
       \mathcal R(A,B)=\operatorname{range}\mathcal C(A,B).
     \]
-    Thus it is exactly the span of $B,AB,\ldots,A^{n-1}B$. -/)]
+    Thus it is exactly the span of $B,AB,\ldots,A^{n-1}B$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory}.
+  -/)]
 noncomputable def reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     Submodule 𝕜 (Fin n → 𝕜) :=

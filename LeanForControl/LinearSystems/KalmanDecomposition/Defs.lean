@@ -47,7 +47,10 @@ Original: this structure packages the data for the LeanForControl API. -/
     coordinate sectors adapted to the reachable and unobservable subspaces.
     Their direct sums recover those subspaces and the full state space. The
     chosen complements are noncanonical and are not individually asserted to
-    be invariant under $A$. -/)]
+    be invariant under $A$.
+
+    References: Hespanha, \emph{Linear Systems Theory}; Kailath, \emph{Linear Systems}.
+  -/)]
 structure KalmanDecomposition
     (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin m) ℂ)
     (C : Matrix (Fin p) (Fin n) ℂ) where

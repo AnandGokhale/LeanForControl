@@ -298,7 +298,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.4. -/
       \dot{V}(y) = DV(y)\,[\,f(y)\,] = 0
       \qquad \text{for every } y \in \omega(\varphi).
     \]
-    Equivalently $\omega(\varphi) \subseteq E = \{x : \dot{V}(x) = 0\}$. -/)
+    Equivalently $\omega(\varphi) \subseteq E = \{x : \dot{V}(x) = 0\}$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.4.
+  -/)
   (proof := /-- Along the trajectory $V$ is nonincreasing and bounded below on the compact set
     $\Omega$, so $V(\varphi(t)) \to L$ for some $L$; by continuity of $V$ every
     $\omega$-limit point sees that same value, so $V \equiv L$ on $\omega(\varphi)$.  Fix
@@ -440,7 +443,10 @@ theorem lasalle_invariance_principle
     The hypothesis on $E$ is the one a user of LaSalle actually discharges: solve
     $\dot{V} = 0$ and check that no solution can stay there but the equilibrium.  Positive
     invariance of $\Omega_{c}$ is a hypothesis rather than a consequence of $\dot{V} \le 0$:
-    deducing it would need a solution through each point of $\Omega_{c}$. -/)]
+    deducing it would need a solution through each point of $\Omega_{c}$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Corollary 4.1.
+  -/)]
 theorem lasalle_local_asymptotic_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV_c1 : ContDiff ℝ 1 V)
@@ -491,7 +497,10 @@ theorem lasalle_local_asymptotic_stable
 
     Unlike Barbashin's theorem (\cref{thm:lasalle-local-asymptotic-stable}) no positively
     invariant set is assumed: radial unboundedness makes every sublevel set compact, and
-    $\dot{V} \le 0$ then keeps the trajectory inside the one through its initial state. -/)]
+    $\dot{V} \le 0$ then keeps the trajectory inside the one through its initial state.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Corollary 4.2.
+  -/)]
 theorem lasalle_global_asymptotic_stable
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV_c1 : ContDiff ℝ 1 V)

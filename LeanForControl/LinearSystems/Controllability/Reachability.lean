@@ -118,7 +118,10 @@ Reference: Hespanha, *Linear Systems Theory*. -/
 @[blueprint "thm:reachableSubspace-eq-top-iff-controllable"
   (title := "Controllability via the reachable subspace")
   (statement := /-- A pair $(A,B)$ is controllable if and only if its
-    reachable subspace is the whole state space. -/)]
+    reachable subspace is the whole state space.
+
+    Reference: Hespanha, \emph{Linear Systems Theory}.
+  -/)]
 theorem reachableSubspace_eq_top_iff_isControllable
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     reachableSubspace A B = ⊤ ↔ IsControllable A B := by
@@ -170,7 +173,10 @@ Reference: Hespanha, *Linear Systems Theory*. -/
   (title := "$A$-invariance of the reachable subspace")
   (latexEnv := "lemma")
   (statement := /-- The reachable subspace is $A$-invariant:
-    $A\mathcal R(A,B)\subseteq\mathcal R(A,B)$. -/)]
+    $A\mathcal R(A,B)\subseteq\mathcal R(A,B)$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory}.
+  -/)]
 theorem reachableSubspace_invariant
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     reachableSubspace A B ∈ Module.End.invtSubmodule A.mulVecLin := by

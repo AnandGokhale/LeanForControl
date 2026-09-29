@@ -213,7 +213,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
     Then the origin is uniformly stable (\cref{def:uniformlyStableNA}).
 
     The sandwich is what makes the conclusion uniform in $t_{0}$: $W_{1}$ and $W_{2}$ do not
-    depend on $t$, so the $\delta(\varepsilon)$ extracted from them does not either. -/)
+    depend on $t$, so the $\delta(\varepsilon)$ extracted from them does not either.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.8.
+  -/)
   (proof := /-- Bound $W_{1}$ below and $W_{2}$ above by class $\mathcal{K}$ functions
     $\alpha_{1}, \alpha_{2}$ (\cref{thm:lyapunov-class-K-bounds}).  Fix a level $d$ below both
     ranges and set $c = \alpha_{2}^{-1}(d)$, so that starting within $c$ of the origin forces
@@ -324,7 +327,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9. -/
 
     A strictly negative $\dot{V}$ alone would not do: $W_{3}$ must be bounded away from zero on
     each annulus, which is exactly what positive definiteness of a function of $x$ alone
-    buys. -/)
+    buys.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.9.
+  -/)
   (proof := /-- As in \cref{thm:lyapunov-uniformly-stable-NA}, take class $\mathcal{K}$ bounds
     $\alpha_{1}, \alpha_{2}, \alpha_{3}$ for $W_{1}, W_{2}, W_{3}$.  Then
     $\dot{V} \le -W_{3}(x) \le -\alpha_{3}(\|x\|) \le

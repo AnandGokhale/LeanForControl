@@ -73,7 +73,10 @@ Reference: Khalil, *Nonlinear Systems*.
   (title := "Lyapunov stability")
   (statement := /-- An equilibrium is Lyapunov stable when every finite
     forward solution segment starting sufficiently close remains within any
-    prescribed neighborhood for its entire interval of definition. -/)]
+    prescribed neighborhood for its entire interval of definition.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 def LyapunovStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ),
     IsTrajectoryOn φ f t₀ t₁ → ‖φ t₀ - x_eq‖ < δ →
@@ -91,7 +94,10 @@ Reference: Khalil, *Nonlinear Systems*.
   (title := "Local exponential stability")
   (statement := /-- An equilibrium is locally exponentially stable on finite
     forward segments when nearby solutions satisfy a uniform estimate
-    $\|x(t)-x_{\rm eq}\|\leq C e^{-a(t-t_0)}\|x(t_0)-x_{\rm eq}\|$. -/)]
+    $\|x(t)-x_{\rm eq}\|\leq C e^{-a(t-t_0)}\|x(t_0)-x_{\rm eq}\|$.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 def LocallyExponentiallyStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ∃ r C a : ℝ, 0 < r ∧ 1 ≤ C ∧ 0 < a ∧
     ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOn φ f t₀ t₁ →
@@ -113,7 +119,10 @@ Reference: Khalil, *Nonlinear Systems*.
   (statement := /-- An equilibrium is \emph{locally asymptotically stable} when it is forward
     Lyapunov stable and there is a radius $c>0$ such that every solution defined for all
     forward time with $\|\varphi(t_0)-x_{\rm eq}\|<c$ satisfies
-    $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$. -/)]
+    $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 def LocalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∃ c > 0, ∀ (t₀ : ℝ) (φ : ℝ → ℝⁿ), IsIntegralCurveOn φ (fun _ y => f y) (Ici t₀) →
@@ -130,7 +139,10 @@ Reference: Khalil, *Nonlinear Systems*.
   (title := "Global asymptotic stability")
   (statement := /-- An equilibrium is \emph{globally asymptotically stable} when it is forward
     Lyapunov stable and every solution defined for all forward time satisfies
-    $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$. -/)]
+    $\varphi(t)\to x_{\rm eq}$ as $t\to\infty$.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 def GlobalAsymptoticStable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   LyapunovStable f x_eq ∧
   ∀ (t₀ : ℝ) (φ : ℝ → ℝⁿ), IsIntegralCurveOn φ (fun _ y => f y) (Ici t₀) →
@@ -143,7 +155,10 @@ Reference: Khalil, *Nonlinear Systems*.
 @[blueprint "def:unstable"
   (title := "Instability")
   (statement := /-- Instability is the negation of stability quantified
-    over all finite forward solution segments. -/)]
+    over all finite forward solution segments.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 def Unstable (f : ℝⁿ → ℝⁿ) (x_eq : ℝⁿ) : Prop :=
   ¬ LyapunovStable f x_eq
 

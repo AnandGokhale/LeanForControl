@@ -174,7 +174,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2. -/
     $\dot\alpha = f(t, \alpha)$ on all of $[t_0, t_1]$.
 
     Global — rather than merely local — Lipschitz continuity is what makes the solution reach
-    $t_1$: it forces linear growth in the state, ruling out finite-time blowup. -/)
+    $t_1$: it forces linear growth in the state, ruling out finite-time blowup.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.2.
+  -/)
   (proof := /-- Mathlib's Picard--Lindel\"of theorem supplies a solution on a time interval of
     length $\Delta t$ only when $\|f\| \le L$ on a ball of radius $a$ about $x_0$ with
     $L\,\Delta t \le a$.  For a $K$-Lipschitz field the sharpest available bound on that ball is

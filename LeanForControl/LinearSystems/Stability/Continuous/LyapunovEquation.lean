@@ -39,7 +39,10 @@ Reference: Khalil, *Nonlinear Systems*. -/
     solves the continuous-time Lyapunov equation with forcing $Q$ when
     \[
       PA+A^{\mathsf T}P=-Q.
-    \] -/)]
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)]
 def SolvesContinuousLyapunovEquation
     (A P Q : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   P * A + Aᵀ * P = -Q
@@ -436,7 +439,10 @@ Reference: Khalil, *Nonlinear Systems*. -/
   (title := "Lyapunov equation for a Hurwitz matrix")
   (statement := /-- If a real matrix $A$ is Hurwitz, then for every positive-definite
     $Q$ there is a positive-definite matrix $P$ satisfying
-    $PA+A^{\mathsf T}P=-Q$, and this $P$ is the unique matrix solution. -/)
+    $PA+A^{\mathsf T}P=-Q$, and this $P$ is the unique matrix solution.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)
   (proof := /-- A contracting integer-time matrix exponential is obtained from
     the Hurwitz spectrum.  Integrating over one time block and summing the
     resulting discrete Lyapunov series constructs $P$; contraction proves

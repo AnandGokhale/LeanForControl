@@ -374,7 +374,10 @@ private lemma U_decay_bound {f : ℝ → ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {c :
     $\|\varphi(t_{0}) - x_{\mathrm{eq}}\| < a$, and every $t > t_{0}$.
 
     The bound depends on the elapsed time alone: neither on $t_{0}$, nor on the trajectory, nor
-    on where in the $a$-ball it started. -/)
+    on where in the $a$-ball it started.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5.
+  -/)
   (proof := /-- Let $\bar{T}(\eta, r)$ be the least delay after which every trajectory starting
     within $r$ of $x_{\mathrm{eq}}$ lies inside the $\eta$-ball; it is finite by hypothesis and
     antitone in $\eta$, but possibly discontinuous.  Smooth it by the sliding average
@@ -460,7 +463,10 @@ private lemma HasUniformClassKInftyBound.toClassK
     Conditions (1)--(4) are exactly the hypotheses of
     \cref{lem:classKLGlobal-of-KInfty-LSingular-family}; (5) is the decay bound.  Unlike the
     local case (\cref{lem:exists-classLSingular-decayBound}) no single envelope can serve every
-    initial state, so the radius remains a parameter. -/)
+    initial state, so the radius remains a parameter.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5 (global case).
+  -/)
   (proof := /-- Every radius is finite, so at radius $r$ the global hypotheses restrict to the
     local ones (uniform convergence times on the $r$-ball, and the class $\mathcal{K}_{\infty}$
     bound read as a class $\mathcal{K}$ bound on $[0, r+1)$).  Take $U(r, \cdot)$ to be the
