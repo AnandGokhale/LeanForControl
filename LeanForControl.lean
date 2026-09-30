@@ -17,7 +17,9 @@ import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Controllability.Defs
 import LeanForControl.LinearSystems.Controllability.Hautus
 import LeanForControl.LinearSystems.Controllability.Reachability
+import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.KalmanDecomposition.Decomposition
+import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.KalmanDecomposition.DecompositionExamples
 import LeanForControl.LinearSystems.KalmanDecomposition.Defs
 import LeanForControl.LinearSystems.Observability.Defs

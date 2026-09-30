@@ -11,10 +11,10 @@ theorems proved about them (`CtsLTV.lean`), per the project convention: definiti
 apart from theorems.
 
 Unlike the rest of `LinearSystems/`, this file is about a genuinely *time-varying* state
-matrix `A : ℝ → Matrix (Fin n) (Fin n) ℝ`, not the constant `A` fixed by `Basic.lean`'s
+matrix `A : ℝ → Matrix X X ℝ`, not the constant `A` fixed by `Basic.lean`'s
 conventions for the LTI-only files.
 
-`Matrix (Fin n) (Fin n) ℝ` carries no default norm instance in Mathlib (there are several
+`Matrix X X ℝ` carries no default norm instance in Mathlib (there are several
 natural choices). We fix the `L∞`-operator norm, `Matrix.Norms.Operator`, throughout this
 track: it is the one under which matrix multiplication is submultiplicative
 (`‖A * B‖ ≤ ‖A‖ * ‖B‖`), which the Peano-Baker series' convergence proof needs.
@@ -30,7 +30,7 @@ namespace LinearSystems
 
 open scoped Matrix.Norms.Operator
 
-variable {n : ℕ}
+variable {X : Type*} [Fintype X] [DecidableEq X]
 
 /-- The `k`-th term of the Peano-Baker series for a time-varying state matrix `A`:
 `peanoBakerTerm A 0 t t₀ = 1` and
@@ -48,8 +48,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5 (Peano-Baker s
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5 (Peano-Baker series).
   -/)]
-noncomputable def peanoBakerTerm (A : ℝ → Matrix (Fin n) (Fin n) ℝ) :
-    ℕ → ℝ → ℝ → Matrix (Fin n) (Fin n) ℝ
+noncomputable def peanoBakerTerm (A : ℝ → Matrix X X ℝ) :
+    ℕ → ℝ → ℝ → Matrix X X ℝ
   | 0,     _, _  => 1
   | k + 1, t, t₀ => ∫ s in t₀..t, A s * peanoBakerTerm A k s t₀
 
@@ -69,8 +69,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.1 (Peano-Baker
     series).
   -/)]
-noncomputable def stateTransitionMatrix (A : ℝ → Matrix (Fin n) (Fin n) ℝ) (t t₀ : ℝ) :
-    Matrix (Fin n) (Fin n) ℝ :=
+noncomputable def stateTransitionMatrix (A : ℝ → Matrix X X ℝ) (t t₀ : ℝ) :
+    Matrix X X ℝ :=
   ∑' k, peanoBakerTerm A k t t₀
 
 end LinearSystems

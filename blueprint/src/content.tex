@@ -11,6 +11,44 @@
 
 \chapter{Linear systems}
 
+\section{The linear system object}
+
+The data of a linear system --- the four coefficient maps $A$, $B$, $C$, $D$ --- together with
+the equations that data satisfies. The object carries no reading of its own: the state equation
+has a continuous-time and a discrete-time form, and which is meant is recorded by the predicate
+applied, not by the type.
+
+\inputleannode{def:linearSystem}
+
+\inputleannode{def:linearSystem-vectorField}
+
+\inputleannode{def:linearSystem-outputMap}
+
+\subsection{The two readings of the state equation}
+
+\inputleannode{def:linearSystem-isTrajectoryOn}
+
+\inputleannode{def:linearSystem-isTrajectory}
+
+\inputleannode{lem:linearSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:linearSystem-isTrajectory-isTrajectoryOn}
+
+\inputleannode{def:linearSystem-isDiscreteTrajectory}
+
+\subsection{Time-invariant systems}
+
+A linear time-invariant system is a constant linear system, not an object of its own kind, so
+that every result about \cref{def:linearSystem} applies to it unchanged.
+
+\inputleannode{def:linearSystem-const}
+
+\inputleannode{def:linearSystem-isTimeInvariant}
+
+\inputleannode{lem:linearSystem-isTimeInvariant-const}
+
+\inputleannode{lem:linearSystem-exists-eq-const}
+
 \section{Observability and controllability matrices}
 
 For a finite-dimensional linear system
