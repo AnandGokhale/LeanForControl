@@ -12,7 +12,6 @@ import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Comparison.ClassL
 import LeanForControl.Comparison.ComparisonFunctions
-import LeanForControl.LinearSystems.Basic
 import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Controllability.Defs
 import LeanForControl.LinearSystems.Controllability.Hautus
