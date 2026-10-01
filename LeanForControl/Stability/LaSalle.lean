@@ -381,7 +381,8 @@ invariant subset of `LieDerivZeroSet f V Ω`. Then φ(t) → M.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.4. -/
 @[blueprint "thm:lasalle-invariance-principle"
   (title := "LaSalle's invariance principle")
-  (statement := /-- Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with $f$ of class
+  (statement := /-- Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with $f$
+    of class
     $C^{1}$ and Lipschitz, let $V \in C^{1}$ satisfy $\dot{V}(x) \le 0$ on $\Omega$, and put
     \[
       E = \{x \in \Omega : \dot{V}(x) = 0\}
@@ -454,7 +455,8 @@ theorem lasalle_invariance_principle
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.1. -/
 @[blueprint "thm:lasalle-local-asymptotic-stable"
   (title := "Barbashin's theorem")
-  (statement := /-- Let $V \in C^{1}$ be a local Lyapunov function for $\dot{x} = f(x)$ on a domain $D$
+  (statement := /-- Let $V \in C^{1}$ be a local Lyapunov function for $\dot{x} = f(x)$ on a domain
+    $D$
     (\cref{def:isLocalLyapunovFunction}).  Suppose for some $c > 0$ the sublevel set
     $\Omega_{c} = \{V \le c\}$ is contained in $D$, compact, and positively invariant, that
     $f$ is $C^{1}$ and Lipschitz, and that $\{x_{\mathrm{eq}}\}$ is the only positively
@@ -511,7 +513,8 @@ theorem lasalle_local_asymptotic_stable
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.2. -/
 @[blueprint "thm:lasalle-global-asymptotic-stable"
   (title := "Krasovskii's theorem")
-  (statement := /-- If $V \in C^{1}$ is positive definite, $\dot{V} \le 0$ on $\mathbb{R}^{n}$ and radially
+  (statement := /-- If $V \in C^{1}$ is positive definite, $\dot{V} \le 0$ on $\mathbb{R}^{n}$ and
+    radially
     unbounded, $f$ is $C^{1}$ and Lipschitz, and for every $c$ the only positively invariant
     subset of $E_{c} = \{x \in \Omega_{c} : \dot{V}(x) = 0\}$ (\cref{def:lieDerivZeroSet})
     is $\{x_{\mathrm{eq}}\}$, then $x_{\mathrm{eq}}$ is globally asymptotically stable

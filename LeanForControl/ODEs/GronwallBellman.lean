@@ -46,7 +46,8 @@ statements with no Gronwall content, and live in `Analysis/Integrals.lean`.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma A.1. -/
 @[blueprint "thm:gronwall-bellman"
   (title := "Gronwall--Bellman inequality")
-  (statement := /-- Khalil, Lemma A.1.  Let $\Lambda, \mu : [a,b] \to \mathbb{R}$ be continuous with $\mu \ge 0$,
+  (statement := /-- Khalil, Lemma A.1.  Let $\Lambda, \mu : [a,b] \to \mathbb{R}$ be continuous
+    with $\mu \ge 0$,
     and let
     $y : [a,b] \to \mathbb{R}$ be continuous satisfying
     \[

@@ -97,7 +97,8 @@ backward instance into a forward one on `[t₁, t₀]`.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.4. -/
 @[blueprint "thm:continuous-dependence-ODE"
   (title := "Continuous dependence on initial states and parameters")
-  (statement := /-- Khalil, Theorem 3.4.  Let $f$ be jointly continuous and $L$-Lipschitz in its state
+  (statement := /-- Khalil, Theorem 3.4.  Let $f$ be jointly continuous and $L$-Lipschitz in its
+    state
     argument on the segment between $t_0$ and $t_1$, let $y$ be an integral solution of
     $\dot y = f(t,y)$ with
     $y(t_0) = y_0$, and let $z$ be an integral solution of the perturbed equation
@@ -276,7 +277,8 @@ The `α`-condition plays the role of `δ` from the classical statement.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.5. -/
 @[blueprint "thm:continuous-dependence-parameters"
   (title := "Continuous dependence on parameters")
-  (statement := /-- Khalil, Theorem 3.5.  If $y$ solves $\dot{y} = f(t,y)$ and $z$ solves $\dot{z} = f(t,z) +
+  (statement := /-- Khalil, Theorem 3.5.  If $y$ solves $\dot{y} = f(t,y)$ and $z$ solves
+    $\dot{z} = f(t,z) +
     g(t,z)$
     with $\|g(t,x)\| \le \alpha$ and $\|z_0 - y_0\| \le \alpha$, and
     $\alpha(1 + 1/L)e^{L(t_1-t_0)} \le \varepsilon$, then
