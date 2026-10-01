@@ -10,7 +10,7 @@ import Mathlib.Analysis.Normed.Group.Bounded
 import Mathlib.Topology.Order.MonotoneContinuity
 import Architect
 
-variable {n : ℕ}
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-!
 # `Stability.DefsNonAutonomous`
@@ -21,7 +21,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
 ## Notation
 
-`ℝⁿ` denotes `EuclideanSpace ℝ (Fin n)` throughout this file.
+`ℝⁿ` denotes an arbitrary real normed space `E` throughout this file.
+
+Nothing below uses more than the norm, the vector space structure, and the topology — there is
+no inner product anywhere — so the state space is left abstract rather than fixed at
+`EuclideanSpace ℝ (Fin n)`. Instantiating `E := EuclideanSpace ℝ (Fin n)` recovers the concrete
+case for the nonlinear track, and `E := X → ℝ` is what lets these predicates meet the linear
+track, whose solution theory carries the `L∞` operator norm.
 
 ## Contents
 
@@ -33,7 +39,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
 open Set Filter Topology
 
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+local notation "ℝⁿ" => E
 
 /-! ## System primitives -/
 

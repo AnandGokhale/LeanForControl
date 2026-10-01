@@ -30,7 +30,6 @@ import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
-import LeanForControl.LinearSystems.Stability.Continuous.DefsLyapunovLTV
 import LeanForControl.LinearSystems.Stability.Continuous.ExponentialStability
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate

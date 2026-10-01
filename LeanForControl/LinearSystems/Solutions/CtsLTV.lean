@@ -1224,6 +1224,20 @@ theorem isIntegralSolution_forcedResponse (hA : Continuous A) (hB : Continuous B
   rw [hFTC]
   abel
 
+/-- With the input switched off the forced response is the homogeneous response: the forcing
+integral has a zero integrand. -/
+@[simp, blueprint "lem:forcedResponse-zero-input"
+  (title := "Zero input gives the homogeneous response")
+  (latexEnv := "lemma")
+  (statement := /-- With $u = 0$ the forced response (\cref{def:forcedResponse}) is the
+    homogeneous response (\cref{def:homogeneousResponse}):
+    $\Phi(t,t_0)x_0 + \int_{t_0}^{t}\Phi(t,\tau)B(\tau)\cdot 0\,\mathrm{d}\tau
+      = \Phi(t,t_0)x_0$. -/)]
+theorem forcedResponse_zero_input (B : ℝ → Matrix X U ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
+    forcedResponse A B 0 t₀ x₀ = homogeneousResponse A t₀ x₀ := by
+  funext t
+  simp [forcedResponse, homogeneousResponse]
+
 /-! ## The solution as a trajectory of the system
 
 `ContinuousLinearSystem` (`LinearSystems/DefsSystem.lean`) bundles the coefficient maps and
@@ -1316,6 +1330,27 @@ theorem isTrajectory_forcedResponse (s : ContinuousLinearSystem X U Y ℝ) (hA :
       rw [← Set.Ioo_min_max, min_eq_left (by linarith), max_eq_right (by linarith)]
       exact ⟨hgt, by linarith⟩
     exact hasDerivAt_variationOfConstants hA hB hu hM hmem x₀
+
+omit [Fintype Y] in
+/-- The homogeneous response is a trajectory of the system under zero input.
+
+Hespanha's Definition 8.1 is stated about this map, so this is the form in which the solution
+theory reaches the stability theory. -/
+@[blueprint "thm:isTrajectory-homogeneousResponse"
+  (title := "The homogeneous response is a trajectory")
+  (statement := /-- For a continuous-time linear system with continuous coefficients, the
+    homogeneous response (\cref{def:homogeneousResponse}) from any state $x_0$ at any time
+    $t_0$ is a trajectory (\cref{def:ctsLinearSystem-isTrajectory}) under zero input.
+
+    Definition 8.1 is stated about this map, so this is the form in which the solution theory
+    reaches the stability theory. -/)
+  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at $u = 0$, rewritten by
+    \cref{lem:forcedResponse-zero-input}. -/)]
+theorem isTrajectory_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+    (hA : Continuous s.A) (hB : Continuous s.B) (t₀ : ℝ) (x₀ : X → ℝ) :
+    s.IsTrajectory 0 (homogeneousResponse s.A t₀ x₀) := by
+  have h := isTrajectory_forcedResponse (u := 0) s hA hB continuous_const t₀ x₀
+  rwa [forcedResponse_zero_input] at h
 
 end ContinuousLinearSystem
 

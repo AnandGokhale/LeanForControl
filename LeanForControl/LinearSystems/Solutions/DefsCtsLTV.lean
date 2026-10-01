@@ -98,4 +98,29 @@ noncomputable def forcedResponse (A : ℝ → Matrix X X ℝ) (B : ℝ → Matri
   fun t => stateTransitionMatrix A t t₀ *ᵥ x₀ +
     ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)
 
+/-- The *homogeneous response* of `ẋ = A(t) x` from the state `x₀` at time `t₀`, namely
+`x(t) = Φ(t, t₀) x₀`.
+
+Hespanha's "homogeneous state response": the forced response (`forcedResponse`) with the input
+switched off. It is named separately because the stability theory is stated about it — the
+input matrix plays no part in Lyapunov stability.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Definition 8.1. -/
+@[blueprint "def:homogeneousResponse"
+  (title := "Homogeneous response")
+  (statement := /-- The \emph{homogeneous response} of $\dot x = A(t)x$ from the state $x_0$ at
+    time $t_0$,
+    \[
+      x(t) = \Phi(t, t_0)\, x_0,
+    \]
+    with $\Phi$ the state transition matrix (\cref{def:stateTransitionMatrix}).  This is the
+    forced response (\cref{def:forcedResponse}) with the input switched off, and the object
+    Lyapunov stability is stated about.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1.
+  -/)]
+noncomputable def homogeneousResponse (A : ℝ → Matrix X X ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
+    ℝ → X → ℝ :=
+  fun t => stateTransitionMatrix A t t₀ *ᵥ x₀
+
 end LinearSystems

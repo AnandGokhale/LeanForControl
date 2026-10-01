@@ -266,11 +266,17 @@ quantifies over.
 
 \inputleannode{def:forcedResponse}
 
+\inputleannode{def:homogeneousResponse}
+
 \inputleannode{lem:continuousOn-forcedResponse}
 
 \inputleannode{thm:isIntegralSolution-forcedResponse}
 
 \inputleannode{thm:isTrajectory-forcedResponse}
+
+\inputleannode{lem:forcedResponse-zero-input}
+
+\inputleannode{thm:isTrajectory-homogeneousResponse}
 
 \subsection{The time-invariant case}
 
@@ -838,41 +844,35 @@ initial conditions, which the trajectory characterization below closes in both d
 the predicates bound the response from a \emph{ball} where the textbook bounds it from every
 initial state, which homogeneity closes. The second is why a linear system has no nontrivial
 region of attraction, recorded as
-\cref{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}.
+\cref{cor:exponentiallyStableNA-linear-iff-globally}.
 
 \subsection{The system and its response}
 
-\inputleannode{def:linearVectorField}
-
-\inputleannode{def:stateTransitionCLM}
-
-\inputleannode{lem:stateTransitionCLM-self}
-
-\inputleannode{lem:isEquilibriumNA-linearVectorField}
+\inputleannode{lem:isEquilibriumNA-linear}
 
 \subsection{Trajectories are state transition responses}
 
-\inputleannode{thm:isTrajectoryNA-stateTransitionCLM}
+\inputleannode{thm:isTrajectoryNA-homogeneousResponse}
 
-\inputleannode{thm:isTrajectoryNA-eq-stateTransitionCLM}
+\inputleannode{thm:isTrajectoryNA-eq-homogeneousResponse}
 
 \subsection{Hespanha's Definition 8.1}
 
-\inputleannode{lem:stableNA-linearVectorField-iff-opNorm}
+\inputleannode{lem:stableNA-linear-iff-bound}
 
-\inputleannode{thm:stableNA-linearVectorField-iff}
+\inputleannode{thm:stableNA-linear-iff}
 
-\inputleannode{thm:uniformlyStableNA-linearVectorField-iff}
+\inputleannode{thm:uniformlyStableNA-linear-iff}
 
-\inputleannode{thm:asymptoticStableNA-linearVectorField-iff}
+\inputleannode{thm:asymptoticStableNA-linear-iff}
 
-\inputleannode{thm:globallyExponentiallyStableNA-linearVectorField-iff}
+\inputleannode{thm:globallyExponentiallyStableNA-linear-iff}
 
-\inputleannode{thm:exponentiallyStableNA-linearVectorField-iff}
+\inputleannode{thm:exponentiallyStableNA-linear-iff}
 
-\inputleannode{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}
+\inputleannode{cor:exponentiallyStableNA-linear-iff-globally}
 
-\inputleannode{thm:unstableNA-linearVectorField-iff}
+\inputleannode{thm:unstableNA-linear-iff}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
