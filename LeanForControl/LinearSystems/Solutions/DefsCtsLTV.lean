@@ -27,9 +27,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 
 namespace LinearSystems
 
+open Matrix
 open scoped Matrix.Norms.Operator
 
-variable {X : Type*} [Fintype X] [DecidableEq X]
+variable {X U : Type*} [Fintype X] [DecidableEq X] [Fintype U]
 
 /-- The `k`-th term of the Peano-Baker series for a time-varying state matrix `A`:
 `peanoBakerTerm A 0 t t₀ = 1` and
@@ -71,5 +72,30 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1
 noncomputable def stateTransitionMatrix (A : ℝ → Matrix X X ℝ) (t t₀ : ℝ) :
     Matrix X X ℝ :=
   ∑' k, peanoBakerTerm A k t t₀
+
+/-- The *forced response* of `ẋ = A(t) x + B(t) u(t)` from the state `x₀` at time `t₀`, given
+by the variation-of-constants formula
+`x(t) = Φ(t, t₀) x₀ + ∫ τ in t₀..t, Φ(t, τ) B(τ) u(τ) dτ`.
+
+The homogeneous response `Φ(·, t₀) x₀` is the special case `B = 0`; naming the forced one is
+what lets it be quantified over, rather than retyped in every statement about it.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
+@[blueprint "def:forcedResponse"
+  (title := "Forced response")
+  (statement := /-- The \emph{forced response} of $\dot x = A(t)x + B(t)u(t)$ from the state
+    $x_0$ at time $t_0$, given by the variation-of-constants formula
+    \[
+      x(t) = \Phi(t, t_0)\, x_0 + \int_{t_0}^{t} \Phi(t, \tau)\, B(\tau)\, u(\tau)\,
+        \mathrm{d}\tau,
+    \]
+    with $\Phi$ the state transition matrix (\cref{def:stateTransitionMatrix}).
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
+  -/)]
+noncomputable def forcedResponse (A : ℝ → Matrix X X ℝ) (B : ℝ → Matrix X U ℝ)
+    (u : ℝ → U → ℝ) (t₀ : ℝ) (x₀ : X → ℝ) : ℝ → X → ℝ :=
+  fun t => stateTransitionMatrix A t t₀ *ᵥ x₀ +
+    ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)
 
 end LinearSystems

@@ -11,43 +11,66 @@
 
 \chapter{Linear systems}
 
-\section{The linear system object}
+\section{The linear system objects}
 
 The data of a linear system --- the four coefficient maps $A$, $B$, $C$, $D$ --- together with
-the equations that data satisfies. The object carries no reading of its own: the state equation
-has a continuous-time and a discrete-time form, and which is meant is recorded by the predicate
-applied, not by the type.
+the equations that data satisfies. There are two objects, one per time domain, carrying the same
+API under the same names: a continuous-time trajectory is an integral curve, a discrete-time one
+is a sequence satisfying a recursion, and those are not two cases of one notion.
 
-\inputleannode{def:linearSystem}
+\subsection{Continuous time}
 
-\inputleannode{def:linearSystem-vectorField}
+\inputleannode{def:ctsLinearSystem}
 
-\inputleannode{def:linearSystem-outputMap}
+\inputleannode{def:ctsLinearSystem-vectorField}
 
-\subsection{The two readings of the state equation}
+\inputleannode{def:ctsLinearSystem-outputMap}
 
-\inputleannode{def:linearSystem-isTrajectoryOn}
+\inputleannode{def:ctsLinearSystem-isTrajectoryOn}
 
-\inputleannode{def:linearSystem-isTrajectory}
+\inputleannode{def:ctsLinearSystem-isTrajectory}
 
-\inputleannode{lem:linearSystem-isTrajectoryOn-univ}
+\inputleannode{lem:ctsLinearSystem-isTrajectoryOn-univ}
 
-\inputleannode{lem:linearSystem-isTrajectory-isTrajectoryOn}
+\inputleannode{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}
 
-\inputleannode{def:linearSystem-isDiscreteTrajectory}
+\subsection{Discrete time}
+
+\inputleannode{def:discLinearSystem}
+
+\inputleannode{def:discLinearSystem-vectorField}
+
+\inputleannode{def:discLinearSystem-outputMap}
+
+\inputleannode{def:discLinearSystem-isTrajectoryOn}
+
+\inputleannode{def:discLinearSystem-isTrajectory}
+
+\inputleannode{lem:discLinearSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:discLinearSystem-isTrajectory-isTrajectoryOn}
 
 \subsection{Time-invariant systems}
 
-A linear time-invariant system is a constant linear system, not an object of its own kind, so
-that every result about \cref{def:linearSystem} applies to it unchanged.
+A linear time-invariant system is a linear system whose coefficients do not vary with time,
+not an object of its own kind, so that every result about the time-varying object applies to it
+unchanged.
 
-\inputleannode{def:linearSystem-const}
+\inputleannode{def:ctsLinearSystem-timeInvariant}
 
-\inputleannode{def:linearSystem-isTimeInvariant}
+\inputleannode{def:ctsLinearSystem-isTimeInvariant}
 
-\inputleannode{lem:linearSystem-isTimeInvariant-const}
+\inputleannode{lem:ctsLinearSystem-isTimeInvariant-timeInvariant}
 
-\inputleannode{lem:linearSystem-exists-eq-const}
+\inputleannode{lem:ctsLinearSystem-exists-eq}
+
+\inputleannode{def:discLinearSystem-timeInvariant}
+
+\inputleannode{def:discLinearSystem-isTimeInvariant}
+
+\inputleannode{lem:discLinearSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:discLinearSystem-exists-eq}
 
 \section{Observability and controllability matrices}
 
@@ -232,6 +255,32 @@ argument.
 \inputleannode{lem:variationOfConstants-self}
 
 \inputleannode{thm:variationOfConstants-unique}
+
+\subsection{The forced response as a trajectory}
+
+The solution theory above is stated on the coefficient maps $A$ and $B$, which is where the
+analysis lives. The results below restate it for the system object of
+\cref{def:ctsLinearSystem}: the variation-of-constants formula is a \emph{trajectory} in the
+sense of \cref{def:ctsLinearSystem-isTrajectory}, which the stability theory
+quantifies over.
+
+\inputleannode{def:forcedResponse}
+
+\inputleannode{lem:continuousOn-forcedResponse}
+
+\inputleannode{thm:isIntegralSolution-forcedResponse}
+
+\inputleannode{thm:isTrajectory-forcedResponse}
+
+\subsection{The time-invariant case}
+
+For a time-invariant system the state transition matrix is the matrix exponential, so the
+variation-of-constants formula collapses to the closed form every textbook writes.
+
+\inputleannode{lem:forcedResponse-timeInvariant}
+
+\inputleannode{thm:isTrajectory-timeInvariant}
+
 
 \inputleannode{lem:variationOfConstants-output}
 

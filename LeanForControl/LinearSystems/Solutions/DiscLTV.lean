@@ -18,7 +18,7 @@ namespace LinearSystems
 
 open Matrix
 
-variable {n : ℕ}
+variable {X : Type*} [Fintype X] [DecidableEq X]
 
 /-- `Φ(t₀,t₀) = I`: the discrete-time state transition matrix is the identity when evaluated at
 equal times, matching the initial condition of P5.5. The product defining `Φ(t₀,t₀)` is over the
@@ -33,7 +33,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Property P5.5.
   -/)
   (proof := /-- The defining product is over the empty range $[t_0, t_0)$. -/)]
-theorem discStateTransitionMatrix_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ) :
+theorem discStateTransitionMatrix_self (A : ℕ → Matrix X X ℝ) (t₀ : ℕ) :
     discStateTransitionMatrix A t₀ t₀ = 1 := by
   simp [discStateTransitionMatrix]
 
@@ -52,7 +52,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5
     \cref{lem:discStateTransitionMatrix-self} this is the existence half of Hespanha's P5.5: the
     discrete state transition matrix solves the matrix recursion. -/)
   (proof := /-- Peel the leading factor $A(t)$ off the defining product. -/)]
-theorem discStateTransitionMatrix_succ (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t t₀ : ℕ}
+theorem discStateTransitionMatrix_succ (A : ℕ → Matrix X X ℝ) {t t₀ : ℕ}
     (ht : t₀ ≤ t) :
     discStateTransitionMatrix A (t + 1) t₀ = A t * discStateTransitionMatrix A t t₀ := by
   unfold discStateTransitionMatrix
@@ -84,8 +84,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5
     \cref{lem:discStateTransitionMatrix-self} and the step chains the recursion against
     \cref{lem:discStateTransitionMatrix-succ}.  No analytic content at all, unlike the
     continuous-time counterpart — the recursion pins each value outright. -/)]
-theorem discStateTransitionMatrix_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    {Z : ℕ → Matrix (Fin n) (Fin n) ℝ} (hZ₀ : Z t₀ = 1)
+theorem discStateTransitionMatrix_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    {Z : ℕ → Matrix X X ℝ} (hZ₀ : Z t₀ = 1)
     (hZ : ∀ t ≥ t₀, Z (t + 1) = A t * Z t) :
     ∀ t ≥ t₀, Z t = discStateTransitionMatrix A t t₀ := by
   intro t ht
@@ -104,8 +104,8 @@ Proof: the same induction as `discStateTransitionMatrix_unique`, pushed through 
   (statement := /-- If $z(t_0) = x_0$ and $z(t+1) = A(t)z(t)$ for all $t \ge t_0$, then
     $z(t) = \Phi(t,t_0)x_0$ for all $t \ge t_0$: the vector form of
     \cref{thm:discStateTransitionMatrix-unique}. -/)]
-theorem discStateTransitionMatrix_mulVec_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    (x₀ : Fin n → ℝ) {z : ℕ → Fin n → ℝ} (hz₀ : z t₀ = x₀)
+theorem discStateTransitionMatrix_mulVec_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    (x₀ : X → ℝ) {z : ℕ → X → ℝ} (hz₀ : z t₀ = x₀)
     (hz : ∀ t ≥ t₀, z (t + 1) = A t *ᵥ z t) :
     ∀ t ≥ t₀, z t = discStateTransitionMatrix A t t₀ *ᵥ x₀ := by
   intro t ht
@@ -129,8 +129,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.6
     unique solution of $z(t+1) = A(t)z(t)$ with $z(t_0) = e_i$, for $t \ge t_0$. -/)
   (proof := /-- \cref{thm:discStateTransitionMatrix-mulVec-unique} at $x_0 = e_i$, using
     $\Phi(t,t_0)e_i = (\Phi(t,t_0))_{\cdot,i}$. -/)]
-theorem discStateTransitionMatrix_col_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    (i : Fin n) {z : ℕ → Fin n → ℝ} (hz₀ : z t₀ = Pi.single i 1)
+theorem discStateTransitionMatrix_col_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    (i : X) {z : ℕ → X → ℝ} (hz₀ : z t₀ = Pi.single i 1)
     (hz : ∀ t ≥ t₀, z (t + 1) = A t *ᵥ z t) :
     ∀ t ≥ t₀, z t = (discStateTransitionMatrix A t t₀).col i := by
   intro t ht
@@ -156,7 +156,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.7
     rather than an artifact. -/)
   (proof := /-- Induction on $t$ from $s$, chaining
     \cref{lem:discStateTransitionMatrix-succ} at both $s$ and $\tau$. -/)]
-theorem discStateTransitionMatrix_semigroup (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {s τ : ℕ}
+theorem discStateTransitionMatrix_semigroup (A : ℕ → Matrix X X ℝ) {s τ : ℕ}
     (hτs : τ ≤ s) :
     ∀ t ≥ s, discStateTransitionMatrix A t s * discStateTransitionMatrix A s τ =
       discStateTransitionMatrix A t τ := by
@@ -167,7 +167,7 @@ theorem discStateTransitionMatrix_semigroup (A : ℕ → Matrix (Fin n) (Fin n) 
     rw [discStateTransitionMatrix_succ A ht, mul_assoc, ih,
       discStateTransitionMatrix_succ A (hτs.trans ht)]
 
-variable {m : ℕ} {B : ℕ → Matrix (Fin n) (Fin m) ℝ} {u : ℕ → Fin m → ℝ}
+variable {U : Type*} [Fintype U] {B : ℕ → Matrix X U ℝ} {u : ℕ → U → ℝ}
 
 /-- **Discrete variation of constants, initial value.** The discrete-time variation-of-constants
 formula `x(t) := Φ(t,t₀) *ᵥ x₀ + Σ_{τ=t₀}^{t-1} Φ(t,τ+1) *ᵥ (B(τ) *ᵥ u(τ))` matches the initial
@@ -188,8 +188,8 @@ variation of constants). -/
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Section 5.3 (discrete
     variation of constants).
   -/)]
-theorem discVariationOfConstants_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ)
-    (x₀ : Fin n → ℝ) :
+theorem discVariationOfConstants_self (A : ℕ → Matrix X X ℝ) (t₀ : ℕ)
+    (x₀ : X → ℝ) :
     discStateTransitionMatrix A t₀ t₀ *ᵥ x₀ +
         ∑ τ ∈ Finset.Ico t₀ t₀, discStateTransitionMatrix A t₀ (τ + 1) *ᵥ (B τ *ᵥ u τ) = x₀ := by
   simp [discStateTransitionMatrix_self]
@@ -214,8 +214,8 @@ reassociating the sum. -/
     \cref{lem:discStateTransitionMatrix-succ}, applied once more to the leading
     $\Phi(t,t_0)$ term.  The peeled term is exactly $B(t)u(t)$, since
     $\Phi(t+1,t+1) = I$. -/)]
-theorem discVariationOfConstants_succ (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ t : ℕ}
-    (ht : t₀ ≤ t) (x₀ : Fin n → ℝ) :
+theorem discVariationOfConstants_succ (A : ℕ → Matrix X X ℝ) {t₀ t : ℕ}
+    (ht : t₀ ≤ t) (x₀ : X → ℝ) :
     discStateTransitionMatrix A (t + 1) t₀ *ᵥ x₀ +
         ∑ τ ∈ Finset.Ico t₀ (t + 1), discStateTransitionMatrix A (t + 1) (τ + 1) *ᵥ (B τ *ᵥ u τ) =
       A t *ᵥ (discStateTransitionMatrix A t t₀ *ᵥ x₀ +
@@ -231,6 +231,7 @@ theorem discVariationOfConstants_succ (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {
     discStateTransitionMatrix_self, Matrix.one_mulVec]
   abel
 
+omit [DecidableEq X] in
 /-- **Discrete variation of constants, uniqueness.** Any two solutions of the forced recursion
 `z(t+1) = A(t) *ᵥ z(t) + B(t) *ᵥ u(t)` sharing the same initial value `x₀` coincide for all
 `t ≥ t₀`.
@@ -246,8 +247,8 @@ each successive value directly. -/
     \cref{thm:variationOfConstants-unique}, no Lipschitz condition or Gronwall estimate is
     needed: the recursion determines each successive value outright, so uniqueness is
     immediate. -/)]
-theorem discVariationOfConstants_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    (x₀ : Fin n → ℝ) {z₁ z₂ : ℕ → Fin n → ℝ} (hz₁₀ : z₁ t₀ = x₀) (hz₂₀ : z₂ t₀ = x₀)
+theorem discVariationOfConstants_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    (x₀ : X → ℝ) {z₁ z₂ : ℕ → X → ℝ} (hz₁₀ : z₁ t₀ = x₀) (hz₂₀ : z₂ t₀ = x₀)
     (hz₁ : ∀ t ≥ t₀, z₁ (t + 1) = A t *ᵥ z₁ t + B t *ᵥ u t)
     (hz₂ : ∀ t ≥ t₀, z₂ (t + 1) = A t *ᵥ z₂ t + B t *ᵥ u t) :
     ∀ t ≥ t₀, z₁ t = z₂ t := by

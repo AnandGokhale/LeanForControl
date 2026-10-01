@@ -22,7 +22,7 @@ namespace LinearSystems
 open scoped Matrix.Norms.Operator Nat
 open Matrix MeasureTheory intervalIntegral
 
-variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
+variable {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℝ)
 
 /-- **Peano-Baker term for constant `A`** (Hespanha, equation (6.1)).
 For a *constant* state matrix `A`, the `k`-th Peano-Baker term
@@ -48,7 +48,7 @@ theorem peanoBakerTerm_const (k : ℕ) (t t₀ : ℝ) :
     peanoBakerTerm (fun _ => A) k t t₀ = ((t - t₀) ^ k / (k)! : ℝ) • A ^ k := by
   induction k generalizing t with
   | zero =>
-    change (1 : Matrix (Fin n) (Fin n) ℝ) = _
+    change (1 : Matrix X X ℝ) = _
     norm_num
   | succ k ih =>
     change (∫ s in t₀..t, A * peanoBakerTerm (fun _ => A) k s t₀) = _
@@ -140,8 +140,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.1
     $A(\cdot) \equiv A$, whose bound $\|A(t)\| \le \|A\|$ is immediate, then rewritten through
     \cref{thm:stateTransitionMatrix-const}.  There is no new ODE content: uniqueness for LTI is
     uniqueness for LTV at a constant matrix. -/)]
-theorem exp_mulVec_unique {t₀ t₁ : ℝ} (x₀ : Fin n → ℝ)
-    {z : ℝ → Fin n → ℝ} (hz : IsIntegralSolution t₀ t₁ z x₀ (fun _ v => A *ᵥ v))
+theorem exp_mulVec_unique {t₀ t₁ : ℝ} (x₀ : X → ℝ)
+    {z : ℝ → X → ℝ} (hz : IsIntegralSolution t₀ t₁ z x₀ (fun _ v => A *ᵥ v))
     (hz_cont : ContinuousOn z (Set.uIcc t₀ t₁)) :
     ∀ t ∈ Set.uIcc t₀ t₁, z t = NormedSpace.exp ((t - t₀) • A) *ᵥ x₀ := by
   intro t ht
@@ -166,8 +166,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.2
   -/)
   (proof := /-- \cref{thm:exp-mulVec-unique} at $x_0 = e_i$, in the column form supplied by the
     time-varying column-uniqueness theorem. -/)]
-theorem exp_col_unique {t₀ t₁ : ℝ} (i : Fin n)
-    {z : ℝ → Fin n → ℝ} (hz : IsIntegralSolution t₀ t₁ z (Pi.single i 1) (fun _ v => A *ᵥ v))
+theorem exp_col_unique {t₀ t₁ : ℝ} (i : X)
+    {z : ℝ → X → ℝ} (hz : IsIntegralSolution t₀ t₁ z (Pi.single i 1) (fun _ v => A *ᵥ v))
     (hz_cont : ContinuousOn z (Set.uIcc t₀ t₁)) :
     ∀ t ∈ Set.uIcc t₀ t₁, z t = (NormedSpace.exp ((t - t₀) • A)).col i := by
   intro t ht
@@ -186,5 +186,73 @@ transition matrix — so neither needs the LTV solution theory this file is buil
 What stays here is what genuinely specializes LTV to a constant `A`: the Peano-Baker collapse
 (6.1), the closed form (6.2), and uniqueness (P6.1, P6.2).
 -/
+
+/-! ## The time-invariant forced response
+
+For a time-invariant system the state transition matrix is the matrix exponential
+(`stateTransitionMatrix_const`), so the variation-of-constants formula collapses to the closed
+form every textbook writes. -/
+
+section TimeInvariant
+
+variable {U Y : Type*} [Fintype U] {u : ℝ → U → ℝ}
+
+/-- **Variation of constants, time-invariant case.** For constant `A` and `B` the forced
+response is the closed form
+
+    x(t) = e^{A(t-t₀)} x₀ + ∫ τ in t₀..t, e^{A(t-τ)} B u(τ) dτ.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6. -/
+@[blueprint "lem:forcedResponse-timeInvariant"
+  (title := "Forced response of a time-invariant system")
+  (latexEnv := "lemma")
+  (statement := /-- For constant $A$ and $B$ the forced response (\cref{def:forcedResponse})
+    is
+    \[
+      x(t) = e^{A(t-t_0)}x_0 + \int_{t_0}^{t} e^{A(t-\tau)}\,B\,u(\tau)\,\mathrm{d}\tau .
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6.
+  -/)
+  (proof := /-- \cref{thm:stateTransitionMatrix-const} identifies $\Phi$ with the matrix
+    exponential, applied once to the homogeneous term and once under the integral sign. -/)]
+theorem forcedResponse_timeInvariant (B : Matrix X U ℝ) (u : ℝ → U → ℝ) (t₀ : ℝ)
+    (x₀ : X → ℝ) (t : ℝ) :
+    forcedResponse (fun _ => A) (fun _ => B) u t₀ x₀ t
+      = NormedSpace.exp ((t - t₀) • A) *ᵥ x₀
+        + ∫ τ in t₀..t, NormedSpace.exp ((t - τ) • A) *ᵥ (B *ᵥ u τ) := by
+  change stateTransitionMatrix (fun _ => A) t t₀ *ᵥ x₀ +
+      (∫ τ in t₀..t, stateTransitionMatrix (fun _ => A) t τ *ᵥ (B *ᵥ u τ)) = _
+  rw [stateTransitionMatrix_const]
+  congr 1
+  exact intervalIntegral.integral_congr fun τ _ => by rw [stateTransitionMatrix_const]
+
+namespace ContinuousLinearSystem
+
+/-- The closed-form response of a time-invariant system is a trajectory of that system. -/
+@[blueprint "thm:isTrajectory-timeInvariant"
+  (title := "The time-invariant response is a trajectory")
+  (statement := /-- For a time-invariant system (\cref{def:ctsLinearSystem-timeInvariant}) with
+    continuous input $u$, the closed form
+    \[
+      t \mapsto e^{A(t-t_0)}x_0 + \int_{t_0}^{t} e^{A(t-\tau)}\,B\,u(\tau)\,\mathrm{d}\tau
+    \]
+    is a trajectory (\cref{def:ctsLinearSystem-isTrajectory}) of that system. -/)
+  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at the time-invariant system, whose
+    coefficient maps are constant and so continuous, rewritten by
+    \cref{lem:forcedResponse-timeInvariant}. -/)]
+theorem isTrajectory_timeInvariant (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ)
+    (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
+    (timeInvariant A B C D).IsTrajectory u
+      (fun t => NormedSpace.exp ((t - t₀) • A) *ᵥ x₀
+        + ∫ τ in t₀..t, NormedSpace.exp ((t - τ) • A) *ᵥ (B *ᵥ u τ)) := by
+  have h : (timeInvariant A B C D).IsTrajectory u
+      (forcedResponse (fun _ => A) (fun _ => B) u t₀ x₀) :=
+    isTrajectory_forcedResponse (timeInvariant A B C D) continuous_const continuous_const hu t₀ x₀
+  rwa [funext fun t => forcedResponse_timeInvariant A B u t₀ x₀ t] at h
+
+end ContinuousLinearSystem
+
+end TimeInvariant
 
 end LinearSystems
