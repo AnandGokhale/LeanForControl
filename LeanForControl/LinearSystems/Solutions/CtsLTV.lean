@@ -1,4 +1,5 @@
 import LeanForControl.Analysis.Continuity
+import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.ODEs.ODE_properties
 import Mathlib.Analysis.Calculus.SmoothSeries
@@ -14,6 +15,11 @@ building up to Theorem 5.1 (Peano-Baker series): the state transition matrix sol
 matrix ODE `Φ̇(t, t₀) = A(t) Φ(t, t₀)`, `Φ(t₀, t₀) = I`, and `x(t) := Φ(t, t₀) *ᵥ x₀` is the
 unique solution of `ẋ = A(t) x`, `x(t₀) = x₀`.
 
+The final section restates the solution for the `LinearSystem` object: the forced response is
+a *trajectory* in the sense of `ContinuousLinearSystem.IsTrajectoryOn`, which is the predicate the
+stability theory quantifies over. Everything before it works with the coefficient maps `A` and
+`B` directly, which is where the analysis lives.
+
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 -/
 
@@ -22,7 +28,7 @@ namespace LinearSystems
 open scoped Matrix.Norms.Operator Nat
 open Matrix MeasureTheory intervalIntegral
 
-variable {n : ℕ} {A : ℝ → Matrix (Fin n) (Fin n) ℝ}
+variable {X : Type*} [Fintype X] [DecidableEq X] {A : ℝ → Matrix X X ℝ}
 
 /-- Each term of the Peano-Baker series is continuous in `t`, for `A` continuous.
 
@@ -77,12 +83,12 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     (\texttt{intervalIntegral.integral\_symm}) in the backward case. -/)]
 theorem norm_peanoBakerTerm_le {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (k : ℕ) :
     ∀ t ∈ Set.uIcc t₀ t₁,
-      ‖peanoBakerTerm A k t t₀‖ ≤ ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ * (M * |t - t₀|) ^ k / (k)! := by
+      ‖peanoBakerTerm A k t t₀‖ ≤ ‖(1 : Matrix X X ℝ)‖ * (M * |t - t₀|) ^ k / (k)! := by
   induction k with
   | zero => intro t _; simp [peanoBakerTerm]
   | succ k ih =>
     intro t ht
-    set C1 : ℝ := ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖
+    set C1 : ℝ := ‖(1 : Matrix X X ℝ)‖
     -- `M` bounds a norm, hence is itself nonnegative.
     have hM_nonneg : 0 ≤ M := (norm_nonneg (A t₀)).trans (hA_le t₀ Set.left_mem_uIcc)
     have hsub : Set.uIcc t₀ t ⊆ Set.uIcc t₀ t₁ := Set.uIcc_subset_uIcc_left ht
@@ -185,10 +191,10 @@ theorem norm_peanoBakerTerm_le_of_mem {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set
     (k : ℕ) :
     ∀ t ∈ Set.uIcc t₀ t₁,
       ‖peanoBakerTerm A k t t₀‖ ≤
-        ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ * (M * |t₁ - t₀|) ^ k / (k)! := by
+        ‖(1 : Matrix X X ℝ)‖ * (M * |t₁ - t₀|) ^ k / (k)! := by
   intro t ht
   have hM_nonneg : 0 ≤ M := (norm_nonneg (A t₀)).trans (hA_le t₀ Set.left_mem_uIcc)
-  have hC1_nonneg : 0 ≤ ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ := norm_nonneg _
+  have hC1_nonneg : 0 ≤ ‖(1 : Matrix X X ℝ)‖ := norm_nonneg _
   -- `t` lies between `t₀` and `t₁`, so its distance to `t₀` is at most the full segment length.
   have habs_le : |t - t₀| ≤ |t₁ - t₀| := by
     rcases le_total t₀ t₁ with h | h
@@ -223,11 +229,11 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 theorem summable_peanoBakerTerm {t t₀ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) :
     Summable (fun k => peanoBakerTerm A k t t₀) :=
   Summable.of_norm_bounded
-    (g := fun k => ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ * (M * |t - t₀|) ^ k / (k)!)
+    (g := fun k => ‖(1 : Matrix X X ℝ)‖ * (M * |t - t₀|) ^ k / (k)!)
     (by
       have hexp : Summable (fun k => (M * |t - t₀|) ^ k / (k)!) :=
         Real.summable_pow_div_factorial (M * |t - t₀|)
-      simpa [mul_div_assoc] using hexp.mul_left ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖)
+      simpa [mul_div_assoc] using hexp.mul_left ‖(1 : Matrix X X ℝ)‖)
     (fun k => norm_peanoBakerTerm_le hA_le k t Set.right_mem_uIcc)
 
 /-- The state transition matrix is continuous on the segment between `t₀` and `t₁` (including
@@ -251,9 +257,9 @@ theorem continuousOn_stateTransitionMatrix (hA : Continuous A) {t₀ t₁ M : �
     (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) :
     ContinuousOn (fun t => stateTransitionMatrix A t t₀) (Set.uIcc t₀ t₁) := by
   have hu_summable :
-      Summable (fun k => ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖ * (M * |t₁ - t₀|) ^ k / (k)!) := by
+      Summable (fun k => ‖(1 : Matrix X X ℝ)‖ * (M * |t₁ - t₀|) ^ k / (k)!) := by
     have hexp := Real.summable_pow_div_factorial (M * |t₁ - t₀|)
-    simpa [mul_div_assoc] using hexp.mul_left ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖
+    simpa [mul_div_assoc] using hexp.mul_left ‖(1 : Matrix X X ℝ)‖
   exact continuousOn_tsum (fun k => (continuous_peanoBakerTerm hA k t₀).continuousOn)
     hu_summable (fun k t ht => norm_peanoBakerTerm_le_of_mem hA_le k t ht)
 
@@ -294,7 +300,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 theorem hasDerivAt_stateTransitionMatrix (hA : Continuous A) {t₀ t₁ M : ℝ}
     (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀) (A t * stateTransitionMatrix A t t₀) t := by
-  set C1 : ℝ := ‖(1 : Matrix (Fin n) (Fin n) ℝ)‖
+  set C1 : ℝ := ‖(1 : Matrix X X ℝ)‖
   have hM_nonneg : 0 ≤ M := (norm_nonneg (A t₀)).trans (hA_le t₀ Set.left_mem_uIcc)
   -- Step 1a: the FTC gives the derivative of each *shifted* term, at every point.
   have hderiv : ∀ (k : ℕ) (z : ℝ),
@@ -341,9 +347,9 @@ theorem hasDerivAt_stateTransitionMatrix (hA : Continuous A) {t₀ t₁ M : ℝ}
   -- Step 2: `Φ(·, t₀)` agrees with `1 + (shifted series)` on the open neighborhood between `t₀`
   -- and `t₁` of `t`, so it has the same derivative there.
   have hone_plus_deriv :
-      HasDerivAt (fun z => (1 : Matrix (Fin n) (Fin n) ℝ) + ∑' k, peanoBakerTerm A (k + 1) z t₀)
+      HasDerivAt (fun z => (1 : Matrix X X ℝ) + ∑' k, peanoBakerTerm A (k + 1) z t₀)
         (A t * stateTransitionMatrix A t t₀) t := by
-    have := (hasDerivAt_const t (1 : Matrix (Fin n) (Fin n) ℝ)).add hshifted_deriv
+    have := (hasDerivAt_const t (1 : Matrix X X ℝ)).add hshifted_deriv
     rwa [zero_add] at this
   refine hone_plus_deriv.congr_of_eventuallyEq ?_
   filter_upwards [hopen.mem_nhds ht] with z hz
@@ -366,13 +372,13 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 theorem stateTransitionMatrix_self (t₀ : ℝ) :
     stateTransitionMatrix A t₀ t₀ = 1 := by
   have hterm : ∀ k, peanoBakerTerm A k t₀ t₀ =
-      if k = 0 then (1 : Matrix (Fin n) (Fin n) ℝ) else 0 := by
+      if k = 0 then (1 : Matrix X X ℝ) else 0 := by
     intro k
     cases k with
     | zero => simp [peanoBakerTerm]
     | succ k => simp [peanoBakerTerm, intervalIntegral.integral_same]
   rw [stateTransitionMatrix, tsum_congr hterm,
-    tsum_ite_eq 0 (fun _ => (1 : Matrix (Fin n) (Fin n) ℝ))]
+    tsum_ite_eq 0 (fun _ => (1 : Matrix X X ℝ))]
 
 /-- **Peano-Baker series: existence** (Hespanha, Theorem 5.1).
 `x(t) := Φ(t, t₀) *ᵥ x₀` solves the
@@ -390,14 +396,14 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. 
     $M \mapsto M x_0$ (continuous, since the domain is finite-dimensional). -/)]
 theorem hasDerivAt_stateTransitionMatrix_mulVec (hA : Continuous A) {t₀ t₁ M : ℝ}
     (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁)
-    (x₀ : Fin n → ℝ) :
+    (x₀ : X → ℝ) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ x₀)
       (A t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀)) t := by
   -- The fixed linear map `M ↦ M *ᵥ x₀`, as a continuous linear map (automatic: the domain
-  -- `Matrix (Fin n) (Fin n) ℝ` is finite-dimensional).
-  set L : Matrix (Fin n) (Fin n) ℝ →L[ℝ] (Fin n → ℝ) :=
+  -- `Matrix X X ℝ` is finite-dimensional).
+  set L : Matrix X X ℝ →L[ℝ] (X → ℝ) :=
     LinearMap.toContinuousLinearMap ((Matrix.mulVecBilin ℝ ℝ).flip x₀) with hL
-  have hL_apply : ∀ M' : Matrix (Fin n) (Fin n) ℝ, L M' = M' *ᵥ x₀ := fun M' => rfl
+  have hL_apply : ∀ M' : Matrix X X ℝ, L M' = M' *ᵥ x₀ := fun M' => rfl
   have hderiv := (L.hasFDerivAt (x := stateTransitionMatrix A t t₀)).comp_hasDerivAt t
     (hasDerivAt_stateTransitionMatrix hA hA_le ht)
   simpa [hL_apply, Matrix.mulVec_mulVec] using hderiv
@@ -421,7 +427,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     (\texttt{HasDerivAt.mul\_const}), then reassociate. -/)]
 theorem hasDerivAt_stateTransitionMatrix_mul (hA : Continuous A) {t₀ t₁ M : ℝ}
     (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁)
-    (C : Matrix (Fin n) (Fin n) ℝ) :
+    (C : Matrix X X ℝ) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀ * C)
       (A t * (stateTransitionMatrix A t t₀ * C)) t := by
   have hderiv := (hasDerivAt_stateTransitionMatrix hA hA_le ht).mul_const C
@@ -448,7 +454,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \cref{thm:hasDerivAt-stateTransitionMatrix-mul}, using $\Phi(t_0,t_0) = I$
     (\cref{thm:stateTransitionMatrix-self}) to fix the initial value. -/)]
 theorem isIntegralSolution_stateTransitionMatrix_mul (hA : Continuous A) {t₀ t₁ M : ℝ}
-    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (C : Matrix (Fin n) (Fin n) ℝ) :
+    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (C : Matrix X X ℝ) :
     IsIntegralSolution t₀ t₁ (fun t => stateTransitionMatrix A t t₀ * C) C
       (fun s Y => A s * Y) := by
   have hx_cont : ContinuousOn (fun t => stateTransitionMatrix A t t₀ * C) (Set.uIcc t₀ t₁) :=
@@ -496,7 +502,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     \cref{thm:hasDerivAt-stateTransitionMatrix-mulVec}, using $\Phi(t_0,t_0) = I$
     (\cref{thm:stateTransitionMatrix-self}) to fix the initial value. -/)]
 theorem isIntegralSolution_stateTransitionMatrix_mulVec (hA : Continuous A) {t₀ t₁ M : ℝ}
-    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ) :
+    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ) :
     IsIntegralSolution t₀ t₁ (fun t => stateTransitionMatrix A t t₀ *ᵥ x₀) x₀
       (fun s v => A s *ᵥ v) := by
   have hx_cont : ContinuousOn (fun t => stateTransitionMatrix A t t₀ *ᵥ x₀) (Set.uIcc t₀ t₁) :=
@@ -543,8 +549,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1. 
     since both solutions share the initial value $x_0$, the resulting bound on
     $\|x(t) - z(t)\|$ collapses to $0$. -/)]
 theorem stateTransitionMatrix_mulVec_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
-    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ)
-    {z : ℝ → Fin n → ℝ} (hz : IsIntegralSolution t₀ t₁ z x₀ (fun s v => A s *ᵥ v))
+    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ)
+    {z : ℝ → X → ℝ} (hz : IsIntegralSolution t₀ t₁ z x₀ (fun s v => A s *ᵥ v))
     (hz_cont : ContinuousOn z (Set.uIcc t₀ t₁)) :
     ∀ t ∈ Set.uIcc t₀ t₁, z t = stateTransitionMatrix A t t₀ *ᵥ x₀ := by
   -- A fixed Lipschitz constant for `v ↦ A t *ᵥ v`, valid for every `t` on the segment.
@@ -552,7 +558,7 @@ theorem stateTransitionMatrix_mulVec_unique (hA : Continuous A) {t₀ t₁ M : �
   have hL_pos : (0 : ℝ) < L := lt_of_lt_of_le one_pos (le_max_right M 1)
   have hM_le_L : M ≤ L := le_max_left M 1
   have hLip : ∀ t ∈ Set.uIcc t₀ t₁,
-      LipschitzWith ⟨L, hL_pos.le⟩ (fun v : Fin n → ℝ => A t *ᵥ v) := by
+      LipschitzWith ⟨L, hL_pos.le⟩ (fun v : X → ℝ => A t *ᵥ v) := by
     intro t ht
     refine LipschitzWith.of_dist_le_mul fun v₁ v₂ => ?_
     have hAt : ‖A t‖ ≤ L := (hA_le t ht).trans hM_le_L
@@ -561,7 +567,7 @@ theorem stateTransitionMatrix_mulVec_unique (hA : Continuous A) {t₀ t₁ M : �
       _ ≤ ‖A t‖ * ‖v₁ - v₂‖ := Matrix.linfty_opNorm_mulVec _ _
       _ ≤ L * dist v₁ v₂ := by rw [dist_eq_norm]; gcongr
   -- Feed `continuous_dependence_ODE` (Theorem 3.4) the zero perturbation `g := 0`.
-  have hbound := continuous_dependence_ODE (g := fun _ _ => (0 : Fin n → ℝ)) (μ := 0) hL_pos
+  have hbound := continuous_dependence_ODE (g := fun _ _ => (0 : X → ℝ)) (μ := 0) hL_pos
     (isIntegralSolution_stateTransitionMatrix_mulVec hA hA_le x₀) (by simpa using hz)
     ((continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
       ((continuousOn_stateTransitionMatrix hA hA_le).prodMk continuousOn_const))
@@ -587,8 +593,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.2
     $x_0 := e_i$, using $\Phi(t,t_0)\, e_i = (\Phi(t,t_0))_{\cdot,i}$
     (\texttt{Matrix.mulVec\_single\_one}). -/)]
 theorem stateTransitionMatrix_col_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
-    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (i : Fin n)
-    {z : ℝ → Fin n → ℝ} (hz : IsIntegralSolution t₀ t₁ z (Pi.single i 1) (fun s v => A s *ᵥ v))
+    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (i : X)
+    {z : ℝ → X → ℝ} (hz : IsIntegralSolution t₀ t₁ z (Pi.single i 1) (fun s v => A s *ᵥ v))
     (hz_cont : ContinuousOn z (Set.uIcc t₀ t₁)) :
     ∀ t ∈ Set.uIcc t₀ t₁, z t = (stateTransitionMatrix A t t₀).col i := by
   intro t ht
@@ -614,8 +620,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
     since both solutions share the initial value $C$, the resulting bound on
     $\|Y(t) - Z(t)\|$ collapses to $0$. -/)]
 theorem stateTransitionMatrix_mul_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
-    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (C : Matrix (Fin n) (Fin n) ℝ)
-    {Y : ℝ → Matrix (Fin n) (Fin n) ℝ} (hY : IsIntegralSolution t₀ t₁ Y C (fun s M' => A s * M'))
+    (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (C : Matrix X X ℝ)
+    {Y : ℝ → Matrix X X ℝ} (hY : IsIntegralSolution t₀ t₁ Y C (fun s M' => A s * M'))
     (hY_cont : ContinuousOn Y (Set.uIcc t₀ t₁)) :
     ∀ t ∈ Set.uIcc t₀ t₁, Y t = stateTransitionMatrix A t t₀ * C := by
   -- A fixed Lipschitz constant for `M' ↦ A t * M'`, valid for every `t` on the segment.
@@ -623,7 +629,7 @@ theorem stateTransitionMatrix_mul_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
   have hL_pos : (0 : ℝ) < L := lt_of_lt_of_le one_pos (le_max_right M 1)
   have hM_le_L : M ≤ L := le_max_left M 1
   have hLip : ∀ t ∈ Set.uIcc t₀ t₁,
-      LipschitzWith ⟨L, hL_pos.le⟩ (fun M' : Matrix (Fin n) (Fin n) ℝ => A t * M') := by
+      LipschitzWith ⟨L, hL_pos.le⟩ (fun M' : Matrix X X ℝ => A t * M') := by
     intro t ht
     refine LipschitzWith.of_dist_le_mul fun M₁ M₂ => ?_
     have hAt : ‖A t‖ ≤ L := (hA_le t ht).trans hM_le_L
@@ -633,7 +639,7 @@ theorem stateTransitionMatrix_mul_unique (hA : Continuous A) {t₀ t₁ M : ℝ}
       _ ≤ L * dist M₁ M₂ := by rw [dist_eq_norm]; gcongr
   -- Feed `continuous_dependence_ODE` (Theorem 3.4) the zero perturbation `g := 0`.
   have hbound := continuous_dependence_ODE
-    (g := fun _ _ => (0 : Matrix (Fin n) (Fin n) ℝ)) (μ := 0) hL_pos
+    (g := fun _ _ => (0 : Matrix X X ℝ)) (μ := 0) hL_pos
     (isIntegralSolution_stateTransitionMatrix_mul hA hA_le C) (by simpa using hY)
     ((continuous_fst.mul continuous_snd).comp_continuousOn
       ((continuousOn_stateTransitionMatrix hA hA_le).prodMk continuousOn_const))
@@ -651,7 +657,7 @@ anchored at `b`.
 
 This is `IsIntegralSolution.reanchor` at the two endpoints, `s := b` and `r := a`. -/
 private lemma isIntegralSolution_stateTransitionMatrix_mul_reanchor (hA : Continuous A) {a b M : ℝ}
-    (hA_le : ∀ r ∈ Set.uIcc a b, ‖A r‖ ≤ M) (C : Matrix (Fin n) (Fin n) ℝ) :
+    (hA_le : ∀ r ∈ Set.uIcc a b, ‖A r‖ ≤ M) (C : Matrix X X ℝ) :
     IsIntegralSolution b a (fun z => stateTransitionMatrix A z a * C)
       (stateTransitionMatrix A b a * C) (fun s Y => A s * Y) :=
   (isIntegralSolution_stateTransitionMatrix_mul hA hA_le C).reanchor
@@ -688,10 +694,10 @@ theorem stateTransitionMatrix_semigroup (hA : Continuous A) {τ s t M : ℝ} (h�
   have hA_le'_u : ∀ r ∈ Set.uIcc s t, ‖A r‖ ≤ M := by
     rw [Set.uIcc_of_le hst.le]
     exact fun r hr => hA_le r (Set.Icc_subset_Icc hτs le_rfl hr)
-  have hF_cont : Continuous (fun p : ℝ × Matrix (Fin n) (Fin n) ℝ => A p.1 * p.2) :=
+  have hF_cont : Continuous (fun p : ℝ × Matrix X X ℝ => A p.1 * p.2) :=
     (hA.comp continuous_fst).mul continuous_snd
   have hbase : IsIntegralSolution τ t (fun z => stateTransitionMatrix A z τ)
-      (1 : Matrix (Fin n) (Fin n) ℝ) (fun r Y => A r * Y) := by
+      (1 : Matrix X X ℝ) (fun r Y => A r * Y) := by
     simpa using isIntegralSolution_stateTransitionMatrix_mul hA hA_le_u 1
   have hre := hbase.reanchor hF_cont (continuousOn_stateTransitionMatrix hA hA_le_u) hs_mem
     Set.right_mem_uIcc
@@ -732,7 +738,7 @@ theorem stateTransitionMatrix_inv (hA : Continuous A) {t τ M : ℝ}
     have hY : IsIntegralSolution t τ (fun z => stateTransitionMatrix A z τ)
         (stateTransitionMatrix A t τ) (fun s Y => A s * Y) := by
       simpa using isIntegralSolution_stateTransitionMatrix_mul_reanchor hA hA_le
-        (1 : Matrix (Fin n) (Fin n) ℝ)
+        (1 : Matrix X X ℝ)
     have huniq := stateTransitionMatrix_mul_unique hA
       (show ∀ r ∈ Set.uIcc t τ, ‖A r‖ ≤ M by rwa [Set.uIcc_comm])
       (stateTransitionMatrix A t τ) hY
@@ -764,7 +770,7 @@ theorem stateTransitionMatrix_comp_of_mem (hA : Continuous A) {a b M : ℝ}
   have hY : IsIntegralSolution b a (fun z => stateTransitionMatrix A z a)
       (stateTransitionMatrix A b a) (fun r Y => A r * Y) := by
     simpa using isIntegralSolution_stateTransitionMatrix_mul_reanchor hA hA_le
-      (1 : Matrix (Fin n) (Fin n) ℝ)
+      (1 : Matrix X X ℝ)
   exact stateTransitionMatrix_mul_unique hA (show ∀ r ∈ Set.uIcc b a, ‖A r‖ ≤ M by
       rwa [Set.uIcc_comm]) (stateTransitionMatrix A b a) hY
     (show ContinuousOn (fun z => stateTransitionMatrix A z a) (Set.uIcc b a) by
@@ -875,8 +881,8 @@ theorem continuousOn_stateTransitionMatrix_snd (hA : Continuous A) {t t₁ M : �
   exact (stateTransitionMatrix_inv hA
     (fun r hr => hA_le r (Set.uIcc_subset_uIcc_left hτ' hr))).2.symm
 
-variable {m p : ℕ} {B : ℝ → Matrix (Fin n) (Fin m) ℝ} {u : ℝ → Fin m → ℝ}
-variable {C : ℝ → Matrix (Fin p) (Fin n) ℝ} {D : ℝ → Matrix (Fin p) (Fin m) ℝ}
+variable {U Y : Type*} [Fintype U] [Fintype Y] {B : ℝ → Matrix X U ℝ} {u : ℝ → U → ℝ}
+variable {C : ℝ → Matrix Y X ℝ} {D : ℝ → Matrix Y U ℝ}
 
 /-- **Integrating-factor step 1.** `w(t) := x₀ + ∫ τ in t₀..t, Φ(t₀,τ) *ᵥ (B(τ) *ᵥ u(τ))` has
 derivative `Φ(t₀,t) *ᵥ (B(t) *ᵥ u(t))` — an *ordinary* FTC fact, since `t₀` (unlike the outer `t`
@@ -885,7 +891,7 @@ depends on the differentiation variable. This avoids ever needing to differentia
 second argument, only integrate it (`continuousOn_stateTransitionMatrix_snd`). -/
 private lemma hasDerivAt_variationOfConstants_w (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
-    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
+    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : X → ℝ) :
     HasDerivAt (fun z => x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
       (stateTransitionMatrix A t₀ t *ᵥ (B t *ᵥ u t)) t := by
   have hF_cont : ContinuousOn (fun τ => stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
@@ -912,7 +918,7 @@ product rule on `Φ(·,t₀) *ᵥ w(·)` instead of a Leibniz rule.
 Proof: push `Φ(z,t₀)` through the integral defining `w` (as a fixed continuous linear map), then
 use `stateTransitionMatrix_comp_base` pointwise: `Φ(z,t₀) *ᵥ (Φ(t₀,τ) *ᵥ v) = Φ(z,τ) *ᵥ v`. -/
 private lemma variationOfConstants_eq_mulVec (hA : Continuous A) (hB : Continuous B)
-    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ)
+    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ)
     {z : ℝ} (hz : z ∈ Set.uIcc t₀ t₁) :
     stateTransitionMatrix A z t₀ *ᵥ x₀ +
         ∫ τ in t₀..z, stateTransitionMatrix A z τ *ᵥ (B τ *ᵥ u τ) =
@@ -920,9 +926,9 @@ private lemma variationOfConstants_eq_mulVec (hA : Continuous A) (hB : Continuou
         (x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ)) := by
   rw [Matrix.mulVec_add]
   congr 1
-  set L : (Fin n → ℝ) →L[ℝ] (Fin n → ℝ) :=
+  set L : (X → ℝ) →L[ℝ] (X → ℝ) :=
     LinearMap.toContinuousLinearMap (stateTransitionMatrix A z t₀).mulVecLin with hL
-  have hL_apply : ∀ v : Fin n → ℝ, L v = stateTransitionMatrix A z t₀ *ᵥ v :=
+  have hL_apply : ∀ v : X → ℝ, L v = stateTransitionMatrix A z t₀ *ᵥ v :=
     fun v => Matrix.mulVecLin_apply _ v
   have hA_le' : ∀ s ∈ Set.uIcc t₀ z, ‖A s‖ ≤ M := fun s hs =>
     hA_le s (Set.uIcc_subset_uIcc_left hz hs)
@@ -938,21 +944,22 @@ private lemma variationOfConstants_eq_mulVec (hA : Continuous A) (hB : Continuou
   rw [Matrix.mulVec_mulVec (B τ *ᵥ u τ), stateTransitionMatrix_comp_base hA hA_le' hτ]
 
 /-- **Integrating-factor step 3, matrix→CLM transport.** `M ↦ (v ↦ M *ᵥ v)`, as a continuous
-linear map from matrices into `(Fin n → ℝ) →L[ℝ] Fin n → ℝ`. Needed to turn a *matrix*-valued
+linear map from matrices into `(X → ℝ) →L[ℝ] X → ℝ`. Needed to turn a *matrix*-valued
 `HasDerivAt` (`hasDerivAt_stateTransitionMatrix`) into a `ContinuousLinearMap`-valued one, so
 `HasDerivAt.clm_apply` can differentiate `z ↦ Φ(z,t₀) *ᵥ w(z)` as a product of two moving paths.
 
 Built from `Matrix.mulVecBilin`, the curried linear (not yet continuous) version of `*ᵥ`, by
 applying `LinearMap.toContinuousLinearMap` twice — once to continuify each value
-`v ↦ M *ᵥ v` (inner map, domain `Fin n → ℝ` is finite-dimensional), once to continuify the whole
-assignment `M ↦ (that CLM)` (outer map, domain `Matrix (Fin n) (Fin n) ℝ` is finite-dimensional
+`v ↦ M *ᵥ v` (inner map, domain `X → ℝ` is finite-dimensional), once to continuify the whole
+assignment `M ↦ (that CLM)` (outer map, domain `Matrix X X ℝ` is finite-dimensional
 too). -/
 private noncomputable def matrixMulVecCLM :
-    Matrix (Fin n) (Fin n) ℝ →L[ℝ] (Fin n → ℝ) →L[ℝ] Fin n → ℝ :=
+    Matrix X X ℝ →L[ℝ] (X → ℝ) →L[ℝ] X → ℝ :=
   LinearMap.toContinuousLinearMap
     (LinearMap.toContinuousLinearMap.toLinearMap.comp (Matrix.mulVecBilin ℝ ℝ))
 
-private lemma matrixMulVecCLM_apply (M : Matrix (Fin n) (Fin n) ℝ) (v : Fin n → ℝ) :
+omit [DecidableEq X] in
+private lemma matrixMulVecCLM_apply (M : Matrix X X ℝ) (v : X → ℝ) :
     matrixMulVecCLM M v = M *ᵥ v := rfl
 
 /-- **Integrating-factor step 3+4.** `z ↦ Φ(z,t₀) *ᵥ w(z)` solves `ẋ = A(t)x + B(t)u(t)` at
@@ -962,7 +969,7 @@ private lemma matrixMulVecCLM_apply (M : Matrix (Fin n) (Fin n) ℝ) (v : Fin n 
 `stateTransitionMatrix_self`) to cancel the forcing term down to `B(t) *ᵥ u(t)`. -/
 private lemma hasDerivAt_variationOfConstants_mulVec (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
-    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
+    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : X → ℝ) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ
         (x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ)))
       (A t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ
@@ -1006,7 +1013,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. 
     only ever integrated in its second argument, never differentiated there. -/)]
 theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
-    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : Fin n → ℝ) :
+    {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : X → ℝ) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ x₀ +
         ∫ τ in t₀..z, stateTransitionMatrix A z τ *ᵥ (B τ *ᵥ u τ))
       (A t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +
@@ -1027,7 +1034,7 @@ integral is over the degenerate interval `[t₀,t₀]`, and `Φ(t₀,t₀) = I`.
     forcing integral is over the degenerate interval and $\Phi(t_0,t_0) = I$.  Together with
     \cref{thm:hasDerivAt-variationOfConstants} this makes it a solution of the initial value
     problem, not merely of the differential equation. -/)]
-theorem variationOfConstants_self (t₀ : ℝ) (x₀ : Fin n → ℝ) :
+theorem variationOfConstants_self (t₀ : ℝ) (x₀ : X → ℝ) :
     stateTransitionMatrix A t₀ t₀ *ᵥ x₀ +
         ∫ τ in t₀..t₀, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ) = x₀ := by
   simp [stateTransitionMatrix_self]
@@ -1053,8 +1060,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. 
     forcing term $B(t)u(t)$ is common to both solutions and cancels in the difference, so it
     never enters the Lipschitz estimate. -/)]
 theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
-    {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {x₀ : Fin n → ℝ}
-    {z₁ z₂ : ℝ → Fin n → ℝ}
+    {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) {x₀ : X → ℝ}
+    {z₁ z₂ : ℝ → X → ℝ}
     (hz₁ : IsIntegralSolution t₀ t₁ z₁ x₀ (fun s v => A s *ᵥ v + B s *ᵥ u s))
     (hz₂ : IsIntegralSolution t₀ t₁ z₂ x₀ (fun s v => A s *ᵥ v + B s *ᵥ u s))
     (hz₁_cont : ContinuousOn z₁ (Set.uIcc t₀ t₁)) (hz₂_cont : ContinuousOn z₂ (Set.uIcc t₀ t₁)) :
@@ -1063,7 +1070,7 @@ theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu 
   have hL_pos : (0 : ℝ) < L := lt_of_lt_of_le one_pos (le_max_right M 1)
   have hM_le_L : M ≤ L := le_max_left M 1
   have hLip : ∀ t ∈ Set.uIcc t₀ t₁,
-      LipschitzWith ⟨L, hL_pos.le⟩ (fun v : Fin n → ℝ => A t *ᵥ v + B t *ᵥ u t) := by
+      LipschitzWith ⟨L, hL_pos.le⟩ (fun v : X → ℝ => A t *ᵥ v + B t *ᵥ u t) := by
     intro t ht
     refine LipschitzWith.of_dist_le_mul fun v₁ v₂ => ?_
     have hAt : ‖A t‖ ≤ L := (hA_le t ht).trans hM_le_L
@@ -1073,7 +1080,7 @@ theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu 
       _ = ‖A t *ᵥ (v₁ - v₂)‖ := by rw [Matrix.mulVec_sub]
       _ ≤ ‖A t‖ * ‖v₁ - v₂‖ := Matrix.linfty_opNorm_mulVec _ _
       _ ≤ L * dist v₁ v₂ := by rw [dist_eq_norm]; gcongr
-  have hbound := continuous_dependence_ODE (g := fun _ _ => (0 : Fin n → ℝ)) (μ := 0) hL_pos
+  have hbound := continuous_dependence_ODE (g := fun _ _ => (0 : X → ℝ)) (μ := 0) hL_pos
     hz₁ (by simpa using hz₂) hz₁_cont hz₂_cont
     (((hA.comp continuous_fst).matrix_mulVec continuous_snd).add
       ((hB.comp continuous_fst).matrix_mulVec (hu.comp continuous_fst)))
@@ -1102,7 +1109,7 @@ u(t)`, for `x(t)` as in `hasDerivAt_variationOfConstants`, splits into the *homo
     integral; the integrand is continuous by
     \cref{lem:continuousOn-stateTransitionMatrix-snd}. -/)]
 theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
-    {t₀ t M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) (x₀ : Fin n → ℝ) :
+    {t₀ t M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) (x₀ : X → ℝ) :
     C t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +
         ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)) + D t *ᵥ u t =
       C t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀) +
@@ -1110,7 +1117,7 @@ theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu 
   rw [Matrix.mulVec_add, add_assoc, add_assoc]
   congr 2
   -- `v ↦ C t *ᵥ v`, as a continuous linear map, commutes with the interval integral.
-  set L : (Fin n → ℝ) →L[ℝ] (Fin p → ℝ) := LinearMap.toContinuousLinearMap (C t).mulVecLin
+  set L : (X → ℝ) →L[ℝ] (Y → ℝ) := LinearMap.toContinuousLinearMap (C t).mulVecLin
     with hL
   have hΦ_cont : ContinuousOn (fun τ => stateTransitionMatrix A t τ) (Set.uIcc t₀ t) := by
     rw [Set.uIcc_comm]
@@ -1119,8 +1126,197 @@ theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu 
       (Set.uIcc t₀ t) :=
     (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
       (hΦ_cont.prodMk (hB.matrix_mulVec hu).continuousOn)
-  have hL_apply : ∀ v : Fin n → ℝ, L v = C t *ᵥ v := fun v => Matrix.mulVecLin_apply (C t) v
+  have hL_apply : ∀ v : X → ℝ, L v = C t *ᵥ v := fun v => Matrix.mulVecLin_apply (C t) v
   simpa [hL_apply] using
     (L.intervalIntegral_comp_comm (μ := volume) hcont.intervalIntegrable).symm
+
+/-- The forced response starts at `x₀`: at `t = t₀` the forcing integral is over a degenerate
+interval and `Φ(t₀,t₀) = I`. Plumbing for the integral form; `variationOfConstants_self` is
+the same fact stated on the formula itself. -/
+private theorem forcedResponse_self (t₀ : ℝ) (x₀ : X → ℝ) :
+    forcedResponse A B u t₀ x₀ t₀ = x₀ := variationOfConstants_self t₀ x₀
+
+/-- The forced response is continuous on the closed segment between `t₀` and `t₁`, endpoints
+included.
+
+Proof: `variationOfConstants_eq_mulVec` rewrites the response as `Φ(z,t₀) *ᵥ w(z)` with
+`w(z) = x₀ + ∫ τ in t₀..z, Φ(t₀,τ) *ᵥ (B τ *ᵥ u τ)`, whose integrand does not depend on `z` —
+only the limit does. Continuity of `w` is then the ordinary continuity of a primitive. -/
+@[blueprint "lem:continuousOn-forcedResponse"
+  (title := "Continuity of the forced response")
+  (latexEnv := "lemma")
+  (statement := /-- For continuous $A$, $B$ and $u$, the forced response
+    (\cref{def:forcedResponse}) is continuous on the closed segment between $t_0$ and $t_1$,
+    endpoints included. -/)
+  (proof := /-- The integrating-factor identity rewrites the response as
+    $\Phi(z,t_0)\,w(z)$ with
+    $w(z) = x_0 + \int_{t_0}^{z}\Phi(t_0,\tau)B(\tau)u(\tau)\,\mathrm{d}\tau$, whose
+    integrand does not depend on $z$ --- only the limit does.  Continuity of $w$ is then the
+    ordinary continuity of a primitive, and $\Phi(\cdot,t_0)$ is continuous by
+    \cref{lem:continuousOn-stateTransitionMatrix}. -/)]
+theorem continuousOn_forcedResponse (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
+    {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ) :
+    ContinuousOn (forcedResponse A B u t₀ x₀) (Set.uIcc t₀ t₁) := by
+  have hg : ContinuousOn (fun τ => stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
+      (Set.uIcc t₀ t₁) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      ((continuousOn_stateTransitionMatrix_snd hA hA_le).prodMk
+        (hB.matrix_mulVec hu).continuousOn)
+  have hw : ContinuousOn
+      (fun z => x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
+      (Set.uIcc t₀ t₁) :=
+    continuousOn_const.add
+      (intervalIntegral.continuousOn_primitive_interval (hg.integrableOn_compact isCompact_uIcc))
+  have hprod : ContinuousOn
+      (fun z => stateTransitionMatrix A z t₀ *ᵥ
+        (x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))) (Set.uIcc t₀ t₁) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      ((continuousOn_stateTransitionMatrix hA hA_le).prodMk hw)
+  exact hprod.congr fun z hz => variationOfConstants_eq_mulVec hA hB hu hA_le x₀ hz
+
+/-- **Variation of constants, integral form.** The forced response satisfies the integral
+equation `x(t) = x₀ + ∫ s in t₀..t, (A(s) x(s) + B(s) u(s))` on the whole closed segment.
+
+This is the differential statement `hasDerivAt_variationOfConstants` upgraded to include the
+endpoints, which the differential form cannot reach: its window has `t₀` as an endpoint for
+every choice of `t₁`, so `t₀` is never interior to it. The integral form has no such
+restriction, and `IsIntegralSolution.isIntegralCurveOn` converts it back into a derivative
+statement valid at `t₀` itself. -/
+@[blueprint "thm:isIntegralSolution-forcedResponse"
+  (title := "Variation of constants, integral form")
+  (statement := /-- The forced response (\cref{def:forcedResponse}) satisfies
+    \[
+      x(t) = x_0 + \int_{t_0}^{t}\bigl(A(s)x(s) + B(s)u(s)\bigr)\,\mathrm{d}s
+    \]
+    for every $t$ on the closed segment between $t_0$ and $t_1$.
+
+    This is \cref{thm:hasDerivAt-variationOfConstants} upgraded to include the endpoints, which
+    the differential form cannot reach: its window has $t_0$ as an endpoint for every choice of
+    $t_1$, so $t_0$ is never interior to it. -/)
+  (proof := /-- The fundamental theorem of calculus, applied to the derivative on the open
+    interval (\cref{thm:hasDerivAt-variationOfConstants}) together with continuity on the
+    closed one (\cref{lem:continuousOn-forcedResponse}), with
+    \cref{lem:variationOfConstants-self} fixing the initial value. -/)]
+theorem isIntegralSolution_forcedResponse (hA : Continuous A) (hB : Continuous B)
+    (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ) :
+    IsIntegralSolution t₀ t₁ (forcedResponse A B u t₀ x₀) x₀
+      (fun s v => A s *ᵥ v + B s *ᵥ u s) := by
+  have hx_cont := continuousOn_forcedResponse hA hB hu hA_le x₀
+  intro t ht
+  have huIcc_sub : Set.uIcc t₀ t ⊆ Set.uIcc t₀ t₁ := Set.uIcc_subset_uIcc_left ht
+  have huIoo_sub : Set.uIoo t₀ t ⊆ Set.uIoo t₀ t₁ := by
+    rw [← Set.Ioo_min_max, ← Set.Ioo_min_max]
+    exact Set.Ioo_subset_Ioo (le_min (min_le_left t₀ t₁) ht.1) (max_le (le_max_left t₀ t₁) ht.2)
+  have hx_cont' : ContinuousOn (forcedResponse A B u t₀ x₀) (Set.uIcc t₀ t) :=
+    hx_cont.mono huIcc_sub
+  have hf'_cont : ContinuousOn
+      (fun s => A s *ᵥ forcedResponse A B u t₀ x₀ s + B s *ᵥ u s) (Set.uIcc t₀ t) :=
+    ((continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      (hA.continuousOn.prodMk hx_cont')).add (hB.matrix_mulVec hu).continuousOn
+  have hderiv : ∀ z ∈ Set.uIoo t₀ t,
+      HasDerivWithinAt (forcedResponse A B u t₀ x₀)
+        (A z *ᵥ forcedResponse A B u t₀ x₀ z + B z *ᵥ u z) (Set.Ioi z) z :=
+    fun z hz =>
+      (hasDerivAt_variationOfConstants hA hB hu hA_le (huIoo_sub hz) x₀).hasDerivWithinAt
+  have hFTC := intervalIntegral.integral_eq_sub_of_hasDeriv_right hx_cont' hderiv
+    hf'_cont.intervalIntegrable
+  rw [forcedResponse_self] at hFTC
+  rw [hFTC]
+  abel
+
+/-! ## The solution as a trajectory of the system
+
+`ContinuousLinearSystem` (`LinearSystems/DefsSystem.lean`) bundles the coefficient maps and
+says what equation they satisfy. The results above are stated on `A` and `B` directly; this
+section is the thin skin that restates them for the bundled object. -/
+
+namespace ContinuousLinearSystem
+
+omit [Fintype Y] in
+/-- The forced response of a system is a trajectory of that system — at every time, with a
+two-sided derivative.
+
+Nothing is assumed beyond continuity of `A`, `B` and `u`, and that is global, so the formula
+solves the state equation on the whole line: for `t < t₀` the forcing integral simply runs
+backwards. Restricting to an interval — `Set.Ici t₀`, the ray the stability predicates quantify
+over — is `IsTrajectory.isTrajectoryOn`.
+
+Away from `t₀` this is `hasDerivAt_variationOfConstants` on a window with `t` in its interior,
+which `uIoo` being unordered already supplies on both sides. At `t₀` itself no such window
+exists, since the formula is anchored there; the two one-sided derivatives are taken from the
+integral form on `[t₀, t₀+1]` and `[t₀-1, t₀]` and glued. -/
+@[blueprint "thm:isTrajectory-forcedResponse"
+  (title := "The forced response is a trajectory")
+  (statement := /-- Let $s$ be a continuous-time linear system with continuous coefficients
+    $A$ and $B$, and let $u$ be a continuous input.  Then the forced response
+    (\cref{def:forcedResponse}) from any state $x_0$ at any time $t_0$ is a trajectory of $s$
+    (\cref{def:ctsLinearSystem-isTrajectory}) — it satisfies the state equation at every
+    $t \in \mathbb{R}$, with a two-sided derivative.
+
+    Restriction to an interval, in particular to the ray $[t_0,\infty)$ that the stability
+    predicates quantify over, is \cref{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
+  -/)
+  (proof := /-- For $t \ne t_0$, apply \cref{thm:hasDerivAt-variationOfConstants} on a window
+    having $t$ in its interior; since the window is unordered this covers $t < t_0$ as well as
+    $t > t_0$, and continuity of $A$ supplies the bound on the compact segment.
+
+    At $t = t_0$ no such window exists, because the formula is anchored there and $t_0$ is an
+    endpoint of every window.  Instead take the integral form
+    (\cref{thm:isIntegralSolution-forcedResponse}) on $[t_0, t_0+1]$ and on $[t_0-1, t_0]$; each
+    yields a one-sided derivative at $t_0$ (\cref{lem:isIntegralSolution-isIntegralCurveOn}),
+    and the two glue to a two-sided one. -/)]
+theorem isTrajectory_forcedResponse (s : ContinuousLinearSystem X U Y ℝ) (hA : Continuous s.A)
+    (hB : Continuous s.B) (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
+    s.IsTrajectory u (forcedResponse s.A s.B u t₀ x₀) := by
+  -- A one-sided derivative at every point of any compact window, from the integral form.
+  have key : ∀ t₁ : ℝ, ∀ t ∈ Set.uIcc t₀ t₁,
+      HasDerivWithinAt (forcedResponse s.A s.B u t₀ x₀)
+        (s.vectorField u t (forcedResponse s.A s.B u t₀ x₀ t)) (Set.uIcc t₀ t₁) t := by
+    intro t₁ t ht
+    obtain ⟨M, hM⟩ := isCompact_uIcc.exists_bound_of_continuousOn (f := s.A)
+      (s := Set.uIcc t₀ t₁) hA.continuousOn
+    have hFx : ContinuousOn
+        (fun r => s.A r *ᵥ forcedResponse s.A s.B u t₀ x₀ r + s.B r *ᵥ u r)
+        (Set.uIcc t₀ t₁) :=
+      ((continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+        (hA.continuousOn.prodMk (continuousOn_forcedResponse hA hB hu hM x₀))).add
+        (hB.matrix_mulVec hu).continuousOn
+    exact (isIntegralSolution_forcedResponse hA hB hu hM x₀).isIntegralCurveOn hFx t ht
+  intro t
+  rcases lt_trichotomy t t₀ with hlt | heq | hgt
+  · obtain ⟨M, hM⟩ := isCompact_uIcc.exists_bound_of_continuousOn (f := s.A)
+      (s := Set.uIcc t₀ (t - 1)) hA.continuousOn
+    have hmem : t ∈ Set.uIoo t₀ (t - 1) := by
+      rw [← Set.Ioo_min_max, min_eq_right (by linarith), max_eq_left (by linarith)]
+      exact ⟨by linarith, hlt⟩
+    exact hasDerivAt_variationOfConstants hA hB hu hM hmem x₀
+  · subst heq
+    have hR : HasDerivWithinAt (forcedResponse s.A s.B u t x₀)
+        (s.vectorField u t (forcedResponse s.A s.B u t x₀ t)) (Set.Ici t) t := by
+      refine (key (t + 1) t Set.left_mem_uIcc).mono_of_mem_nhdsWithin ?_
+      rw [Set.uIcc_of_le (by linarith : t ≤ t + 1)]
+      exact mem_nhdsWithin.2
+        ⟨Set.Iio (t + 1), isOpen_Iio, Set.mem_Iio.2 (by linarith),
+          fun r hr => ⟨hr.2, hr.1.le⟩⟩
+    have hL : HasDerivWithinAt (forcedResponse s.A s.B u t x₀)
+        (s.vectorField u t (forcedResponse s.A s.B u t x₀ t)) (Set.Iic t) t := by
+      refine (key (t - 1) t Set.left_mem_uIcc).mono_of_mem_nhdsWithin ?_
+      rw [Set.uIcc_comm, Set.uIcc_of_le (by linarith : t - 1 ≤ t)]
+      exact mem_nhdsWithin.2
+        ⟨Set.Ioi (t - 1), isOpen_Ioi, Set.mem_Ioi.2 (by linarith),
+          fun r hr => ⟨hr.1.le, hr.2⟩⟩
+    have hunion := hR.union hL
+    rw [Set.Ici_union_Iic] at hunion
+    exact hunion.hasDerivAt Filter.univ_mem
+  · obtain ⟨M, hM⟩ := isCompact_uIcc.exists_bound_of_continuousOn (f := s.A)
+      (s := Set.uIcc t₀ (t + 1)) hA.continuousOn
+    have hmem : t ∈ Set.uIoo t₀ (t + 1) := by
+      rw [← Set.Ioo_min_max, min_eq_left (by linarith), max_eq_right (by linarith)]
+      exact ⟨hgt, by linarith⟩
+    exact hasDerivAt_variationOfConstants hA hB hu hM hmem x₀
+
+end ContinuousLinearSystem
 
 end LinearSystems

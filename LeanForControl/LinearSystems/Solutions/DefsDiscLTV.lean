@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Basic
+import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
 import Mathlib.Data.Real.Basic
 import Architect
@@ -11,7 +11,7 @@ here, apart from the theorems proved about them (`DiscLTV.lean`), per the projec
 definitions live apart from theorems.
 
 Like `DefsCtsLTV.lean`, this file is about a genuinely *time-varying* state matrix
-`A : ℕ → Matrix (Fin n) (Fin n) ℝ`, but now for the discrete-time system `x(t+1) = A(t) x(t)`.
+`A : ℕ → Matrix X X ℝ`, but now for the discrete-time system `x(t+1) = A(t) x(t)`.
 
 * `discStateTransitionMatrix` — the discrete-time state transition matrix,
   `Φ(t, t₀) := A(t-1) A(t-2) ⋯ A(t₀+1) A(t₀)` for `t > t₀`, `Φ(t₀, t₀) := I`.
@@ -21,7 +21,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3.
 
 namespace LinearSystems
 
-variable {n : ℕ}
+variable {X : Type*} [Fintype X] [DecidableEq X]
 
 /-- The *discrete-time state transition matrix* of a time-varying linear system
 `x(t+1) = A(t) x(t)`:
@@ -44,8 +44,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, equation (5.1
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, equation (5.11).
   -/)]
-noncomputable def discStateTransitionMatrix (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t t₀ : ℕ) :
-    Matrix (Fin n) (Fin n) ℝ :=
+noncomputable def discStateTransitionMatrix (A : ℕ → Matrix X X ℝ) (t t₀ : ℕ) :
+    Matrix X X ℝ :=
   ((List.range (t - t₀)).map (fun k => A (t - 1 - k))).prod
 
 end LinearSystems

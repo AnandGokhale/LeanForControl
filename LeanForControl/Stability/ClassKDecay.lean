@@ -2,7 +2,7 @@ import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Comparison.Axioms
-import LeanForControl.Dini.DiniDeriv
+import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
@@ -528,7 +528,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4. Differences:
 - Uniqueness of the solution is not asserted, only existence of the class `KL` operator `σ`. -/
 @[blueprint "thm:class-KL-osgood"
   (title := "The decay ODE has a class $\\mathcal{KL}$ solution operator")
-  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the origin,
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the
+    origin,
     $\alpha(x) \le Lx$ on $(0, \mathrm{base}]$.  Then there is a class $\mathcal{KL}$
     function $\sigma$ (\cref{def:isClassKL}) with $\sigma(0, s) = 0$, $\sigma(r, 0) = r$,
     and such that for each $r$ the map $s \mapsto \sigma(r, s)$ solves

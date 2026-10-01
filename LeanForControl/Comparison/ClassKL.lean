@@ -529,13 +529,19 @@ theorem ClassKLGlobal.continuous_r {a : ℝ} (β : ClassKLGlobal) {s : ℝ} (hs 
   simp
 
 /-- Post-composing a global class KL function with a class K∞ function yields global class KL.
-    (Applies `α` to the output of `β`.) -/
+    (Applies `α` to the output of `β`.)
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, fifth bullet (the outer `α₁`),
+in the global case `a = ∞`. -/
 @[blueprint "lem:classKLGlobal-comp-left"
   (title := "Post-composition, global case")
   (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \alpha(\beta(r, s))$ is global class
     $\mathcal{KL}$.  No range hypothesis is needed, since $\alpha$ is defined on all of
-    $[0,\infty)$. -/)]
+    $[0,\infty)$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the outer
+    $\alpha_1$), in the global case $a = \infty$. -/)]
 def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
   toFun r s     := α.toFun (β.toFun r s)
   map_zero s hs := by simp only [β.map_zero s hs, α.map_zero]
@@ -612,12 +618,18 @@ noncomputable def ClassKLGlobal.min_KInfty (β : ClassKLGlobal) (α : ClassKInft
     · filter_upwards [] with s; exact min_le_left _ _
 
 /-- Pre-composing a global class KL function with a class K∞ function yields global class KL.
-    (Applies `α` to the first argument of `β`.) -/
+    (Applies `α` to the first argument of `β`.)
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, fifth bullet (the inner `α₂`),
+in the global case `a = ∞`. -/
 @[blueprint "lem:classKLGlobal-comp-right"
   (title := "Pre-composition in the radius argument, global case")
   (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $\alpha$ is class
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \beta(\alpha(r), s)$ is global class
-    $\mathcal{KL}$. -/)]
+    $\mathcal{KL}$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the inner
+    $\alpha_2$), in the global case $a = \infty$. -/)]
 def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
   toFun r s     := β.toFun (α.toFun r) s
   map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]

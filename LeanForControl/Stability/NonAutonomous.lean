@@ -4,7 +4,7 @@ import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Stability.ClassKDecay
-import LeanForControl.Dini.DiniDeriv
+import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.Stability.KLCharacterization
 
 import Mathlib.Analysis.Calculus.FDeriv.Basic

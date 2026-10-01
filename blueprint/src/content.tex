@@ -11,6 +11,67 @@
 
 \chapter{Linear systems}
 
+\section{The linear system objects}
+
+The data of a linear system --- the four coefficient maps $A$, $B$, $C$, $D$ --- together with
+the equations that data satisfies. There are two objects, one per time domain, carrying the same
+API under the same names: a continuous-time trajectory is an integral curve, a discrete-time one
+is a sequence satisfying a recursion, and those are not two cases of one notion.
+
+\subsection{Continuous time}
+
+\inputleannode{def:ctsLinearSystem}
+
+\inputleannode{def:ctsLinearSystem-vectorField}
+
+\inputleannode{def:ctsLinearSystem-outputMap}
+
+\inputleannode{def:ctsLinearSystem-isTrajectoryOn}
+
+\inputleannode{def:ctsLinearSystem-isTrajectory}
+
+\inputleannode{lem:ctsLinearSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}
+
+\subsection{Discrete time}
+
+\inputleannode{def:discLinearSystem}
+
+\inputleannode{def:discLinearSystem-vectorField}
+
+\inputleannode{def:discLinearSystem-outputMap}
+
+\inputleannode{def:discLinearSystem-isTrajectoryOn}
+
+\inputleannode{def:discLinearSystem-isTrajectory}
+
+\inputleannode{lem:discLinearSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:discLinearSystem-isTrajectory-isTrajectoryOn}
+
+\subsection{Time-invariant systems}
+
+A linear time-invariant system is a linear system whose coefficients do not vary with time,
+not an object of its own kind, so that every result about the time-varying object applies to it
+unchanged.
+
+\inputleannode{def:ctsLinearSystem-timeInvariant}
+
+\inputleannode{def:ctsLinearSystem-isTimeInvariant}
+
+\inputleannode{lem:ctsLinearSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:ctsLinearSystem-exists-eq}
+
+\inputleannode{def:discLinearSystem-timeInvariant}
+
+\inputleannode{def:discLinearSystem-isTimeInvariant}
+
+\inputleannode{lem:discLinearSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:discLinearSystem-exists-eq}
+
 \section{Observability and controllability matrices}
 
 For a finite-dimensional linear system
@@ -194,6 +255,32 @@ argument.
 \inputleannode{lem:variationOfConstants-self}
 
 \inputleannode{thm:variationOfConstants-unique}
+
+\subsection{The forced response as a trajectory}
+
+The solution theory above is stated on the coefficient maps $A$ and $B$, which is where the
+analysis lives. The results below restate it for the system object of
+\cref{def:ctsLinearSystem}: the variation-of-constants formula is a \emph{trajectory} in the
+sense of \cref{def:ctsLinearSystem-isTrajectory}, which the stability theory
+quantifies over.
+
+\inputleannode{def:forcedResponse}
+
+\inputleannode{lem:continuousOn-forcedResponse}
+
+\inputleannode{thm:isIntegralSolution-forcedResponse}
+
+\inputleannode{thm:isTrajectory-forcedResponse}
+
+\subsection{The time-invariant case}
+
+For a time-invariant system the state transition matrix is the matrix exponential, so the
+variation-of-constants formula collapses to the closed form every textbook writes.
+
+\inputleannode{lem:forcedResponse-timeInvariant}
+
+\inputleannode{thm:isTrajectory-timeInvariant}
+
 
 \inputleannode{lem:variationOfConstants-output}
 
@@ -736,6 +823,56 @@ what restores uniformity.
 \inputleannode{thm:lyapunov-uniformly-stable-NA}
 
 \inputleannode{thm:lyapunov-uniformly-asymptotic-stable-NA}
+
+\section{Linear time-varying systems}
+
+Hespanha states Lyapunov stability for the continuous-time linear time-varying system
+$\dot x = A(t)x$ as four conditions on its homogeneous state response
+$x(t) = \Phi(t, t_0)x_0$. None of them is taken as a definition here: each is proved
+\emph{equivalent} to the corresponding predicate of the previous sections, so the linear track
+and the nonlinear track share one notion of stability rather than two.
+
+Two things stand between the textbook conditions and the predicates, and both are settled in
+this section. The predicates quantify over trajectories where the textbook quantifies over
+initial conditions, which the trajectory characterization below closes in both directions; and
+the predicates bound the response from a \emph{ball} where the textbook bounds it from every
+initial state, which homogeneity closes. The second is why a linear system has no nontrivial
+region of attraction, recorded as
+\cref{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}.
+
+\subsection{The system and its response}
+
+\inputleannode{def:linearVectorField}
+
+\inputleannode{def:stateTransitionCLM}
+
+\inputleannode{lem:stateTransitionCLM-self}
+
+\inputleannode{lem:isEquilibriumNA-linearVectorField}
+
+\subsection{Trajectories are state transition responses}
+
+\inputleannode{thm:isTrajectoryNA-stateTransitionCLM}
+
+\inputleannode{thm:isTrajectoryNA-eq-stateTransitionCLM}
+
+\subsection{Hespanha's Definition 8.1}
+
+\inputleannode{lem:stableNA-linearVectorField-iff-opNorm}
+
+\inputleannode{thm:stableNA-linearVectorField-iff}
+
+\inputleannode{thm:uniformlyStableNA-linearVectorField-iff}
+
+\inputleannode{thm:asymptoticStableNA-linearVectorField-iff}
+
+\inputleannode{thm:globallyExponentiallyStableNA-linearVectorField-iff}
+
+\inputleannode{thm:exponentiallyStableNA-linearVectorField-iff}
+
+\inputleannode{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}
+
+\inputleannode{thm:unstableNA-linearVectorField-iff}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 

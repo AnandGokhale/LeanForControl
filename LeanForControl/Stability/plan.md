@@ -47,6 +47,7 @@ Files:
 | Lyapunov's uniform stability theorem | `lyapunov_uniformly_stable_NA` | `NonAutonomous.lean` | ✅ done |
 | Lyapunov's uniform asymptotic stability theorem | `lyapunov_uniformly_asymptotic_stable_NA` | `NonAutonomous.lean` | ✅ done |
 | Exponential stability from a power-law Lyapunov sandwich | — | — | planned — Khalil Theorem 4.10; `ExponentiallyStableNA` is defined but nothing concludes it |
+| Hespanha's Definition 8.1 for `ẋ = A(t)x` ⟺ the predicates below | `stableNA_linearVectorField_iff` and friends | `LinearSystems/Stability/Continuous/LyapunovLTV.lean` | ✅ done — see `L` |
 
 Files:
 
@@ -64,6 +65,12 @@ Files:
 - `KLCharacterization.lean` — class-K / class-KL characterizations of the stability
   predicates in `DefsNonAutonomous.lean`
 - `NonAutonomous.lean` — the two main Lyapunov theorems for non-autonomous systems
+
+The predicates of `DefsNonAutonomous.lean` are also the ones the linear track uses: Hespanha's
+Definition 8.1, stated on the state transition matrix of `ẋ = A(t)x`, is proved equivalent to
+them in `LinearSystems/Stability/Continuous/LyapunovLTV.lean` rather than re-defined there. That
+file lives on the linear side because its subject is the linear system; see
+`LeanForControl/LinearSystems/plan.md`.
 
 Comparison-function library (`LeanForControl/Comparison/`):
 

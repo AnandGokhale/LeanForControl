@@ -72,8 +72,7 @@ LeanForControl/                          ← Lean source
 ├── Stability/                           ← Lyapunov, LaSalle, and indirect-method theory
 ├── Comparison/                          ← class K / K∞ / KL / L comparison-function library
 ├── ODEs/                                ← comparison lemma, Gronwall–Bellman, ODE existence
-├── Dini/                                ← Dini derivatives (used by the comparison lemma)
-├── Analysis/                            ← supporting analysis and derivative-remainder lemmas
+├── Analysis/                            ← supporting analysis: Dini derivatives, limsup, integrals, derivative remainders
 ├── MatrixAlgebra/                       ← matrix facts with no system semantics (rank, spectrum, exp, quadratic forms)
 └── LinearSystems/                       ← solutions, controllability/observability, Hurwitz theory, Lyapunov equations
 blueprint/src/                           ← .tex sources (run leanblueprint web to render)

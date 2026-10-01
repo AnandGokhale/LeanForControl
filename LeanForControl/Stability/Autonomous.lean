@@ -585,7 +585,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2, with (4.6) in its
 compact-sublevel-set form. -/
 @[blueprint "thm:lyapunov-asymptotic-stable"
   (title := "Lyapunov's global asymptotic stability theorem")
-  (statement := /-- If $V$ is a global strict Lyapunov function (\cref{def:isStrictLyapunovFunction})
+  (statement := /-- If $V$ is a global strict Lyapunov function
+    (\cref{def:isStrictLyapunovFunction})
     and $f$ is continuous, then $x_{\mathrm{eq}}$ is globally asymptotically stable
     (\cref{def:globalAsymptoticStable}).
 
