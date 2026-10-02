@@ -1,7 +1,7 @@
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
 import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.MatrixAlgebra.QuadraticForm
-import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import Architect

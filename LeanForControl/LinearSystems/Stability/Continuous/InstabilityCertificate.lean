@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Spectrum
 import Mathlib.Analysis.Complex.Polynomial.Basic

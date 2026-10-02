@@ -1,11 +1,11 @@
-import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.DefsStability
 import Architect
 
 /-!
 # Basic theorems for Hurwitz matrices
 
 This file establishes the basic reusable API for the Hurwitz predicates defined in
-`LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz`.
+`LeanForControl.LinearSystems.Stability.DefsStability`.
 
 The definition intentionally allows zero-dimensional matrices. In dimension zero there
 are no nonzero eigenvectors, so every matrix is Hurwitz with every rate; the theorem
@@ -24,10 +24,14 @@ variable {n : ℕ}
 
 /-- Ordinary Hurwitz stability is exactly Hurwitz stability with rate zero.
 
+`IsHurwitz` is stated primitively rather than as `IsHurwitzWithRate 0`, so that it unfolds
+to `μ.re < 0` on the nose; `-0 = 0` is not definitional for the reals, which is why this is
+no longer `Iff.rfl`.
+
 Original: this is the compatibility lemma for the rate-indexed definition. -/
 theorem isHurwitz_iff_isHurwitzWithRate_zero (A : Matrix (Fin n) (Fin n) ℝ) :
-    IsHurwitz A ↔ IsHurwitzWithRate 0 A :=
-  Iff.rfl
+    IsHurwitz A ↔ IsHurwitzWithRate 0 A := by
+  simp [IsHurwitz, IsHurwitzWithRate]
 
 /-- A certified Hurwitz decay rate may be weakened.
 

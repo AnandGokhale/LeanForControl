@@ -24,6 +24,10 @@ is a sequence satisfying a recursion, and those are not two cases of one notion.
 
 \inputleannode{def:ctsLinearSystem-vectorField}
 
+\inputleannode{lem:ctsLinearSystem-vectorField-zero-input}
+
+\inputleannode{lem:ctsLinearSystem-vectorField-apply-zero}
+
 \inputleannode{def:ctsLinearSystem-outputMap}
 
 \inputleannode{def:ctsLinearSystem-isTrajectoryOn}
@@ -39,6 +43,10 @@ is a sequence satisfying a recursion, and those are not two cases of one notion.
 \inputleannode{def:discLinearSystem}
 
 \inputleannode{def:discLinearSystem-vectorField}
+
+\inputleannode{lem:discLinearSystem-vectorField-zero-input}
+
+\inputleannode{lem:discLinearSystem-vectorField-apply-zero}
 
 \inputleannode{def:discLinearSystem-outputMap}
 
@@ -156,12 +164,14 @@ kernel of the observability matrix.
 \section{Hurwitz stability}
 
 For a real square matrix $A$, Hurwitz stability is expressed through the complex eigenpairs
-of its entrywise complexification. The rate-indexed predicate records a strict spectral
-margin, and ordinary Hurwitz stability is the zero-rate case.
+of its entrywise complexification, over an abstract index type. The rate-indexed predicate
+records a strict spectral margin. Ordinary Hurwitz stability is the zero-rate case, but is
+stated separately rather than derived, so that it unfolds directly to
+$\operatorname{Re}(\mu) < 0$.
 
-\inputleannode{def:isHurwitzWithRate}
+\inputleannode{def:stability-isHurwitz}
 
-\inputleannode{def:isHurwitz}
+\inputleannode{def:stability-isHurwitzWithRate}
 
 \inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
 
@@ -268,6 +278,8 @@ quantifies over.
 
 \inputleannode{def:homogeneousResponse}
 
+\inputleannode{lem:homogeneousResponse-self}
+
 \inputleannode{lem:continuousOn-forcedResponse}
 
 \inputleannode{thm:isIntegralSolution-forcedResponse}
@@ -277,6 +289,12 @@ quantifies over.
 \inputleannode{lem:forcedResponse-zero-input}
 
 \inputleannode{thm:isTrajectory-homogeneousResponse}
+
+\inputleannode{thm:eq-homogeneousResponse-of-isIntegralCurveOn}
+
+\inputleannode{thm:isTrajectoryOn-homogeneousResponse}
+
+\inputleannode{thm:eq-homogeneousResponse-of-isTrajectoryOn}
 
 \subsection{The time-invariant case}
 
@@ -345,9 +363,13 @@ $\exp$ and $A$ alone.
 These say nothing about trajectories, initial times or state transition matrices — they are
 facts about $\exp$ and $A$ alone, and are proved as such. The complexification bridge is what
 lets spectral arguments, which must happen over $\mathbb{C}$, yield bounds on a real
-exponential; P6.5 collapses the exponential series to a finite polynomial in $A$.
+exponential; P6.5 collapses the exponential series to a finite polynomial in $A$. The
+eigenpair lemma is the half of spectral mapping that is pure power-series algebra, and is what
+turns an eigenvalue condition on $A$ into a statement about the growth of $e^{At}$.
 
 \inputleannode{lem:complexification-exp}
+
+\inputleannode{lem:exp-mulVec-eigenpair}
 
 \inputleannode{thm:exp-const-add}
 
@@ -848,19 +870,13 @@ region of attraction, recorded as
 
 \subsection{The system and its response}
 
-\inputleannode{lem:isEquilibriumNA-linear}
-
 \subsection{Trajectories are state transition responses}
-
-\inputleannode{thm:isTrajectoryNA-homogeneousResponse}
-
-\inputleannode{thm:isTrajectoryNA-eq-homogeneousResponse}
 
 \subsection{Hespanha's Definition 8.1}
 
-\inputleannode{lem:stableNA-linear-iff-bound}
+\inputleannode{lem:stableNA-linear-iff-boundedStateTransition}
 
-\inputleannode{thm:stableNA-linear-iff}
+\inputleannode{thm:stableNA-linear-iff-boundedHomogenousTrajectory}
 
 \inputleannode{thm:uniformlyStableNA-linear-iff}
 

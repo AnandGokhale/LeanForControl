@@ -1224,6 +1224,16 @@ theorem isIntegralSolution_forcedResponse (hA : Continuous A) (hB : Continuous B
   rw [hFTC]
   abel
 
+/-- The homogeneous response starts at `x₀`: `Φ(t₀, t₀) = I`. -/
+@[simp, blueprint "lem:homogeneousResponse-self"
+  (title := "The homogeneous response at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- The homogeneous response (\cref{def:homogeneousResponse}) takes the value
+    $x_{0}$ at $t = t_{0}$, since $\Phi(t_{0},t_{0}) = I$. -/)]
+theorem homogeneousResponse_self (A : ℝ → Matrix X X ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
+    homogeneousResponse A t₀ x₀ t₀ = x₀ := by
+  simp [homogeneousResponse, stateTransitionMatrix_self]
+
 /-- With the input switched off the forced response is the homogeneous response: the forcing
 integral has a zero integrand. -/
 @[simp, blueprint "lem:forcedResponse-zero-input"
@@ -1237,6 +1247,43 @@ theorem forcedResponse_zero_input (B : ℝ → Matrix X U ℝ) (t₀ : ℝ) (x�
     forcedResponse A B 0 t₀ x₀ = homogeneousResponse A t₀ x₀ := by
   funext t
   simp [forcedResponse, homogeneousResponse]
+
+/-- A continuous `A` is bounded on every compact time segment. -/
+private lemma exists_norm_le_uIcc (hA : Continuous A) (a b : ℝ) :
+    ∃ M : ℝ, ∀ s ∈ Set.uIcc a b, ‖A s‖ ≤ M :=
+  isCompact_uIcc.exists_bound_of_continuousOn hA.continuousOn
+
+/-- Every solution of `ẋ = A(t) x` on `[t₀, ∞)` is the homogeneous response from its own
+initial state.
+
+Uniqueness, repackaged from `stateTransitionMatrix_mulVec_unique` in the differential rather
+than the integral formulation. This is where Grönwall enters: together with
+`isIntegralCurve_homogeneousResponse` it says the solutions from `t₀` are *exactly* the
+responses `Φ(·, t₀) x₀`. -/
+@[blueprint "thm:eq-homogeneousResponse-of-isIntegralCurveOn"
+  (title := "Solutions are homogeneous responses")
+  (statement := /-- Let $A$ be continuous and let $x$ solve $\dot x = A(t)x$ on
+    $[t_{0}, \infty)$.  Then
+    \[
+      \varphi(t) = \Phi(t, t_{0})\, \varphi(t_{0}), \qquad \forall\, t \ge t_{0}.
+    \] -/)
+  (proof := /-- On $[t_{0}, t]$ the solution satisfies the integral equation
+    (\cref{lem:isIntegralCurveOn-isIntegralSolution}), so uniqueness for the Peano--Baker
+    solution (\cref{thm:stateTransitionMatrix-mulVec-unique}) identifies it with
+    $\Phi(\cdot, t_{0}) x(t_{0})$ there. -/)]
+theorem eq_homogeneousResponse_of_isIntegralCurveOn (hA : Continuous A) {z : ℝ → X → ℝ}
+    {t₀ : ℝ} (hz : IsIntegralCurveOn z (fun t v => A t *ᵥ v) (Set.Ici t₀)) {t : ℝ}
+    (ht : t₀ ≤ t) : z t = homogeneousResponse A t₀ (z t₀) t := by
+  obtain ⟨M, hM⟩ := exists_norm_le_uIcc hA t₀ t
+  have hcurve : IsIntegralCurveOn z (fun r v => A r *ᵥ v) (Set.uIcc t₀ t) := by
+    rw [Set.uIcc_of_le ht]
+    exact fun r hr => (hz r (Set.Icc_subset_Ici_self hr)).mono Set.Icc_subset_Ici_self
+  have hz_cont : ContinuousOn z (Set.uIcc t₀ t) := fun r hr => (hcurve r hr).continuousWithinAt
+  have hFx : ContinuousOn (fun r => A r *ᵥ z r) (Set.uIcc t₀ t) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      (hA.continuousOn.prodMk hz_cont)
+  exact stateTransitionMatrix_mulVec_unique hA hM (z t₀) (hcurve.isIntegralSolution hFx)
+    hz_cont t Set.right_mem_uIcc
 
 /-! ## The solution as a trajectory of the system
 
@@ -1334,6 +1381,7 @@ theorem isTrajectory_forcedResponse (s : ContinuousLinearSystem X U Y ℝ) (hA :
 omit [Fintype Y] in
 /-- The homogeneous response is a trajectory of the system under zero input.
 
+No hypothesis on `B` appears: the forcing term is switched off, so only `A` is involved.
 Hespanha's Definition 8.1 is stated about this map, so this is the form in which the solution
 theory reaches the stability theory. -/
 @[blueprint "thm:isTrajectory-homogeneousResponse"
@@ -1344,13 +1392,55 @@ theory reaches the stability theory. -/
 
     Definition 8.1 is stated about this map, so this is the form in which the solution theory
     reaches the stability theory. -/)
-  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at $u = 0$, rewritten by
-    \cref{lem:forcedResponse-zero-input}. -/)]
+  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at a system with no inputs, where the
+    forcing integral vanishes (\cref{lem:forcedResponse-zero-input}).  The dummy system is an
+    artefact of the proof: only $A$ appears in the statement, and no hypothesis on $B$ is
+    needed. -/)]
 theorem isTrajectory_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
-    (hA : Continuous s.A) (hB : Continuous s.B) (t₀ : ℝ) (x₀ : X → ℝ) :
+    (hA : Continuous s.A) (t₀ : ℝ) (x₀ : X → ℝ) :
     s.IsTrajectory 0 (homogeneousResponse s.A t₀ x₀) := by
-  have h := isTrajectory_forcedResponse (u := 0) s hA hB continuous_const t₀ x₀
-  rwa [forcedResponse_zero_input] at h
+  have h := isTrajectory_forcedResponse
+    (s := ({ A := s.A, B := fun _ => (0 : Matrix X Unit ℝ),
+             C := fun _ => (0 : Matrix Unit X ℝ),
+             D := fun _ => (0 : Matrix Unit Unit ℝ) } : ContinuousLinearSystem X Unit Unit ℝ))
+    (u := (0 : ℝ → Unit → ℝ)) hA continuous_const continuous_const t₀ x₀
+  rw [forcedResponse_zero_input] at h
+  simpa [IsTrajectory, vectorField_zero_input] using h
+
+omit [Fintype Y] in
+/-- The homogeneous response is a trajectory of the unforced system on the forward ray.
+
+`isTrajectory_homogeneousResponse` restricted to `[t₀, ∞)`, which is the interval the stability
+predicates quantify over. -/
+@[blueprint "thm:isTrajectoryOn-homogeneousResponse"
+  (title := "The homogeneous response is a trajectory on the forward ray")
+  (statement := /-- The homogeneous response (\cref{def:homogeneousResponse}) is a trajectory
+    of the unforced system (\cref{def:ctsLinearSystem-isTrajectoryOn}) on $[t_{0}, \infty)$. -/)
+  (proof := /-- \cref{thm:isTrajectory-homogeneousResponse}, restricted to the ray by
+    \cref{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}. -/)]
+theorem isTrajectoryOn_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+    (hA : Continuous s.A) (t₀ : ℝ) (x₀ : X → ℝ) :
+    s.IsTrajectoryOn 0 (homogeneousResponse s.A t₀ x₀) (Set.Ici t₀) :=
+  (isTrajectory_homogeneousResponse s hA t₀ x₀).isTrajectoryOn _
+
+omit [Fintype Y] in
+/-- Every trajectory of the unforced system is its own homogeneous response.
+
+Uniqueness, read on the system object. This is where Grönwall enters, through
+`stateTransitionMatrix_mulVec_unique`. -/
+@[blueprint "thm:eq-homogeneousResponse-of-isTrajectoryOn"
+  (title := "Trajectories of the unforced system are homogeneous responses")
+  (statement := /-- Let $s$ have continuous $A$ and let $\varphi$ be a trajectory of the
+    unforced system on $[t_{0}, \infty)$ (\cref{def:ctsLinearSystem-isTrajectoryOn}).  Then
+    $\varphi(t) = \Phi(t, t_{0})\,\varphi(t_{0})$ for every $t \ge t_{0}$. -/)
+  (proof := /-- \cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}, after reducing the
+    unforced state equation by \cref{lem:ctsLinearSystem-vectorField-zero-input}. -/)]
+theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLinearSystem X U Y ℝ)
+    (hA : Continuous s.A) {x : ℝ → X → ℝ} {t₀ : ℝ}
+    (hx : s.IsTrajectoryOn 0 x (Set.Ici t₀)) {t : ℝ} (ht : t₀ ≤ t) :
+    x t = homogeneousResponse s.A t₀ (x t₀) t := by
+  rw [IsTrajectoryOn, vectorField_zero_input] at hx
+  exact eq_homogeneousResponse_of_isIntegralCurveOn hA hx ht
 
 end ContinuousLinearSystem
 

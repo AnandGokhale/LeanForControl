@@ -21,6 +21,9 @@ open scoped Matrix.Norms.Frobenius
 
 variable {n : ℕ}
 
+-- `X` is bound per-declaration rather than at namespace level: as a section variable it would
+-- shadow `Polynomial.X` in `section FinitePolynomial` below.
+
 /-- Entrywise complexification commutes with the matrix exponential. -/
 @[blueprint "lem:complexification-exp"
   (title := "Complexification commutes with the matrix exponential")
@@ -35,13 +38,13 @@ variable {n : ℕ}
     $\mathbb{C}$, to norm bounds on a real exponential. -/)
   (proof := /-- Entrywise complexification is a continuous ring homomorphism, and $\exp$
     commutes with any such. -/)]
-lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
+lemma complexification_exp {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℝ) :
     (exp A).map (algebraMap ℝ ℂ) = exp (A.map (algebraMap ℝ ℂ)) := by
-  letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℝ) :=
+  letI : NormedAlgebra ℚ (Matrix X X ℝ) :=
     NormedAlgebra.restrictScalars ℚ ℝ _
-  letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℂ) :=
+  letI : NormedAlgebra ℚ (Matrix X X ℂ) :=
     NormedAlgebra.restrictScalars ℚ ℂ _
-  let φ : Matrix (Fin n) (Fin n) ℝ →+* Matrix (Fin n) (Fin n) ℂ :=
+  let φ : Matrix X X ℝ →+* Matrix X X ℂ :=
     (algebraMap ℝ ℂ).mapMatrix
   have hφ : Continuous φ := by
     apply continuous_pi
@@ -51,6 +54,82 @@ lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
     exact Complex.continuous_ofReal.comp
       ((continuous_apply j).comp (continuous_apply i))
   simpa [φ] using NormedSpace.map_exp φ hφ A
+
+section Eigenpair
+
+/-!
+## The exponential on an eigenvector
+
+`e^{M}` acts on an eigenvector of `M` by exponentiating the eigenvalue. This is the half of
+spectral mapping that is pure power-series algebra: no spectral theory is used, only that
+`N ↦ N *ᵥ v` is a continuous linear map and therefore passes through the `tsum` that defines
+`exp`.
+
+Stated over an arbitrary index type, since everything downstream of the
+`ContinuousLinearSystem` object is, and over an arbitrary `RCLike` scalar field, since the
+eigenpairs it is applied to live over `ℂ` while the matrices they come from live over `ℝ`.
+-/
+
+variable {𝕜 : Type*} [RCLike 𝕜] {X : Type*} [Fintype X] [DecidableEq X]
+
+/-- Multiplication by a *fixed* vector, as a continuous linear map in the matrix.
+
+`Matrix.mulVecLin` fills the other slot — `v ↦ M *ᵥ v` for a fixed matrix; `Matrix.mulVecBilin`
+is linear in both, and flipping it gives the slot needed here, namely the one that moves a
+`tsum` over matrices inside a `*ᵥ`. Continuity is automatic: the domain is finite-dimensional. -/
+private noncomputable def mulVecRightL (v : X → 𝕜) : Matrix X X 𝕜 →L[𝕜] (X → 𝕜) :=
+  LinearMap.toContinuousLinearMap ((Matrix.mulVecBilin 𝕜 𝕜).flip v)
+
+omit [DecidableEq X] in
+@[simp]
+private lemma mulVecRightL_apply (v : X → 𝕜) (M : Matrix X X 𝕜) :
+    mulVecRightL v M = M *ᵥ v := rfl
+
+/-- An eigenvector of `M` is an eigenvector of `e^{M}`, with eigenvalue `e^{μ}`.
+
+This is the direction of spectral mapping that needs no spectral theory: `M^k *ᵥ v = μ^k • v`
+by induction, and the exponential series is a `tsum` that the continuous linear map
+`N ↦ N *ᵥ v` commutes with.
+
+Reference: standard power-series functional calculus for the exponential. -/
+@[blueprint "lem:exp-mulVec-eigenpair"
+  (title := "The exponential acts on an eigenvector by exponentiating its eigenvalue")
+  (latexEnv := "lemma")
+  (statement := /-- Let $M$ be a square matrix and let $(\mu, v)$ be an eigenpair of $M$, so
+    that $Mv = \mu v$.  Then
+    \[
+      e^{M} v = e^{\mu}\, v .
+    \]
+
+    Reference: standard power-series functional calculus for the exponential.
+  -/)
+  (proof := /-- Induction gives $M^{k}v = \mu^{k}v$ for every $k$.  The map $N \mapsto Nv$ is
+    linear and continuous, so it commutes with the sum defining
+    $e^{M} = \sum_{k} (k!)^{-1} M^{k}$, giving
+    $e^{M}v = \sum_{k} (k!)^{-1}\mu^{k} v = e^{\mu} v$. -/)]
+theorem exp_mulVec_of_mulVec_eq_smul (M : Matrix X X 𝕜) (μ : 𝕜) (v : X → 𝕜)
+    (h : M *ᵥ v = μ • v) :
+    exp M *ᵥ v = exp μ • v := by
+  have hpow : ∀ k : ℕ, M ^ k *ᵥ v = μ ^ k • v := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih =>
+        calc M ^ (k + 1) *ᵥ v = M ^ k *ᵥ (M *ᵥ v) := by
+              rw [pow_succ, Matrix.mulVec_mulVec]
+          _ = μ ^ (k + 1) • v := by
+              rw [h, Matrix.mulVec_smul, ih, smul_smul, pow_succ, mul_comm]
+  rw [congrFun (NormedSpace.exp_eq_tsum 𝕜) M]
+  change mulVecRightL v (∑' k : ℕ, ((k.factorial : 𝕜)⁻¹) • M ^ k) = _
+  rw [(mulVecRightL v).map_tsum (NormedSpace.expSeries_summable' M)]
+  simp_rw [mulVecRightL_apply, Matrix.smul_mulVec, hpow, smul_smul]
+  have hs : Summable fun k : ℕ => (k.factorial : 𝕜)⁻¹ * μ ^ k := by
+    simpa [smul_eq_mul] using NormedSpace.expSeries_summable' (𝕂 := 𝕜) μ
+  rw [hs.tsum_smul_const]
+  congr 1
+  simpa [smul_eq_mul] using (congrFun (NormedSpace.exp_eq_tsum 𝕜) μ).symm
+
+end Eigenpair
 
 section FinitePolynomial
 

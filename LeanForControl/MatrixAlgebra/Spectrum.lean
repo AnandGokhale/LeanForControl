@@ -9,6 +9,8 @@ import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Matrix.BilinearForm
 
+import LeanForControl.MatrixAlgebra.Exponential
+
 /-!
 # Eigenpairs, generalized eigenspaces, and spectral mapping for matrices
 
@@ -243,61 +245,6 @@ noncomputable section
 
 open scoped Matrix.Norms.Frobenius
 
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E]
-
-private lemma continuousLinearMap_exp_apply_of_apply_eq_smul
-    (T : E →L[ℂ] E) (μ : ℂ) (v : E) (hTv : T v = μ • v) :
-    NormedSpace.exp T v = Complex.exp μ • v := by
-  have hpow : ∀ k : ℕ, (T ^ k) v = μ ^ k • v := by
-    intro k
-    induction k with
-    | zero => simp
-    | succ k ih =>
-        rw [pow_succ, ContinuousLinearMap.mul_apply, hTv, map_smul, ih]
-        rw [smul_smul]
-        simp only [pow_succ]
-        rw [mul_comm]
-  rw [congrFun (NormedSpace.exp_eq_tsum ℂ) T]
-  change (ContinuousLinearMap.apply ℂ E v)
-    (∑' n : ℕ, ((n.factorial : ℂ)⁻¹) • T ^ n) = _
-  rw [(ContinuousLinearMap.apply ℂ E v).map_tsum (NormedSpace.expSeries_summable' T)]
-  change (∑' n : ℕ, (((n.factorial : ℂ)⁻¹) • T ^ n) v) = _
-  simp_rw [ContinuousLinearMap.smul_apply, hpow, smul_smul]
-  have hs : Summable (fun n : ℕ ↦ (n.factorial : ℂ)⁻¹ * μ ^ n) := by
-    simpa [smul_eq_mul] using NormedSpace.expSeries_summable' (𝕂 := ℂ) μ
-  rw [hs.tsum_smul_const]
-  congr 1
-  rw [Complex.exp_eq_exp_ℂ]
-  simpa [smul_eq_mul] using (congrFun (NormedSpace.exp_eq_tsum ℂ) μ).symm
-
-/-- The matrix exponential acts on an eigenvector by exponentiating its eigenvalue.
-
-Reference: standard power-series functional calculus for the exponential. -/
-private lemma exp_mulVec_of_mulVec_eq_smul
-    (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) (v : Fin n → ℂ)
-    (hAv : A *ᵥ v = μ • v) :
-    NormedSpace.exp A *ᵥ v = Complex.exp μ • v := by
-  letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℂ) :=
-    NormedAlgebra.restrictScalars ℚ ℂ _
-  letI : NormedAlgebra ℚ
-      (EuclideanSpace ℂ (Fin n) →L[ℂ] EuclideanSpace ℂ (Fin n)) :=
-    NormedAlgebra.restrictScalars ℚ ℂ _
-  let e := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℂ)
-  let T := e A
-  have hTv : T (WithLp.toLp 2 v) = μ • WithLp.toLp 2 v := by
-    simpa [T, e] using congrArg (WithLp.toLp 2) hAv
-  have heig := continuousLinearMap_exp_apply_of_apply_eq_smul
-    T μ (WithLp.toLp 2 v) hTv
-  have he_cont : Continuous e := by
-    exact LinearMap.continuous_of_finiteDimensional e.toAlgEquiv.toLinearMap
-  have hmap : e (NormedSpace.exp A) = NormedSpace.exp T := by
-    simpa [T] using NormedSpace.map_exp e he_cont A
-  apply WithLp.toLp_injective 2
-  rw [← Matrix.toEuclideanCLM_toLp (NormedSpace.exp A) v]
-  change (e (NormedSpace.exp A)) (WithLp.toLp 2 v) = _
-  rw [hmap, heig]
-  simp
-
 /-- Every spectral value of a complex matrix exponential is the exponential of an
 eigenvalue of the original matrix.
 
@@ -306,14 +253,14 @@ It is proved algebraically by restricting `A` to an eigenspace of `exp A`.
 
 Reference: standard spectral-mapping theorem for the matrix exponential. -/
 lemma exists_eigenpair_of_mem_spectrum_exp
-    (A : Matrix (Fin n) (Fin n) ℂ) {z : ℂ}
+    {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℂ) {z : ℂ}
     (hz : z ∈ spectrum ℂ (NormedSpace.exp A)) :
-    ∃ (μ : ℂ) (v : Fin n → ℂ),
+    ∃ (μ : ℂ) (v : X → ℂ),
       v ≠ 0 ∧ A *ᵥ v = μ • v ∧ z = Complex.exp μ := by
   have hz' : Module.End.HasEigenvalue (NormedSpace.exp A).toLin' z := by
     rw [Module.End.hasEigenvalue_iff_mem_spectrum, Matrix.spectrum_toLin']
     exact hz
-  let W : Submodule ℂ (Fin n → ℂ) := Module.End.eigenspace (NormedSpace.exp A).toLin' z
+  let W : Submodule ℂ (X → ℂ) := Module.End.eigenspace (NormedSpace.exp A).toLin' z
   have hW : W ≠ ⊥ := by simpa [W] using hz'
   letI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW
   have hcommMatrix : Commute (NormedSpace.exp A) A := (Commute.refl A).exp_left
@@ -325,15 +272,17 @@ lemma exists_eigenpair_of_mem_spectrum_exp
   obtain ⟨μ, hμ⟩ := Module.End.exists_eigenvalue AW
   obtain ⟨w, hw⟩ := hμ.exists_hasEigenvector
   have hAwSubtype : AW w = μ • w := hw.apply_eq_smul
-  have hAw : A *ᵥ (w : Fin n → ℂ) = μ • (w : Fin n → ℂ) := by
+  have hAw : A *ᵥ (w : X → ℂ) = μ • (w : X → ℂ) := by
     have := congrArg Subtype.val hAwSubtype
     simpa [AW, Matrix.toLin'_apply'] using this
-  have hExpAw : NormedSpace.exp A *ᵥ (w : Fin n → ℂ) = z • (w : Fin n → ℂ) := by
-    have hwmem : (w : Fin n → ℂ) ∈
+  have hExpAw : NormedSpace.exp A *ᵥ (w : X → ℂ) = z • (w : X → ℂ) := by
+    have hwmem : (w : X → ℂ) ∈
         Module.End.eigenspace (NormedSpace.exp A).toLin' z := w.property
     have := Module.End.mem_eigenspace_iff.mp hwmem
     simpa [Matrix.toLin'_apply'] using this
-  have hseries := exp_mulVec_of_mulVec_eq_smul A μ (w : Fin n → ℂ) hAw
+  have hseries : NormedSpace.exp A *ᵥ (w : X → ℂ) = Complex.exp μ • (w : X → ℂ) := by
+    rw [Complex.exp_eq_exp_ℂ]
+    exact exp_mulVec_of_mulVec_eq_smul A μ _ hAw
   have hzexp : z = Complex.exp μ := by
     apply smul_left_injective ℂ (Subtype.coe_ne_coe.mpr hw.2)
     exact hExpAw.symm.trans hseries

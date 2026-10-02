@@ -4,7 +4,7 @@ import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
-import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.Stability.Autonomous
 import Architect
 
