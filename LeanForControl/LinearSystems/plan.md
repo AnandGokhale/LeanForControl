@@ -214,7 +214,7 @@ visible gap rather than an unstated assumption that this library is continuous-t
 | Unstable eigenvalue ⟹ instability (affine-linear) | `unstable_affineLinear_of_eigenvalue_re_pos` | `Stability/LyapunovIndirect/LinearizationInstability.lean` | ✅ done |
 | Unstable eigenvalue ⟹ instability (`C¹` field) | `unstable_of_exists_complex_eigenvalue_re_pos` | `Stability/LyapunovIndirect/NonlinearInstability.lean` | ✅ done |
 | Chetaev's instability theorem (exponential form) | `unstable_of_exponential_chetaev` | `Stability/LyapunovIndirect/Chetaev.lean` | ✅ done (closes issue #8) |
-| Chetaev's instability theorem (boundary form) | — | — | planned — see `Stability/plan.md` |
+| Chetaev's instability theorem (boundary form) | `unstable_of_geometric_chetaev` | `Stability/LyapunovIndirect/Chetaev.lean` | ✅ done |
 | Hespanha Def. 8.1 for `ẋ = A(t)x` ⟺ the `*NA` stability predicates | `stableNA_linearVectorField_iff`, `asymptoticStableNA_linearVectorField_iff`, `exponentiallyStableNA_linearVectorField_iff`, `unstableNA_linearVectorField_iff` | `Stability/LinearTimeVarying.lean` | ✅ done |
 
 Rule 2 keeps this list short by construction: a theorem whose hypothesis is about `A` and whose

@@ -9,7 +9,7 @@
 | Global asymptotic stability via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Autonomous.lean` | ✅ done |
 | Local asymptotic stability via strict local Lyapunov function | `lyapunov_local_asymptotic_stable` | `Autonomous.lean` | ✅ done |
 | Quantitative exponential Chetaev criterion | `unstable_of_exponential_chetaev` | `LyapunovIndirect/Chetaev.lean` | ✅ done |
-| Boundary-form/geometric Chetaev theorem | — | — | planned |
+| Boundary-form/geometric Chetaev theorem | `unstable_of_geometric_chetaev` | `LyapunovIndirect/Chetaev.lean` | ✅ done |
 | ω-limit set of a trajectory | `omegaLimitTraj`, `mem_omegaLimitTraj_iff` | `LaSalle.lean` | ✅ done |
 | ω-limit set is positively invariant (Khalil Lemma 4.1) | `isPositivelyInvariant_omegaLimitTraj` | `LaSalle.lean` | ✅ done |
 | `V̇ = 0` on the ω-limit set | `lieDeriv_eq_zero_on_omegaLimitTraj` | `LaSalle.lean` | ✅ done |
@@ -22,6 +22,7 @@
 Files:
 
 - `DefsAutonomous.lean` — autonomous trajectory, stability, and Lyapunov-function definitions
+- `DefsChetaev.lean` — bounded boundary-form Chetaev certificates
 - `Autonomous.lean` — Lyapunov stability / GAS / LAS
 - `LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
 - `LyapunovIndirect/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
@@ -171,7 +172,7 @@ References for the two branches: Khalil, *Nonlinear Systems*; Hahn,
 
 ---
 
-## Still planned: boundary-form/geometric Chetaev theorem
+## Boundary-form/geometric Chetaev theorem
 
 The completed `unstable_of_exponential_chetaev` is a quantitative criterion tailored to the indirect-method proof. It assumes, on a closed
 ball, a quadratic upper bound
@@ -179,23 +180,22 @@ ball, a quadratic upper bound
 `2 α V(x) ≤ DV(x) f(x)`, and positive values of `V` arbitrarily close to `x_eq`.
 Those hypotheses are enough for the quadratic certificate above.
 
-This is distinct from the more general boundary-form version of Chetaev's theorem, which
-remains planned. Its geometric hypotheses should package an open set `D₁` with `x_eq` on
-its frontier, positivity of `V` and its Lie derivative in `D₁`, and vanishing of `V` on
-the relevant boundary. The target conclusion should use `Unstable`, which already quantifies
-over finite forward segments, so finite-time escape is handled without a global-trajectory
-assumption.
+The completed `unstable_of_geometric_chetaev` packages these hypotheses in
+`IsChetaevFunction`: an open set `D` with `x_eq` on its frontier, a positive radius, global
+`C¹` regularity of `V`, positivity and strictly positive Lie derivative on `D` inside the
+closed certificate ball, and vanishing of `V` on the relevant part of `frontier D`. Its
+conclusion is `Unstable`, which quantifies over finite forward segments and therefore does not
+assume global trajectories.
 
-The remaining work for that general theorem is geometric rather than spectral:
+The proof is geometric rather than spectral:
 
-- define a boundary-form Chetaev certificate in a dedicated definitions file;
-- derive positive seed points from the frontier hypothesis;
-- control retention in the positive component and exit through its boundary;
-- replace the quantitative exponential growth estimate by the compact-set argument for a
-  merely positive Lie derivative.
+- the frontier hypothesis supplies positive seed points arbitrarily close to the base point;
+- a first-exit argument and boundary vanishing retain the cutoff solution in `D`;
+- the retained positive superlevel set in the closed ball is compact, so the strictly positive
+  Lie derivative has a positive minimum and forces linear growth to the certificate sphere.
 
-The smooth-cutoff continuation, finite-segment chain rule, and first-exit machinery already
-proved for the exponential criterion should be reusable.
+The theorem reuses the smooth-cutoff continuation, finite-segment chain rule, and first-sphere
+machinery proved for the exponential criterion.
 
 ---
 

@@ -18,7 +18,6 @@ import LeanForControl.LinearSystems.Controllability.Hautus
 import LeanForControl.LinearSystems.Controllability.Reachability
 import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.KalmanDecomposition.Decomposition
-import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.KalmanDecomposition.DecompositionExamples
 import LeanForControl.LinearSystems.KalmanDecomposition.Defs
 import LeanForControl.LinearSystems.Observability.Defs
@@ -47,6 +46,7 @@ import LeanForControl.ODEs.PicardLindelof
 import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.ClassKDecay
 import LeanForControl.Stability.DefsAutonomous
+import LeanForControl.Stability.DefsChetaev
 import LeanForControl.Stability.DefsNonAutonomous
 import LeanForControl.Stability.KLCharacterization
 import LeanForControl.Stability.KLCharacterizationTools

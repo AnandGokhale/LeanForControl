@@ -86,8 +86,8 @@ home_page/                               ← Jekyll scaffold for the project's h
 `LeanForControl/Stability/plan.md` is the maintained roadmap for the stability corner of
 the library. It records the autonomous and non-autonomous Lyapunov theory, LaSalle, and both
 branches of Lyapunov's indirect method (in `Stability/LyapunovIndirect/`). The quantitative
-exponential Chetaev criterion used by the nonlinear instability proof is complete; the more
-general boundary-form/geometric Chetaev theorem remains planned.
+exponential Chetaev criterion used by the nonlinear instability proof and a bounded
+boundary-form/geometric Chetaev theorem are complete.
 `LeanForControl/LinearSystems/plan.md` tracks the linear track — solutions, the structural
 theory, and the Hurwitz foundation — along with its directory-placement rules. The other
 directories don't have a written roadmap yet; check
