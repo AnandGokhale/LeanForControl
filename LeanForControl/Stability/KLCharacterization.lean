@@ -100,11 +100,30 @@ private lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_
     rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
     exact le_csSup (hbdd_of_le s₂ hs₂)
       (mem_normsReachableFromBall ht₀ ht hφ (h_init.trans hs₁₂))
+  have hω_cont_zero : ContinuousWithinAt ω (Set.Icc 0 a) 0 := by
+    rw [Metric.continuousWithinAt_iff]
+    intro ε hε
+    obtain ⟨δ, hδ, hUSε⟩ := hUS (ε / 2) (half_pos hε)
+    refine ⟨min δ a, lt_min hδ ha, ?_⟩
+    intro r hr hrdist
+    have hr0 : 0 ≤ r := hr.1
+    have hrlt : r < min δ a := by
+      simpa only [Real.dist_eq, sub_zero, abs_of_nonneg hr0] using hrdist
+    have hω_nonneg : 0 ≤ ω r :=
+      Real.sSup_nonneg fun d ⟨_, _, _, _, _, _, _, hd⟩ => hd ▸ norm_nonneg _
+    have hω_upper : ω r ≤ ε / 2 := by
+      apply Real.sSup_le
+      · rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
+        exact (hUSε t₀ ht₀ φ hφ
+          (h_init.trans_lt (hrlt.trans_le (min_le_left δ a))) t ht).le
+      · positivity
+    rw [hω_zero, Real.dist_eq, sub_zero, abs_of_nonneg hω_nonneg]
+    linarith
   -- Class K majorant: exists_strictMono_upper_bound lifts it to a strictly increasing bound
   obtain ⟨b, α, hα_bound⟩ : ∃ (b : ℝ) (α : ClassK a b),
       ∀ r ∈ Set.Ico 0 a, ω r ≤ α.toFun r := by
     obtain ⟨g, b, hb, hg_zero, hg_a, hg_cont, hg_mono, hg_bound⟩ :=
-      exists_strictMono_upper_bound a ha ω hω_zero hω_mono
+      exists_strictMono_upper_bound a ha ω hω_zero hω_mono hω_cont_zero
     exact ⟨b, ClassK.of_strictMono ha hb g hg_zero hg_a hg_cont hg_mono,
       fun r hr => hg_bound r hr.1 hr.2.le⟩
   refine ⟨a, b, α, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
@@ -149,7 +168,26 @@ private lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ �
     rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
     exact le_csSup (hbdd_of_le r₂ hr₂)
       (mem_normsReachableFromBall ht₀ ht hφ (h_init.trans h_le))
-  obtain ⟨α, hα_bound⟩ := exists_classKInfty_upper_bound ω hω_zero hω_mono
+  have hω_cont_zero : ContinuousWithinAt ω (Set.Ici 0) 0 := by
+    rw [Metric.continuousWithinAt_iff]
+    intro ε hε
+    refine ⟨δ (ε / 2), hδ_pos (ε / 2) (half_pos hε), ?_⟩
+    intro r hr hrdist
+    have hr0 : 0 ≤ r := hr
+    have hrlt : r < δ (ε / 2) := by
+      simpa only [Real.dist_eq, sub_zero, abs_of_nonneg hr0] using hrdist
+    have hω_nonneg : 0 ≤ ω r :=
+      Real.sSup_nonneg fun d ⟨_, _, _, _, _, _, _, hd⟩ => hd ▸ norm_nonneg _
+    have hω_upper : ω r ≤ ε / 2 := by
+      apply Real.sSup_le
+      · rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
+        exact (hδ_stab (ε / 2) (half_pos hε) t₀ ht₀ φ hφ
+          (h_init.trans_lt hrlt) t ht).le
+      · positivity
+    rw [hω_zero, Real.dist_eq, sub_zero, abs_of_nonneg hω_nonneg]
+    linarith
+  obtain ⟨α, hα_bound⟩ :=
+    exists_classKInfty_upper_bound ω hω_zero hω_mono hω_cont_zero
   refine ⟨α, fun t₀ ht₀ φ hφ t ht => ?_⟩
   calc ‖φ t - x_eq‖
       ≤ ω ‖φ t₀ - x_eq‖       := le_csSup (hbdd_of_le _ (norm_nonneg _))

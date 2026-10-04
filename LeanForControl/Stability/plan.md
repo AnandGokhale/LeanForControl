@@ -77,8 +77,8 @@ Comparison-function library (`LeanForControl/Comparison/`):
 - `ClassK.lean`, `ClassKInfty.lean`, `ClassKL.lean`, `ClassL.lean` — the class K, K∞, KL,
   and L function structures and their algebra (composition, inverse, restriction)
 - `Axioms.lean` — assumed comparison-function results (three axioms)
-- `../axioms.lean` — the two monotone-to-strictly-monotone smoothing axioms, plus the
-  bounded-interval majorant proved from them
+- `../axioms.lean` — the monotone-to-strictly-monotone lower smoothing axiom, plus proved
+  global and bounded upper majorants (with the necessary right-continuity-at-zero hypothesis)
 - `ComparisonFunctions.lean` — shared comparison-function infrastructure
 
 ---

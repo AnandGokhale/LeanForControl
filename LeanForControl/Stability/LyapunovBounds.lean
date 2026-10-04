@@ -31,7 +31,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 2. Show `ψ(‖x‖) ≤ V(x) ≤ φ(‖x‖)` (`V_ge_psi`, `V_le_phi`).
 3. Establish that `ψ` is zero at 0, positive away from 0, and monotone (`psi_fn_zero`,
    `psi_fn_pos`, `psi_fn_mono`); similarly for `φ` (`phi_fn_zero`, `phi_fn_mono`).
-4. Apply the smoothing axioms from `LeanForControl.axioms` to obtain strictly monotone
+4. Apply the smoothing results from `LeanForControl.axioms` to obtain strictly monotone
    continuous functions `f ≤ ψ` and `φ ≤ g`.
 5. Package via `ClassK.of_strictMono` to get the class K bounds `α₁ ≤ ψ ≤ V` and
    `V ≤ φ ≤ α₂`.
@@ -211,6 +211,46 @@ private lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn
     rintro _ ⟨x, hx, rfl⟩
     exact ⟨x, Metric.closedBall_subset_closedBall h_le hx, rfl⟩
 
+/-- The radial supremum `phi_fn V` is right-continuous at zero when `V` is continuous
+there and vanishes there.  This is the extra caller-side fact needed by a corrected
+upper-majorant theorem; monotonicity alone does not imply it. -/
+private lemma phi_fn_continuousWithinAt_zero {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r)
+    (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r)) (hV_zero : V 0 = 0) :
+    ContinuousWithinAt (phi_fn V) (Set.Ici 0) 0 := by
+  rw [Metric.continuousWithinAt_iff]
+  intro ε hε
+  obtain ⟨δ, hδ, hVδ⟩ := Metric.continuousWithinAt_iff.mp
+    (hV_cont.continuousWithinAt (Metric.mem_closedBall_self hr.le)) (ε / 2) (by positivity)
+  refine ⟨min δ r, lt_min hδ hr, ?_⟩
+  intro s hs hsδ
+  have hs0 : 0 ≤ s := hs
+  have hsδ' : s < min δ r := by
+    simpa only [Real.dist_eq, sub_zero, abs_of_nonneg hs0] using hsδ
+  have hs_le_r : s ≤ r := (hsδ'.trans_le (min_le_right δ r)).le
+  have hphi_nonneg : 0 ≤ phi_fn V s := by
+    apply le_csSup
+    · exact ((isCompact_closedBall (0 : ℝⁿ) s).image_of_continuousOn
+        (hV_cont.mono (Metric.closedBall_subset_closedBall hs_le_r))).bddAbove
+    · exact ⟨0, Metric.mem_closedBall_self hs0, hV_zero⟩
+  have hphi_upper : phi_fn V s ≤ ε / 2 := by
+    unfold phi_fn
+    apply Real.sSup_le
+    · intro y hy
+      obtain ⟨x, hx, rfl⟩ := hy
+      have hs_lt_r : s < r := hsδ'.trans_le (min_le_right δ r)
+      have hx_r : x ∈ closedBall (0 : ℝⁿ) r :=
+        Metric.closedBall_subset_closedBall hs_lt_r.le hx
+      have hx_δ : dist x 0 < δ := by
+        rw [dist_zero_right]
+        exact (mem_closedBall_zero_iff.mp hx).trans_lt
+          (hsδ'.trans_le (min_le_left δ r))
+      have := hVδ hx_r hx_δ
+      rw [Real.dist_eq, hV_zero, sub_zero] at this
+      exact (le_abs_self (V x)).trans this.le
+    · positivity
+  rw [phi_fn_zero hV_zero, Real.dist_eq, sub_zero, abs_of_nonneg hphi_nonneg]
+  linarith
+
 -- ─── 5. Upper Sandwich: V(x) ≤ φ(‖x‖) ───────────────────────────────────────
 
 /-- `V(x) ≤ φ(‖x‖)`: since `x ∈ closedBall 0 ‖x‖`, `V(x)` is an element of the
@@ -233,7 +273,7 @@ private lemma V_le_phi {r : ℝ} {V : ℝⁿ → ℝ}
 
 /-! ### Packaging ψ and φ into Class K Functions
 
-We apply the smoothing axioms from `LeanForControl.axioms` to turn the (merely monotone)
+We apply the smoothing results from `LeanForControl.axioms` to turn the (merely monotone)
 comparison functions `ψ` and `φ` into full `ClassK` structures.  The final bounds follow
 by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
 
@@ -262,12 +302,13 @@ private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
 private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) :
     ∃ (b₂ : ℝ) (α₂ : ClassK r b₂), ∀ s, 0 ≤ s → s ≤ r → phi_fn V s ≤ α₂.toFun s := by
-  -- Verify the two hypotheses of the upper smoothing axiom for φ
+  -- Verify the hypotheses of the upper smoothing theorem for φ
   have hφ_zero : phi_fn V 0 = 0 := phi_fn_zero hV_zero
   have hφ_mono : MonotoneOn (phi_fn V) (Set.Icc 0 r) :=
     fun _ hs₁ _ hs₂ hle => phi_fn_mono hV_cont hle hs₂.2 hs₁.1
-  -- Apply the smoothing axiom to get a strictly monotone continuous φ ≤ f
+  -- Apply the smoothing theorem to get a strictly monotone continuous φ ≤ f
   rcases exists_strictMono_upper_bound r hr (phi_fn V) hφ_zero hφ_mono
+      ((phi_fn_continuousWithinAt_zero hr hV_cont hV_zero).mono Set.Icc_subset_Ici_self)
     with ⟨f, b₂, hb₂_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
   exact ⟨b₂, ClassK.of_strictMono hr hb₂_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
 
