@@ -182,7 +182,7 @@ it: an element of spectral radius below one has a contractive power.
 
 \section{Matrix Lyapunov equations and quadratic certificates}
 
-\inputleannode{def:solvesContinuousLyapunovEquation}
+\inputleannode{def:continuousLyapunovEquation}
 
 \inputleannode{def:quadraticForm}
 
@@ -260,9 +260,9 @@ difficulty is that the elapsed time appears both as the upper limit of integrati
 integrand; the proof factors the two apart rather than differentiating $\Phi$ in its second
 argument.
 
-\inputleannode{thm:hasDerivAt-variationOfConstants}
+\inputleannode{thm:hasDerivAt-forcedResponse}
 
-\inputleannode{lem:variationOfConstants-self}
+\inputleannode{lem:forcedResponse-self}
 
 \inputleannode{thm:variationOfConstants-unique}
 
@@ -306,7 +306,7 @@ variation-of-constants formula collapses to the closed form every textbook write
 \inputleannode{thm:isTrajectory-timeInvariant}
 
 
-\inputleannode{lem:variationOfConstants-output}
+\inputleannode{lem:forcedResponse-output}
 
 \section{Discrete-time systems}
 
@@ -866,7 +866,7 @@ initial conditions, which the trajectory characterization below closes in both d
 the predicates bound the response from a \emph{ball} where the textbook bounds it from every
 initial state, which homogeneity closes. The second is why a linear system has no nontrivial
 region of attraction, recorded as
-\cref{cor:exponentiallyStableNA-linear-iff-globally}.
+\cref{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}.
 
 \subsection{The system and its response}
 
@@ -874,21 +874,21 @@ region of attraction, recorded as
 
 \subsection{Hespanha's Definition 8.1}
 
-\inputleannode{lem:stableNA-linear-iff-boundedStateTransition}
+\inputleannode{lem:stableNA-iff-boundedStateTransition}
 
-\inputleannode{thm:stableNA-linear-iff-boundedHomogenousTrajectory}
+\inputleannode{thm:stableNA-iff-boundedHomogeneousResponse}
 
-\inputleannode{thm:uniformlyStableNA-linear-iff}
+\inputleannode{thm:uniformlyStableNA-iff-uniformlyBoundedStateTransition}
 
-\inputleannode{thm:asymptoticStableNA-linear-iff}
+\inputleannode{thm:asymptoticStableNA-iff-decayingHomogeneousResponse}
 
-\inputleannode{thm:globallyExponentiallyStableNA-linear-iff}
+\inputleannode{thm:globallyExponentiallyStableNA-iff-decayingStateTransition}
 
-\inputleannode{thm:exponentiallyStableNA-linear-iff}
+\inputleannode{thm:exponentiallyStableNA-iff-decayingStateTransition}
 
-\inputleannode{cor:exponentiallyStableNA-linear-iff-globally}
+\inputleannode{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}
 
-\inputleannode{thm:unstableNA-linear-iff}
+\inputleannode{thm:unstableNA-iff-unboundedHomogeneousResponse}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 

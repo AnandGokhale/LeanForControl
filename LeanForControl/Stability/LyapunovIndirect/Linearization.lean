@@ -37,7 +37,7 @@ private theorem exists_centeredQuadraticForm_decay
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
     (hJac : fderiv ℝ f x_eq =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
-    (hLyap : SolvesContinuousLyapunovEquation A P 1) :
+    (hLyap : ContinuousLyapunovEquation A P 1) :
     ∃ r > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
       fderiv ℝ (centeredQuadraticForm P x_eq) x (f x) ≤
         -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by
@@ -79,7 +79,7 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
     (hf : ContDiff ℝ 1 f) (heq : f x_eq = 0)
     (hJac : fderiv ℝ f x_eq =
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
-    (hP : P.PosDef) (hLyap : SolvesContinuousLyapunovEquation A P 1) :
+    (hP : P.PosDef) (hLyap : ContinuousLyapunovEquation A P 1) :
     LocallyExponentiallyStable f x_eq := by
   letI : NeZero n := ⟨Nat.ne_of_gt hn⟩
   obtain ⟨r, hr, hdecay⟩ :=

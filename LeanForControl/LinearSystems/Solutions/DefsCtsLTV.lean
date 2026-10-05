@@ -5,13 +5,13 @@ import Architect
 /-!
 # Definitions for continuous-time solutions
 
-Every `def` and `noncomputable def` for the `Solutions` directory lives here, apart from the
-theorems proved about them (`CtsLTV.lean`), per the project convention: definitions live
-apart from theorems.
+Every `def` and `noncomputable def` for the `Solutions` directory's continuous-time track
+lives here, apart from the theorems proved about them (`CtsLTV.lean`, `CtsLTI.lean`), per the
+project convention: definitions live apart from theorems. The discrete-time definitions are in
+`DefsDiscLTV.lean`.
 
-Unlike the rest of `LinearSystems/`, this file is about a genuinely *time-varying* state
-matrix `A : ℝ → Matrix X X ℝ`, not the constant `A` fixed by `Basic.lean`'s
-conventions for the LTI-only files.
+The state matrix is a genuinely *time-varying* `A : ℝ → Matrix X X ℝ`; the time-invariant case
+is the constant map, specialized in `CtsLTI.lean` rather than given a separate definition.
 
 `Matrix X X ℝ` carries no default norm instance in Mathlib (there are several
 natural choices). We fix the `L∞`-operator norm, `Matrix.Norms.Operator`, throughout this
@@ -21,6 +21,9 @@ track: it is the one under which matrix multiplication is submultiplicative
 * `peanoBakerTerm` — the `k`-th iterated-integral term of the Peano-Baker series.
 * `stateTransitionMatrix` — the Peano-Baker series itself,
   `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
+* `forcedResponse` — the variation-of-constants formula for `ẋ = A(t)x + B(t)u(t)`.
+* `homogeneousResponse` — the forced response with the input switched off, which is what the
+  stability theory is stated about.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 -/

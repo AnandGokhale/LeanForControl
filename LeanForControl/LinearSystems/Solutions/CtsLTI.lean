@@ -227,7 +227,7 @@ theorem forcedResponse_timeInvariant (B : Matrix X U ℝ) (u : ℝ → U → ℝ
   congr 1
   exact intervalIntegral.integral_congr fun τ _ => by rw [stateTransitionMatrix_const]
 
-namespace ContinuousLinearSystem
+namespace ContinuousLinearSystem.timeInvariant
 
 /-- The closed-form response of a time-invariant system is a trajectory of that system. -/
 @[blueprint "thm:isTrajectory-timeInvariant"
@@ -241,7 +241,7 @@ namespace ContinuousLinearSystem
   (proof := /-- \cref{thm:isTrajectory-forcedResponse} at the time-invariant system, whose
     coefficient maps are constant and so continuous, rewritten by
     \cref{lem:forcedResponse-timeInvariant}. -/)]
-theorem isTrajectory_timeInvariant (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ)
+theorem isTrajectory (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ)
     (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
     (timeInvariant A B C D).IsTrajectory u
       (fun t => NormedSpace.exp ((t - t₀) • A) *ᵥ x₀
@@ -251,7 +251,7 @@ theorem isTrajectory_timeInvariant (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D 
     isTrajectory_forcedResponse (timeInvariant A B C D) continuous_const continuous_const hu t₀ x₀
   rwa [funext fun t => forcedResponse_timeInvariant A B u t₀ x₀ t] at h
 
-end ContinuousLinearSystem
+end ContinuousLinearSystem.timeInvariant
 
 end TimeInvariant
 

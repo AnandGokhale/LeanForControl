@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Stability.Continuous.ExponentialStability
+import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.Normed.Operator.Mul
@@ -28,24 +29,6 @@ open scoped Matrix.Norms.Frobenius RealInnerProductSpace Topology BigOperators
 variable {n : ℕ}
 
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
-
-/-- `P` solves the continuous-time Lyapunov equation for `A` and `Q` when
-`P A + Aᵀ P = -Q`.
-
-Reference: Khalil, *Nonlinear Systems*. -/
-@[blueprint "def:solvesContinuousLyapunovEquation"
-  (title := "Continuous-time Lyapunov equation")
-  (statement := /-- For real square matrices $A$, $P$, and $Q$, the matrix $P$
-    solves the continuous-time Lyapunov equation with forcing $Q$ when
-    \[
-      PA+A^{\mathsf T}P=-Q.
-    \]
-
-    Reference: Khalil, \emph{Nonlinear Systems}.
-  -/)]
-def SolvesContinuousLyapunovEquation
-    (A P Q : Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  P * A + Aᵀ * P = -Q
 
 /-- The continuous linear map extracting entry `(i, j)` of a matrix.
 
@@ -373,9 +356,9 @@ theorem exists_posDef_unique_solution_continuous_lyapunov_of_exp_nat_norm_lt_one
     (A Q : Matrix (Fin n) (Fin n) ℝ) (hQ : Q.PosDef)
     (hcontract : ∃ m : ℕ, 0 < m ∧ ‖NormedSpace.exp ((m : ℝ) • A)‖ < 1) :
     ∃ P : Matrix (Fin n) (Fin n) ℝ,
-      P.PosDef ∧ SolvesContinuousLyapunovEquation A P Q ∧
+      P.PosDef ∧ ContinuousLyapunovEquation A P Q ∧
         ∀ S : Matrix (Fin n) (Fin n) ℝ,
-          SolvesContinuousLyapunovEquation A S Q → S = P := by
+          ContinuousLyapunovEquation A S Q → S = P := by
   obtain ⟨m, hm, hC⟩ := hcontract
   let C := NormedSpace.exp ((m : ℝ) • A)
   let R := finiteLyapunovIntegral A Q m
@@ -451,9 +434,9 @@ theorem IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov
     {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsHurwitz A)
     (Q : Matrix (Fin n) (Fin n) ℝ) (hQ : Q.PosDef) :
     ∃ P : Matrix (Fin n) (Fin n) ℝ,
-      P.PosDef ∧ SolvesContinuousLyapunovEquation A P Q ∧
+      P.PosDef ∧ ContinuousLyapunovEquation A P Q ∧
         ∀ S : Matrix (Fin n) (Fin n) ℝ,
-          SolvesContinuousLyapunovEquation A S Q → S = P :=
+          ContinuousLyapunovEquation A S Q → S = P :=
   exists_posDef_unique_solution_continuous_lyapunov_of_exp_nat_norm_lt_one
     A Q hQ hA.exists_norm_exp_nat_smul_lt_one
 
@@ -463,7 +446,7 @@ along the linear vector field equal to minus the `Q`-quadratic form.
 Reference: the continuous-time Lyapunov-equation identity. -/
 theorem fderiv_centeredQuadraticForm_linear_general
     {A P Q : Matrix (Fin n) (Fin n) ℝ}
-    (hEq : SolvesContinuousLyapunovEquation A P Q)
+    (hEq : ContinuousLyapunovEquation A P Q)
     (x_eq x : ℝⁿ) :
     fderiv ℝ (centeredQuadraticForm P x_eq) x
         (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
@@ -501,7 +484,7 @@ theorem fderiv_centeredQuadraticForm_linear_general
 Reference: the continuous-time Lyapunov-equation identity. -/
 theorem fderiv_centeredQuadraticForm_linear
     {A P : Matrix (Fin n) (Fin n) ℝ}
-    (hEq : SolvesContinuousLyapunovEquation A P 1)
+    (hEq : ContinuousLyapunovEquation A P 1)
     (x_eq x : ℝⁿ) :
     fderiv ℝ (centeredQuadraticForm P x_eq) x
         (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =

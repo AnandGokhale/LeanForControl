@@ -22,15 +22,17 @@ Each result is stated about a `ContinuousLinearSystem`, since these are properti
 and needs only `Continuous s.A` — the input and output matrices play no part in Lyapunov
 stability.
 
-* **Definition 8.1(1)** — `stableNA_linear_iff_boundedHomogenousTrajectory`: stability is
+* **Definition 8.1(1)** — `stableNA_iff_boundedHomogeneousResponse`: stability is
   boundedness of every homogeneous response. Its workhorse
-  `stableNA_linear_iff_boundedStateTransition` gives the equivalent bound on `Φ(t, t₀)`
-  itself, and `uniformlyStableNA_linear_iff` makes that bound independent of `t₀`.
-* **Definition 8.1(2)** — `asymptoticStableNA_linear_iff`.
-* **Definition 8.1(3)** — `exponentiallyStableNA_linear_iff` and its global twin
-  `globallyExponentiallyStableNA_linear_iff`, with `exponentiallyStableNA_linear_iff_globally`
-  recording that for a linear system the two coincide.
-* **Definition 8.1(4)** — `unstableNA_linear_iff`.
+  `stableNA_iff_boundedStateTransition` gives the equivalent bound on `Φ(t, t₀)`
+  itself, and `uniformlyStableNA_iff_uniformlyBoundedStateTransition` makes that bound
+  independent of `t₀`.
+* **Definition 8.1(2)** — `asymptoticStableNA_iff_decayingHomogeneousResponse`.
+* **Definition 8.1(3)** — `exponentiallyStableNA_iff_decayingStateTransition` and its global twin
+  `globallyExponentiallyStableNA_iff_decayingStateTransition`, and with
+  `exponentiallyStableNA_iff_globallyExponentiallyStableNA` recording that for a linear system
+  the two coincide.
+* **Definition 8.1(4)** — `unstableNA_iff_unboundedHomogeneousResponse`.
 
 Every one of them is the trajectory characterization plus homogeneity. The trajectory
 characterization itself is solution theory and lives in `Solutions/CtsLTV.lean`:
@@ -62,7 +64,7 @@ Two things separate the textbook statements from the predicates:
   bounds are on the response from a *ball*. Linearity is what makes these the same: the
   response from `r x₀` is `r` times the response from `x₀`, so a bound on any ball scales to
   a bound everywhere. This is why a linear system has no nontrivial region of attraction, and
-  the reason `exponentiallyStableNA_linear_iff_globally` holds.
+  the reason `exponentiallyStableNA_iff_globallyExponentiallyStableNA` holds.
 
 The sign in `Real.exp (-γ * (t - t₀))` is the decaying one; the estimate as printed in some
 editions of Hespanha carries `e^{λ(t-t₀)}` with `λ > 0`, which is a typo for `e^{-λ(t-t₀)}`.
@@ -191,7 +193,7 @@ private lemma margin_of_bound (s : ContinuousLinearSystem X U Y ℝ) (hA : Conti
 
 This is the workhorse behind `stableNA_linear_iff`; it is stated separately because the bound
 on every state, not the per-initial-condition one, is what later results consume. -/
-@[blueprint "lem:stableNA-linear-iff-boundedStateTransition"
+@[blueprint "lem:stableNA-iff-boundedStateTransition"
   (title := "Stability as a bound on the state transition matrix")
   (latexEnv := "lemma")
   (statement := /-- Consider the linear time-varying system
@@ -216,7 +218,7 @@ on every state, not the per-initial-condition one, is what later results consume
     ($\Leftarrow$) Given $\varepsilon$, take $\delta = \varepsilon/(C+1)$.  A trajectory is its
     own response (\cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}), so
     $\|\varphi(t)\| \le C\|\varphi(t_{0})\| < \varepsilon$. -/)]
-theorem stableNA_linear_iff_boundedStateTransition (s : ContinuousLinearSystem X U Y ℝ)
+theorem stableNA_iff_boundedStateTransition (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     StableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ C ≥ (0 : ℝ), ∀ t ≥ t₀, ∀ x : X → ℝ,
@@ -237,7 +239,7 @@ in the sense of `StableNA`.
 The textbook's per-initial-condition form and the state-transition form are equivalent by
 Banach–Steinhaus: a pointwise-bounded family of operators on a Banach space is
 norm-bounded. -/
-@[blueprint "thm:stableNA-linear-iff-boundedHomogenousTrajectory"
+@[blueprint "thm:stableNA-iff-boundedHomogeneousResponse"
   (title := "Lyapunov stability of a linear time-varying system")
   (statement := /-- Consider the linear time-varying system
     \[
@@ -253,15 +255,15 @@ norm-bounded. -/
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(1).
   -/)
   (proof := /-- The state-transition form is
-    \cref{lem:stableNA-linear-iff-boundedStateTransition}.  A bound on $\Phi$ gives
+    \cref{lem:stableNA-iff-boundedStateTransition}.  A bound on $\Phi$ gives
     the response bound $C\|x_{0}\|$; conversely a family of operators bounded at every point of
     a Banach space is norm-bounded, by the uniform boundedness principle. -/)]
-theorem stableNA_linear_iff_boundedHomogenousTrajectory (s : ContinuousLinearSystem X U Y ℝ)
+theorem stableNA_iff_boundedHomogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     StableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ, ∃ C : ℝ, ∀ t ≥ t₀,
         ‖homogeneousResponse s.A t₀ x₀ t‖ ≤ C := by
-  rw [stableNA_linear_iff_boundedStateTransition s hA]
+  rw [stableNA_iff_boundedStateTransition s hA]
   constructor
   · intro h t₀ ht₀ x₀
     obtain ⟨C, _, hC⟩ := h t₀ ht₀
@@ -283,7 +285,7 @@ theorem stableNA_linear_iff_boundedHomogenousTrajectory (s : ContinuousLinearSys
 Khalil separates uniform stability from stability by the order of the quantifiers on `δ` and
 `t₀`; on the linear side that separation is visible as whether the constant `C` bounding the
 response may depend on `t₀`. -/
-@[blueprint "thm:uniformlyStableNA-linear-iff"
+@[blueprint "thm:uniformlyStableNA-iff-uniformlyBoundedStateTransition"
   (title := "Uniform stability of a linear time-varying system")
   (statement := /-- Consider the linear time-varying system
     \[
@@ -301,9 +303,9 @@ response may depend on `t₀`. -/
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(1),
     with the margin independent of $t_{0}$.
   -/)
-  (proof := /-- Identical to \cref{lem:stableNA-linear-iff-boundedStateTransition}, with the
+  (proof := /-- Identical to \cref{lem:stableNA-iff-boundedStateTransition}, with the
     margin $\delta$ and the bound $C$ both carried outside the quantifier on $t_{0}$. -/)]
-theorem uniformlyStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
+theorem uniformlyStableNA_iff_uniformlyBoundedStateTransition (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     UniformlyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ C ≥ (0 : ℝ), ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
@@ -324,7 +326,7 @@ asymptotically stable in the sense of `AsymptoticStableNA`.
 
 The boundedness clause is stated because the textbook states it ("in addition"), not because
 it is needed: a continuous response that converges is bounded. -/
-@[blueprint "thm:asymptoticStableNA-linear-iff"
+@[blueprint "thm:asymptoticStableNA-iff-decayingHomogeneousResponse"
   (title := "Asymptotic stability of a linear time-varying system")
   (statement := /-- Consider the linear time-varying system
     \[
@@ -342,12 +344,12 @@ it is needed: a continuous response that converges is bounded. -/
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(2).
   -/)
   (proof := /-- The stability conjunct is
-    \cref{thm:stableNA-linear-iff-boundedHomogenousTrajectory}.  For attractivity: an
+    \cref{thm:stableNA-iff-boundedHomogeneousResponse}.  For attractivity: an
     arbitrary $x_{0}$ is rescaled into the attractivity ball, and the limit scales back, since
     the response is linear in the initial state; conversely every trajectory is a response
     (\cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}), so convergence of the responses is
     convergence of the trajectories, from any radius. -/)]
-theorem asymptoticStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
+theorem asymptoticStableNA_iff_decayingHomogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     AsymptoticStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       (∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ, ∃ C : ℝ, ∀ t ≥ t₀,
@@ -356,7 +358,7 @@ theorem asymptoticStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
         Tendsto (homogeneousResponse s.A t₀ x₀) atTop (𝓝 0)) := by
   constructor
   · rintro ⟨hS, hattr⟩
-    refine ⟨(stableNA_linear_iff_boundedHomogenousTrajectory s hA).1 hS, fun t₀ ht₀ x₀ => ?_⟩
+    refine ⟨(stableNA_iff_boundedHomogeneousResponse s hA).1 hS, fun t₀ ht₀ x₀ => ?_⟩
     obtain ⟨c, hc, hconv⟩ := hattr t₀ ht₀
     rcases eq_or_ne x₀ 0 with rfl | hx
     · have h0 : homogeneousResponse s.A t₀ (0 : X → ℝ) = fun _ : ℝ => (0 : X → ℝ) := by
@@ -376,7 +378,7 @@ theorem asymptoticStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
     simpa [homogeneousResponse, Matrix.mulVec_smul, smul_smul,
       inv_mul_cancel₀ hr0.ne'] using h2
   · rintro ⟨hbd, hconv⟩
-    refine ⟨(stableNA_linear_iff_boundedHomogenousTrajectory s hA).2 hbd,
+    refine ⟨(stableNA_iff_boundedHomogeneousResponse s hA).2 hbd,
       fun t₀ ht₀ => ⟨1, one_pos, fun φ hφ _ => ?_⟩⟩
     refine Filter.Tendsto.congr' ?_ (hconv t₀ ht₀ (φ t₀))
     filter_upwards [eventually_ge_atTop t₀] with t ht
@@ -386,7 +388,7 @@ theorem asymptoticStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
 
 /-- Exponential stability in its global form: the response obeys
 `‖x(t)‖ ≤ k e^{-γ(t - t₀)} ‖x(t₀)‖` for every initial condition. -/
-@[blueprint "thm:globallyExponentiallyStableNA-linear-iff"
+@[blueprint "thm:globallyExponentiallyStableNA-iff-decayingStateTransition"
   (title := "Global exponential stability of a linear time-varying system")
   (statement := /-- Consider the linear time-varying system
     \[
@@ -408,8 +410,8 @@ theorem asymptoticStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
   (proof := /-- Both directions are the trajectory characterization plus homogeneity: the
     exponential estimate along every trajectory is the estimate applied to the initial state,
     and conversely the estimate on any ball scales to the estimate everywhere. -/)]
-theorem globallyExponentiallyStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
-    (hA : Continuous s.A) :
+theorem globallyExponentiallyStableNA_iff_decayingStateTransition
+    (s : ContinuousLinearSystem X U Y ℝ) (hA : Continuous s.A) :
     GloballyExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
         ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
@@ -430,9 +432,9 @@ theorem globallyExponentiallyStableNA_linear_iff (s : ContinuousLinearSystem X U
       _ = k * ‖φ t₀‖ * Real.exp (-γ * (t - t₀)) := by ring
 
 /-- Exponential stability in its local form. The right-hand side is the same as in
-`globallyExponentiallyStableNA_linear_iff`: the radius `c` of the local definition carries no
-information for a linear system. -/
-@[blueprint "thm:exponentiallyStableNA-linear-iff"
+`globallyExponentiallyStableNA_iff_decayingStateTransition`: the radius `c` of the local
+definition carries no information for a linear system. -/
+@[blueprint "thm:exponentiallyStableNA-iff-decayingStateTransition"
   (title := "Exponential stability of a linear time-varying system")
   (statement := /-- Consider the linear time-varying system
     \[
@@ -449,14 +451,14 @@ information for a linear system. -/
       \qquad \forall\, t \ge t_{0} \ge 0,\ \forall\, x.
     \]
     The condition is the one in
-    \cref{thm:globallyExponentiallyStableNA-linear-iff}: the radius in the local definition
-    carries no information here.
+    \cref{thm:globallyExponentiallyStableNA-iff-decayingStateTransition}: the radius in the
+    local definition carries no information here.
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(3).
   -/)
   (proof := /-- As in the global case; the radius $c$ of the local definition is absorbed by
     the scaling argument, and $c = 1$ serves in the converse. -/)]
-theorem exponentiallyStableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
+theorem exponentiallyStableNA_iff_decayingStateTransition (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     ExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
@@ -485,7 +487,7 @@ omit [DecidableEq X] in
 
 A linear system has no nontrivial region of attraction: the two definitions differ only by a
 radius, and the response is homogeneous, so the radius scales away. -/
-@[blueprint "cor:exponentiallyStableNA-linear-iff-globally"
+@[blueprint "cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA"
   (title := "Local exponential stability is global, for a linear system")
   (latexEnv := "lemma")
   (statement := /-- Consider the linear time-varying system
@@ -499,21 +501,21 @@ radius, and the response is homogeneous, so the radius scales away. -/
     this system if and only if it is globally exponentially stable
     (\cref{def:globallyExponentiallyStableNA}). -/)
   (proof := /-- Both are equivalent to the same estimate,
-    \cref{thm:exponentiallyStableNA-linear-iff} and
-    \cref{thm:globallyExponentiallyStableNA-linear-iff}. -/)]
-theorem exponentiallyStableNA_linear_iff_globally (s : ContinuousLinearSystem X U Y ℝ)
+    \cref{thm:exponentiallyStableNA-iff-decayingStateTransition} and
+    \cref{thm:globallyExponentiallyStableNA-iff-decayingStateTransition}. -/)]
+theorem exponentiallyStableNA_iff_globallyExponentiallyStableNA (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     ExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       GloballyExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) := by
   classical
-  exact (exponentiallyStableNA_linear_iff s hA).trans
-    (globallyExponentiallyStableNA_linear_iff s hA).symm
+  exact (exponentiallyStableNA_iff_decayingStateTransition s hA).trans
+    (globallyExponentiallyStableNA_iff_decayingStateTransition s hA).symm
 
 /-! ## Definition 8.1(4): instability -/
 
 /-- The system is unstable when it is not marginally stable:
 some initial condition has an unbounded homogeneous response. -/
-@[blueprint "thm:unstableNA-linear-iff"
+@[blueprint "thm:unstableNA-iff-unboundedHomogeneousResponse"
   (title := "Instability of a linear time-varying system")
   (statement := /-- Consider the linear time-varying system
     \[
@@ -528,13 +530,13 @@ some initial condition has an unbounded homogeneous response. -/
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(4).
   -/)
-  (proof := /-- The negation of \cref{thm:stableNA-linear-iff-boundedHomogenousTrajectory}. -/)]
-theorem unstableNA_linear_iff (s : ContinuousLinearSystem X U Y ℝ)
+  (proof := /-- The negation of \cref{thm:stableNA-iff-boundedHomogeneousResponse}. -/)]
+theorem unstableNA_iff_unboundedHomogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
     (hA : Continuous s.A) :
     UnstableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ t₀ : ℝ, 0 ≤ t₀ ∧ ∃ x₀ : X → ℝ, ∀ C : ℝ, ∃ t ≥ t₀,
         C < ‖homogeneousResponse s.A t₀ x₀ t‖ := by
-  rw [UnstableNA, stableNA_linear_iff_boundedHomogenousTrajectory s hA]
+  rw [UnstableNA, stableNA_iff_boundedHomogeneousResponse s hA]
   push Not
   rfl
 

@@ -68,4 +68,26 @@ def IsHurwitzWithRate (α : ℝ) (A : Matrix X X ℝ) : Prop :=
   ∀ (μ : ℂ) (v : X → ℂ), v ≠ 0 →
     A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v → μ.re < -α
 
+/-- `P` satisfies the **continuous Lyapunov equation** for `A` with forcing `Q` when
+
+    P A + Aᵀ P = -Q.
+
+For `P` positive definite this is the statement that `x ↦ xᵀ P x` decreases along `ẋ = A x`
+at the rate set by `Q`: Hespanha's Theorem 8.2 turns that into an equivalent of asymptotic
+stability.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. -/
+@[blueprint "def:continuousLyapunovEquation"
+  (title := "Continuous Lyapunov equation")
+  (statement := /-- For real square matrices $A$, $P$ and $Q$, the matrix $P$ satisfies the
+    \emph{continuous Lyapunov equation} for $A$ with forcing $Q$ when
+    \[
+      PA + A^{\mathsf T}P = -Q.
+    \]
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.2.
+  -/)]
+def ContinuousLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
+  P * A + Aᵀ * P = -Q
+
 end LinearSystems
