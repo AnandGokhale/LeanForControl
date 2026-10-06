@@ -22,7 +22,7 @@
 Files:
 
 - `DefsAutonomous.lean` — autonomous trajectory, stability, and Lyapunov-function definitions
-- `DefsChetaev.lean` — bounded boundary-form Chetaev certificates
+- `DefsChetaev.lean` — Chetaev certificates with conditions on a fixed closed ball
 - `Autonomous.lean` — Lyapunov stability / GAS / LAS
 - `LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
 - `LyapunovIndirect/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
@@ -180,12 +180,20 @@ ball, a quadratic upper bound
 `2 α V(x) ≤ DV(x) f(x)`, and positive values of `V` arbitrarily close to `x_eq`.
 Those hypotheses are enough for the quadratic certificate above.
 
-The completed `unstable_of_geometric_chetaev` packages these hypotheses in
+The completed `unstable_of_geometric_chetaev` packages a different set of hypotheses in
 `IsChetaevFunction`: an open set `D` with `x_eq` on its frontier, a positive radius, global
 `C¹` regularity of `V`, positivity and strictly positive Lie derivative on `D` inside the
 closed certificate ball, and vanishing of `V` on the relevant part of `frontier D`. Its
 conclusion is `Unstable`, which quantifies over finite forward segments and therefore does not
-assume global trajectories.
+assume global trajectories. Neither the region nor the certificate is globally bounded,
+and the base point is not assumed to be an equilibrium.
+
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
+p. 125. The positive-superlevel escape argument corresponds to that theorem's proof, but
+this is a boundary formulation using an independently supplied open region, not the full
+positive set in the textbook's ball. Global `C¹` regularity of the field and certificate
+is stronger than the textbook's local-domain regularity. "Geometric" and "boundary-form"
+describe this formulation, not distinct textbook theorem names.
 
 The proof is geometric rather than spectral:
 

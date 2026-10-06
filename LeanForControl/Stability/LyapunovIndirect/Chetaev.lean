@@ -258,7 +258,7 @@ private theorem exists_cutoff_segment_reaching_radius
     hφ0 hφcont hφderiv hbound hgrowth hlarge
   exact ⟨T, φ, t, hφ0, hφcont, hφderiv, ht, hfar⟩
 
-/-- Cutoff solution segments which start arbitrarily close to the equilibrium
+/-- Cutoff solution segments which start arbitrarily close to the base point
 and reach a fixed radius witness forward instability.
 
 The first-exit reduction: a segment of the cutoff field agrees with the original field up to its
@@ -477,7 +477,7 @@ private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
       field_simp
     linarith
 
-/-- A bounded boundary-form Chetaev certificate forces forward instability.
+/-- A Chetaev certificate on a fixed closed ball forces forward instability.
 
 The frontier hypothesis produces positive seeds arbitrarily close to the base point.  A smooth
 cutoff supplies a solution on a sufficiently long finite interval.  Boundary vanishing prevents
@@ -485,14 +485,24 @@ the solution from leaving the positive region before it reaches the certificate 
 compactness bounds the strictly positive Lie derivative away from zero on the retained
 superlevel set.
 
-Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*. -/
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
+p. 125 (Chetaev's instability theorem).  This boundary formulation follows the same
+positive-superlevel escape argument, with an independently supplied open region instead of
+the full positive set in a ball.  Here `f` and `V` are globally `C¹`, while sign and boundary
+conditions are local to the closed ball.  The conclusion negates stability over all finite
+forward segments; unlike Khalil's equilibrium theorem, no `f x_eq = 0` is assumed. -/
 @[blueprint "thm:geometric-chetaev-unstable"
   (title := "Boundary-form Chetaev instability criterion")
-  (statement := /-- Let $V$ be a bounded boundary-form Chetaev certificate on an open region
-    whose frontier contains the base point.  If the vector field is globally $C^1$, then the
-    base point is unstable with respect to finite forward solution segments.
+  (statement := /-- Let $V$ be a Chetaev certificate on a fixed closed ball, with an open
+    positive region whose frontier contains the base point. The certificate function and
+    vector field are globally $C^1$, but sign and boundary conditions apply only in the ball.
+    Then the base point is unstable with respect to all finite forward solution segments.
+    No equilibrium hypothesis $f(x_{\rm eq})=0$ is assumed.
 
-    Reference: Hahn, \emph{Stability of Motion}; Khalil, \emph{Nonlinear Systems}. -/)
+    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed. (Prentice Hall, 2002),
+    Theorem 4.3, p. 125. This is a boundary formulation of Chetaev's escape argument,
+    not a literal transcription: the textbook uses the full positive set in a ball
+    and states instability of an equilibrium. -/)
   (proof := /-- Choose a positive seed near the frontier point.  Globalize the vector field by
     a smooth cutoff. Boundary vanishing retains the solution in the certificate region; on the
     compact retained superlevel set the positive Lie derivative has a positive minimum, forcing
@@ -521,12 +531,16 @@ theorem unstable_of_geometric_chetaev
 
 /-- An exponentially increasing Chetaev function forces forward instability.
 
-The `hseed` condition says that the positive cone of `V` accumulates at the
+The `hseed` condition says that the positive set of `V` accumulates at the
 base point.  The proof globalizes the vector field with a smooth cutoff,
 follows the resulting solution to its first sphere crossing, and applies the
 differential inequality to rule out remaining inside the sphere forever.
 
-Reference: Hahn, *Stability of Motion* (Chetaev's instability method). -/
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
+p. 125, for Chetaev's instability method.  This quantitative variant uses a quadratic
+bound and exponential Lie-derivative inequality instead of the textbook hypotheses;
+it assumes global `C¹` regularity and concludes finite-segment instability of a base point
+without an equilibrium hypothesis. It is not the statement of Theorem 4.3. -/
 @[blueprint "thm:exponential-chetaev-unstable"
   (title := "Exponential Chetaev instability criterion")
   (statement := /-- Suppose the vector field $f$ and certificate $V$ are $C^1$,
@@ -536,7 +550,10 @@ Reference: Hahn, *Stability of Motion* (Chetaev's instability method). -/
     Then the base point is unstable with respect to finite forward solution
     segments.
 
-    Reference: Hahn, \emph{Stability of Motion} (Chetaev's instability method).
+    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed. (Prentice Hall, 2002),
+    Theorem 4.3, p. 125, for Chetaev's instability method. This is a quantitative variant,
+    not the textbook statement. Regularity is global, the inequalities are local to the
+    ball, and no equilibrium hypothesis is assumed.
   -/)
   (proof := /-- Globalize the vector field by a smooth cutoff, integrate the
     differential inequality on a sufficiently long finite segment, and stop
