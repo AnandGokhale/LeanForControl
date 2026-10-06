@@ -240,7 +240,7 @@ lemma exists_strictMono_upper_bound (r : ℝ) (hr : 0 < r) (φ : ℝ → ℝ)
     exact hcont ⟨hs0, hsle⟩ (by
       rw [Real.dist_eq, sub_zero, abs_of_nonneg hs0]
       exact hslt.trans_le (min_le_left δ r))
-  -- Apply the global axiom to φ_ext
+  -- Apply the proved global upper-majorant theorem to φ_ext
   obtain ⟨f, hf_zero, hf_cont, hf_mono, _, hf_bound⟩ :=
     exists_strictMono_upper_bound_global φ_ext hφ_ext_zero hφ_ext_mono hφ_ext_cont_zero
   refine ⟨f, f r, ?_, hf_zero, rfl,
