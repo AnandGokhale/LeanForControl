@@ -16,7 +16,9 @@ horizons. The quantitative theorem converts exponential certificate growth
 into escape; the boundary-form theorem uses open-set retention and a compact
 positive-minimum argument to obtain linear growth and escape.
 
-Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*.
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
+p. 125 (Chetaev's instability theorem). The boundary formulation and quantitative variant
+below document their differences from the textbook statement.
 -/
 
 open Filter Function Metric Set Topology
