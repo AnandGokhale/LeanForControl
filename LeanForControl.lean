@@ -28,12 +28,12 @@ import LeanForControl.LinearSystems.Solutions.CtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
-import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTI
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
+import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
