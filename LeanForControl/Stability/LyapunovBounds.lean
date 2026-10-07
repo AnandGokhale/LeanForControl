@@ -211,6 +211,28 @@ private lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn
     rintro _ ⟨x, hx, rfl⟩
     exact ⟨x, Metric.closedBall_subset_closedBall h_le hx, rfl⟩
 
+/-- `φ` is continuous at `0` from the right: on a small ball `V` is close to `V(0) = 0`, so
+    its supremum there is too. -/
+private lemma phi_fn_continuousWithinAt {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r)
+    (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r)) (hV_zero : V 0 = 0) :
+    ContinuousWithinAt (phi_fn V) (Set.Icc 0 r) 0 := by
+  refine Metric.continuousWithinAt_iff.mpr fun ε hε => ?_
+  obtain ⟨δ, hδ, hV⟩ := Metric.continuousWithinAt_iff.mp
+    (hV_cont 0 (Metric.mem_closedBall_self hr.le)) (ε / 2) (half_pos hε)
+  refine ⟨δ, hδ, fun {s} hs hds => ?_⟩
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg hs.1] at hds
+  -- every value of `V` on `closedBall 0 s` is within `ε / 2` of `V 0 = 0`
+  have h_le : phi_fn V s ≤ ε / 2 := by
+    refine csSup_le ⟨V 0, 0, Metric.mem_closedBall_self hs.1, rfl⟩ ?_
+    rintro _ ⟨x, hx, rfl⟩
+    have h := hV (Metric.closedBall_subset_closedBall hs.2 hx)
+      ((Metric.mem_closedBall.mp hx).trans_lt hds)
+    rw [hV_zero, Real.dist_eq, sub_zero] at h
+    exact (le_abs_self _).trans h.le
+  have h_ge : 0 ≤ phi_fn V s := phi_fn_zero hV_zero ▸ phi_fn_mono hV_cont hs.1 hs.2 le_rfl
+  rw [phi_fn_zero hV_zero, Real.dist_eq, sub_zero, abs_of_nonneg h_ge]
+  linarith
+
 -- ─── 5. Upper Sandwich: V(x) ≤ φ(‖x‖) ───────────────────────────────────────
 
 /-- `V(x) ≤ φ(‖x‖)`: since `x ∈ closedBall 0 ‖x‖`, `V(x)` is an element of the
@@ -233,7 +255,7 @@ private lemma V_le_phi {r : ℝ} {V : ℝⁿ → ℝ}
 
 /-! ### Packaging ψ and φ into Class K Functions
 
-We apply the smoothing axioms from `LeanForControl.axioms` to turn the (merely monotone)
+We apply the smoothing results from `LeanForControl.axioms` to turn the (merely monotone)
 comparison functions `ψ` and `φ` into full `ClassK` structures.  The final bounds follow
 by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
 
@@ -262,12 +284,14 @@ private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
 private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) :
     ∃ (b₂ : ℝ) (α₂ : ClassK r b₂), ∀ s, 0 ≤ s → s ≤ r → phi_fn V s ≤ α₂.toFun s := by
-  -- Verify the two hypotheses of the upper smoothing axiom for φ
+  -- Verify the three hypotheses of the upper smoothing lemma for φ
   have hφ_zero : phi_fn V 0 = 0 := phi_fn_zero hV_zero
   have hφ_mono : MonotoneOn (phi_fn V) (Set.Icc 0 r) :=
     fun _ hs₁ _ hs₂ hle => phi_fn_mono hV_cont hle hs₂.2 hs₁.1
-  -- Apply the smoothing axiom to get a strictly monotone continuous φ ≤ f
-  rcases exists_strictMono_upper_bound r hr (phi_fn V) hφ_zero hφ_mono
+  have hφ_cont : ContinuousWithinAt (phi_fn V) (Set.Icc 0 r) 0 :=
+    phi_fn_continuousWithinAt hr hV_cont hV_zero
+  -- Apply the smoothing lemma to get a strictly monotone continuous φ ≤ f
+  rcases exists_strictMono_upper_bound r hr (phi_fn V) hφ_zero hφ_mono hφ_cont
     with ⟨f, b₂, hb₂_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
   exact ⟨b₂, ClassK.of_strictMono hr hb₂_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
 

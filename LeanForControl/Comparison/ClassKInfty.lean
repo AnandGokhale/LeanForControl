@@ -373,22 +373,23 @@ noncomputable def ClassKInfty.min_fn (α : ClassKInfty) (β : ClassKInfty) :
 
 
 
-/-- Any function on `[0, ∞)` that is monotone and vanishes at `0` is dominated by a class K∞
-    function. -/
+/-- Any function on `[0, ∞)` that is monotone, vanishes at `0` and is continuous there is
+    dominated by a class K∞ function. -/
 @[blueprint "lem:exists-classKInfty-upper-bound"
   (title := "Class $\\mathcal{K}_{\\infty}$ majorant of a monotone function")
   (latexEnv := "lemma")
-  (statement := /-- Let $\omega : \mathbb{R} \to \mathbb{R}$ satisfy $\omega(0) = 0$ and be
-    monotone on $[0, \infty)$.  Then there is a class $\mathcal{K}_{\infty}$ function $\alpha$
-    with $\omega(r) \le \alpha(r)$ for all $r \ge 0$. -/)
-  (proof := /-- The smoothing axiom supplies a continuous, strictly increasing $f$ with
-    $f(0) = 0$, $f(r) \to \infty$ and $\omega \le f$ on $[0,\infty)$; by
+  (statement := /-- Let $\omega : \mathbb{R} \to \mathbb{R}$ satisfy $\omega(0) = 0$, be
+    monotone on $[0, \infty)$, and be continuous at $0$ from the right.  Then there is a class
+    $\mathcal{K}_{\infty}$ function $\alpha$ with $\omega(r) \le \alpha(r)$ for all $r \ge 0$. -/)
+  (proof := /-- \cref{lem:exists-strictMono-upper-bound-global} supplies a continuous, strictly
+    increasing $f$ with $f(0) = 0$, $f(r) \to \infty$ and $\omega \le f$ on $[0,\infty)$; by
     \cref{lem:classKInfty-of-strictMono} that $f$ is class $\mathcal{K}_{\infty}$. -/)]
 lemma exists_classKInfty_upper_bound (ω : ℝ → ℝ)
     (hω_zero : ω 0 = 0)
-    (hω_mono : MonotoneOn ω (Set.Ici 0)) :
+    (hω_mono : MonotoneOn ω (Set.Ici 0))
+    (hω_cont : ContinuousWithinAt ω (Set.Ici 0) 0) :
     ∃ α : ClassKInfty, ∀ r ≥ 0, ω r ≤ α.toFun r := by
   obtain ⟨f, hf_zero, hf_cont, hf_mono, hf_top, hf_bound⟩ :=
-    exists_strictMono_upper_bound_global ω hω_zero hω_mono
+    exists_strictMono_upper_bound_global ω hω_zero hω_mono hω_cont
   exact ⟨ClassKInfty.of_strictMono f hf_zero hf_cont hf_mono hf_top,
          fun r hr => hf_bound r hr⟩
