@@ -1,6 +1,14 @@
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.Analysis.Normed.Algebra.GelfandFormula
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
+import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+
+import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Eigenpair
 
 import Architect
 
@@ -21,6 +29,9 @@ open scoped Matrix.Norms.Frobenius
 
 variable {n : ℕ}
 
+-- `X` is bound per-declaration rather than at namespace level: as a section variable it would
+-- shadow `Polynomial.X` in `section FinitePolynomial` below.
+
 /-- Entrywise complexification commutes with the matrix exponential. -/
 @[blueprint "lem:complexification-exp"
   (title := "Complexification commutes with the matrix exponential")
@@ -35,13 +46,14 @@ variable {n : ℕ}
     $\mathbb{C}$, to norm bounds on a real exponential. -/)
   (proof := /-- Entrywise complexification is a continuous ring homomorphism, and $\exp$
     commutes with any such. -/)]
-lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
-    (exp A).map (algebraMap ℝ ℂ) = exp (A.map (algebraMap ℝ ℂ)) := by
-  letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℝ) :=
+lemma complexification_exp {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℝ) :
+    (exp A).complexify = exp A.complexify := by
+  simp only [Matrix.complexify_eq_map]
+  letI : NormedAlgebra ℚ (Matrix X X ℝ) :=
     NormedAlgebra.restrictScalars ℚ ℝ _
-  letI : NormedAlgebra ℚ (Matrix (Fin n) (Fin n) ℂ) :=
+  letI : NormedAlgebra ℚ (Matrix X X ℂ) :=
     NormedAlgebra.restrictScalars ℚ ℂ _
-  let φ : Matrix (Fin n) (Fin n) ℝ →+* Matrix (Fin n) (Fin n) ℂ :=
+  let φ : Matrix X X ℝ →+* Matrix X X ℂ :=
     (algebraMap ℝ ℂ).mapMatrix
   have hφ : Continuous φ := by
     apply continuous_pi
@@ -51,6 +63,74 @@ lemma complexification_exp (A : Matrix (Fin n) (Fin n) ℝ) :
     exact Complex.continuous_ofReal.comp
       ((continuous_apply j).comp (continuous_apply i))
   simpa [φ] using NormedSpace.map_exp φ hφ A
+
+section Eigenpair
+
+/-!
+## The exponential on an eigenvector
+
+`e^{M}` acts on an eigenvector of `M` by exponentiating the eigenvalue. This is the half of
+spectral mapping that is pure power-series algebra: no spectral theory is used, only that
+`N ↦ N *ᵥ v` is a continuous linear map and therefore passes through the `tsum` that defines
+`exp`.
+
+Stated over an arbitrary index type, since everything downstream of the
+`ContinuousLinearSystem` object is, and over an arbitrary `RCLike` scalar field, since the
+eigenpairs it is applied to live over `ℂ` while the matrices they come from live over `ℝ`.
+-/
+
+variable {𝕜 : Type*} [RCLike 𝕜] {X : Type*} [Fintype X] [DecidableEq X]
+
+/-- Multiplication by a *fixed* vector, as a continuous linear map in the matrix.
+
+`Matrix.mulVecLin` fills the other slot — `v ↦ M *ᵥ v` for a fixed matrix; `Matrix.mulVecBilin`
+is linear in both, and flipping it gives the slot needed here, namely the one that moves a
+`tsum` over matrices inside a `*ᵥ`. Continuity is automatic: the domain is finite-dimensional. -/
+private noncomputable def mulVecRightL (v : X → 𝕜) : Matrix X X 𝕜 →L[𝕜] (X → 𝕜) :=
+  LinearMap.toContinuousLinearMap ((Matrix.mulVecBilin 𝕜 𝕜).flip v)
+
+omit [DecidableEq X] in
+@[simp]
+private lemma mulVecRightL_apply (v : X → 𝕜) (M : Matrix X X 𝕜) :
+    mulVecRightL v M = M *ᵥ v := rfl
+
+/-- An eigenvector of `M` is an eigenvector of `e^{M}`, with eigenvalue `e^{μ}`.
+
+This is the direction of spectral mapping that needs no spectral theory: `M^k *ᵥ v = μ^k • v`
+by induction, and the exponential series is a `tsum` that the continuous linear map
+`N ↦ N *ᵥ v` commutes with.
+
+Reference: standard power-series functional calculus for the exponential. -/
+@[blueprint "lem:exp-mulVec-eigenpair"
+  (title := "The exponential acts on an eigenvector by exponentiating its eigenvalue")
+  (latexEnv := "lemma")
+  (statement := /-- Let $M$ be a square matrix and let $(\mu, v)$ be an eigenpair of $M$, so
+    that $Mv = \mu v$.  Then
+    \[
+      e^{M} v = e^{\mu}\, v .
+    \]
+
+    Reference: standard power-series functional calculus for the exponential.
+  -/)
+  (proof := /-- Induction gives $M^{k}v = \mu^{k}v$ for every $k$.  The map $N \mapsto Nv$ is
+    linear and continuous, so it commutes with the sum defining
+    $e^{M} = \sum_{k} (k!)^{-1} M^{k}$, giving
+    $e^{M}v = \sum_{k} (k!)^{-1}\mu^{k} v = e^{\mu} v$. -/)]
+theorem exp_mulVec_of_mulVec_eq_smul (M : Matrix X X 𝕜) (μ : 𝕜) (v : X → 𝕜)
+    (h : M *ᵥ v = μ • v) :
+    exp M *ᵥ v = exp μ • v := by
+  have hpow := MatrixAlgebra.pow_mulVec_of_mulVec_eq_smul h
+  rw [congrFun (NormedSpace.exp_eq_tsum 𝕜) M]
+  change mulVecRightL v (∑' k : ℕ, ((k.factorial : 𝕜)⁻¹) • M ^ k) = _
+  rw [(mulVecRightL v).map_tsum (NormedSpace.expSeries_summable' M)]
+  simp_rw [mulVecRightL_apply, Matrix.smul_mulVec, hpow, smul_smul]
+  have hs : Summable fun k : ℕ => (k.factorial : 𝕜)⁻¹ * μ ^ k := by
+    simpa [smul_eq_mul] using NormedSpace.expSeries_summable' (𝕂 := 𝕜) μ
+  rw [hs.tsum_smul_const]
+  congr 1
+  simpa [smul_eq_mul] using (congrFun (NormedSpace.exp_eq_tsum 𝕜) μ).symm
+
+end Eigenpair
 
 section FinitePolynomial
 
@@ -303,5 +383,93 @@ theorem exists_exp_eq_sum_smul_pow :
   rw [(summable_alphaCoeff A i t).tsum_smul_const, alphaCoeff]
 
 end FinitePolynomial
+
+/-! ## Reverse spectral mapping for the matrix exponential -/
+
+noncomputable section
+
+open scoped Matrix.Norms.Frobenius
+
+/-- Every spectral value of a complex matrix exponential is the exponential of an
+eigenvalue of the original matrix.
+
+This is the reverse inclusion in spectral mapping specialized to finite complex matrices.
+It is proved algebraically by restricting `A` to an eigenspace of `exp A`.
+
+Reference: standard spectral-mapping theorem for the matrix exponential. -/
+lemma exists_eigenpair_of_mem_spectrum_exp
+    {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℂ) {z : ℂ}
+    (hz : z ∈ spectrum ℂ (NormedSpace.exp A)) :
+    ∃ (μ : ℂ) (v : X → ℂ),
+      v ≠ 0 ∧ A *ᵥ v = μ • v ∧ z = Complex.exp μ := by
+  have hz' : Module.End.HasEigenvalue (NormedSpace.exp A).toLin' z := by
+    rw [Module.End.hasEigenvalue_iff_mem_spectrum, Matrix.spectrum_toLin']
+    exact hz
+  let W : Submodule ℂ (X → ℂ) := Module.End.eigenspace (NormedSpace.exp A).toLin' z
+  have hW : W ≠ ⊥ := by simpa [W] using hz'
+  letI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW
+  have hcommMatrix : Commute (NormedSpace.exp A) A := (Commute.refl A).exp_left
+  have hcomm : Commute (NormedSpace.exp A).toLin' A.toLin' :=
+    hcommMatrix.map Matrix.toLinAlgEquiv'
+  have hmap : Set.MapsTo A.toLin' W W := by
+    simpa [W] using Module.End.mapsTo_genEigenspace_of_comm hcomm z 1
+  let AW : Module.End ℂ W := A.toLin'.restrict hmap
+  obtain ⟨μ, hμ⟩ := Module.End.exists_eigenvalue AW
+  obtain ⟨w, hw⟩ := hμ.exists_hasEigenvector
+  have hAwSubtype : AW w = μ • w := hw.apply_eq_smul
+  have hAw : A *ᵥ (w : X → ℂ) = μ • (w : X → ℂ) := by
+    have := congrArg Subtype.val hAwSubtype
+    simpa [AW, Matrix.toLin'_apply'] using this
+  have hExpAw : NormedSpace.exp A *ᵥ (w : X → ℂ) = z • (w : X → ℂ) := by
+    have hwmem : (w : X → ℂ) ∈
+        Module.End.eigenspace (NormedSpace.exp A).toLin' z := w.property
+    have := Module.End.mem_eigenspace_iff.mp hwmem
+    simpa [Matrix.toLin'_apply'] using this
+  have hseries : NormedSpace.exp A *ᵥ (w : X → ℂ) = Complex.exp μ • (w : X → ℂ) := by
+    rw [Complex.exp_eq_exp_ℂ]
+    exact exp_mulVec_of_mulVec_eq_smul A μ _ hAw
+  have hzexp : z = Complex.exp μ := by
+    apply smul_left_injective ℂ (Subtype.coe_ne_coe.mpr hw.2)
+    exact hExpAw.symm.trans hseries
+  exact ⟨μ, w, Subtype.coe_ne_coe.mpr hw.2, hAw, hzexp⟩
+
+/-- If every eigenvalue of a real matrix has strictly negative real part, the exponential of
+its complexification has spectral radius below one.
+
+`spectralRadius` is defined from `spectrum`, which is purely algebraic, so this is independent
+of which matrix norm is in scope — but it is what Gelfand's formula consumes, in whichever
+norm the caller works in.
+
+The hypothesis is spelled out rather than written `IsHurwitz`, which lives downstream in
+`LinearSystems`; it is definitionally that predicate.
+
+Reference: standard spectral mapping for the matrix exponential. -/
+@[blueprint "lem:spectralRadius-exp-complexify-lt-one"
+  (title := "Negative spectrum gives a contractive exponential")
+  (latexEnv := "lemma")
+  (statement := /-- If every eigenpair $(\mu, v)$ of the complexification of a real matrix $A$,
+    with $v \ne 0$, has $\operatorname{Re}(\mu) < 0$, then
+    $r(e^{A_{\mathbb C}}) < 1$.
+
+    Reference: standard spectral mapping for the matrix exponential.
+  -/)
+  (proof := /-- Reverse spectral mapping: every spectral value of $e^{A_{\mathbb C}}$ is
+    $e^{\mu}$ for an eigenvalue $\mu$ of $A_{\mathbb C}$, and
+    $|e^{\mu}| = e^{\operatorname{Re}\mu} < 1$. -/)]
+lemma spectralRadius_exp_complexify_lt_one {X : Type*} [Fintype X] [DecidableEq X]
+    (A : Matrix X X ℝ)
+    (hA : ∀ (μ : ℂ) (v : X → ℂ), v ≠ 0 → A.complexify *ᵥ v = μ • v → μ.re < 0) :
+    spectralRadius ℂ (NormedSpace.exp A.complexify) < 1 := by
+  rcases isEmpty_or_nonempty X with _ | _
+  · rw [Subsingleton.elim (NormedSpace.exp A.complexify) 0, spectrum.spectralRadius_zero]
+    exact zero_lt_one
+  · refine spectrum.spectralRadius_lt_of_forall_lt _ fun z hz => ?_
+    have hz1 : ‖z‖ < 1 := by
+      obtain ⟨μ, v, hv, hAv, rfl⟩ := exists_eigenpair_of_mem_spectrum_exp _ hz
+      rw [Complex.norm_exp]
+      exact Real.exp_lt_one_iff.mpr (hA μ v hv hAv)
+    simpa only [ENNReal.coe_lt_coe] using hz1
+
+end
 
 end MatrixAlgebra

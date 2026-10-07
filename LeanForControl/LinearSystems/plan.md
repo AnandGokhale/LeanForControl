@@ -97,8 +97,8 @@ PR is opened rather than during review.
    several files, as a single `Continuous.lean` / `Discrete.lean` where it does not.
 
 **Tie-breaker, for the Lyapunov-equation cluster.** Rule 1 read literally would send
-`SolvesContinuousLyapunovEquation` to `MatrixAlgebra/` — it quantifies only over matrices. It does
-not go there: a statement mentioning `IsHurwitz` or `SolvesContinuousLyapunovEquation` goes to
+`ContinuousLyapunovEquation` to `MatrixAlgebra/` — it quantifies only over matrices. It does
+not go there: a statement mentioning `IsHurwitz` or `ContinuousLyapunovEquation` goes to
 `LinearSystems/Stability/Continuous/`; one mentioning neither, and no `f`, goes to
 `MatrixAlgebra/`. The topic table below places the Lyapunov equation explicitly, and explicit
 wins over the mechanical rule.

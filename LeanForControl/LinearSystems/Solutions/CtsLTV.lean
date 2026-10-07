@@ -15,10 +15,10 @@ building up to Theorem 5.1 (Peano-Baker series): the state transition matrix sol
 matrix ODE `Φ̇(t, t₀) = A(t) Φ(t, t₀)`, `Φ(t₀, t₀) = I`, and `x(t) := Φ(t, t₀) *ᵥ x₀` is the
 unique solution of `ẋ = A(t) x`, `x(t₀) = x₀`.
 
-The final section restates the solution for the `LinearSystem` object: the forced response is
-a *trajectory* in the sense of `ContinuousLinearSystem.IsTrajectoryOn`, which is the predicate the
-stability theory quantifies over. Everything before it works with the coefficient maps `A` and
-`B` directly, which is where the analysis lives.
+The final section restates the solution for the `ContinuousLinearSystem` object: the forced
+response is a *trajectory* in the sense of `ContinuousLinearSystem.IsTrajectoryOn`, which is the
+predicate the stability theory quantifies over. Everything before it works with the coefficient
+maps `A` and `B` directly, which is where the analysis lives.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 -/
@@ -886,10 +886,10 @@ variable {C : ℝ → Matrix Y X ℝ} {D : ℝ → Matrix Y U ℝ}
 
 /-- **Integrating-factor step 1.** `w(t) := x₀ + ∫ τ in t₀..t, Φ(t₀,τ) *ᵥ (B(τ) *ᵥ u(τ))` has
 derivative `Φ(t₀,t) *ᵥ (B(t) *ᵥ u(t))` — an *ordinary* FTC fact, since `t₀` (unlike the outer `t`
-in `hasDerivAt_variationOfConstants`) is fixed throughout the integrand: only the upper limit
+in `hasDerivAt_forcedResponse`) is fixed throughout the integrand: only the upper limit
 depends on the differentiation variable. This avoids ever needing to differentiate `Φ` in its
 second argument, only integrate it (`continuousOn_stateTransitionMatrix_snd`). -/
-private lemma hasDerivAt_variationOfConstants_w (hA : Continuous A) (hB : Continuous B)
+private lemma hasDerivAt_forcedResponse_w (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
     {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : X → ℝ) :
     HasDerivAt (fun z => x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))
@@ -912,12 +912,12 @@ private lemma hasDerivAt_variationOfConstants_w (hA : Continuous A) (hB : Contin
   exact hderiv.const_add x₀
 
 /-- **Integrating-factor step 2.** `x(z) = Φ(z,t₀) *ᵥ w(z)`, algebraically, for `w` as in
-`hasDerivAt_variationOfConstants_w` — this is what lets differentiating `x` reduce to an ordinary
+`hasDerivAt_forcedResponse_w` — this is what lets differentiating `x` reduce to an ordinary
 product rule on `Φ(·,t₀) *ᵥ w(·)` instead of a Leibniz rule.
 
 Proof: push `Φ(z,t₀)` through the integral defining `w` (as a fixed continuous linear map), then
 use `stateTransitionMatrix_comp_base` pointwise: `Φ(z,t₀) *ᵥ (Φ(t₀,τ) *ᵥ v) = Φ(z,τ) *ᵥ v`. -/
-private lemma variationOfConstants_eq_mulVec (hA : Continuous A) (hB : Continuous B)
+private lemma forcedResponse_eq_mulVec (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ)
     {z : ℝ} (hz : z ∈ Set.uIcc t₀ t₁) :
     stateTransitionMatrix A z t₀ *ᵥ x₀ +
@@ -964,10 +964,10 @@ private lemma matrixMulVecCLM_apply (M : Matrix X X ℝ) (v : X → ℝ) :
 
 /-- **Integrating-factor step 3+4.** `z ↦ Φ(z,t₀) *ᵥ w(z)` solves `ẋ = A(t)x + B(t)u(t)` at
 `t` — the ordinary product rule (`HasDerivAt.clm_apply`, via `matrixMulVecCLM`) applied to
-`hasDerivAt_stateTransitionMatrix` and `hasDerivAt_variationOfConstants_w`, simplified using
+`hasDerivAt_stateTransitionMatrix` and `hasDerivAt_forcedResponse_w`, simplified using
 `Φ(t,t₀) * Φ(t₀,t) = Φ(t,t) = I` (`stateTransitionMatrix_comp_base`,
 `stateTransitionMatrix_self`) to cancel the forcing term down to `B(t) *ᵥ u(t)`. -/
-private lemma hasDerivAt_variationOfConstants_mulVec (hA : Continuous A) (hB : Continuous B)
+private lemma hasDerivAt_forcedResponse_mulVec (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
     {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : X → ℝ) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ
@@ -977,7 +977,7 @@ private lemma hasDerivAt_variationOfConstants_mulVec (hA : Continuous A) (hB : C
   have hΦ_deriv := (matrixMulVecCLM.hasFDerivAt
     (x := stateTransitionMatrix A t t₀)).comp_hasDerivAt t
     (hasDerivAt_stateTransitionMatrix hA hA_le ht)
-  have hderiv := hΦ_deriv.clm_apply (hasDerivAt_variationOfConstants_w hA hB hu hA_le ht x₀)
+  have hderiv := hΦ_deriv.clm_apply (hasDerivAt_forcedResponse_w hA hB hu hA_le ht x₀)
   simp only [Function.comp_apply, matrixMulVecCLM_apply] at hderiv
   have hcancel : stateTransitionMatrix A t t₀ * stateTransitionMatrix A t₀ t = 1 := by
     rw [stateTransitionMatrix_comp_base hA
@@ -991,12 +991,12 @@ private lemma hasDerivAt_variationOfConstants_mulVec (hA : Continuous A) (hB : C
 ∫ τ in t₀..t, Φ(t,τ) *ᵥ (B(τ) *ᵥ u(τ))` solves the initial value problem
 `ẋ = A(t) x + B(t) u(t)`, `x(t₀) = x₀`.
 
-Proof: transfer `hasDerivAt_variationOfConstants_mulVec` (the derivative of `Φ(·,t₀) *ᵥ w(·)`)
-across the pointwise equality `x(z) = Φ(z,t₀) *ᵥ w(z)` (`variationOfConstants_eq_mulVec`), valid
+Proof: transfer `hasDerivAt_forcedResponse_mulVec` (the derivative of `Φ(·,t₀) *ᵥ w(·)`)
+across the pointwise equality `x(z) = Φ(z,t₀) *ᵥ w(z)` (`forcedResponse_eq_mulVec`), valid
 on the neighborhood `Set.uIcc t₀ t₁ ∈ 𝓝 t` since `t` is interior to it.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
-@[blueprint "thm:hasDerivAt-variationOfConstants"
+@[blueprint "thm:hasDerivAt-forcedResponse"
   (title := "Variation of constants: existence")
   (statement := /-- Hespanha, Theorem 5.2.  For continuous $A$, $B$ and $u$, the
     function
@@ -1011,7 +1011,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. 
     \cref{lem:stateTransitionMatrix-comp-base} shows $x(t) = \Phi(t,t_0)w(t)$.  Differentiating
     that product and cancelling $\Phi(t,t_0)\Phi(t_0,t) = I$ leaves the claim.  $\Phi$ is thus
     only ever integrated in its second argument, never differentiated there. -/)]
-theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
+theorem hasDerivAt_forcedResponse (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M)
     {t : ℝ} (ht : t ∈ Set.uIoo t₀ t₁) (x₀ : X → ℝ) :
     HasDerivAt (fun z => stateTransitionMatrix A z t₀ *ᵥ x₀ +
@@ -1019,25 +1019,24 @@ theorem hasDerivAt_variationOfConstants (hA : Continuous A) (hB : Continuous B)
       (A t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +
           ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)) + B t *ᵥ u t) t := by
   have hopen : IsOpen (Set.uIoo t₀ t₁) := by rw [← Set.Ioo_min_max]; exact isOpen_Ioo
-  have hderiv0 := hasDerivAt_variationOfConstants_mulVec hA hB hu hA_le ht x₀
-  rw [← variationOfConstants_eq_mulVec hA hB hu hA_le x₀ (Set.uIoo_subset_uIcc_self ht)] at hderiv0
+  have hderiv0 := hasDerivAt_forcedResponse_mulVec hA hB hu hA_le ht x₀
+  rw [← forcedResponse_eq_mulVec hA hB hu hA_le x₀ (Set.uIoo_subset_uIcc_self ht)] at hderiv0
   refine hderiv0.congr_of_eventuallyEq ?_
   filter_upwards [Filter.mem_of_superset (hopen.mem_nhds ht) Set.uIoo_subset_uIcc_self] with z hz
-  exact variationOfConstants_eq_mulVec hA hB hu hA_le x₀ hz
+  exact forcedResponse_eq_mulVec hA hB hu hA_le x₀ hz
 
-/-- The variation-of-constants formula matches the initial value `x₀` at `t = t₀`: the forcing
-integral is over the degenerate interval `[t₀,t₀]`, and `Φ(t₀,t₀) = I`. -/
-@[blueprint "lem:variationOfConstants-self"
-  (title := "Variation of constants at the initial time")
+/-- The forced response matches the initial value `x₀` at `t = t₀`: the forcing integral is over
+the degenerate interval `[t₀,t₀]`, and `Φ(t₀,t₀) = I`. -/
+@[blueprint "lem:forcedResponse-self"
+  (title := "The forced response at the initial time")
   (latexEnv := "lemma")
-  (statement := /-- The variation-of-constants formula takes the value $x_0$ at $t = t_0$: the
-    forcing integral is over the degenerate interval and $\Phi(t_0,t_0) = I$.  Together with
-    \cref{thm:hasDerivAt-variationOfConstants} this makes it a solution of the initial value
-    problem, not merely of the differential equation. -/)]
-theorem variationOfConstants_self (t₀ : ℝ) (x₀ : X → ℝ) :
-    stateTransitionMatrix A t₀ t₀ *ᵥ x₀ +
-        ∫ τ in t₀..t₀, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ) = x₀ := by
-  simp [stateTransitionMatrix_self]
+  (statement := /-- The forced response (\cref{def:forcedResponse}) takes the value $x_0$ at
+    $t = t_0$: the forcing integral is over the degenerate interval and $\Phi(t_0,t_0) = I$.
+    Together with \cref{thm:hasDerivAt-forcedResponse} this makes it a solution of the initial
+    value problem, not merely of the differential equation. -/)]
+theorem forcedResponse_self (t₀ : ℝ) (x₀ : X → ℝ) :
+    forcedResponse A B u t₀ x₀ t₀ = x₀ := by
+  simp [forcedResponse, stateTransitionMatrix_self]
 
 /-- **Variation of constants: uniqueness** (Hespanha, Theorem 5.2).
 Any two integral solutions of the
@@ -1091,14 +1090,14 @@ theorem variationOfConstants_unique (hA : Continuous A) (hB : Continuous B) (hu 
 
 /-- **Variation of constants: output equation** (Hespanha, equation (5.8)).
 `y(t) := C(t) x(t) + D(t)
-u(t)`, for `x(t)` as in `hasDerivAt_variationOfConstants`, splits into the *homogeneous response*
+u(t)`, for `x(t)` as in `hasDerivAt_forcedResponse`, splits into the *homogeneous response*
 `C(t) Φ(t,t₀) x₀` and the *forced response* `∫ τ in t₀..t, C(t) Φ(t,τ) B(τ) u(τ) + D(t) u(t)`. -/
-@[blueprint "lem:variationOfConstants-output"
+@[blueprint "lem:forcedResponse-output"
   (title := "Variation of constants: output equation")
   (latexEnv := "lemma")
   (statement := /-- (Hespanha, equation (5.8)).
     With $x$ as in
-    \cref{thm:hasDerivAt-variationOfConstants}, the output $y(t) = C(t)x(t) + D(t)u(t)$ splits
+    \cref{thm:hasDerivAt-forcedResponse}, the output $y(t) = C(t)x(t) + D(t)u(t)$ splits
     into the homogeneous response and the forced response:
     \[
       y(t) = C(t)\Phi(t,t_0)x_0
@@ -1108,7 +1107,7 @@ u(t)`, for `x(t)` as in `hasDerivAt_variationOfConstants`, splits into the *homo
   (proof := /-- $v \mapsto C(t)v$ is a continuous linear map and so commutes with the interval
     integral; the integrand is continuous by
     \cref{lem:continuousOn-stateTransitionMatrix-snd}. -/)]
-theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
+theorem forcedResponse_output (hA : Continuous A) (hB : Continuous B) (hu : Continuous u)
     {t₀ t M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) (x₀ : X → ℝ) :
     C t *ᵥ (stateTransitionMatrix A t t₀ *ᵥ x₀ +
         ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)) + D t *ᵥ u t =
@@ -1130,16 +1129,10 @@ theorem variationOfConstants_output (hA : Continuous A) (hB : Continuous B) (hu 
   simpa [hL_apply] using
     (L.intervalIntegral_comp_comm (μ := volume) hcont.intervalIntegrable).symm
 
-/-- The forced response starts at `x₀`: at `t = t₀` the forcing integral is over a degenerate
-interval and `Φ(t₀,t₀) = I`. Plumbing for the integral form; `variationOfConstants_self` is
-the same fact stated on the formula itself. -/
-private theorem forcedResponse_self (t₀ : ℝ) (x₀ : X → ℝ) :
-    forcedResponse A B u t₀ x₀ t₀ = x₀ := variationOfConstants_self t₀ x₀
-
 /-- The forced response is continuous on the closed segment between `t₀` and `t₁`, endpoints
 included.
 
-Proof: `variationOfConstants_eq_mulVec` rewrites the response as `Φ(z,t₀) *ᵥ w(z)` with
+Proof: `forcedResponse_eq_mulVec` rewrites the response as `Φ(z,t₀) *ᵥ w(z)` with
 `w(z) = x₀ + ∫ τ in t₀..z, Φ(t₀,τ) *ᵥ (B τ *ᵥ u τ)`, whose integrand does not depend on `z` —
 only the limit does. Continuity of `w` is then the ordinary continuity of a primitive. -/
 @[blueprint "lem:continuousOn-forcedResponse"
@@ -1172,12 +1165,12 @@ theorem continuousOn_forcedResponse (hA : Continuous A) (hB : Continuous B) (hu 
         (x₀ + ∫ τ in t₀..z, stateTransitionMatrix A t₀ τ *ᵥ (B τ *ᵥ u τ))) (Set.uIcc t₀ t₁) :=
     (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
       ((continuousOn_stateTransitionMatrix hA hA_le).prodMk hw)
-  exact hprod.congr fun z hz => variationOfConstants_eq_mulVec hA hB hu hA_le x₀ hz
+  exact hprod.congr fun z hz => forcedResponse_eq_mulVec hA hB hu hA_le x₀ hz
 
 /-- **Variation of constants, integral form.** The forced response satisfies the integral
 equation `x(t) = x₀ + ∫ s in t₀..t, (A(s) x(s) + B(s) u(s))` on the whole closed segment.
 
-This is the differential statement `hasDerivAt_variationOfConstants` upgraded to include the
+This is the differential statement `hasDerivAt_forcedResponse` upgraded to include the
 endpoints, which the differential form cannot reach: its window has `t₀` as an endpoint for
 every choice of `t₁`, so `t₀` is never interior to it. The integral form has no such
 restriction, and `IsIntegralSolution.isIntegralCurveOn` converts it back into a derivative
@@ -1190,13 +1183,13 @@ statement valid at `t₀` itself. -/
     \]
     for every $t$ on the closed segment between $t_0$ and $t_1$.
 
-    This is \cref{thm:hasDerivAt-variationOfConstants} upgraded to include the endpoints, which
+    This is \cref{thm:hasDerivAt-forcedResponse} upgraded to include the endpoints, which
     the differential form cannot reach: its window has $t_0$ as an endpoint for every choice of
     $t_1$, so $t_0$ is never interior to it. -/)
   (proof := /-- The fundamental theorem of calculus, applied to the derivative on the open
-    interval (\cref{thm:hasDerivAt-variationOfConstants}) together with continuity on the
+    interval (\cref{thm:hasDerivAt-forcedResponse}) together with continuity on the
     closed one (\cref{lem:continuousOn-forcedResponse}), with
-    \cref{lem:variationOfConstants-self} fixing the initial value. -/)]
+    \cref{lem:forcedResponse-self} fixing the initial value. -/)]
 theorem isIntegralSolution_forcedResponse (hA : Continuous A) (hB : Continuous B)
     (hu : Continuous u) {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (x₀ : X → ℝ) :
     IsIntegralSolution t₀ t₁ (forcedResponse A B u t₀ x₀) x₀
@@ -1217,12 +1210,73 @@ theorem isIntegralSolution_forcedResponse (hA : Continuous A) (hB : Continuous B
       HasDerivWithinAt (forcedResponse A B u t₀ x₀)
         (A z *ᵥ forcedResponse A B u t₀ x₀ z + B z *ᵥ u z) (Set.Ioi z) z :=
     fun z hz =>
-      (hasDerivAt_variationOfConstants hA hB hu hA_le (huIoo_sub hz) x₀).hasDerivWithinAt
+      (hasDerivAt_forcedResponse hA hB hu hA_le (huIoo_sub hz) x₀).hasDerivWithinAt
   have hFTC := intervalIntegral.integral_eq_sub_of_hasDeriv_right hx_cont' hderiv
     hf'_cont.intervalIntegrable
   rw [forcedResponse_self] at hFTC
   rw [hFTC]
   abel
+
+/-- The homogeneous response starts at `x₀`: `Φ(t₀, t₀) = I`. -/
+@[simp, blueprint "lem:homogeneousResponse-self"
+  (title := "The homogeneous response at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- The homogeneous response (\cref{def:homogeneousResponse}) takes the value
+    $x_{0}$ at $t = t_{0}$, since $\Phi(t_{0},t_{0}) = I$. -/)]
+theorem homogeneousResponse_self (A : ℝ → Matrix X X ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
+    homogeneousResponse A t₀ x₀ t₀ = x₀ := by
+  simp [homogeneousResponse, stateTransitionMatrix_self]
+
+/-- With the input switched off the forced response is the homogeneous response: the forcing
+integral has a zero integrand. -/
+@[simp, blueprint "lem:forcedResponse-zero-input"
+  (title := "Zero input gives the homogeneous response")
+  (latexEnv := "lemma")
+  (statement := /-- With $u = 0$ the forced response (\cref{def:forcedResponse}) is the
+    homogeneous response (\cref{def:homogeneousResponse}):
+    $\Phi(t,t_0)x_0 + \int_{t_0}^{t}\Phi(t,\tau)B(\tau)\cdot 0\,\mathrm{d}\tau
+      = \Phi(t,t_0)x_0$. -/)]
+theorem forcedResponse_zero_input (B : ℝ → Matrix X U ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
+    forcedResponse A B 0 t₀ x₀ = homogeneousResponse A t₀ x₀ := by
+  funext t
+  simp [forcedResponse, homogeneousResponse]
+
+/-- A continuous `A` is bounded on every compact time segment. -/
+private lemma exists_norm_le_uIcc (hA : Continuous A) (a b : ℝ) :
+    ∃ M : ℝ, ∀ s ∈ Set.uIcc a b, ‖A s‖ ≤ M :=
+  isCompact_uIcc.exists_bound_of_continuousOn hA.continuousOn
+
+/-- Every solution of `ẋ = A(t) x` on `[t₀, ∞)` is the homogeneous response from its own
+initial state.
+
+Uniqueness, repackaged from `stateTransitionMatrix_mulVec_unique` in the differential rather
+than the integral formulation. This is where Grönwall enters: together with
+`isIntegralCurve_homogeneousResponse` it says the solutions from `t₀` are *exactly* the
+responses `Φ(·, t₀) x₀`. -/
+@[blueprint "thm:eq-homogeneousResponse-of-isIntegralCurveOn"
+  (title := "Solutions are homogeneous responses")
+  (statement := /-- Let $A$ be continuous and let $x$ solve $\dot x = A(t)x$ on
+    $[t_{0}, \infty)$.  Then
+    \[
+      \varphi(t) = \Phi(t, t_{0})\, \varphi(t_{0}), \qquad \forall\, t \ge t_{0}.
+    \] -/)
+  (proof := /-- On $[t_{0}, t]$ the solution satisfies the integral equation
+    (\cref{lem:isIntegralCurveOn-isIntegralSolution}), so uniqueness for the Peano--Baker
+    solution (\cref{thm:stateTransitionMatrix-mulVec-unique}) identifies it with
+    $\Phi(\cdot, t_{0}) x(t_{0})$ there. -/)]
+theorem eq_homogeneousResponse_of_isIntegralCurveOn (hA : Continuous A) {z : ℝ → X → ℝ}
+    {t₀ : ℝ} (hz : IsIntegralCurveOn z (fun t v => A t *ᵥ v) (Set.Ici t₀)) {t : ℝ}
+    (ht : t₀ ≤ t) : z t = homogeneousResponse A t₀ (z t₀) t := by
+  obtain ⟨M, hM⟩ := exists_norm_le_uIcc hA t₀ t
+  have hcurve : IsIntegralCurveOn z (fun r v => A r *ᵥ v) (Set.uIcc t₀ t) := by
+    rw [Set.uIcc_of_le ht]
+    exact fun r hr => (hz r (Set.Icc_subset_Ici_self hr)).mono Set.Icc_subset_Ici_self
+  have hz_cont : ContinuousOn z (Set.uIcc t₀ t) := fun r hr => (hcurve r hr).continuousWithinAt
+  have hFx : ContinuousOn (fun r => A r *ᵥ z r) (Set.uIcc t₀ t) :=
+    (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
+      (hA.continuousOn.prodMk hz_cont)
+  exact stateTransitionMatrix_mulVec_unique hA hM (z t₀) (hcurve.isIntegralSolution hFx)
+    hz_cont t Set.right_mem_uIcc
 
 /-! ## The solution as a trajectory of the system
 
@@ -1241,7 +1295,7 @@ solves the state equation on the whole line: for `t < t₀` the forcing integral
 backwards. Restricting to an interval — `Set.Ici t₀`, the ray the stability predicates quantify
 over — is `IsTrajectory.isTrajectoryOn`.
 
-Away from `t₀` this is `hasDerivAt_variationOfConstants` on a window with `t` in its interior,
+Away from `t₀` this is `hasDerivAt_forcedResponse` on a window with `t` in its interior,
 which `uIoo` being unordered already supplies on both sides. At `t₀` itself no such window
 exists, since the formula is anchored there; the two one-sided derivatives are taken from the
 integral form on `[t₀, t₀+1]` and `[t₀-1, t₀]` and glued. -/
@@ -1258,7 +1312,7 @@ integral form on `[t₀, t₀+1]` and `[t₀-1, t₀]` and glued. -/
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
   -/)
-  (proof := /-- For $t \ne t_0$, apply \cref{thm:hasDerivAt-variationOfConstants} on a window
+  (proof := /-- For $t \ne t_0$, apply \cref{thm:hasDerivAt-forcedResponse} on a window
     having $t$ in its interior; since the window is unordered this covers $t < t_0$ as well as
     $t > t_0$, and continuity of $A$ supplies the bound on the compact segment.
 
@@ -1291,7 +1345,7 @@ theorem isTrajectory_forcedResponse (s : ContinuousLinearSystem X U Y ℝ) (hA :
     have hmem : t ∈ Set.uIoo t₀ (t - 1) := by
       rw [← Set.Ioo_min_max, min_eq_right (by linarith), max_eq_left (by linarith)]
       exact ⟨by linarith, hlt⟩
-    exact hasDerivAt_variationOfConstants hA hB hu hM hmem x₀
+    exact hasDerivAt_forcedResponse hA hB hu hM hmem x₀
   · subst heq
     have hR : HasDerivWithinAt (forcedResponse s.A s.B u t x₀)
         (s.vectorField u t (forcedResponse s.A s.B u t x₀ t)) (Set.Ici t) t := by
@@ -1315,7 +1369,71 @@ theorem isTrajectory_forcedResponse (s : ContinuousLinearSystem X U Y ℝ) (hA :
     have hmem : t ∈ Set.uIoo t₀ (t + 1) := by
       rw [← Set.Ioo_min_max, min_eq_left (by linarith), max_eq_right (by linarith)]
       exact ⟨hgt, by linarith⟩
-    exact hasDerivAt_variationOfConstants hA hB hu hM hmem x₀
+    exact hasDerivAt_forcedResponse hA hB hu hM hmem x₀
+
+omit [Fintype Y] in
+/-- The homogeneous response is a trajectory of the system under zero input.
+
+No hypothesis on `B` appears: the forcing term is switched off, so only `A` is involved.
+Hespanha's Definition 8.1 is stated about this map, so this is the form in which the solution
+theory reaches the stability theory. -/
+@[blueprint "thm:isTrajectory-homogeneousResponse"
+  (title := "The homogeneous response is a trajectory")
+  (statement := /-- For a continuous-time linear system with continuous coefficients, the
+    homogeneous response (\cref{def:homogeneousResponse}) from any state $x_0$ at any time
+    $t_0$ is a trajectory (\cref{def:ctsLinearSystem-isTrajectory}) under zero input.
+
+    Definition 8.1 is stated about this map, so this is the form in which the solution theory
+    reaches the stability theory. -/)
+  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at a system with no inputs, where the
+    forcing integral vanishes (\cref{lem:forcedResponse-zero-input}).  The dummy system is an
+    artefact of the proof: only $A$ appears in the statement, and no hypothesis on $B$ is
+    needed. -/)]
+theorem isTrajectory_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+    (hA : Continuous s.A) (t₀ : ℝ) (x₀ : X → ℝ) :
+    s.IsTrajectory 0 (homogeneousResponse s.A t₀ x₀) := by
+  have h := isTrajectory_forcedResponse
+    (s := ({ A := s.A, B := fun _ => (0 : Matrix X Unit ℝ),
+             C := fun _ => (0 : Matrix Unit X ℝ),
+             D := fun _ => (0 : Matrix Unit Unit ℝ) } : ContinuousLinearSystem X Unit Unit ℝ))
+    (u := (0 : ℝ → Unit → ℝ)) hA continuous_const continuous_const t₀ x₀
+  rw [forcedResponse_zero_input] at h
+  simpa [IsTrajectory, vectorField_zero_input] using h
+
+omit [Fintype Y] in
+/-- The homogeneous response is a trajectory of the unforced system on the forward ray.
+
+`isTrajectory_homogeneousResponse` restricted to `[t₀, ∞)`, which is the interval the stability
+predicates quantify over. -/
+@[blueprint "thm:isTrajectoryOn-homogeneousResponse"
+  (title := "The homogeneous response is a trajectory on the forward ray")
+  (statement := /-- The homogeneous response (\cref{def:homogeneousResponse}) is a trajectory
+    of the unforced system (\cref{def:ctsLinearSystem-isTrajectoryOn}) on $[t_{0}, \infty)$. -/)
+  (proof := /-- \cref{thm:isTrajectory-homogeneousResponse}, restricted to the ray by
+    \cref{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}. -/)]
+theorem isTrajectoryOn_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+    (hA : Continuous s.A) (t₀ : ℝ) (x₀ : X → ℝ) :
+    s.IsTrajectoryOn 0 (homogeneousResponse s.A t₀ x₀) (Set.Ici t₀) :=
+  (isTrajectory_homogeneousResponse s hA t₀ x₀).isTrajectoryOn _
+
+omit [Fintype Y] in
+/-- Every trajectory of the unforced system is its own homogeneous response.
+
+Uniqueness, read on the system object. This is where Grönwall enters, through
+`stateTransitionMatrix_mulVec_unique`. -/
+@[blueprint "thm:eq-homogeneousResponse-of-isTrajectoryOn"
+  (title := "Trajectories of the unforced system are homogeneous responses")
+  (statement := /-- Let $s$ have continuous $A$ and let $\varphi$ be a trajectory of the
+    unforced system on $[t_{0}, \infty)$ (\cref{def:ctsLinearSystem-isTrajectoryOn}).  Then
+    $\varphi(t) = \Phi(t, t_{0})\,\varphi(t_{0})$ for every $t \ge t_{0}$. -/)
+  (proof := /-- \cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}, after reducing the
+    unforced state equation by \cref{lem:ctsLinearSystem-vectorField-zero-input}. -/)]
+theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLinearSystem X U Y ℝ)
+    (hA : Continuous s.A) {x : ℝ → X → ℝ} {t₀ : ℝ}
+    (hx : s.IsTrajectoryOn 0 x (Set.Ici t₀)) {t : ℝ} (ht : t₀ ≤ t) :
+    x t = homogeneousResponse s.A t₀ (x t₀) t := by
+  rw [IsTrajectoryOn, vectorField_zero_input] at hx
+  exact eq_homogeneousResponse_of_isIntegralCurveOn hA hx ht
 
 end ContinuousLinearSystem
 

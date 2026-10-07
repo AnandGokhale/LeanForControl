@@ -24,6 +24,10 @@ is a sequence satisfying a recursion, and those are not two cases of one notion.
 
 \inputleannode{def:ctsLinearSystem-vectorField}
 
+\inputleannode{lem:ctsLinearSystem-vectorField-zero-input}
+
+\inputleannode{lem:ctsLinearSystem-vectorField-apply-zero}
+
 \inputleannode{def:ctsLinearSystem-outputMap}
 
 \inputleannode{def:ctsLinearSystem-isTrajectoryOn}
@@ -39,6 +43,10 @@ is a sequence satisfying a recursion, and those are not two cases of one notion.
 \inputleannode{def:discLinearSystem}
 
 \inputleannode{def:discLinearSystem-vectorField}
+
+\inputleannode{lem:discLinearSystem-vectorField-zero-input}
+
+\inputleannode{lem:discLinearSystem-vectorField-apply-zero}
 
 \inputleannode{def:discLinearSystem-outputMap}
 
@@ -156,14 +164,18 @@ kernel of the observability matrix.
 \section{Hurwitz stability}
 
 For a real square matrix $A$, Hurwitz stability is expressed through the complex eigenpairs
-of its entrywise complexification. The rate-indexed predicate records a strict spectral
-margin, and ordinary Hurwitz stability is the zero-rate case.
+of its entrywise complexification, over an abstract index type. The rate-indexed predicate
+records a strict spectral margin. Ordinary Hurwitz stability is the zero-rate case, but is
+stated separately rather than derived, so that it unfolds directly to
+$\operatorname{Re}(\mu) < 0$.
 
-\inputleannode{def:isHurwitzWithRate}
+\inputleannode{def:stability-isHurwitz}
 
-\inputleannode{def:isHurwitz}
+\inputleannode{def:stability-isHurwitzWithRate}
 
 \inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
+
+\inputleannode{thm:isHurwitz-exists-pos-rate}
 
 The exponential decay estimates rest on a general Banach-algebra fact, stated with no matrices in
 it: an element of spectral radius below one has a contractive power.
@@ -172,7 +184,7 @@ it: an element of spectral radius below one has a contractive power.
 
 \section{Matrix Lyapunov equations and quadratic certificates}
 
-\inputleannode{def:solvesContinuousLyapunovEquation}
+\inputleannode{def:continuousLyapunovEquation}
 
 \inputleannode{def:quadraticForm}
 
@@ -250,9 +262,9 @@ difficulty is that the elapsed time appears both as the upper limit of integrati
 integrand; the proof factors the two apart rather than differentiating $\Phi$ in its second
 argument.
 
-\inputleannode{thm:hasDerivAt-variationOfConstants}
+\inputleannode{thm:hasDerivAt-forcedResponse}
 
-\inputleannode{lem:variationOfConstants-self}
+\inputleannode{lem:forcedResponse-self}
 
 \inputleannode{thm:variationOfConstants-unique}
 
@@ -266,11 +278,25 @@ quantifies over.
 
 \inputleannode{def:forcedResponse}
 
+\inputleannode{def:homogeneousResponse}
+
+\inputleannode{lem:homogeneousResponse-self}
+
 \inputleannode{lem:continuousOn-forcedResponse}
 
 \inputleannode{thm:isIntegralSolution-forcedResponse}
 
 \inputleannode{thm:isTrajectory-forcedResponse}
+
+\inputleannode{lem:forcedResponse-zero-input}
+
+\inputleannode{thm:isTrajectory-homogeneousResponse}
+
+\inputleannode{thm:eq-homogeneousResponse-of-isIntegralCurveOn}
+
+\inputleannode{thm:isTrajectoryOn-homogeneousResponse}
+
+\inputleannode{thm:eq-homogeneousResponse-of-isTrajectoryOn}
 
 \subsection{The time-invariant case}
 
@@ -282,7 +308,7 @@ variation-of-constants formula collapses to the closed form every textbook write
 \inputleannode{thm:isTrajectory-timeInvariant}
 
 
-\inputleannode{lem:variationOfConstants-output}
+\inputleannode{lem:forcedResponse-output}
 
 \section{Discrete-time systems}
 
@@ -334,14 +360,40 @@ $\exp$ and $A$ alone.
 
 \inputleannode{thm:exp-col-unique}
 
+\subsection{Complexification}
+
+Spectral arguments must happen over $\mathbb{C}$, because $\mathbb{R}$ is not algebraically
+closed, while the systems of interest have real coefficients. Entrywise complexification is the
+bridge, and these record what it commutes with. The one with content is the transfer of positive
+definiteness: a real positive-definite matrix remains positive definite against \emph{complex}
+vectors, which is what lets a Lyapunov certificate be evaluated against an eigenvector.
+
+\inputleannode{def:matrix-complexify}
+
+\inputleannode{lem:matrix-posDef-complexify}
+
 \subsection{The matrix exponential as an algebraic object}
 
 These say nothing about trajectories, initial times or state transition matrices — they are
 facts about $\exp$ and $A$ alone, and are proved as such. The complexification bridge is what
 lets spectral arguments, which must happen over $\mathbb{C}$, yield bounds on a real
-exponential; P6.5 collapses the exponential series to a finite polynomial in $A$.
+exponential; P6.5 collapses the exponential series to a finite polynomial in $A$. The
+eigenpair lemma is the half of spectral mapping that is pure power-series algebra, and is what
+turns an eigenvalue condition on $A$ into a statement about the growth of $e^{At}$.
 
 \inputleannode{lem:complexification-exp}
+
+\inputleannode{lem:exp-mulVec-eigenpair}
+
+\inputleannode{lem:smul-mulVec-eigenpair}
+
+\inputleannode{lem:pow-mulVec-eigenpair}
+
+\inputleannode{lem:mulVec-add-smul-one}
+
+\inputleannode{lem:mulVec-sub-smul-one-eq-zero}
+
+\inputleannode{lem:spectralRadius-exp-complexify-lt-one}
 
 \inputleannode{thm:exp-const-add}
 
@@ -842,37 +894,151 @@ region of attraction, recorded as
 
 \subsection{The system and its response}
 
-\inputleannode{def:linearVectorField}
-
-\inputleannode{def:stateTransitionCLM}
-
-\inputleannode{lem:stateTransitionCLM-self}
-
-\inputleannode{lem:isEquilibriumNA-linearVectorField}
-
 \subsection{Trajectories are state transition responses}
-
-\inputleannode{thm:isTrajectoryNA-stateTransitionCLM}
-
-\inputleannode{thm:isTrajectoryNA-eq-stateTransitionCLM}
 
 \subsection{Hespanha's Definition 8.1}
 
-\inputleannode{lem:stableNA-linearVectorField-iff-opNorm}
+\inputleannode{lem:stableNA-iff-boundedStateTransition}
 
-\inputleannode{thm:stableNA-linearVectorField-iff}
+\inputleannode{thm:stableNA-iff-boundedHomogeneousResponse}
 
-\inputleannode{thm:uniformlyStableNA-linearVectorField-iff}
+\inputleannode{thm:uniformlyStableNA-iff-uniformlyBoundedStateTransition}
 
-\inputleannode{thm:asymptoticStableNA-linearVectorField-iff}
+\inputleannode{thm:asymptoticStableNA-iff-decayingHomogeneousResponse}
 
-\inputleannode{thm:globallyExponentiallyStableNA-linearVectorField-iff}
+\inputleannode{thm:globallyExponentiallyStableNA-iff-decayingStateTransition}
 
-\inputleannode{thm:exponentiallyStableNA-linearVectorField-iff}
+\inputleannode{thm:exponentiallyStableNA-iff-decayingStateTransition}
 
 \inputleannode{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}
 
-\inputleannode{thm:unstableNA-linearVectorField-iff}
+\inputleannode{thm:unstableNA-iff-unboundedHomogeneousResponse}
+
+\section{Linear time-invariant systems}
+
+For constant $A$ the state transition matrix is $e^{A(t-t_0)}$
+(\cref{thm:stateTransitionMatrix-const}), and the stability conditions of the previous section
+collapse to a condition on the eigenvalues of $A$ alone. This is Hespanha's Theorem 8.1.
+
+Clauses (1) and (4) of that theorem --- marginal stability and instability --- ask that the
+Jordan blocks at imaginary-axis eigenvalues be $1 \times 1$. They are not recorded here: they
+need a Jordan normal form, which is a project rather than a lemma.
+
+\subsection{The Hurwitz condition and its rate-indexed refinement}
+
+The rate-indexed predicate records a strict spectral margin. It is related to the plain Hurwitz
+condition by a spectral shift (\cref{thm:isHurwitzWithRate-iff-spectral-shift}), and the two
+agree at rate zero.
+
+\inputleannode{lem:isHurwitz-iff-isHurwitzWithRate-zero}
+
+\inputleannode{lem:isHurwitzWithRate-mono}
+
+\inputleannode{lem:isHurwitzWithRate-of-isEmpty}
+
+\inputleannode{lem:isHurwitzWithRate-neg-one-by-one}
+
+The Hurwitz condition bounds each eigenvalue away from the imaginary axis one at a time;
+because the spectrum is compact, that upgrades to a uniform margin
+(\cref{thm:isHurwitz-exists-pos-rate}). This is what turns a qualitative hypothesis into a
+quantitative rate, and it is used twice below.
+
+\subsection{Equivalent analytic conditions}
+
+Nothing in this subsection mentions a system: the Hurwitz condition, decay of $e^{At}$, and an
+explicit exponential envelope for $\|e^{At}\|$ are shown to be the same condition on the
+matrix. Two generic facts about exponential envelopes are recorded first.
+
+\inputleannode{lem:tendsto-const-mul-exp-neg}
+
+\inputleannode{lem:tendsto-zero-of-norm-le-envelope}
+
+\inputleannode{thm:isHurwitz-exists-norm-exp-le}
+
+\inputleannode{thm:isHurwitz-exists-norm-exp-mulVec-le}
+
+\inputleannode{thm:isHurwitz-of-tendsto-exp}
+
+\inputleannode{thm:isHurwitz-of-tendsto-exp-mulVec}
+
+\inputleannode{thm:isHurwitz-iff-tendsto-exp}
+
+\inputleannode{thm:isHurwitz-iff-exists-norm-exp-le}
+
+\subsection{Hespanha's Theorem 8.1}
+
+\inputleannode{thm:asymptoticStableNA-iff-isHurwitz}
+
+\inputleannode{thm:exponentiallyStableNA-iff-isHurwitz}
+
+\subsection{The Lyapunov equation}
+
+Hespanha's Theorem 8.2 ties the spectral condition to solvability of $PA + A^{\mathsf T}P = -Q$.
+The direction a Lyapunov certificate is \emph{used} in comes first: exhibiting a single
+positive-definite $P$ proves the spectrum lies in the open left half-plane.
+
+\inputleannode{thm:isHurwitz-of-continuousLyapunovEquation}
+
+\inputleannode{thm:isHurwitz-of-posDef-neg-lyapunovResidual}
+
+The converse is a construction. One finite block of the integral
+$\int_{0}^{m} e^{tA^{\mathsf T}}Qe^{tA}\,\mathrm{d}t$ is summed into a convergent discrete
+Lyapunov series, with convergence and uniqueness both coming from the contraction
+$\|e^{Am}\| < 1$. A Hurwitz matrix supplies that contraction, which is
+\cref{thm:hurwitz-lyapunov-equation}.
+
+\inputleannode{thm:exists-posDef-unique-lyapunov-solution-of-contraction}
+
+\inputleannode{lem:exists-posDef-neg-lyapunovResidual-of-forall-posDef}
+
+\subsection{The rate form}
+
+The Lyapunov inequality $PA + A^{\mathsf T}P \preceq -2cP$ carries an explicit decay rate:
+along a trajectory it gives $\dot V \le -2cV$ for $V = x^{\mathsf T}Px$. It is not one of
+Hespanha's clauses, but it is the shape every contraction and guaranteed-decay-rate condition
+is written in, so it is recorded as a sixth equivalent.
+
+\inputleannode{thm:isHurwitz-of-posDef-lyapunovRate}
+
+\inputleannode{thm:exists-posDef-lyapunovRate-of-isHurwitz}
+
+\subsection{Theorem 8.2}
+
+\inputleannode{thm:isHurwitz-iff-forall-posDef-exists-solution}
+
+\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}
+
+\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovRate}
+
+\inputleannode{thm:lyapunovStability-tfae}
+
+\subsection{Quadratic forms along a linear vector field}
+
+What makes a solution of the Lyapunov equation a Lyapunov \emph{function}: the forcing matrix
+is exactly the dissipation rate of the associated quadratic form.
+
+\inputleannode{thm:fderiv-centeredQuadraticForm-linear-general}
+
+\inputleannode{lem:fderiv-centeredQuadraticForm-linear}
+
+\subsection{A quadratic certificate for an unstable eigenmode}
+
+The instability counterpart (\cref{thm:positive-real-eigenvalue-quadratic-certificate}): an
+eigenvalue with positive real part yields a real quadratic Chetaev certificate. The
+construction solves a shifted Lyapunov--Sylvester equation, whose injectivity rests on a
+nonresonance condition on the spectrum --- which is what the lemmas below supply.
+
+\inputleannode{lem:bilinear-eq-zero-on-genEigenspaces}
+
+\inputleannode{lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero}
+
+\inputleannode{lem:bilinear-eq-zero-of-no-resonance}
+
+\inputleannode{lem:toBilin-right-mul}
+
+\inputleannode{lem:toBilin-left-transpose-mul}
+
+\inputleannode{lem:toBilin-symm-real}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 

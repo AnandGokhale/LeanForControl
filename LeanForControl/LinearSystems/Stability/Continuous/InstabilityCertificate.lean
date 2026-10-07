@@ -1,8 +1,9 @@
-import LeanForControl.LinearSystems.Stability.Continuous.DefsHurwitz
+import LeanForControl.LinearSystems.Stability.DefsStability
+import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.QuadraticForm
-import LeanForControl.MatrixAlgebra.Spectrum
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Matrix.BilinearForm
@@ -23,6 +24,203 @@ Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*.
 open Matrix MatrixAlgebra Set
 open scoped RealInnerProductSpace
 
+
+namespace MatrixAlgebra
+
+open Matrix
+
+/-! ## Bilinear forms vanishing under a no-resonance condition -/
+
+variable {V : Type*} [AddCommGroup V] [Module ℂ V]
+
+/-- A resonance-avoiding bilinear form vanishes on a pair of generalized eigenspaces.
+
+`hB` says `B` transforms `T`-generalized-eigenvectors additively by `c`; if the pair's
+combined eigenvalue `ξ + ν` misses `c`, the form must vanish on that pair. Proved by
+strong induction on the sum of the generalized-eigenspace orders. -/
+@[blueprint "lem:bilinear-eq-zero-on-genEigenspaces"
+  (title := "A nonresonant bilinear form vanishes on a pair of generalized eigenspaces")
+  (latexEnv := "lemma")
+  (statement := /-- Let $T$ be an endomorphism of a complex vector space and
+    $B$ a bilinear form satisfying the Sylvester-type identity
+    \[
+      B(x, Ty) + B(Tx, y) = c\,B(x,y) \qquad \forall\, x, y.
+    \]
+    If $\xi + \nu \ne c$, then $B$ vanishes on
+    $\ker(T - \xi)^{k} \times \ker(T - \nu)^{l}$ for all $k, l$. -/)
+  (proof := /-- Strong induction on $k + l$.  The base cases are the zero generalized
+    eigenspaces, where the vector is $0$.  Otherwise write $Tx = N_{x} + \xi x$ and
+    $Ty = N_{y} + \nu y$ with $N_{x}, N_{y}$ one order lower; the induction hypothesis kills
+    $B(N_{x}, y)$ and $B(x, N_{y})$, leaving $(\xi + \nu - c)B(x,y) = 0$, and the coefficient
+    is nonzero by nonresonance. -/)]
+lemma bilinear_eq_zero_on_genEigenspaces
+    (T : Module.End ℂ V) (B : V →ₗ[ℂ] (V →ₗ[ℂ] ℂ)) (c ξ ν : ℂ)
+    (hB : ∀ x y, B x (T y) + B (T x) y = c * B x y)
+    (hres : ξ + ν ≠ c) :
+    ∀ (k l : ℕ) (x y : V), x ∈ T.genEigenspace ξ k →
+      y ∈ T.genEigenspace ν l → B x y = 0 := by
+  intro k l
+  induction hsum : k + l using Nat.strong_induction_on generalizing k l with
+  | h s ih =>
+      intro x y hx hy
+      rcases k with _ | k
+      · have hx' : x ∈ T.genEigenspace ξ (0 : ℕ∞) := by simpa using hx
+        have hxzero :=
+          (Module.End.mem_genEigenspace_zero (f := T) (μ := ξ) (x := x)).mp hx'
+        subst x
+        simp
+      rcases l with _ | l
+      · have hy' : y ∈ T.genEigenspace ν (0 : ℕ∞) := by simpa using hy
+        have hyzero :=
+          (Module.End.mem_genEigenspace_zero (f := T) (μ := ν) (x := y)).mp hy'
+        subst y
+        simp
+      let Nx := (T - ξ • (1 : Module.End ℂ V)) x
+      let Ny := (T - ν • (1 : Module.End ℂ V)) y
+      have hxN : Nx ∈ T.genEigenspace ξ k := by
+        rw [Module.End.mem_genEigenspace_nat] at hx ⊢
+        simpa only [Nx, pow_succ, Module.End.mul_apply] using hx
+      have hyN : Ny ∈ T.genEigenspace ν l := by
+        rw [Module.End.mem_genEigenspace_nat] at hy ⊢
+        simpa only [Ny, pow_succ, Module.End.mul_apply] using hy
+      have hNx : B Nx y = 0 := by
+        apply ih (k + (l + 1)) (by omega) k (l + 1) rfl Nx y hxN hy
+      have hNy : B x Ny = 0 := by
+        apply ih ((k + 1) + l) (by omega) (k + 1) l rfl x Ny hx hyN
+      have hrec := hB x y
+      have hTx : T x = Nx + ξ • x := by simp [Nx]
+      have hTy : T y = Ny + ν • y := by simp [Ny]
+      rw [hTx, hTy] at hrec
+      simp [hNx, hNy] at hrec
+      have hcoeff : ξ + ν - c ≠ 0 := sub_ne_zero.mpr hres
+      apply (mul_eq_zero.mp ?_).resolve_left hcoeff
+      linear_combination hrec
+
+/-- A nonzero vector in a maximal generalized eigenspace witnesses that eigenvalue. -/
+@[blueprint "lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero"
+  (title := "A nonzero generalized eigenvector witnesses its eigenvalue")
+  (latexEnv := "lemma")
+  (statement := /-- If $x \ne 0$ lies in the maximal generalized eigenspace of $T$ at $\xi$,
+    then $\xi$ is an eigenvalue of $T$. -/)
+  (proof := /-- Membership gives $x \in \ker(T - \xi)^{k}$ for some $k$, necessarily $k \ne 0$
+    since $x \ne 0$; so that generalized eigenspace is nontrivial, and a nontrivial generalized
+    eigenspace forces an eigenvalue. -/)]
+lemma hasEigenvalue_of_mem_maxGenEigenspace_ne_zero
+    (T : Module.End ℂ V) {ξ : ℂ} {x : V}
+    (hx : x ∈ T.maxGenEigenspace ξ) (hx0 : x ≠ 0) :
+    T.HasEigenvalue ξ := by
+  obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace T ξ x).mp hx
+  have hk0 : k ≠ 0 := by
+    intro hkzero
+    subst k
+    simpa using hx0 (by simpa using hk)
+  apply Module.End.hasEigenvalue_of_hasGenEigenvalue
+  rw [Module.End.hasGenEigenvalue_iff, Submodule.ne_bot_iff]
+  exact ⟨x, Module.End.mem_genEigenspace_nat.mpr hk, hx0⟩
+
+/-- A resonance-avoiding bilinear form vanishes identically on a finite-dimensional space:
+if no pair of `T`-eigenvalues sums to `c`, `bilinear_eq_zero_on_genEigenspaces` applies to
+every pair of vectors via the generalized-eigenspace decomposition. -/
+@[blueprint "lem:bilinear-eq-zero-of-no-resonance"
+  (title := "A nonresonant bilinear form vanishes identically")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be a finite-dimensional complex vector space, $T$ an endomorphism,
+    and $B$ a bilinear form with $B(x,Ty) + B(Tx,y) = c\,B(x,y)$.  If no pair of eigenvalues
+    of $T$ sums to $c$, then $B = 0$.
+
+    This is the uniqueness half of solvability for the Sylvester-type equation: the associated
+    operator has trivial kernel exactly when the spectrum is nonresonant. -/)
+  (proof := /-- Over $\mathbb{C}$ the generalized eigenspaces of $T$ span $V$, so it suffices
+    to check $B(x,y) = 0$ for $x, y$ in generalized eigenspaces.  A nonzero such vector
+    witnesses its eigenvalue (\cref{lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero}), so
+    nonresonance applies and \cref{lem:bilinear-eq-zero-on-genEigenspaces} gives
+    $B(x,y) = 0$. -/)]
+lemma bilinear_eq_zero_of_no_resonance
+    [FiniteDimensional ℂ V]
+    (T : Module.End ℂ V) (B : V →ₗ[ℂ] (V →ₗ[ℂ] ℂ)) (c : ℂ)
+    (hB : ∀ x y, B x (T y) + B (T x) y = c * B x y)
+    (hres : ∀ ξ ν, T.HasEigenvalue ξ → T.HasEigenvalue ν → ξ + ν ≠ c) :
+    B = 0 := by
+  apply LinearMap.ext
+  intro x
+  change B x = 0
+  rw [← LinearMap.mem_ker]
+  have hxall : (⊤ : Submodule ℂ V) ≤ LinearMap.ker B := by
+    rw [← T.iSup_maxGenEigenspace_eq_top]
+    apply iSup_le
+    intro ξ x hx
+    rw [LinearMap.mem_ker]
+    apply LinearMap.ext
+    intro y
+    have hyall : (⊤ : Submodule ℂ V) ≤ LinearMap.ker (B x) := by
+      rw [← T.iSup_maxGenEigenspace_eq_top]
+      apply iSup_le
+      intro ν y hy
+      rw [LinearMap.mem_ker]
+      by_cases hx0 : x = 0
+      · simp [hx0]
+      by_cases hy0 : y = 0
+      · simp [hy0]
+      obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace T ξ x).mp hx
+      obtain ⟨l, hl⟩ := (Module.End.mem_maxGenEigenspace T ν y).mp hy
+      exact bilinear_eq_zero_on_genEigenspaces T B c ξ ν hB
+        (hres ξ ν
+          (hasEigenvalue_of_mem_maxGenEigenspace_ne_zero T hx hx0)
+          (hasEigenvalue_of_mem_maxGenEigenspace_ne_zero T hy hy0))
+        k l x y (Module.End.mem_genEigenspace_nat.mpr hk)
+          (Module.End.mem_genEigenspace_nat.mpr hl)
+    exact LinearMap.mem_ker.mp (hyall Submodule.mem_top)
+  exact hxall Submodule.mem_top
+
+/-! ## Compatibility of `Matrix.toBilin'` with matrix multiplication -/
+
+/-- `Matrix.toBilin'` turns right multiplication by `A` into applying `A` on the right. -/
+@[blueprint "lem:toBilin-right-mul"
+  (title := "Right multiplication acts on the right argument")
+  (latexEnv := "lemma")
+  (statement := /-- For square matrices $H, A$ over a commutative semiring,
+    $(HA)(x,y) = H(x, Ay)$ as bilinear forms. -/)
+  (proof := /-- Both sides unfold to $x \cdot (HAy)$ by associativity of
+    matrix-vector multiplication. -/)]
+lemma toBilin_right_mul {K : Type*} [CommSemiring K] {n : ℕ}
+    (H A : Matrix (Fin n) (Fin n) K) (x y : Fin n → K) :
+    Matrix.toBilin' (H * A) x y = Matrix.toBilin' H x (A *ᵥ y) := by
+  rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.mulVec_mulVec]
+
+/-- `Matrix.toBilin'` turns left multiplication by `Aᵀ` into applying `A` on the left. -/
+@[blueprint "lem:toBilin-left-transpose-mul"
+  (title := "Left multiplication by the transpose acts on the left argument")
+  (latexEnv := "lemma")
+  (statement := /-- For square matrices $H, A$ over a commutative semiring,
+    $(A^{\mathsf T}H)(x,y) = H(Ax, y)$ as bilinear forms.
+
+    Together with \cref{lem:toBilin-right-mul} this is what turns the matrix equation
+    $HA + A^{\mathsf T}H = cH$ into the Sylvester-type identity on bilinear forms that
+    \cref{lem:bilinear-eq-zero-of-no-resonance} consumes. -/)
+  (proof := /-- Move the transpose across the dot product:
+    $x \cdot (A^{\mathsf T}Hy) = (Ax) \cdot (Hy)$. -/)]
+lemma toBilin_left_transpose_mul {K : Type*} [CommSemiring K] {n : ℕ}
+    (H A : Matrix (Fin n) (Fin n) K) (x y : Fin n → K) :
+    Matrix.toBilin' (Aᵀ * H) x y = Matrix.toBilin' H (A *ᵥ x) y := by
+  rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.dotProduct_mulVec,
+    ← Matrix.vecMul_vecMul, Matrix.vecMul_transpose, Matrix.dotProduct_mulVec]
+
+/-- A symmetric real matrix's bilinear form is symmetric in its two arguments. -/
+@[blueprint "lem:toBilin-symm-real"
+  (title := "A symmetric matrix represents a symmetric form")
+  (latexEnv := "lemma")
+  (statement := /-- If $H$ is a symmetric real matrix then $H(x,y) = H(y,x)$ as a bilinear
+    form. -/)
+  (proof := /-- Move the transpose across the dot product and apply $H^{\mathsf T} = H$. -/)]
+lemma toBilin_symm_real
+    {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm) (x y : Fin n → ℝ) :
+    Matrix.toBilin' H x y = Matrix.toBilin' H y x := by
+  rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.dotProduct_mulVec,
+    ← Matrix.mulVec_transpose]
+  rw [hH.eq, dotProduct_comm]
+
+end MatrixAlgebra
+
 namespace LinearSystems
 
 variable {n : ℕ}
@@ -42,8 +240,8 @@ private def shiftedLyapunovOperator
 private lemma shiftedLyapunovOperator_injective_of_no_resonance
     (A : Matrix (Fin n) (Fin n) ℝ) (a : ℝ)
     (hres : ∀ ξ ν,
-      Module.End.HasEigenvalue (A.map (algebraMap ℝ ℂ)).mulVecLin ξ →
-      Module.End.HasEigenvalue (A.map (algebraMap ℝ ℂ)).mulVecLin ν →
+      Module.End.HasEigenvalue (A.complexify).mulVecLin ξ →
+      Module.End.HasEigenvalue (A.complexify).mulVecLin ν →
       ξ + ν ≠ (2 * a : ℝ)) :
     Function.Injective (shiftedLyapunovOperator A a) := by
   intro H K hHK
@@ -52,8 +250,8 @@ private lemma shiftedLyapunovOperator_injective_of_no_resonance
   have hD : shiftedLyapunovOperator A a D = 0 := by
     change shiftedLyapunovOperator A a (H - K) = 0
     rw [map_sub, hHK, sub_self]
-  let AC : Matrix (Fin n) (Fin n) ℂ := A.map (algebraMap ℝ ℂ)
-  let DC : Matrix (Fin n) (Fin n) ℂ := D.map (algebraMap ℝ ℂ)
+  let AC : Matrix (Fin n) (Fin n) ℂ := A.complexify
+  let DC : Matrix (Fin n) (Fin n) ℂ := D.complexify
   let T : Module.End ℂ (Fin n → ℂ) := AC.mulVecLin
   let B : (Fin n → ℂ) →ₗ[ℂ] ((Fin n → ℂ) →ₗ[ℂ] ℂ) :=
     Matrix.toBilin' DC
@@ -89,7 +287,7 @@ private lemma exists_symmetric_shifted_lyapunov_solution
       0 < a ∧ a < μ.re ∧ H.IsHermitian ∧
         H * A + Aᵀ * H - (2 * a) • H = 1 := by
   let T : Module.End ℂ (Fin n → ℂ) :=
-    (A.map (algebraMap ℝ ℂ)).mulVecLin
+    (A.complexify).mulVecLin
   let resonance : Set ℝ :=
     (fun z : ℂ × ℂ ↦ (z.1 + z.2).re / 2) ''
       (spectrum ℂ T ×ˢ spectrum ℂ T)
@@ -126,7 +324,7 @@ private lemma exists_positive_quadraticForm_direction
     (A H : Matrix (Fin n) (Fin n) ℝ) (a : ℝ)
     {μ : ℂ} {v : Fin n → ℂ}
     (hv : v ≠ 0)
-    (heig : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v)
+    (heig : A.complexify *ᵥ v = μ • v)
     (ha : a < μ.re)
     (hHerm : H.IsHermitian)
     (hH : H * A + Aᵀ * H - (2 * a) • H = 1) :
@@ -244,7 +442,7 @@ Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*. -/
 theorem exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) {μ : ℂ} {v : Fin n → ℂ}
     (hv : v ≠ 0)
-    (heig : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v)
+    (heig : A.complexify *ᵥ v = μ • v)
     (hμ : 0 < μ.re) :
     ∃ (α : ℝ) (H : Matrix (Fin n) (Fin n) ℝ)
         (w : EuclideanSpace ℝ (Fin n)),

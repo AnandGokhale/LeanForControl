@@ -200,6 +200,32 @@ def outputMap (s : ContinuousLinearSystem X U Y 𝕜) (u : ℝ → U → 𝕜) :
 @[simp] lemma outputMap_apply (s : ContinuousLinearSystem X U Y 𝕜) (u : ℝ → U → 𝕜) (t : ℝ)
     (z : X → 𝕜) : s.outputMap u t z = s.C t *ᵥ z + s.D t *ᵥ u t := rfl
 
+/-- With the input switched off the state equation is `ẋ = A(t) x`: the input term vanishes.
+
+This is what lets a statement about the unforced system be written on the system object rather
+than on its state matrix alone. -/
+@[simp, blueprint "lem:ctsLinearSystem-vectorField-zero-input"
+  (title := "The unforced state equation")
+  (latexEnv := "lemma")
+  (statement := /-- At zero input the state equation (\cref{def:ctsLinearSystem-vectorField})
+    reduces to $(t, z) \mapsto A(t)\,z$. -/)]
+lemma vectorField_zero_input (s : ContinuousLinearSystem X U Y 𝕜) :
+    s.vectorField (0 : ℝ → U → 𝕜) = fun t z => s.A t *ᵥ z := by
+  funext t z; simp [vectorField]
+
+/-- At the origin the state equation contributes only the input term. In particular the origin
+is an equilibrium of the unforced system: `s.vectorField 0 t 0 = 0`. -/
+@[blueprint "lem:ctsLinearSystem-vectorField-apply-zero"
+  (title := "The state equation at the origin")
+  (latexEnv := "lemma")
+  (statement := /-- At $z = 0$ the state equation
+    (\cref{def:ctsLinearSystem-vectorField}) contributes only the input term,
+    $A(t)\,0 + B(t)u(t) = B(t)u(t)$.  With the input switched off the origin is
+    therefore an equilibrium of the system. -/)]
+lemma vectorField_apply_zero (s : ContinuousLinearSystem X U Y 𝕜) (u : ℝ → U → 𝕜) (t : ℝ) :
+    s.vectorField u t 0 = s.B t *ᵥ u t := by
+  simp [vectorField]
+
 end Semantics
 
 section Trajectory
@@ -347,6 +373,29 @@ def outputMap (s : DiscreteLinearSystem X U Y 𝕜) (u : ℕ → U → 𝕜) :
 
 @[simp] lemma outputMap_apply (s : DiscreteLinearSystem X U Y 𝕜) (u : ℕ → U → 𝕜) (k : ℕ)
     (z : X → 𝕜) : s.outputMap u k z = s.C k *ᵥ z + s.D k *ᵥ u k := rfl
+
+/-- With the input switched off the state equation is `x(k+1) = A(k) x(k)`. -/
+@[simp, blueprint "lem:discLinearSystem-vectorField-zero-input"
+  (title := "The unforced state equation, discrete time")
+  (latexEnv := "lemma")
+  (statement := /-- At zero input the state equation (\cref{def:discLinearSystem-vectorField})
+    reduces to $(k, z) \mapsto A(k)\,z$. -/)]
+lemma vectorField_zero_input (s : DiscreteLinearSystem X U Y 𝕜) :
+    s.vectorField (0 : ℕ → U → 𝕜) = fun k z => s.A k *ᵥ z := by
+  funext k z; simp [vectorField]
+
+/-- At the origin the state equation contributes only the input term. In particular the origin
+is an equilibrium of the unforced system: `s.vectorField 0 k 0 = 0`. -/
+@[blueprint "lem:discLinearSystem-vectorField-apply-zero"
+  (title := "The state equation at the origin")
+  (latexEnv := "lemma")
+  (statement := /-- At $z = 0$ the state equation
+    (\cref{def:discLinearSystem-vectorField}) contributes only the input term,
+    $A(k)\,0 + B(k)u(k) = B(k)u(k)$.  With the input switched off the origin is
+    therefore an equilibrium of the system. -/)]
+lemma vectorField_apply_zero (s : DiscreteLinearSystem X U Y 𝕜) (u : ℕ → U → 𝕜) (k : ℕ) :
+    s.vectorField u k 0 = s.B k *ᵥ u k := by
+  simp [vectorField]
 
 /-- `x` is a trajectory of `s` under the input `u` on the set `I`:
 
