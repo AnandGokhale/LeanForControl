@@ -2,11 +2,12 @@ import Mathlib.Analysis.Complex.Norm
 import Mathlib.Analysis.Calculus.FDeriv.WithLp
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
-import LeanForControl.MatrixAlgebra.Spectrum
+import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.Stability.Autonomous
 import Architect
+import LeanForControl.MatrixAlgebra.Complex
 
 /-!
 # Unstable modes and finite forward segments
@@ -63,16 +64,16 @@ private lemma hasDerivAt_realEigenmode
 
 private lemma realEigenmode_deriv_eq_mulVec
     (A : Matrix (Fin n) (Fin n) ℝ) (q μ : ℂ) (v : Fin n → ℂ)
-    (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v) (t : ℝ) :
+    (hAv : A.complexify *ᵥ v = μ • v) (t : ℝ) :
     (WithLp.toLp 2 fun i => (q * Complex.exp (μ * (t : ℂ)) * μ * v i).re) =
       realMulVec A (realEigenmode q μ v t) := by
-  have h := MatrixAlgebra.matrixMulVec_re_smul_eigenpair A μ
+  have h := Matrix.complexify_mulVec_re_smul_eigenpair A μ
     (q * Complex.exp (μ * (t : ℂ))) v hAv
   simpa [realMulVec, realEigenmode] using congrArg (WithLp.toLp 2) h
 
 private lemma hasDerivAt_realEigenmode_of_eigenvector
     (A : Matrix (Fin n) (Fin n) ℝ) (q μ : ℂ) (v : Fin n → ℂ)
-    (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v) (t : ℝ) :
+    (hAv : A.complexify *ᵥ v = μ • v) (t : ℝ) :
     HasDerivAt (realEigenmode q μ v)
       (realMulVec A (realEigenmode q μ v t)) t := by
   rw [← realEigenmode_deriv_eq_mulVec A q μ v hAv t]
@@ -140,7 +141,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
 theorem unstable_affineLinear_of_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) (x_eq : ℝⁿ) (mu : ℂ) (v : Fin n → ℂ)
     (hv : v ≠ 0)
-    (hAv : A.map (algebraMap ℝ ℂ) *ᵥ v = mu • v)
+    (hAv : A.complexify *ᵥ v = mu • v)
     (hmu : 0 < mu.re) :
     Unstable (LinearSystems.affineLinearVectorField A x_eq) x_eq := by
   apply unstable_of_fixed_escape (by positivity : (0 : ℝ) < 1)

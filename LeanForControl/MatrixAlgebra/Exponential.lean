@@ -1,6 +1,14 @@
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.Analysis.Normed.Algebra.GelfandFormula
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
+import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+
+import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Eigenpair
 
 import Architect
 
@@ -39,7 +47,8 @@ variable {n : ℕ}
   (proof := /-- Entrywise complexification is a continuous ring homomorphism, and $\exp$
     commutes with any such. -/)]
 lemma complexification_exp {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℝ) :
-    (exp A).map (algebraMap ℝ ℂ) = exp (A.map (algebraMap ℝ ℂ)) := by
+    (exp A).complexify = exp A.complexify := by
+  simp only [Matrix.complexify_eq_map]
   letI : NormedAlgebra ℚ (Matrix X X ℝ) :=
     NormedAlgebra.restrictScalars ℚ ℝ _
   letI : NormedAlgebra ℚ (Matrix X X ℂ) :=
@@ -110,15 +119,7 @@ Reference: standard power-series functional calculus for the exponential. -/
 theorem exp_mulVec_of_mulVec_eq_smul (M : Matrix X X 𝕜) (μ : 𝕜) (v : X → 𝕜)
     (h : M *ᵥ v = μ • v) :
     exp M *ᵥ v = exp μ • v := by
-  have hpow : ∀ k : ℕ, M ^ k *ᵥ v = μ ^ k • v := by
-    intro k
-    induction k with
-    | zero => simp
-    | succ k ih =>
-        calc M ^ (k + 1) *ᵥ v = M ^ k *ᵥ (M *ᵥ v) := by
-              rw [pow_succ, Matrix.mulVec_mulVec]
-          _ = μ ^ (k + 1) • v := by
-              rw [h, Matrix.mulVec_smul, ih, smul_smul, pow_succ, mul_comm]
+  have hpow := MatrixAlgebra.pow_mulVec_of_mulVec_eq_smul h
   rw [congrFun (NormedSpace.exp_eq_tsum 𝕜) M]
   change mulVecRightL v (∑' k : ℕ, ((k.factorial : 𝕜)⁻¹) • M ^ k) = _
   rw [(mulVecRightL v).map_tsum (NormedSpace.expSeries_summable' M)]
@@ -382,5 +383,93 @@ theorem exists_exp_eq_sum_smul_pow :
   rw [(summable_alphaCoeff A i t).tsum_smul_const, alphaCoeff]
 
 end FinitePolynomial
+
+/-! ## Reverse spectral mapping for the matrix exponential -/
+
+noncomputable section
+
+open scoped Matrix.Norms.Frobenius
+
+/-- Every spectral value of a complex matrix exponential is the exponential of an
+eigenvalue of the original matrix.
+
+This is the reverse inclusion in spectral mapping specialized to finite complex matrices.
+It is proved algebraically by restricting `A` to an eigenspace of `exp A`.
+
+Reference: standard spectral-mapping theorem for the matrix exponential. -/
+lemma exists_eigenpair_of_mem_spectrum_exp
+    {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℂ) {z : ℂ}
+    (hz : z ∈ spectrum ℂ (NormedSpace.exp A)) :
+    ∃ (μ : ℂ) (v : X → ℂ),
+      v ≠ 0 ∧ A *ᵥ v = μ • v ∧ z = Complex.exp μ := by
+  have hz' : Module.End.HasEigenvalue (NormedSpace.exp A).toLin' z := by
+    rw [Module.End.hasEigenvalue_iff_mem_spectrum, Matrix.spectrum_toLin']
+    exact hz
+  let W : Submodule ℂ (X → ℂ) := Module.End.eigenspace (NormedSpace.exp A).toLin' z
+  have hW : W ≠ ⊥ := by simpa [W] using hz'
+  letI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW
+  have hcommMatrix : Commute (NormedSpace.exp A) A := (Commute.refl A).exp_left
+  have hcomm : Commute (NormedSpace.exp A).toLin' A.toLin' :=
+    hcommMatrix.map Matrix.toLinAlgEquiv'
+  have hmap : Set.MapsTo A.toLin' W W := by
+    simpa [W] using Module.End.mapsTo_genEigenspace_of_comm hcomm z 1
+  let AW : Module.End ℂ W := A.toLin'.restrict hmap
+  obtain ⟨μ, hμ⟩ := Module.End.exists_eigenvalue AW
+  obtain ⟨w, hw⟩ := hμ.exists_hasEigenvector
+  have hAwSubtype : AW w = μ • w := hw.apply_eq_smul
+  have hAw : A *ᵥ (w : X → ℂ) = μ • (w : X → ℂ) := by
+    have := congrArg Subtype.val hAwSubtype
+    simpa [AW, Matrix.toLin'_apply'] using this
+  have hExpAw : NormedSpace.exp A *ᵥ (w : X → ℂ) = z • (w : X → ℂ) := by
+    have hwmem : (w : X → ℂ) ∈
+        Module.End.eigenspace (NormedSpace.exp A).toLin' z := w.property
+    have := Module.End.mem_eigenspace_iff.mp hwmem
+    simpa [Matrix.toLin'_apply'] using this
+  have hseries : NormedSpace.exp A *ᵥ (w : X → ℂ) = Complex.exp μ • (w : X → ℂ) := by
+    rw [Complex.exp_eq_exp_ℂ]
+    exact exp_mulVec_of_mulVec_eq_smul A μ _ hAw
+  have hzexp : z = Complex.exp μ := by
+    apply smul_left_injective ℂ (Subtype.coe_ne_coe.mpr hw.2)
+    exact hExpAw.symm.trans hseries
+  exact ⟨μ, w, Subtype.coe_ne_coe.mpr hw.2, hAw, hzexp⟩
+
+/-- If every eigenvalue of a real matrix has strictly negative real part, the exponential of
+its complexification has spectral radius below one.
+
+`spectralRadius` is defined from `spectrum`, which is purely algebraic, so this is independent
+of which matrix norm is in scope — but it is what Gelfand's formula consumes, in whichever
+norm the caller works in.
+
+The hypothesis is spelled out rather than written `IsHurwitz`, which lives downstream in
+`LinearSystems`; it is definitionally that predicate.
+
+Reference: standard spectral mapping for the matrix exponential. -/
+@[blueprint "lem:spectralRadius-exp-complexify-lt-one"
+  (title := "Negative spectrum gives a contractive exponential")
+  (latexEnv := "lemma")
+  (statement := /-- If every eigenpair $(\mu, v)$ of the complexification of a real matrix $A$,
+    with $v \ne 0$, has $\operatorname{Re}(\mu) < 0$, then
+    $r(e^{A_{\mathbb C}}) < 1$.
+
+    Reference: standard spectral mapping for the matrix exponential.
+  -/)
+  (proof := /-- Reverse spectral mapping: every spectral value of $e^{A_{\mathbb C}}$ is
+    $e^{\mu}$ for an eigenvalue $\mu$ of $A_{\mathbb C}$, and
+    $|e^{\mu}| = e^{\operatorname{Re}\mu} < 1$. -/)]
+lemma spectralRadius_exp_complexify_lt_one {X : Type*} [Fintype X] [DecidableEq X]
+    (A : Matrix X X ℝ)
+    (hA : ∀ (μ : ℂ) (v : X → ℂ), v ≠ 0 → A.complexify *ᵥ v = μ • v → μ.re < 0) :
+    spectralRadius ℂ (NormedSpace.exp A.complexify) < 1 := by
+  rcases isEmpty_or_nonempty X with _ | _
+  · rw [Subsingleton.elim (NormedSpace.exp A.complexify) 0, spectrum.spectralRadius_zero]
+    exact zero_lt_one
+  · refine spectrum.spectralRadius_lt_of_forall_lt _ fun z hz => ?_
+    have hz1 : ‖z‖ < 1 := by
+      obtain ⟨μ, v, hv, hAv, rfl⟩ := exists_eigenpair_of_mem_spectrum_exp _ hz
+      rw [Complex.norm_exp]
+      exact Real.exp_lt_one_iff.mpr (hA μ v hv hAv)
+    simpa only [ENNReal.coe_lt_coe] using hz1
+
+end
 
 end MatrixAlgebra

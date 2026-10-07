@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Data.Matrix.Mul
+import LeanForControl.MatrixAlgebra.Complex
 import Architect
 
 /-!
@@ -46,7 +47,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1. 
   -/)]
 def IsHurwitz (A : Matrix X X ℝ) : Prop :=
   ∀ (μ : ℂ) (v : X → ℂ), v ≠ 0 →
-    A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v → μ.re < 0
+    A.complexify *ᵥ v = μ • v → μ.re < 0
 
 /-- A real square matrix is **Hurwitz with decay rate `α`** when every complex eigenvalue `μ`
 satisfies `μ.re < -α`, so that the spectrum is bounded away from the imaginary axis by `α`.
@@ -66,7 +67,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1. 
   -/)]
 def IsHurwitzWithRate (α : ℝ) (A : Matrix X X ℝ) : Prop :=
   ∀ (μ : ℂ) (v : X → ℂ), v ≠ 0 →
-    A.map (algebraMap ℝ ℂ) *ᵥ v = μ • v → μ.re < -α
+    A.complexify *ᵥ v = μ • v → μ.re < -α
 
 /-- `P` satisfies the **continuous Lyapunov equation** for `A` with forcing `Q` when
 

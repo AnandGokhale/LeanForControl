@@ -175,6 +175,8 @@ $\operatorname{Re}(\mu) < 0$.
 
 \inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
 
+\inputleannode{thm:isHurwitz-exists-pos-rate}
+
 The exponential decay estimates rest on a general Banach-algebra fact, stated with no matrices in
 it: an element of spectral radius below one has a contractive power.
 
@@ -358,6 +360,18 @@ $\exp$ and $A$ alone.
 
 \inputleannode{thm:exp-col-unique}
 
+\subsection{Complexification}
+
+Spectral arguments must happen over $\mathbb{C}$, because $\mathbb{R}$ is not algebraically
+closed, while the systems of interest have real coefficients. Entrywise complexification is the
+bridge, and these record what it commutes with. The one with content is the transfer of positive
+definiteness: a real positive-definite matrix remains positive definite against \emph{complex}
+vectors, which is what lets a Lyapunov certificate be evaluated against an eigenvector.
+
+\inputleannode{def:matrix-complexify}
+
+\inputleannode{lem:matrix-posDef-complexify}
+
 \subsection{The matrix exponential as an algebraic object}
 
 These say nothing about trajectories, initial times or state transition matrices — they are
@@ -370,6 +384,16 @@ turns an eigenvalue condition on $A$ into a statement about the growth of $e^{At
 \inputleannode{lem:complexification-exp}
 
 \inputleannode{lem:exp-mulVec-eigenpair}
+
+\inputleannode{lem:smul-mulVec-eigenpair}
+
+\inputleannode{lem:pow-mulVec-eigenpair}
+
+\inputleannode{lem:mulVec-add-smul-one}
+
+\inputleannode{lem:mulVec-sub-smul-one-eq-zero}
+
+\inputleannode{lem:spectralRadius-exp-complexify-lt-one}
 
 \inputleannode{thm:exp-const-add}
 
@@ -889,6 +913,14 @@ region of attraction, recorded as
 \inputleannode{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}
 
 \inputleannode{thm:unstableNA-iff-unboundedHomogeneousResponse}
+
+\subsection{The Lyapunov equation}
+
+Hespanha's Theorem 8.2 ties the spectral condition to solvability of $PA + A^{\mathsf T}P = -Q$.
+The direction recorded here is the one a Lyapunov certificate is \emph{used} in: exhibiting a
+single positive-definite $P$ proves the spectrum lies in the open left half-plane.
+
+\inputleannode{thm:isHurwitz-of-continuousLyapunovEquation}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
