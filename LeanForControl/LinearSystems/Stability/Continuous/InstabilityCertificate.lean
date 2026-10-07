@@ -38,6 +38,21 @@ variable {V : Type*} [AddCommGroup V] [Module ℂ V]
 `hB` says `B` transforms `T`-generalized-eigenvectors additively by `c`; if the pair's
 combined eigenvalue `ξ + ν` misses `c`, the form must vanish on that pair. Proved by
 strong induction on the sum of the generalized-eigenspace orders. -/
+@[blueprint "lem:bilinear-eq-zero-on-genEigenspaces"
+  (title := "A nonresonant bilinear form vanishes on a pair of generalized eigenspaces")
+  (latexEnv := "lemma")
+  (statement := /-- Let $T$ be an endomorphism of a complex vector space and
+    $B$ a bilinear form satisfying the Sylvester-type identity
+    \[
+      B(x, Ty) + B(Tx, y) = c\,B(x,y) \qquad \forall\, x, y.
+    \]
+    If $\xi + \nu \ne c$, then $B$ vanishes on
+    $\ker(T - \xi)^{k} \times \ker(T - \nu)^{l}$ for all $k, l$. -/)
+  (proof := /-- Strong induction on $k + l$.  The base cases are the zero generalized
+    eigenspaces, where the vector is $0$.  Otherwise write $Tx = N_{x} + \xi x$ and
+    $Ty = N_{y} + \nu y$ with $N_{x}, N_{y}$ one order lower; the induction hypothesis kills
+    $B(N_{x}, y)$ and $B(x, N_{y})$, leaving $(\xi + \nu - c)B(x,y) = 0$, and the coefficient
+    is nonzero by nonresonance. -/)]
 lemma bilinear_eq_zero_on_genEigenspaces
     (T : Module.End ℂ V) (B : V →ₗ[ℂ] (V →ₗ[ℂ] ℂ)) (c ξ ν : ℂ)
     (hB : ∀ x y, B x (T y) + B (T x) y = c * B x y)
@@ -82,6 +97,14 @@ lemma bilinear_eq_zero_on_genEigenspaces
       linear_combination hrec
 
 /-- A nonzero vector in a maximal generalized eigenspace witnesses that eigenvalue. -/
+@[blueprint "lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero"
+  (title := "A nonzero generalized eigenvector witnesses its eigenvalue")
+  (latexEnv := "lemma")
+  (statement := /-- If $x \ne 0$ lies in the maximal generalized eigenspace of $T$ at $\xi$,
+    then $\xi$ is an eigenvalue of $T$. -/)
+  (proof := /-- Membership gives $x \in \ker(T - \xi)^{k}$ for some $k$, necessarily $k \ne 0$
+    since $x \ne 0$; so that generalized eigenspace is nontrivial, and a nontrivial generalized
+    eigenspace forces an eigenvalue. -/)]
 lemma hasEigenvalue_of_mem_maxGenEigenspace_ne_zero
     (T : Module.End ℂ V) {ξ : ℂ} {x : V}
     (hx : x ∈ T.maxGenEigenspace ξ) (hx0 : x ≠ 0) :
@@ -98,6 +121,20 @@ lemma hasEigenvalue_of_mem_maxGenEigenspace_ne_zero
 /-- A resonance-avoiding bilinear form vanishes identically on a finite-dimensional space:
 if no pair of `T`-eigenvalues sums to `c`, `bilinear_eq_zero_on_genEigenspaces` applies to
 every pair of vectors via the generalized-eigenspace decomposition. -/
+@[blueprint "lem:bilinear-eq-zero-of-no-resonance"
+  (title := "A nonresonant bilinear form vanishes identically")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be a finite-dimensional complex vector space, $T$ an endomorphism,
+    and $B$ a bilinear form with $B(x,Ty) + B(Tx,y) = c\,B(x,y)$.  If no pair of eigenvalues
+    of $T$ sums to $c$, then $B = 0$.
+
+    This is the uniqueness half of solvability for the Sylvester-type equation: the associated
+    operator has trivial kernel exactly when the spectrum is nonresonant. -/)
+  (proof := /-- Over $\mathbb{C}$ the generalized eigenspaces of $T$ span $V$, so it suffices
+    to check $B(x,y) = 0$ for $x, y$ in generalized eigenspaces.  A nonzero such vector
+    witnesses its eigenvalue (\cref{lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero}), so
+    nonresonance applies and \cref{lem:bilinear-eq-zero-on-genEigenspaces} gives
+    $B(x,y) = 0$. -/)]
 lemma bilinear_eq_zero_of_no_resonance
     [FiniteDimensional ℂ V]
     (T : Module.End ℂ V) (B : V →ₗ[ℂ] (V →ₗ[ℂ] ℂ)) (c : ℂ)
@@ -138,12 +175,30 @@ lemma bilinear_eq_zero_of_no_resonance
 /-! ## Compatibility of `Matrix.toBilin'` with matrix multiplication -/
 
 /-- `Matrix.toBilin'` turns right multiplication by `A` into applying `A` on the right. -/
+@[blueprint "lem:toBilin-right-mul"
+  (title := "Right multiplication acts on the right argument")
+  (latexEnv := "lemma")
+  (statement := /-- For square matrices $H, A$ over a commutative semiring,
+    $(HA)(x,y) = H(x, Ay)$ as bilinear forms. -/)
+  (proof := /-- Both sides unfold to $x \cdot (HAy)$ by associativity of
+    matrix-vector multiplication. -/)]
 lemma toBilin_right_mul {K : Type*} [CommSemiring K] {n : ℕ}
     (H A : Matrix (Fin n) (Fin n) K) (x y : Fin n → K) :
     Matrix.toBilin' (H * A) x y = Matrix.toBilin' H x (A *ᵥ y) := by
   rw [Matrix.toBilin'_apply', Matrix.toBilin'_apply', Matrix.mulVec_mulVec]
 
 /-- `Matrix.toBilin'` turns left multiplication by `Aᵀ` into applying `A` on the left. -/
+@[blueprint "lem:toBilin-left-transpose-mul"
+  (title := "Left multiplication by the transpose acts on the left argument")
+  (latexEnv := "lemma")
+  (statement := /-- For square matrices $H, A$ over a commutative semiring,
+    $(A^{\mathsf T}H)(x,y) = H(Ax, y)$ as bilinear forms.
+
+    Together with \cref{lem:toBilin-right-mul} this is what turns the matrix equation
+    $HA + A^{\mathsf T}H = cH$ into the Sylvester-type identity on bilinear forms that
+    \cref{lem:bilinear-eq-zero-of-no-resonance} consumes. -/)
+  (proof := /-- Move the transpose across the dot product:
+    $x \cdot (A^{\mathsf T}Hy) = (Ax) \cdot (Hy)$. -/)]
 lemma toBilin_left_transpose_mul {K : Type*} [CommSemiring K] {n : ℕ}
     (H A : Matrix (Fin n) (Fin n) K) (x y : Fin n → K) :
     Matrix.toBilin' (Aᵀ * H) x y = Matrix.toBilin' H (A *ᵥ x) y := by
@@ -151,6 +206,12 @@ lemma toBilin_left_transpose_mul {K : Type*} [CommSemiring K] {n : ℕ}
     ← Matrix.vecMul_vecMul, Matrix.vecMul_transpose, Matrix.dotProduct_mulVec]
 
 /-- A symmetric real matrix's bilinear form is symmetric in its two arguments. -/
+@[blueprint "lem:toBilin-symm-real"
+  (title := "A symmetric matrix represents a symmetric form")
+  (latexEnv := "lemma")
+  (statement := /-- If $H$ is a symmetric real matrix then $H(x,y) = H(y,x)$ as a bilinear
+    form. -/)
+  (proof := /-- Move the transpose across the dot product and apply $H^{\mathsf T} = H$. -/)]
 lemma toBilin_symm_real
     {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm) (x y : Fin n → ℝ) :
     Matrix.toBilin' H x y = Matrix.toBilin' H y x := by

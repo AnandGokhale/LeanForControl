@@ -45,6 +45,13 @@ to `μ.re < 0` on the nose; `-0 = 0` is not definitional for the reals, which is
 no longer `Iff.rfl`.
 
 Original: this is the compatibility lemma for the rate-indexed definition. -/
+@[blueprint "lem:isHurwitz-iff-isHurwitzWithRate-zero"
+  (title := "Hurwitz is rate zero")
+  (latexEnv := "lemma")
+  (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
+    only if it is Hurwitz with decay rate $0$ (\cref{def:stability-isHurwitzWithRate}). -/)
+  (proof := /-- Both unfold to a condition on $\operatorname{Re}\mu$, the first to
+    $\operatorname{Re}\mu < 0$ and the second to $\operatorname{Re}\mu < -0$. -/)]
 theorem isHurwitz_iff_isHurwitzWithRate_zero (A : Matrix X X ℝ) :
     IsHurwitz A ↔ IsHurwitzWithRate 0 A := by
   simp [IsHurwitz, IsHurwitzWithRate]
@@ -53,6 +60,13 @@ omit [DecidableEq X] in
 /-- A certified Hurwitz decay rate may be weakened.
 
 Original: monotonicity of the rate-indexed predicate. -/
+@[blueprint "lem:isHurwitzWithRate-mono"
+  (title := "A certified decay rate may be weakened")
+  (latexEnv := "lemma")
+  (statement := /-- If $A$ is Hurwitz with decay rate $\alpha$
+    (\cref{def:stability-isHurwitzWithRate}) and $\beta \le \alpha$, then $A$ is Hurwitz with
+    decay rate $\beta$. -/)
+  (proof := /-- Each eigenvalue satisfies $\operatorname{Re}\mu < -\alpha \le -\beta$. -/)]
 theorem IsHurwitzWithRate.mono {A : Matrix X X ℝ} {α β : ℝ}
     (hA : IsHurwitzWithRate α A) (hβα : β ≤ α) :
     IsHurwitzWithRate β A := by
@@ -65,6 +79,16 @@ omit [DecidableEq X] in
 nonzero eigenvector.
 
 Original: documents the chosen zero-dimensional convention. -/
+@[blueprint "lem:isHurwitzWithRate-of-isEmpty"
+  (title := "Zero-dimensional matrices are vacuously Hurwitz")
+  (latexEnv := "lemma")
+  (statement := /-- If the index type is empty then every $A$ is Hurwitz with every decay rate
+    $\alpha$ (\cref{def:stability-isHurwitzWithRate}).
+
+    This records the convention chosen for the degenerate case: the predicate quantifies over
+    nonzero eigenvectors, and in dimension zero there are none. -/)
+  (proof := /-- There is no nonzero vector, so the hypothesis of the predicate is never
+    met. -/)]
 theorem isHurwitzWithRate_of_isEmpty [IsEmpty X] (α : ℝ) (A : Matrix X X ℝ) :
     IsHurwitzWithRate α A := by
   intro μ v hv
@@ -114,6 +138,15 @@ theorem isHurwitzWithRate_iff_add_smul_one
 This is a concrete sanity check for the eigenpair definition and its sign convention.
 
 Original: direct computation included as a sanity check for the definition. -/
+@[blueprint "lem:isHurwitzWithRate-neg-one-by-one"
+  (title := "The scalar example")
+  (latexEnv := "lemma")
+  (statement := /-- For $\alpha < \gamma$, the $1 \times 1$ matrix $(-\gamma)$ is Hurwitz with
+    decay rate $\alpha$ (\cref{def:stability-isHurwitzWithRate}).
+
+    Included as a concrete check on the sign convention of the definition. -/)
+  (proof := /-- The only eigenvalue is $-\gamma$, and
+    $\operatorname{Re}(-\gamma) = -\gamma < -\alpha$. -/)]
 theorem isHurwitzWithRate_neg_one_by_one {α γ : ℝ} (hαγ : α < γ) :
     IsHurwitzWithRate α ((-γ) • (1 : Matrix (Fin 1) (Fin 1) ℝ)) := by
   intro μ v hv hAv
@@ -201,6 +234,15 @@ omit [Fintype X] [DecidableEq X] in
 
 Nothing but `Real.tendsto_exp_atBot` composed with the affine map `t ↦ -γ (t - t₀)`, which
 tends to `atBot` because `-γ < 0`. -/
+@[blueprint "lem:tendsto-const-mul-exp-neg"
+  (title := "The decay envelope vanishes")
+  (latexEnv := "lemma")
+  (statement := /-- For $\gamma > 0$ and any constants $K, t_{0}$,
+    \[
+      \lim_{t \to \infty} K\,e^{-\gamma(t - t_{0})} = 0.
+    \] -/)
+  (proof := /-- The affine map $t \mapsto -\gamma(t - t_{0})$ tends to $-\infty$ because
+    $-\gamma < 0$; compose with $\exp$ and scale by $K$. -/)]
 lemma tendsto_const_mul_exp_neg (K t₀ : ℝ) {γ : ℝ} (hγ : 0 < γ) :
     Tendsto (fun t : ℝ => K * Real.exp (-γ * (t - t₀))) atTop (𝓝 0) := by
   have haff : Tendsto (fun t : ℝ => -γ * (t - t₀)) atTop atBot :=
@@ -215,6 +257,21 @@ Anything whose norm sits under `k e^{-γ (t - t₀)} c` tends to zero.
 This is `squeeze_zero_norm'`; what it saves is doing the envelope's limit and the
 reassociation `k · E · c = (k · c) · E` once rather than at each call site. It is stated over
 an arbitrary normed space because it is used for both matrix- and vector-valued quantities. -/
+@[blueprint "lem:tendsto-zero-of-norm-le-envelope"
+  (title := "Squeeze against an exponentially decaying envelope")
+  (latexEnv := "lemma")
+  (statement := /-- Let $E$ be a normed space, $f : \mathbb{R} \to E$, and $\gamma > 0$.  If
+    eventually
+    \[
+      \|f(t)\| \le k\,e^{-\gamma(t - t_{0})}\,c,
+    \]
+    then $f(t) \to 0$ as $t \to \infty$.
+
+    Stated over an arbitrary normed space because it is applied to both matrix- and
+    vector-valued quantities. -/)
+  (proof := /-- The squeeze theorem: $\|f\|$ is bounded below by $0$ and above by an envelope
+    that tends to $0$ (\cref{lem:tendsto-const-mul-exp-neg}, after reassociating
+    $k \cdot E \cdot c = (kc) \cdot E$). -/)]
 lemma tendsto_zero_of_norm_le_envelope {E : Type*} [NormedAddCommGroup E]
     {f : ℝ → E} (k c t₀ : ℝ) {γ : ℝ} (hγ : 0 < γ)
     (hbd : ∀ᶠ t in atTop, ‖f t‖ ≤ k * Real.exp (-γ * (t - t₀)) * c) :
@@ -268,6 +325,34 @@ The contractive block `‖e^{Am}‖ ≤ c < 1` decays geometrically along the ar
 with constant `M / c`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1. -/
+@[blueprint "thm:isHurwitz-exists-norm-exp-le"
+  (title := "A Hurwitz matrix has an exponentially decaying exponential")
+  (statement := /-- If $A$ is Hurwitz (\cref{def:stability-isHurwitz}) then there are
+    $k > 0$ and $\gamma > 0$ with
+    \[
+      \|e^{At}\| \le k\,e^{-\gamma t}, \qquad \forall\, t \ge 0.
+    \] -/)
+  (proof := /-- \emph{A contracting block.}  The spectral radius of $e^{A_{\mathbb C}}$ is
+    below $1$ (\cref{lem:spectralRadius-exp-complexify-lt-one}), so by Gelfand's formula
+    (\cref{lem:exists-pow-norm-lt-one}) some integer time $p > 0$ has
+    $\|e^{Ap}\| < 1$.  Fix $c$ with $\|e^{Ap}\| \le c < 1$, kept away from $0$ so that
+    $\log c$ exists.
+
+    \emph{One block.}  $\|e^{Ar}\|$ is continuous, hence bounded by some $M \ge 1$ on the
+    compact interval $[0, p]$.
+
+    \emph{Spreading.}  Write $t = qp + r$ with $q \in \mathbb{N}$ and $r \in [0, p)$.  The
+    exponents commute, so $e^{At} = e^{Ar}(e^{Ap})^{q}$, and submultiplicativity gives
+    $\|e^{At}\| \le M c^{q}$ by induction on $q$.  Setting $\gamma = -\log c / p$ turns
+    $c^{q}$ into $e^{-\gamma q p}$, and $qp \ge t - p$ costs one further factor $c^{-1}$.  The
+    bound is $\|e^{At}\| \le (M/c)\,e^{-\gamma t}$.
+
+    The contraction is taken in the $L^{\infty}$ operator norm, which is what makes it usable
+    against $\|Ax\|_{\infty} \le \|A\|_{\infty}\|x\|_{\infty}$ in
+    \cref{thm:isHurwitz-exists-norm-exp-mulVec-le}.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.1.
+  -/)]
 theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
     ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t →
       ‖exp (t • A)‖ ≤ k * Real.exp (-γ * t) := by
@@ -354,6 +439,18 @@ theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
 Separated from `IsHurwitz.exists_norm_exp_le` because the bound on the matrix is the real
 content; this is one application of `Matrix.linfty_opNorm_mulVec`, and it is the step where
 the choice of the `L∞` operator norm earns its keep. -/
+@[blueprint "thm:isHurwitz-exists-norm-exp-mulVec-le"
+  (title := "Exponential decay of the state under a Hurwitz matrix")
+  (statement := /-- If $A$ is Hurwitz (\cref{def:stability-isHurwitz}) then there are
+    $k > 0$ and $\gamma > 0$ with
+    \[
+      \|e^{At}x\| \le k\,e^{-\gamma t}\,\|x\|, \qquad \forall\, t \ge 0,\ \forall\, x.
+    \]
+
+    This is the form the Lyapunov stability predicates consume. -/)
+  (proof := /-- \cref{thm:isHurwitz-exists-norm-exp-le} bounds the matrix; one application of
+    $\|Ax\|_{\infty} \le \|A\|_{\infty}\|x\|_{\infty}$ transfers it to the state.  This is the
+    step at which the choice of the $L^{\infty}$ operator norm earns its keep. -/)]
 theorem IsHurwitz.exists_norm_exp_mulVec_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
     ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t → ∀ x : X → ℝ,
       ‖exp (t • A) *ᵥ x‖ ≤ k * Real.exp (-γ * t) * ‖x‖ := by
@@ -384,6 +481,24 @@ Complexification is continuous, so the limit carries across to the complex eigen
 but `e^{At} v = e^{μ t} v` has norm `e^{t · Re μ} ‖v‖ ≥ ‖v‖ > 0` whenever `Re μ ≥ 0`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1. -/
+@[blueprint "thm:isHurwitz-of-tendsto-exp"
+  (title := "Decay of the matrix exponential forces the Hurwitz condition")
+  (statement := /-- If $e^{At} \to 0$ as $t \to \infty$ then $A$ is Hurwitz
+    (\cref{def:stability-isHurwitz}).
+
+    Stated from mere convergence rather than from an exponential bound, so that it serves
+    clause (2) and clause (3) of Theorem 8.1 alike.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.1.
+  -/)
+  (proof := /-- Suppose $\operatorname{Re}\mu \ge 0$ for some eigenpair $(\mu, v)$ with
+    $v \ne 0$.  Complexification is continuous, so $e^{At}_{\mathbb C}v \to 0$ as well.  But
+    $v$ is an eigenvector of $tA_{\mathbb C}$ with eigenvalue $t\mu$, hence of its exponential
+    (\cref{lem:exp-mulVec-eigenpair}), so
+    \[
+      \|e^{At}_{\mathbb C}v\| = |e^{t\mu}|\,\|v\| = e^{t\operatorname{Re}\mu}\|v\| \ge \|v\| > 0
+    \]
+    for every $t \ge 0$, contradicting convergence to $0$. -/)]
 theorem isHurwitz_of_tendsto_exp
     (hmat : Tendsto (fun t : ℝ => exp (t • A)) atTop (𝓝 0)) :
     IsHurwitz A := by
@@ -427,6 +542,16 @@ theorem isHurwitz_of_tendsto_exp
 /-- Pointwise decay of `e^{At}` on real states already forces `A` to be Hurwitz.
 
 The composite both clauses of Theorem 8.1 reach for. -/
+@[blueprint "thm:isHurwitz-of-tendsto-exp-mulVec"
+  (title := "Pointwise decay of the state forces the Hurwitz condition")
+  (statement := /-- If $e^{At}x \to 0$ as $t \to \infty$ for every real state $x$, then $A$ is
+    Hurwitz (\cref{def:stability-isHurwitz}).
+
+    This is the composite that both clauses of Theorem 8.1 reach for: the stability predicates
+    speak about states, not about the matrix. -/)
+  (proof := /-- Feeding the hypothesis the standard basis vectors returns the columns of
+    $e^{At}$, and convergence in the matrix space is entrywise, so $e^{At} \to 0$; apply
+    \cref{thm:isHurwitz-of-tendsto-exp}. -/)]
 theorem isHurwitz_of_tendsto_exp_mulVec
     (h : ∀ x : X → ℝ, Tendsto (fun t : ℝ => exp (t • A) *ᵥ x) atTop (𝓝 0)) :
     IsHurwitz A :=
@@ -450,6 +575,13 @@ private lemma tendsto_exp_of_norm_exp_le {k γ : ℝ} (hγ : 0 < γ)
   simpa using hbd t ht
 
 /-- `A` is Hurwitz exactly when `e^{At} → 0`. -/
+@[blueprint "thm:isHurwitz-iff-tendsto-exp"
+  (title := "Hurwitz is decay of the matrix exponential")
+  (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
+    only if $e^{At} \to 0$ as $t \to \infty$. -/)
+  (proof := /-- Forwards, \cref{thm:isHurwitz-exists-norm-exp-le} supplies an exponentially
+    decaying envelope and \cref{lem:tendsto-zero-of-norm-le-envelope} squeezes;
+    backwards is \cref{thm:isHurwitz-of-tendsto-exp}. -/)]
 theorem isHurwitz_iff_tendsto_exp :
     IsHurwitz A ↔ Tendsto (fun t : ℝ => exp (t • A)) atTop (𝓝 0) := by
   refine ⟨fun hA => ?_, isHurwitz_of_tendsto_exp A⟩
@@ -457,6 +589,18 @@ theorem isHurwitz_iff_tendsto_exp :
   exact tendsto_exp_of_norm_exp_le A hγ hbd
 
 /-- `A` is Hurwitz exactly when `‖e^{At}‖` admits an exponentially decaying envelope. -/
+@[blueprint "thm:isHurwitz-iff-exists-norm-exp-le"
+  (title := "Hurwitz is an exponential envelope for the matrix exponential")
+  (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
+    only if there are $k > 0$ and $\gamma > 0$ with
+    $\|e^{At}\| \le k\,e^{-\gamma t}$ for all $t \ge 0$.
+
+    Recorded separately from \cref{thm:isHurwitz-iff-tendsto-exp} because the two are what
+    clauses (2) and (3) of Theorem 8.1 respectively need: bare convergence for asymptotic
+    stability, an explicit rate for exponential stability. -/)
+  (proof := /-- Forwards is \cref{thm:isHurwitz-exists-norm-exp-le}.  Backwards, the envelope
+    forces $e^{At} \to 0$ (\cref{lem:tendsto-zero-of-norm-le-envelope}), so
+    \cref{thm:isHurwitz-iff-tendsto-exp} applies. -/)]
 theorem isHurwitz_iff_exists_norm_exp_le :
     IsHurwitz A ↔ ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t →
       ‖exp (t • A)‖ ≤ k * Real.exp (-γ * t) := by

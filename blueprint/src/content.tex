@@ -914,13 +914,131 @@ region of attraction, recorded as
 
 \inputleannode{thm:unstableNA-iff-unboundedHomogeneousResponse}
 
+\section{Linear time-invariant systems}
+
+For constant $A$ the state transition matrix is $e^{A(t-t_0)}$
+(\cref{thm:stateTransitionMatrix-const}), and the stability conditions of the previous section
+collapse to a condition on the eigenvalues of $A$ alone. This is Hespanha's Theorem 8.1.
+
+Clauses (1) and (4) of that theorem --- marginal stability and instability --- ask that the
+Jordan blocks at imaginary-axis eigenvalues be $1 \times 1$. They are not recorded here: they
+need a Jordan normal form, which is a project rather than a lemma.
+
+\subsection{The Hurwitz condition and its rate-indexed refinement}
+
+The rate-indexed predicate records a strict spectral margin. It is related to the plain Hurwitz
+condition by a spectral shift (\cref{thm:isHurwitzWithRate-iff-spectral-shift}), and the two
+agree at rate zero.
+
+\inputleannode{lem:isHurwitz-iff-isHurwitzWithRate-zero}
+
+\inputleannode{lem:isHurwitzWithRate-mono}
+
+\inputleannode{lem:isHurwitzWithRate-of-isEmpty}
+
+\inputleannode{lem:isHurwitzWithRate-neg-one-by-one}
+
+The Hurwitz condition bounds each eigenvalue away from the imaginary axis one at a time;
+because the spectrum is compact, that upgrades to a uniform margin
+(\cref{thm:isHurwitz-exists-pos-rate}). This is what turns a qualitative hypothesis into a
+quantitative rate, and it is used twice below.
+
+\subsection{Equivalent analytic conditions}
+
+Nothing in this subsection mentions a system: the Hurwitz condition, decay of $e^{At}$, and an
+explicit exponential envelope for $\|e^{At}\|$ are shown to be the same condition on the
+matrix. Two generic facts about exponential envelopes are recorded first.
+
+\inputleannode{lem:tendsto-const-mul-exp-neg}
+
+\inputleannode{lem:tendsto-zero-of-norm-le-envelope}
+
+\inputleannode{thm:isHurwitz-exists-norm-exp-le}
+
+\inputleannode{thm:isHurwitz-exists-norm-exp-mulVec-le}
+
+\inputleannode{thm:isHurwitz-of-tendsto-exp}
+
+\inputleannode{thm:isHurwitz-of-tendsto-exp-mulVec}
+
+\inputleannode{thm:isHurwitz-iff-tendsto-exp}
+
+\inputleannode{thm:isHurwitz-iff-exists-norm-exp-le}
+
+\subsection{Hespanha's Theorem 8.1}
+
+\inputleannode{thm:asymptoticStableNA-iff-isHurwitz}
+
+\inputleannode{thm:exponentiallyStableNA-iff-isHurwitz}
+
 \subsection{The Lyapunov equation}
 
 Hespanha's Theorem 8.2 ties the spectral condition to solvability of $PA + A^{\mathsf T}P = -Q$.
-The direction recorded here is the one a Lyapunov certificate is \emph{used} in: exhibiting a
-single positive-definite $P$ proves the spectrum lies in the open left half-plane.
+The direction a Lyapunov certificate is \emph{used} in comes first: exhibiting a single
+positive-definite $P$ proves the spectrum lies in the open left half-plane.
 
 \inputleannode{thm:isHurwitz-of-continuousLyapunovEquation}
+
+\inputleannode{thm:isHurwitz-of-posDef-neg-lyapunovResidual}
+
+The converse is a construction. One finite block of the integral
+$\int_{0}^{m} e^{tA^{\mathsf T}}Qe^{tA}\,\mathrm{d}t$ is summed into a convergent discrete
+Lyapunov series, with convergence and uniqueness both coming from the contraction
+$\|e^{Am}\| < 1$. A Hurwitz matrix supplies that contraction, which is
+\cref{thm:hurwitz-lyapunov-equation}.
+
+\inputleannode{thm:exists-posDef-unique-lyapunov-solution-of-contraction}
+
+\inputleannode{lem:exists-posDef-neg-lyapunovResidual-of-forall-posDef}
+
+\subsection{The rate form}
+
+The Lyapunov inequality $PA + A^{\mathsf T}P \preceq -2cP$ carries an explicit decay rate:
+along a trajectory it gives $\dot V \le -2cV$ for $V = x^{\mathsf T}Px$. It is not one of
+Hespanha's clauses, but it is the shape every contraction and guaranteed-decay-rate condition
+is written in, so it is recorded as a sixth equivalent.
+
+\inputleannode{thm:isHurwitz-of-posDef-lyapunovRate}
+
+\inputleannode{thm:exists-posDef-lyapunovRate-of-isHurwitz}
+
+\subsection{Theorem 8.2}
+
+\inputleannode{thm:isHurwitz-iff-forall-posDef-exists-solution}
+
+\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}
+
+\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovRate}
+
+\inputleannode{thm:lyapunovStability-tfae}
+
+\subsection{Quadratic forms along a linear vector field}
+
+What makes a solution of the Lyapunov equation a Lyapunov \emph{function}: the forcing matrix
+is exactly the dissipation rate of the associated quadratic form.
+
+\inputleannode{thm:fderiv-centeredQuadraticForm-linear-general}
+
+\inputleannode{lem:fderiv-centeredQuadraticForm-linear}
+
+\subsection{A quadratic certificate for an unstable eigenmode}
+
+The instability counterpart (\cref{thm:positive-real-eigenvalue-quadratic-certificate}): an
+eigenvalue with positive real part yields a real quadratic Chetaev certificate. The
+construction solves a shifted Lyapunov--Sylvester equation, whose injectivity rests on a
+nonresonance condition on the spectrum --- which is what the lemmas below supply.
+
+\inputleannode{lem:bilinear-eq-zero-on-genEigenspaces}
+
+\inputleannode{lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero}
+
+\inputleannode{lem:bilinear-eq-zero-of-no-resonance}
+
+\inputleannode{lem:toBilin-right-mul}
+
+\inputleannode{lem:toBilin-left-transpose-mul}
+
+\inputleannode{lem:toBilin-symm-real}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 

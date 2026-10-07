@@ -345,6 +345,33 @@ then every positive-definite forcing matrix `Q` has a positive-definite solution
 `P A + Aᵀ P = -Q`, unique among all matrix solutions.
 
 Reference: Khalil, *Nonlinear Systems*. -/
+@[blueprint "thm:exists-posDef-unique-lyapunov-solution-of-contraction"
+  (title := "The Lyapunov equation from a contracting exponential")
+  (statement := /-- Suppose $\|e^{Am}\| < 1$ for some integer $m > 0$.  Then for every
+    positive definite $Q$ there is a positive definite $P$ with
+    $PA + A^{\mathsf T}P = -Q$ (\cref{def:continuousLyapunovEquation}), and $P$ is the unique
+    matrix solution.
+
+    Reference: Khalil, \emph{Nonlinear Systems}.
+  -/)
+  (proof := /-- Write $L(P) = PA + A^{\mathsf T}P$ for the Lyapunov operator,
+    $C = e^{Am}$, and $T(W) = C^{\mathsf T}WC$ for the congruence (Stein) operator.
+
+    \emph{One block.}  Let $R = \int_{0}^{m} e^{tA^{\mathsf T}}Qe^{tA}\,\mathrm{d}t$.
+    Differentiating the integrand two ways and equating the derivatives by uniqueness gives
+    the key identity $L(R) = T(Q) - Q$.  $R$ is positive definite because the integrand is,
+    pointwise, and positive definiteness survives the integral.
+
+    \emph{Summing the blocks.}  $\|C\| < 1$ makes $\|T\| < 1$, so $\sum_{k} T^{k}R$ converges;
+    call it $P$.  It is positive definite, being a convergent sum of positive definite terms.
+    Since $A$ and $C$ commute, $L$ commutes with $T$, so
+    $L(T^{k}R) = T^{k+1}Q - T^{k}Q$ and the series for $L(P)$ telescopes to $-Q$.
+
+    \emph{Uniqueness.}  A contraction has only the trivial fixed point, so $L$ is injective;
+    two solutions with the same forcing therefore coincide.
+
+    The contraction is taken in the Frobenius norm, the only place in the construction where
+    $\|C^{\mathsf T}\| = \|C\|$ is needed. -/)]
 theorem exists_posDef_unique_solution_continuous_lyapunov_of_exp_nat_norm_lt_one
     (A Q : Matrix X X ℝ) (hQ : Q.PosDef)
     (hcontract : ∃ m : ℕ, 0 < m ∧ ‖NormedSpace.exp ((m : ℝ) • A)‖ < 1) :
@@ -521,6 +548,19 @@ take the forcing to be minus the residual.
 
 Stated through positive definiteness of `-(PM + MᵀP)` rather than through a matrix order
 relation, so that it needs no Loewner order on matrices. -/
+@[blueprint "thm:isHurwitz-of-posDef-neg-lyapunovResidual"
+  (title := "The Lyapunov inequality certifies the Hurwitz condition")
+  (statement := /-- If $P$ is positive definite and $-(PM + M^{\mathsf T}P)$ is positive
+    definite, then $M$ is Hurwitz (\cref{def:stability-isHurwitz}).
+
+    This is Hespanha's Theorem 8.2, $(5) \Rightarrow (3)$.  It is stated through positive
+    definiteness of the negated residual rather than through a matrix order relation, so that
+    it needs no Loewner order.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.2.
+  -/)
+  (proof := /-- Take the forcing to be minus the residual and apply
+    \cref{thm:isHurwitz-of-continuousLyapunovEquation}. -/)]
 theorem isHurwitz_of_posDef_neg_lyapunovResidual (hP : P.PosDef)
     (hneg : (-(P * M + Mᵀ * P)).PosDef) :
     IsHurwitz M :=
@@ -534,6 +574,19 @@ the resulting `P` satisfies the Lyapunov inequality.
 
 The content is just the instantiation `Q := 1`; it is recorded separately because it is the
 edge of Theorem 8.2's cycle that carries no mathematics. -/
+@[blueprint "lem:exists-posDef-neg-lyapunovResidual-of-forall-posDef"
+  (title := "From every forcing to one certificate")
+  (latexEnv := "lemma")
+  (statement := /-- If every positive definite $Q$ admits a positive definite solution of
+    $PM + M^{\mathsf T}P = -Q$ (\cref{def:continuousLyapunovEquation}), then some positive
+    definite $P$ makes $-(PM + M^{\mathsf T}P)$ positive definite.
+
+    This is Hespanha's Theorem 8.2, $(4) \Rightarrow (5)$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.2.
+  -/)
+  (proof := /-- Instantiate the forcing at $Q = I$; the residual is then $-I$, whose negation
+    is the identity.  The edge carries no mathematics beyond the instantiation. -/)]
 theorem exists_posDef_neg_lyapunovResidual_of_forall_posDef
     (h : ∀ Q : Matrix X X ℝ, Q.PosDef →
       ∃ S : Matrix X X ℝ, S.PosDef ∧ ContinuousLyapunovEquation M S Q) :
@@ -552,6 +605,20 @@ set_option linter.unusedDecidableInType false in
 /-- **Hespanha, Theorem 8.2, (3) ⟺ (4).**
 `A` is Hurwitz exactly when every positive-definite forcing admits a positive-definite
 solution of the Lyapunov equation, unique among all matrix solutions. -/
+@[blueprint "thm:isHurwitz-iff-forall-posDef-exists-solution"
+  (title := "Hurwitz is solvability of the Lyapunov equation for every forcing")
+  (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
+    only if for every positive definite $Q$ there is a positive definite $P$ with
+    $PA + A^{\mathsf T}P = -Q$ (\cref{def:continuousLyapunovEquation}), unique among all
+    matrix solutions.
+
+    This is Hespanha's Theorem 8.2, $(3) \Leftrightarrow (4)$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.2.
+  -/)
+  (proof := /-- Forwards is \cref{thm:hurwitz-lyapunov-equation}.  Backwards, instantiate the
+    forcing at $Q = I$ and apply
+    \cref{thm:isHurwitz-of-continuousLyapunovEquation}. -/)]
 theorem isHurwitz_iff_forall_posDef_exists_solution (A : Matrix X X ℝ) :
     IsHurwitz A ↔ ∀ R : Matrix X X ℝ, R.PosDef →
       ∃ S : Matrix X X ℝ, S.PosDef ∧ ContinuousLyapunovEquation A S R ∧
@@ -565,6 +632,20 @@ set_option linter.unusedDecidableInType false in
 /-- **Hespanha, Theorem 8.2, (3) ⟺ (5).**
 `A` is Hurwitz exactly when some positive-definite `P` makes the Lyapunov residual negative
 definite. This is the form a certificate is supplied in. -/
+@[blueprint "thm:isHurwitz-iff-exists-posDef-lyapunovResidual"
+  (title := "Hurwitz is the existence of one Lyapunov certificate")
+  (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
+    only if some positive definite $P$ makes $-(PA + A^{\mathsf T}P)$ positive definite.
+
+    This is Hespanha's Theorem 8.2, $(3) \Leftrightarrow (5)$, and the form in which a
+    Lyapunov certificate is actually supplied: one matrix, not a family.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.2.
+  -/)
+  (proof := /-- Forwards, \cref{thm:hurwitz-lyapunov-equation} produces a solution for each
+    forcing and \cref{lem:exists-posDef-neg-lyapunovResidual-of-forall-posDef} extracts one
+    certificate from them; backwards is
+    \cref{thm:isHurwitz-of-posDef-neg-lyapunovResidual}. -/)]
 theorem isHurwitz_iff_exists_posDef_lyapunovResidual (A : Matrix X X ℝ) :
     IsHurwitz A ↔ ∃ S : Matrix X X ℝ, S.PosDef ∧ (-(S * A + Aᵀ * S)).PosDef := by
   constructor
@@ -589,6 +670,18 @@ omit [DecidableEq X] in
 /-- **The rate form implies Hurwitz.**
 A positive-definite `P` satisfying `PA + AᵀP ≼ -2c P` with `c > 0` certifies that `A` is
 Hurwitz: the residual is then at least `2c P`, which is positive definite. -/
+@[blueprint "thm:isHurwitz-of-posDef-lyapunovRate"
+  (title := "The rate form certifies the Hurwitz condition")
+  (statement := /-- If $P$ is positive definite, $c > 0$, and
+    $PA + A^{\mathsf T}P \preceq -2cP$ — that is, $-(PA + A^{\mathsf T}P) - 2cP$ is positive
+    semidefinite — then $A$ is Hurwitz (\cref{def:stability-isHurwitz}).
+
+    Along a trajectory this inequality gives $\dot V \le -2cV$ for $V = x^{\mathsf T}Px$, so
+    it certifies not merely stability but a decay rate. -/)
+  (proof := /-- Split $-(PA + A^{\mathsf T}P)$ as
+    $\bigl(-(PA + A^{\mathsf T}P) - 2cP\bigr) + 2cP$: positive semidefinite plus positive
+    definite is positive definite, so
+    \cref{thm:isHurwitz-of-posDef-neg-lyapunovResidual} applies. -/)]
 theorem isHurwitz_of_posDef_lyapunovRate {A S : Matrix X X ℝ} {c : ℝ} (hc : 0 < c)
     (hS : S.PosDef) (hres : (-(S * A + Aᵀ * S) - (2 * c) • S).PosSemidef) :
     IsHurwitz A := by
@@ -610,6 +703,20 @@ Hurwitz; solving `S(A + cI) + (A + cI)ᵀS = -1` and expanding gives
 
 No domination bound between two positive-definite matrices is needed — the residual is not
 merely bounded below, it is `1`. -/
+@[blueprint "thm:exists-posDef-lyapunovRate-of-isHurwitz"
+  (title := "A Hurwitz matrix admits a rate certificate")
+  (statement := /-- If $A$ is Hurwitz (\cref{def:stability-isHurwitz}) then there are a
+    positive definite $P$ and a rate $c > 0$ with
+    $PA + A^{\mathsf T}P \preceq -2cP$. -/)
+  (proof := /-- Solve the Lyapunov equation for the \emph{shifted} matrix.  A Hurwitz $A$ has
+    a positive spectral margin $c$ (\cref{thm:isHurwitz-exists-pos-rate}), so $A + cI$ is
+    still Hurwitz (\cref{thm:isHurwitzWithRate-iff-spectral-shift}).  Solving
+    $P(A + cI) + (A + cI)^{\mathsf T}P = -I$ (\cref{thm:hurwitz-lyapunov-equation}) and
+    expanding gives $PA + A^{\mathsf T}P = -I - 2cP$, so the residual
+    $-(PA + A^{\mathsf T}P) - 2cP$ is \emph{exactly} the identity.
+
+    No domination bound between two positive definite matrices is needed: the residual is not
+    merely bounded below, it is $I$. -/)]
 theorem exists_posDef_lyapunovRate_of_isHurwitz {A : Matrix X X ℝ} (hA : IsHurwitz A) :
     ∃ (S : Matrix X X ℝ) (c : ℝ), 0 < c ∧ S.PosDef ∧
       (-(S * A + Aᵀ * S) - (2 * c) • S).PosSemidef := by
@@ -638,6 +745,18 @@ set_option linter.unusedDecidableInType false in
 
 This is the rate-carrying refinement of clause (5): it does not merely certify stability, it
 exhibits a decay rate, since `V = xᵀSx` then obeys `V̇ ≤ -2c V`. -/
+@[blueprint "thm:isHurwitz-iff-exists-posDef-lyapunovRate"
+  (title := "Hurwitz is the existence of a rate certificate")
+  (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
+    only if there are a positive definite $P$ and a rate $c > 0$ with
+    $PA + A^{\mathsf T}P \preceq -2cP$.
+
+    This is clause 6 of \cref{thm:lyapunovStability-tfae}, which is not in Hespanha's list.  It
+    is the rate-carrying refinement of
+    \cref{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}, and the shape every contraction
+    and guaranteed-decay-rate condition is written in. -/)
+  (proof := /-- \cref{thm:exists-posDef-lyapunovRate-of-isHurwitz} and
+    \cref{thm:isHurwitz-of-posDef-lyapunovRate}. -/)]
 theorem isHurwitz_iff_exists_posDef_lyapunovRate (A : Matrix X X ℝ) :
     IsHurwitz A ↔ ∃ (S : Matrix X X ℝ) (c : ℝ), 0 < c ∧ S.PosDef ∧
       (-(S * A + Aᵀ * S) - (2 * c) • S).PosSemidef := by
@@ -659,6 +778,23 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 along the linear vector field equal to minus the `Q`-quadratic form.
 
 Reference: the continuous-time Lyapunov-equation identity. -/
+@[blueprint "thm:fderiv-centeredQuadraticForm-linear-general"
+  (title := "A Lyapunov solution makes its quadratic form decrease")
+  (statement := /-- Let $P$ solve $PA + A^{\mathsf T}P = -Q$
+    (\cref{def:continuousLyapunovEquation}).  Then the derivative of the centered quadratic
+    form $x \mapsto (x - x_{\mathrm{eq}})^{\mathsf T}P(x - x_{\mathrm{eq}})$
+    (\cref{def:quadraticForm}) along the linear vector field $y \mapsto Ay$ is
+    \[
+      -\,(x - x_{\mathrm{eq}})^{\mathsf T}Q\,(x - x_{\mathrm{eq}}).
+    \]
+
+    This is what makes a Lyapunov solution a Lyapunov \emph{function}: the forcing $Q$ is
+    exactly the dissipation rate. -/)
+  (proof := /-- The derivative of the quadratic form in the direction $Ay$ is
+    $\langle y, Py'\rangle + \langle y', Py\rangle$ with $y' = Ay$, which is the form
+    represented by $PA + A^{\mathsf T}P$.  Transporting the equation through
+    $\mathtt{toEuclideanCLM}$ — under which transpose becomes adjoint — rewrites that as
+    $-Q$. -/)]
 theorem fderiv_centeredQuadraticForm_linear_general
     {A P Q : Matrix (Fin n) (Fin n) ℝ}
     (hEq : ContinuousLyapunovEquation A P Q)
@@ -697,6 +833,15 @@ theorem fderiv_centeredQuadraticForm_linear_general
 `-‖x - x_eq‖²`.
 
 Reference: the continuous-time Lyapunov-equation identity. -/
+@[blueprint "lem:fderiv-centeredQuadraticForm-linear"
+  (title := "Identity forcing gives decrease at the squared norm")
+  (latexEnv := "lemma")
+  (statement := /-- For $P$ solving $PA + A^{\mathsf T}P = -I$
+    (\cref{def:continuousLyapunovEquation}), the derivative of the centered quadratic form
+    (\cref{def:quadraticForm}) along $y \mapsto Ay$ is
+    $-\|x - x_{\mathrm{eq}}\|^{2}$. -/)
+  (proof := /-- \cref{thm:fderiv-centeredQuadraticForm-linear-general} at $Q = I$, where the
+    quadratic form is the squared Euclidean norm. -/)]
 theorem fderiv_centeredQuadraticForm_linear
     {A P : Matrix (Fin n) (Fin n) ℝ}
     (hEq : ContinuousLyapunovEquation A P 1)
