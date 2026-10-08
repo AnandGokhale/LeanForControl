@@ -11,11 +11,9 @@ lake exe cache get          # download mathlib's prebuilt artifacts
 lake build                  # builds the project (~minutes the first time)
 ```
 
-`lake build` green is the source of truth. No `sorry` or `admit`. Five custom `axiom`s remain,
-all comparison-function constructions that are standard but not yet in Mathlib: two smoothing
-results in `LeanForControl/axioms.lean` and three in `LeanForControl/Comparison/Axioms.lean`.
-Each carries a blueprint node marked *assumed without proof*; `#print axioms` on any result
-shows which it inherits. ODE existence and uniqueness are **proved**, not assumed — see
+`lake build` green is the source of truth. No `sorry` or `admit`. No custom `axiom`s
+remain: `#print axioms` on any result shows only Lean's standard `propext`,
+`Classical.choice` and `Quot.sound`. ODE existence and uniqueness are **proved**, not assumed — see
 `LeanForControl/ODEs/PicardLindelof.lean`.
 
 ## Three ways to look at the project
@@ -68,7 +66,6 @@ keep it tight and faithful; trust the Lean source if they ever drift.
 
 ```
 LeanForControl/                          ← Lean source
-├── axioms.lean                          ← top-level custom axioms (real-analysis smoothing)
 ├── Stability/                           ← Lyapunov, LaSalle, and indirect-method theory
 ├── Comparison/                          ← class K / K∞ / KL / L comparison-function library
 ├── ODEs/                                ← comparison lemma, Gronwall–Bellman, ODE existence

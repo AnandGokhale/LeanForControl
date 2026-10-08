@@ -3,10 +3,9 @@ import LeanForControl.Stability.KLCharacterizationTools
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
-import LeanForControl.Comparison.Axioms
 import LeanForControl.Comparison.ComparisonFunctions
 
-import LeanForControl.axioms
+import LeanForControl.Analysis.MonotoneFunctions
 
 import Architect
 
@@ -64,6 +63,19 @@ private lemma mem_normsReachableFromBall {f : ℝ → ℝⁿ → ℝⁿ} {x_eq :
     ‖φ t - x_eq‖ ∈ normsReachableFromBall f x_eq r :=
   ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
 
+/-- A function vanishing at `0`, nonnegative on `S` and uniformly small on small arguments in `S`
+is continuous at `0` within `S`.  This is how stability makes the worst-deviation function `ω`
+continuous at `0`. -/
+private lemma continuousWithinAt_zero_of_small {ω : ℝ → ℝ} {S : Set ℝ} (hω_zero : ω 0 = 0)
+    (hω_nonneg : ∀ s ∈ S, 0 ≤ ω s)
+    (h_small : ∀ ε > 0, ∃ δ > 0, ∀ s ∈ S, s < δ → ω s ≤ ε) : ContinuousWithinAt ω S 0 := by
+  refine Metric.continuousWithinAt_iff.mpr fun ε hε => ?_
+  obtain ⟨δ, hδ, h⟩ := h_small (ε / 2) (half_pos hε)
+  refine ⟨δ, hδ, fun {s} hs hds => ?_⟩
+  rw [hω_zero, Real.dist_eq, sub_zero, abs_of_nonneg (hω_nonneg s hs)]
+  have : s < δ := (le_abs_self s).trans_lt (by simpa [Real.dist_eq] using hds)
+  linarith [h s hs this]
+
 private lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_eq : ℝⁿ)
     (hUS : UniformlyStableNA f x_eq) :
     ∃ (a b : ℝ) (α : ClassK a b), HasUniformClassKBound f x_eq α := by
@@ -100,11 +112,19 @@ private lemma uniformlyStable_implies_classK (f : ℝ → ℝⁿ → ℝⁿ) (x_
     rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
     exact le_csSup (hbdd_of_le s₂ hs₂)
       (mem_normsReachableFromBall ht₀ ht hφ (h_init.trans hs₁₂))
+  -- Continuous at `0`: stability at `ε` bounds `ω` by `ε` on `[0, δ)`.
+  have hω_cont : ContinuousWithinAt ω (Set.Icc 0 a) 0 :=
+    continuousWithinAt_zero_of_small hω_zero
+      (fun _ _ => Real.sSup_nonneg fun d ⟨_, _, _, _, _, _, _, hd⟩ => hd ▸ norm_nonneg _)
+      fun ε hε => by
+        obtain ⟨δ, hδ, hUS_ε⟩ := hUS ε hε
+        exact ⟨δ, hδ, fun s _ hs => Real.sSup_le (fun d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, hd⟩ =>
+          hd ▸ (hUS_ε t₀ ht₀ φ hφ (h_init.trans_lt hs) t ht).le) hε.le⟩
   -- Class K majorant: exists_strictMono_upper_bound lifts it to a strictly increasing bound
   obtain ⟨b, α, hα_bound⟩ : ∃ (b : ℝ) (α : ClassK a b),
       ∀ r ∈ Set.Ico 0 a, ω r ≤ α.toFun r := by
     obtain ⟨g, b, hb, hg_zero, hg_a, hg_cont, hg_mono, hg_bound⟩ :=
-      exists_strictMono_upper_bound a ha ω hω_zero hω_mono
+      exists_strictMono_upper_bound a ha ω hω_zero hω_mono hω_cont
     exact ⟨b, ClassK.of_strictMono ha hb g hg_zero hg_a hg_cont hg_mono,
       fun r hr => hg_bound r hr.1 hr.2.le⟩
   refine ⟨a, b, α, fun t₀ ht₀ φ hφ h_init t ht => ?_⟩
@@ -149,7 +169,13 @@ private lemma globallyUniformlyStable_implies_classKInfty (f : ℝ → ℝⁿ �
     rintro d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, rfl⟩
     exact le_csSup (hbdd_of_le r₂ hr₂)
       (mem_normsReachableFromBall ht₀ ht hφ (h_init.trans h_le))
-  obtain ⟨α, hα_bound⟩ := exists_classKInfty_upper_bound ω hω_zero hω_mono
+  have hω_cont : ContinuousWithinAt ω (Set.Ici 0) 0 :=
+    continuousWithinAt_zero_of_small hω_zero
+      (fun _ _ => Real.sSup_nonneg fun d ⟨_, _, _, _, _, _, _, hd⟩ => hd ▸ norm_nonneg _)
+      fun ε hε => ⟨δ ε, hδ_pos ε hε, fun s _ hs =>
+        Real.sSup_le (fun d ⟨φ, t₀, t, ht₀, ht, hφ, h_init, hd⟩ =>
+          hd ▸ (hδ_stab ε hε t₀ ht₀ φ hφ (h_init.trans_lt hs) t ht).le) hε.le⟩
+  obtain ⟨α, hα_bound⟩ := exists_classKInfty_upper_bound ω hω_zero hω_mono hω_cont
   refine ⟨α, fun t₀ ht₀ φ hφ t ht => ?_⟩
   calc ‖φ t - x_eq‖
       ≤ ω ‖φ t₀ - x_eq‖       := le_csSup (hbdd_of_le _ (norm_nonneg _))

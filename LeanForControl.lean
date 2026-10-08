@@ -6,7 +6,6 @@ import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.SpectralRadius
-import LeanForControl.Comparison.Axioms
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
@@ -18,7 +17,6 @@ import LeanForControl.LinearSystems.Controllability.Hautus
 import LeanForControl.LinearSystems.Controllability.Reachability
 import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.KalmanDecomposition.Decomposition
-import LeanForControl.LinearSystems.DefsSystem
 import LeanForControl.LinearSystems.KalmanDecomposition.DecompositionExamples
 import LeanForControl.LinearSystems.KalmanDecomposition.Defs
 import LeanForControl.LinearSystems.Observability.Defs
@@ -29,12 +27,12 @@ import LeanForControl.LinearSystems.Solutions.CtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
-import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTI
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
+import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
@@ -59,4 +57,3 @@ import LeanForControl.Stability.LyapunovIndirect.LinearizationInstability
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import LeanForControl.Stability.LyapunovIndirect.NonlinearInstability
 import LeanForControl.Stability.NonAutonomous
-import LeanForControl.axioms
