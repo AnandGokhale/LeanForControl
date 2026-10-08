@@ -110,28 +110,6 @@ theorem isObservable_iff_observabilityMatrix_ker_trivial
     have := congrFun hk i
     simpa using this
 
-/-!
-## Follow-ups for the Hautus track
-
-The following helpers were not needed to prove
-`isObservable_iff_observabilityMatrix_ker_trivial`, but will be needed before
-attacking either Hautus or the rank-based reformulations:
-
-* a rank-vs-trivial-kernel bridge for matrices of shape `Matrix (m × p) n 𝕜`,
-  most naturally phrased through `Matrix.toLin'` and `LinearMap.ker`;
-* block-matrix rank lemmas for stacked rows
-  `[A₁ ; A₂ ; … ; Aₖ]`, lifting per-block kernels to the stack and back;
-* a transition from `(C · Aᵏ) *ᵥ x = 0 ∀ k < n` to invariance of the
-  unobservable subspace under `A` (Cayley–Hamilton style argument), needed
-  to extract eigenvectors for the Hautus direction;
-* coercion lemmas between `(C * A^k) *ᵥ x` and `C *ᵥ (A^k *ᵥ x)`, which
-  are useful when restating observability in terms of trajectories rather
-  than matrix powers.
-
-These belong in `MatrixAlgebra.Rank` (matrix-level facts) and a future
-`LinearSystems.Observability.Hautus` (control-level facts) once needed.
--/
-
 end LinearSystems
 
 /-!

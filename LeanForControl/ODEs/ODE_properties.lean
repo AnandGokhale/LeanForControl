@@ -278,13 +278,14 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.5. -/
 @[blueprint "thm:continuous-dependence-parameters"
   (title := "Continuous dependence on parameters")
   (statement := /-- Khalil, Theorem 3.5.  If $y$ solves $\dot{y} = f(t,y)$ and $z$ solves
-    $\dot{z} = f(t,z) +
-    g(t,z)$
-    with $\|g(t,x)\| \le \alpha$ and $\|z_0 - y_0\| \le \alpha$, and
+    $\dot{z} = f(t,z) + g(t,z)$ with $\|g(t,x)\| \le \alpha$ and $\|z_0 - y_0\| \le \alpha$, and
     $\alpha(1 + 1/L)e^{L(t_1-t_0)} \le \varepsilon$, then
     $\|y(t) - z(t)\| \le \varepsilon$ for all $t \in [t_0, t_1]$. -/)
-  (proof := /-- Reduce to \cref{thm:gronwall-bellman} applied to $\|y-z\|$,
-    using the $L$-Lipschitz bound on $f$ and the $\alpha$-bound on $g$. -/)]
+  (proof := /-- Specialise \cref{thm:continuous-dependence-ODE} with $\mu = \alpha$ and
+    $\|y_0 - z_0\| \le \alpha$: for $t \in [t_0, t_1]$ it gives
+    $\|y(t) - z(t)\| \le \alpha e^{L(t-t_0)} + \frac{\alpha}{L}(e^{L(t-t_0)} - 1)
+    = \alpha(1 + 1/L)e^{L(t-t_0)} - \alpha/L$.  Drop the $-\alpha/L$ and bound $e^{L(t-t_0)}$
+    by $e^{L(t_1-t_0)}$ to get at most $\varepsilon$. -/)]
 theorem continuous_dependence_parameters
     (ht : t₀ ≤ t₁)
     (hL : 0 < L)

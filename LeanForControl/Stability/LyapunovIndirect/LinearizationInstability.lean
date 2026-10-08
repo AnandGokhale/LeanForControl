@@ -130,14 +130,21 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.7.
   -/)
-  (proof := /-- Let $v \ne 0$ be an eigenvector for $\mu$ and consider the real eigenmode
-    $t \mapsto x_{\mathrm{eq}} + \rho\operatorname{Re}\bigl(e^{\mu t} v\bigr)$, a genuine
-    solution of the linear equation for every $\rho > 0$.  Its initial displacement is
-    $\rho\|v\|$, which can be made smaller than any $\delta$, while some coordinate has
-    modulus growing like $\rho\,|v_{i}|\,e^{(\operatorname{Re}\mu)t}$ --- the real part
-    recovers at least half the complex amplitude over each quarter-period.  Since
-    $\operatorname{Re}\mu > 0$ this exceeds the fixed escape radius at some finite time, so no
-    $\delta$ confines every solution segment. -/)]
+  (proof := /-- Let $v \ne 0$ be an eigenvector for $\mu$, fix a coordinate $i$ with
+    $v_i \ne 0$, and for $q \in \mathbb{C}$ consider the real eigenmode
+    $t \mapsto x_{\mathrm{eq}} + \operatorname{Re}\bigl(q\,e^{\mu t} v\bigr)$, a genuine solution
+    of the linear equation.  Given $\delta > 0$, put $\rho = \delta / (2\|v\|)$; for $|q| = \rho$
+    the initial displacement is at most $\rho\|v\| = \delta/2 < \delta$.
+
+    Since $\operatorname{Re}\mu > 0$, choose a single time $T \ge 0$ with
+    $\rho\,e^{(\operatorname{Re}\mu)T}|v_i| \ge 2$, and let $z = e^{\mu T} v_i$, so
+    $\rho|z| \ge 2$ and hence $\rho(|\operatorname{Re} z| + |\operatorname{Im} z|) \ge 2$.  One
+    of the two components therefore carries at least half: either $\rho|\operatorname{Re} z|
+    \ge 1$, and we take $q = \rho$, whose $i$-th coordinate at time $T$ is $\rho\operatorname{Re}
+    z$; or $\rho|\operatorname{Im} z| \ge 1$, and we take $q = -i\rho$, whose $i$-th coordinate
+    at time $T$ is $\rho\operatorname{Im} z$.  Either way the solution segment on $[0, T]$
+    starts within $\delta$ of $x_{\mathrm{eq}}$ and reaches distance at least $1$ at time $T$, so
+    no $\delta$ confines every solution segment to the unit ball. -/)]
 theorem unstable_affineLinear_of_eigenvalue_re_pos
     (A : Matrix (Fin n) (Fin n) ℝ) (x_eq : ℝⁿ) (mu : ℂ) (v : Fin n → ℂ)
     (hv : v ≠ 0)

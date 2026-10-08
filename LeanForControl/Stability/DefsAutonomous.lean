@@ -205,9 +205,10 @@ Four structures forming a hierarchy:
 
 For the local structures, V : ℝⁿ → ℝ is globally continuous and differentiable
 (needed for chain rule and IVT arguments), but positivity and Lie-derivative
-conditions hold only on the domain D. The bridge lemma `contDiffOn_extension`
-justifies this: any C¹ function on open D extends to a globally C¹ function
-agreeing with the original on a neighborhood of x_eq.
+conditions hold only on the domain D. This loses no generality: a C¹ function on
+open D can be multiplied by a smooth bump supported in D to give a globally C¹
+function agreeing with the original on a neighborhood of x_eq. (That extension
+is standard and is not formalized as a separate lemma here.)
 
 The Lie derivative DV(x)[f(x)] = fderiv ℝ V x (f x). -/
 
@@ -306,7 +307,8 @@ structure IsStrictLyapunovFunction (f : ℝⁿ → ℝⁿ) (V : ℝⁿ → ℝ) 
 
 /-- Classical GAS Lyapunov certificate: C¹, positive definite, strictly negative Lie derivative,
     and radially unbounded (`V(x) → ∞` as `‖x‖ → ∞`). Implies `IsStrictLyapunovFunction`
-    via `isCompact_sublevel_set` in `Autonomous.lean`.
+    via `isCompact_sublevel_set` (below, in this file); the implication itself is
+    `asymptotic_implies_strict` in `Autonomous.lean`.
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2, hypotheses (4.5), (4.6),
     (4.7). -/

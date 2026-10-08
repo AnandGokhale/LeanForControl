@@ -7,9 +7,10 @@ import Architect
 open Set Filter Topology MeasureTheory intervalIntegral
 
 /-!
-# `Stability.ComparisonFunctions`
+# Class K comparison functions
 
-Class K, K∞, and KL comparison functions.
+Class K comparison functions; class K∞ and KL live in `Comparison.ClassKInfty` and
+`Comparison.ClassKL`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
@@ -230,6 +231,37 @@ noncomputable def ClassK.restrictTo {a b : ℝ} (α : ClassK a b) {c e : ℝ}
 
 -- ─── ClassK Operations ────────────────────────────────────────────────────────
 
+/-- A function that is strictly increasing on an order-connected set `s ⊆ ℝ` and maps `s`
+onto an order-connected set `t` is continuous on `s`.
+
+Such a function restricts to an order isomorphism `s ≃o t`, and an order isomorphism between
+order-connected subsets of `ℝ` (each carrying the order topology) is continuous.  This is the
+continuity half of "the inverse of a class K / K∞ function is class K / K∞", used by
+`ClassK.symm` and `ClassKInfty.symm`. -/
+theorem continuousOn_of_strictMonoOn_of_surjOn {g : ℝ → ℝ} {s t : Set ℝ}
+    [OrdConnected s] [ht : OrdConnected t] (hg_mono : StrictMonoOn g s)
+    (hg_maps : MapsTo g s t) (hg_surj : SurjOn g s t) : ContinuousOn g s := by
+  have h_image : g '' s = t := hg_surj.image_eq_of_mapsTo hg_maps
+  haveI : OrdConnected (g '' s) := h_image ▸ ht
+  -- `g` restricted to `s` is the order isomorphism `s ≃o g '' s`, followed by `Subtype.val`.
+  let e : s ≃o g '' s := hg_mono.orderIso g s
+  rw [continuousOn_iff_continuous_restrict]
+  exact continuous_subtype_val.comp e.continuous
+
+/-- The inverse of a class K function is zero at zero: `α⁻¹ 0 = α⁻¹ (α 0) = 0`. -/
+private lemma ClassK.invFun_zero {a b : ℝ} (α : ClassK a b) : α.invFun 0 = 0 := by
+  have h_left : α.invFun (α.toFun 0) = 0 := α.left_inv ⟨le_refl 0, α.ha⟩
+  rwa [α.map_zero] at h_left
+
+/-- The inverse of a class K function is strictly increasing on `[0, b)`: applying the
+strictly increasing `α` to `α⁻¹ y₁, α⁻¹ y₂` gives back `y₁ < y₂`. -/
+private lemma ClassK.invFun_strictMonoOn {a b : ℝ} (α : ClassK a b) :
+    StrictMonoOn α.invFun (Set.Ico 0 b) := by
+  intro y₁ hy₁ y₂ hy₂ hy_lt
+  rw [← α.strict_mono.lt_iff_lt (α.inv_maps_to hy₁) (α.inv_maps_to hy₂),
+    α.right_inv hy₁, α.right_inv hy₂]
+  exact hy_lt
+
 /-- The inverse of a class K function `[0,a) → [0,b)` is class K on `[0,b) → [0,a)`. 
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, first bullet. Khalil's domain
@@ -251,89 +283,11 @@ def ClassK.symm {a b : ℝ} (α : ClassK a b) : ClassK b a where
   inv_maps_to := α.maps_to
   left_inv    := α.right_inv
   right_inv   := α.left_inv
-  map_zero := by
-    have h0 : (0 : ℝ) ∈ Set.Ico 0 a := ⟨le_refl 0, α.ha⟩
-    have h_left := α.left_inv h0
-    rw [α.map_zero] at h_left; exact h_left
-  continuous := by
-    have inv_mono : StrictMonoOn α.invFun (Set.Ico 0 b) := by
-      intro y₁ hy₁ y₂ hy₂ hy_lt
-      apply lt_of_not_ge
-      intro h_ge
-      rcases eq_or_lt_of_le h_ge with h_eq | h_gt
-      · have h_apply : α.toFun (α.invFun y₁) = α.toFun (α.invFun y₂) := by rw [h_eq]
-        rw [α.right_inv hy₁, α.right_inv hy₂] at h_apply; linarith
-      · have h_apply := α.strict_mono (α.inv_maps_to hy₂) (α.inv_maps_to hy₁) h_gt
-        rw [α.right_inv hy₂, α.right_inv hy₁] at h_apply; linarith
-    have inv_zero : α.invFun 0 = 0 := by
-      have h0 : (0 : ℝ) ∈ Set.Ico 0 a := ⟨le_refl 0, α.ha⟩
-      have h_left := α.left_inv h0; rw [α.map_zero] at h_left; exact h_left
-    have inv_surj : ∀ x ∈ Set.Ico 0 a, ∃ w ∈ Set.Ico 0 b, α.invFun w = x :=
-      fun x hx => ⟨α.toFun x, α.maps_to hx, α.left_inv hx⟩
-    have inv_lt_a : ∀ y ∈ Set.Ico 0 b, α.invFun y < a :=
-      fun y hy => (α.inv_maps_to hy).2
-    -- Find a right-witness for the continuity criterion: given invFun y < z,
-    -- produce w ∈ Ico 0 b with invFun w ∈ Ioc (invFun y) z.
-    have find_right : ∀ (y : ℝ), y ∈ Set.Ico 0 b → ∀ z > α.invFun y,
-        ∃ w ∈ Set.Ico 0 b, α.invFun w ∈ Set.Ioc (α.invFun y) z := by
-      intro y hy z hz
-      by_cases hza : z < a
-      · have hz0 : 0 ≤ z := le_of_lt (lt_of_le_of_lt (α.inv_maps_to hy).1 hz)
-        obtain ⟨w, hw, hinv⟩ := inv_surj z ⟨hz0, hza⟩
-        exact ⟨w, hw, by rw [hinv]; exact ⟨hz, le_refl z⟩⟩
-      · have hiy_lt_a : α.invFun y < a := inv_lt_a y hy
-        obtain ⟨x, hxl, hxr⟩ := exists_between hiy_lt_a
-        have hx0 : 0 ≤ x := le_of_lt (lt_of_le_of_lt (α.inv_maps_to hy).1 hxl)
-        obtain ⟨w, hw, hinv⟩ := inv_surj x ⟨hx0, hxr⟩
-        exact ⟨w, hw, by rw [hinv]; exact ⟨hxl, le_of_lt (lt_of_lt_of_le hxr (not_lt.mp hza))⟩⟩
-    intro y hy
-    obtain ⟨hy0, hyb⟩ := hy
-    by_cases h0 : y = 0
-    · -- Left endpoint: use right-continuity within Ici 0
-      subst h0
-      apply ContinuousWithinAt.mono _ Set.Ico_subset_Ici_self
-      apply StrictMonoOn.continuousWithinAt_right_of_exists_between inv_mono
-      · rw [mem_nhdsGE_iff_exists_Ico_subset' α.hb]
-        exact ⟨b, α.hb, Set.Ico_subset_Ico_right le_rfl⟩
-      · rw [inv_zero]
-        intro z hz
-        by_cases hza : z < a
-        · have hz0 : 0 ≤ z := le_of_lt hz
-          obtain ⟨w, hw, hinv⟩ := inv_surj z ⟨hz0, hza⟩
-          exact ⟨w, hw, by rw [hinv]; exact ⟨hz, le_refl z⟩⟩
-        · obtain ⟨x, hx0, hxa⟩ := exists_between α.ha
-          obtain ⟨w, hw, hinv⟩ := inv_surj x ⟨le_of_lt hx0, hxa⟩
-          exact ⟨w, hw, by rw [hinv]; exact ⟨hx0, le_of_lt (lt_of_lt_of_le hxa (not_lt.mp hza))⟩⟩
-    · -- Interior point: ContinuousAt via the between-points criterion
-      have hy0' : 0 < y := lt_of_le_of_ne hy0 (Ne.symm h0)
-      have hico_nhd : Set.Ico 0 b ∈ 𝓝 y := Ico_mem_nhds_iff.mpr ⟨hy0', hyb⟩
-      apply ContinuousAt.continuousWithinAt
-      apply StrictMonoOn.continuousAt_of_exists_between inv_mono hico_nhd
-      · intro z hz
-        have hinvy_pos : 0 < α.invFun y := by
-          have h0b : (0 : ℝ) ∈ Set.Ico 0 b := ⟨le_refl 0, α.hb⟩
-          have := inv_mono h0b ⟨le_of_lt hy0', hyb⟩ hy0'
-          rwa [inv_zero] at this
-        have hinvy_lt_a : α.invFun y < a := inv_lt_a y ⟨le_of_lt hy0', hyb⟩
-        have hmax : max z 0 < α.invFun y := max_lt hz hinvy_pos
-        obtain ⟨x, hxl, hxr⟩ := exists_between hmax
-        have hx0 : 0 ≤ x := le_of_lt (lt_of_le_of_lt (le_max_right z 0) hxl)
-        obtain ⟨w, hw, hinv⟩ := inv_surj x ⟨hx0, lt_trans hxr hinvy_lt_a⟩
-        exact ⟨w, hw, hinv ▸ ⟨le_of_lt (lt_of_le_of_lt (le_max_left z 0) hxl), hxr⟩⟩
-      · exact find_right y ⟨le_of_lt hy0', hyb⟩
-  strict_mono := by
-    intro y₁ hy₁ y₂ hy₂ hy_lt
-    have hx₁ := α.inv_maps_to hy₁
-    have hx₂ := α.inv_maps_to hy₂
-    apply lt_of_not_ge
-    intro h_ge
-    rcases eq_or_lt_of_le h_ge with h_eq | h_gt
-    · -- invFun y₁ = invFun y₂ implies y₁ = y₂ via right_inv: contradiction
-      have h_apply : α.toFun (α.invFun y₁) = α.toFun (α.invFun y₂) := by rw [h_eq]
-      rw [α.right_inv hy₁, α.right_inv hy₂] at h_apply; linarith
-    · -- invFun y₁ > invFun y₂ implies y₁ > y₂ via forward strict_mono: contradiction
-      have h_apply := α.strict_mono hx₂ hx₁ h_gt
-      rw [α.right_inv hy₂, α.right_inv hy₁] at h_apply; linarith
+  map_zero    := α.invFun_zero
+  strict_mono := α.invFun_strictMonoOn
+  -- `α⁻¹` is strictly increasing and maps `[0, b)` onto `[0, a)` (it is a left inverse of `α`).
+  continuous  := continuousOn_of_strictMonoOn_of_surjOn α.invFun_strictMonoOn α.inv_maps_to
+    (α.left_inv.surjOn α.maps_to)
 
 /-- Composition of two class K functions is class K
     (the composed inverse is the reverse composition of inverses). 

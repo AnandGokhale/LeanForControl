@@ -233,13 +233,12 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
     exact (if_neg hs).symm
 
   continuous := by
-    -- Strategy:
-    -- • s > 0: nearby points also have s' > 0, so if_neg fires and β is a
-    --   composition of continuous functions (α, U, sqrt, min).
-    -- • s = 0, r = 0: squeeze β between 0 and α(p.1) → 0.
-    -- • s = 0, r > 0: find buffer r₁ > r and use U.tendsto_top to get δ > 0
-    --   such that U(s') ≥ α(r₁) for s' ∈ (0,δ). In Iio(r₁)×[0,δ), min = α(p.1)
-    --   so β is locally just α, which is continuous.
+    -- Split on the point (r₀, s₀):
+    -- • s₀ > 0: nearby points also have s > 0, so there β = min(α(r), √(α(r) U(s))),
+    --   a composition of continuous functions.
+    -- • s₀ = 0, r₀ = 0: squeeze 0 ≤ β(r, s) ≤ α(r), and α(r) → α(0) = 0.
+    -- • s₀ = 0, r₀ > 0: pick r₁ ∈ (r₀, a). Since U(s) → ∞ as s → 0⁺, near (r₀, 0) we have
+    --   α(r) < α(r₁) < U(s), so the minimum is α(r) and β agrees with the continuous α(r).
     rintro ⟨r₀, s₀⟩ ⟨hr₀, hs₀⟩
     change ContinuousWithinAt (fun p : ℝ × ℝ => if p.2 = 0 then α.toFun p.1
       else min (α.toFun p.1) (Real.sqrt (α.toFun p.1 * U.toFun p.2)))
@@ -248,7 +247,8 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
     have hr_nn : 0 ≤ r₀ := hr₀.1
     rcases eq_or_lt_of_le hs_nn with rfl | hs₀_pos
     · rcases eq_or_lt_of_le hr_nn with rfl | hr_pos
-      · have h_bound : ∀ p ∈ Set.Ico 0 a ×ˢ Set.Ici 0,
+      · -- r₀ = 0, s₀ = 0: squeeze β between 0 and α(p.1), which tends to α(0) = 0.
+        have h_bound : ∀ p ∈ Set.Ico 0 a ×ˢ Set.Ici 0,
             0 ≤ (if p.2 = 0 then α.toFun p.1 else min (α.toFun p.1)
                   (Real.sqrt (α.toFun p.1 * U.toFun p.2))) ∧
                 (if p.2 = 0 then α.toFun p.1 else min (α.toFun p.1)
@@ -273,45 +273,44 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
               (𝓝 (α.toFun 0)) := h_comp
           simp only [α.map_zero] at h_tendsto
           exact h_tendsto
-        --have h_eval : (if (0 : ℝ) = 0 then α.toFun 0 else _) = 0 := by simp [α.map_zero]
         rw [ContinuousWithinAt]
         simp only [α.map_zero]
         apply tendsto_of_tendsto_of_tendsto_of_le_of_le' h_tendsto_zero h_tendsto_alpha
         · filter_upwards [self_mem_nhdsWithin] with p hp; exact (h_bound p hp).1
         · filter_upwards [self_mem_nhdsWithin] with p hp; exact (h_bound p hp).2
-      · -- r₀ > 0, s₀ = 0: U(s) blows up, so the min() caps at α(r).
+      · -- r₀ > 0, s₀ = 0: near (r₀, 0) we have U(s) ≥ α(r), so β(r, s) = α(r) locally.
         have h_cont_proxy : ContinuousWithinAt (fun p : ℝ × ℝ => α.toFun p.1)
           (Set.Ico 0 a ×ˢ Set.Ici 0) (r₀, 0) :=
           (α.continuous r₀ hr₀).comp continuous_fst.continuousWithinAt (fun _ hp => hp.1)
         refine ContinuousWithinAt.congr_of_eventuallyEq h_cont_proxy ?_ ?_
-        · -- 1. Find a buffer radius r₁ slightly larger than r₀
+        · -- 1. Pick r₁ ∈ (r₀, a); near (r₀, 0) we have r < r₁, hence α(r) < α(r₁).
           obtain ⟨r₁, hr₀_lt_r₁, hr₁_lt_a⟩ := exists_between hr₀.2
           have hr₁_Ico : r₁ ∈ Set.Ico 0 a := ⟨(hr₀.1.trans hr₀_lt_r₁.le), hr₁_lt_a⟩
-          -- 2. Extract the filter blow-up property for U(s)
+          -- 2. Since U(s) → ∞ as s → 0⁺, U(s) > α(r₁) for all small s > 0.
           have h_U_huge : ∀ᶠ s in 𝓝[>] 0, α.toFun r₁ < U.toFun s :=
             U.tendsto_top (eventually_gt_atTop (α.toFun r₁))
-          -- The Golden Key: Convert 𝓝[>] 0 to standard 𝓝 0 with an implication
+          -- Restate on the full neighbourhood 𝓝 0, with `0 < s` as a hypothesis.
           have h_U_nhd : ∀ᶠ s in 𝓝 0, 0 < s → α.toFun r₁ < U.toFun s :=
             eventually_nhdsWithin_iff.mp h_U_huge
-          -- 3. Push the 1D filters seamlessly into the 2D neighborhood! No δ needed.
+          -- 3. Pull both conditions back along `fst`/`snd` to a neighbourhood of (r₀, 0).
           filter_upwards [
             continuous_fst.continuousWithinAt.eventually (Iio_mem_nhds hr₀_lt_r₁),
             continuous_snd.continuousWithinAt.eventually h_U_nhd,
             self_mem_nhdsWithin
           ] with p hp_x hp_U hp_domain
-          -- 4. Evaluate the minimum inside this filter intersection
+          -- 4. On that neighbourhood the minimum is attained by α(p.1).
           have h_px_lt : p.1 < r₁ := hp_x
           have h_px_Ico : p.1 ∈ Set.Ico 0 a := hp_domain.1
           by_cases hy0 : p.2 = 0
           · simp [hy0]
           · simp only [hy0, if_false]
             have hy_pos : 0 < p.2 := lt_of_le_of_ne hp_domain.2 (Ne.symm hy0)
-            -- Because p.2 > 0, the filter implication instantly gives us the bound
+            -- p.2 > 0, so U(p.2) > α(r₁)
             have h_U_gt : α.toFun r₁ < U.toFun p.2 := hp_U hy_pos
-            -- Prove local α(p.1) is strictly bounded by α(r₁)
+            -- p.1 < r₁, so α(p.1) < α(r₁)
             have h_alpha_px_lt : α.toFun p.1 < α.toFun r₁ :=
               α.strict_mono h_px_Ico hr₁_Ico h_px_lt
-            -- Squash the minimum via nonlinear arithmetic over the square root
+            -- α(p.1) ≤ U(p.2) gives α(p.1)² ≤ α(p.1) U(p.2), so α(p.1) ≤ √(α(p.1) U(p.2)).
             have h_alpha_px_le_U : α.toFun p.1 ≤ U.toFun p.2 := h_alpha_px_lt.le.trans h_U_gt.le
             have h_px_pos : 0 ≤ α.toFun p.1 := (α.maps_to h_px_Ico).1
             apply min_eq_left
@@ -321,9 +320,10 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
               Real.sqrt (α.toFun p.1 * U.toFun p.2) :=
               Real.sqrt_le_sqrt h_sq_le
             rwa [Real.sqrt_mul_self h_px_pos] at h_sqrt
-        · -- The evaluation at the exact point (r₀, 0)
+        · -- At (r₀, 0) itself, β(r₀, 0) = α(r₀) by definition.
           simp
-    · have hs_ne : s₀ ≠ 0 := hs₀_pos.ne'
+    · -- s₀ > 0: β agrees near (r₀, s₀) with the continuous min(α(r), √(α(r) U(s))).
+      have hs_ne : s₀ ≠ 0 := hs₀_pos.ne'
       refine ContinuousWithinAt.congr_of_eventuallyEq
         (f := fun p => min (α.toFun p.1)
           (Real.sqrt (α.toFun p.1 * U.toFun p.2))
@@ -357,6 +357,18 @@ theorem ClassKL.continuous_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s)
     (fun _ hr => Set.mk_mem_prod hr hs)).congr (fun _ _ => rfl)
 
 
+/-- If `f s → 0` as `s → ∞` and eventually `f s ∈ S`, and `α` is continuous at `0` within `S`
+with `α 0 = 0`, then `α (f s) → 0`.  This is the `tendsto_zero` field of every
+post-composition `α ∘ β` below, with `S` the domain of `α` and `f = β(r, ·)`. -/
+private lemma tendsto_zero_comp_of_continuousWithinAt {α f : ℝ → ℝ} {S : Set ℝ}
+    (hα_cont : ContinuousWithinAt α S 0) (hα_zero : α 0 = 0)
+    (hf : Tendsto f atTop (𝓝 0)) (hf_mem : ∀ᶠ s in atTop, f s ∈ S) :
+    Tendsto (fun s => α (f s)) atTop (𝓝 0) := by
+  have hf_within : Tendsto f atTop (𝓝[S] 0) :=
+    tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within f hf hf_mem
+  have h_comp := hα_cont.tendsto.comp hf_within
+  rwa [hα_zero] at h_comp
+
 /-- Post-composing a class KL function with a class K∞ function yields class KL.
     (Applies `α` to the output of `β`.) 
     
@@ -389,15 +401,11 @@ def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : Cla
     α.strict_mono.monotoneOn (β.nonneg r hr s₂ hs₂) (β.nonneg r hr s₁ hs₁)
       (β.anti_s r hr hs₁ hs₂ hs)
   tendsto_zero r hr := by
-    have hβ := β.tendsto_zero r hr
     have hβ_ici : ∀ᶠ s in Filter.atTop, β.toFun r s ∈ Set.Ici 0 := by
       filter_upwards [eventually_ge_atTop 0] with s hs
       exact β.nonneg r hr s hs
-    have hβ_within := tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      (fun s => β.toFun r s) hβ hβ_ici
-    have hα_cont := α.continuous.continuousWithinAt self_mem_Ici
-    have h := hα_cont.tendsto.comp hβ_within
-    rwa [α.map_zero] at h
+    exact tendsto_zero_comp_of_continuousWithinAt
+      (α.continuous.continuousWithinAt self_mem_Ici) α.map_zero (β.tendsto_zero r hr) hβ_ici
 
 /-- Post-composing a class KL function with a class K function yields class KL,
     provided the range of `β` is strictly within the domain of `α`. 
@@ -440,15 +448,11 @@ def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
                              (β.anti_s r hr hs₁ hs₂ hs)
 
   tendsto_zero r hr := by
-    have hβ := β.tendsto_zero r hr
     have hβ_ico : ∀ᶠ s in Filter.atTop, β.toFun r s ∈ Set.Ico 0 b := by
       filter_upwards [eventually_ge_atTop 0] with s hs
       exact ⟨β.nonneg r hr s hs, h_range r hr s hs⟩
-    have hβ_within := tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      (fun s => β.toFun r s) hβ hβ_ico
-    have hα_cont := α.continuous.continuousWithinAt ⟨le_refl 0, α.ha⟩
-    have h := hα_cont.tendsto.comp hβ_within
-    rwa [α.map_zero] at h
+    exact tendsto_zero_comp_of_continuousWithinAt
+      (α.continuous.continuousWithinAt ⟨le_refl 0, α.ha⟩) α.map_zero (β.tendsto_zero r hr) hβ_ico
 
 
 
@@ -515,7 +519,6 @@ structure ClassKLGlobal where
   nonneg        : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ toFun r s
   anti_s        : ∀ r ≥ 0, AntitoneOn (fun s => toFun r s) (Set.Ici 0)
   tendsto_zero  : ∀ r ≥ 0, Filter.Tendsto (fun s => toFun r s) Filter.atTop (nhds 0)
-  --tendsto_atTop : Filter.Tendsto (fun r => toFun r 0) Filter.atTop Filter.atTop
 
 /-- A global class KL function is continuous in `r` for each fixed `s ≥ 0`: the section of the
     joint continuity in the `continuous` field. -/
@@ -555,18 +558,11 @@ def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlo
     α.strict_mono.monotoneOn (β.nonneg r hr s₂ hs₂) (β.nonneg r hr s₁ hs₁)
       (β.anti_s r hr hs₁ hs₂ hs)
   tendsto_zero r hr := by
-    have hβ := β.tendsto_zero r hr
     have hβ_ici : ∀ᶠ s in Filter.atTop, β.toFun r s ∈ Set.Ici 0 := by
       filter_upwards [eventually_ge_atTop 0] with s hs
       exact β.nonneg r hr s hs
-    have hβ_within := tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      (fun s => β.toFun r s) hβ hβ_ici
-    have hα_cont := α.continuous.continuousWithinAt self_mem_Ici
-    have h := hα_cont.tendsto.comp hβ_within
-    rwa [α.map_zero] at h
-  -- tendsto_atTop := by
-  --   have h_eq : (fun r => α.toFun (β.toFun r 0)) = α.toFun ∘ (fun r => β.toFun r 0) := rfl
-  --   rw [h_eq]; exact α.tendsto_atTop.comp β.tendsto_atTop
+    exact tendsto_zero_comp_of_continuousWithinAt
+      (α.continuous.continuousWithinAt self_mem_Ici) α.map_zero (β.tendsto_zero r hr) hβ_ici
 
 /-- Product of a class K∞ function and a class L function is global class KL.
     `β(r, s) = α(r) * γ(s)`. -/
@@ -642,4 +638,3 @@ def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGl
   nonneg r hr s hs := β.nonneg (α.toFun r) (α.maps_to hr) s hs
   anti_s r hr        := β.anti_s (α.toFun r) (α.maps_to hr)
   tendsto_zero r hr  := β.tendsto_zero (α.toFun r) (α.maps_to hr)
-  -- tendsto_atTop      := β.tendsto_atTop.comp α.tendsto_atTop

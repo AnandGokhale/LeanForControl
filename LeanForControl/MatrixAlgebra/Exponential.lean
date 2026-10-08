@@ -15,9 +15,24 @@ import Architect
 /-!
 # The matrix exponential as an algebraic object
 
-This file collects facts relating the matrix exponential to entrywise complexification —
-algebraic and norm-compatibility bridges between the real and complex matrix exponential,
-with no system semantics (no Hurwitz hypothesis, no spectral conclusion).
+Facts about the matrix exponential `exp A` that mention only `A` — no trajectories, no
+initial time, no system semantics. The file has four parts:
+
+* **Complexification** — `complexification_exp`: entrywise complexification commutes with
+  `exp`, the bridge that carries spectral facts (which live over `ℂ`) back to a real matrix.
+* **The exponential on an eigenvector** (`section Eigenpair`) —
+  `exp_mulVec_of_mulVec_eq_smul`: if `M v = μ v` then `exp M v = exp μ • v`.
+* **`e^{At}` as a finite polynomial in `A`** (`section FinitePolynomial`, Hespanha P6.3 and
+  P6.5) — the semigroup law `exp_const_add`, and `exists_exp_eq_sum_smul_pow`:
+  `e^{At} = ∑_{i<n} αᵢ(t) Aⁱ`, proved by Cayley--Hamilton and a geometric growth bound on the
+  reduced coefficients.
+* **Reverse spectral mapping** — `exists_eigenpair_of_mem_spectrum_exp`: every spectral value
+  of `exp A` over `ℂ` is `exp μ` for an eigenvalue `μ` of `A`; hence
+  `spectralRadius_exp_complexify_lt_one`, the spectral radius of `exp A` is `< 1` when every
+  eigenvalue of `A` has negative real part.
+
+The Hurwitz predicate itself lives downstream in `LinearSystems`; hypotheses here are spelled
+out on eigenpairs instead.
 
 Reference: standard properties of the matrix exponential.
 -/

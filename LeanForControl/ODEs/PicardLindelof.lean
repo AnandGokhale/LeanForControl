@@ -308,9 +308,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2, scalar case. -/
     $\dot z = g(t, z)$ with $z(t_0) = x_0$ and has right derivative $g(s, z(s))$ at each
     $s \in [t_0, t_1)$.
 
-    This is the scalar specialization of \cref{thm:exists-isIntegralCurveOn-Icc}; it is the
-    existence hypothesis that \cref{thm:comparison-lemma} takes as an assumption rather than
-    discharging.
+    This is the scalar specialization of \cref{thm:exists-isIntegralCurveOn-Icc}; it discharges
+    the perturbed-solution hypothesis that \cref{thm:comparison-lemma} takes for generality.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.2, scalar case.
   -/)
@@ -342,11 +341,10 @@ complete integral curve through any initial condition, unique on the ray.
 
 Uniqueness is stated as agreement *on `Ici t₀`* rather than as `∃!`. That is not a weakening: a
 predicate built from `HasDerivWithinAt _ _ (Ici t₀)` constrains a function only on `Ici t₀`, so
-two solutions may differ freely below `t₀` and `∃!` over `ℝ → E` would be false. 
+two solutions may differ freely below `t₀` and `∃!` over `ℝ → E` would be false.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2, whose $t_1$ is arbitrary, extended to
-the
-forward ray. Uniqueness is stated as agreement on `[t₀, ∞)`, not as equality of functions. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2, whose $t_1$ is arbitrary, extended
+to the forward ray. -/
 @[blueprint "thm:exists-isIntegralCurveOn-Ici"
   (title := "Picard--Lindel\\\"of on the forward ray")
   (statement := /-- Let $f$ be jointly continuous and $K$-Lipschitz in the state variable,
@@ -358,9 +356,7 @@ forward ray. Uniqueness is stated as agreement on `[t₀, ∞)`, not as equality
     says nothing about $t < t_0$, so solutions may differ there.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.2, whose $t_1$ is arbitrary,
-    extended to the forward ray.  Uniqueness is stated as agreement on $[t_0,\infty)$, not as
-    equality of
-    functions.
+    extended to the forward ray.
   -/)
   (proof := /-- For each $n$ take a solution $\alpha_n$ on $[t_0, t_0+n]$
     (\cref{thm:exists-isIntegralCurveOn-Icc}).  By uniqueness

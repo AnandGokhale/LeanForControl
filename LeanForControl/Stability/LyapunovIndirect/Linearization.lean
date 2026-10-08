@@ -81,7 +81,13 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
       Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A)
     (hP : P.PosDef) (hLyap : ContinuousLyapunovEquation A P 1) :
     LocallyExponentiallyStable f x_eq := by
+  -- Idea: `V(x) = (x - x_eq)ᵀ P (x - x_eq)` is sandwiched between `m‖x - x_eq‖²` and
+  -- `M‖x - x_eq‖²`, and near `x_eq` its Lie derivative is at most `-½‖x - x_eq‖² ≤ -k V`
+  -- with `k = 1/(2M)`.  So `e^{ks} V(φ s)` is antitone, `V` decays like `e^{-kt}`, and taking
+  -- square roots gives `‖φ t - x_eq‖ ≤ C e^{-(k/2)(t - t₀)} ‖φ t₀ - x_eq‖` with `C = M/m`.
   letI : NeZero n := ⟨Nat.ne_of_gt hn⟩
+  -- Step 1: `V` is a local Lyapunov function on `ball x_eq r`, so solutions starting within
+  -- `ρ` of `x_eq` stay in that ball.
   obtain ⟨r, hr, hdecay⟩ :=
     exists_centeredQuadraticForm_decay A P hf heq hJac hLyap
   let V : ℝⁿ → ℝ := centeredQuadraticForm P x_eq
@@ -100,10 +106,13 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
       have hx' : ‖x - x_eq‖ < r := by
         simpa [D, Metric.mem_ball, dist_eq_norm] using hx
       have hd := hdecay x hx'
+      -- `-(1/2)‖x - x_eq‖² ≤ 0`, so the decay bound gives a nonpositive Lie derivative.
       nlinarith [sq_nonneg ‖x - x_eq‖] }
   have hstable : LyapunovStable f x_eq :=
     lyapunov_stable hn hlocal
   obtain ⟨ρ, hρ, hstay⟩ := hstable r hr
+  -- Step 2: the constants.  `m‖y‖² ≤ yᵀPy ≤ M‖y‖²`, decay rate `k = 1/(2M)`, overshoot
+  -- `C = M/m`, and norm decay rate `a = k/2`.
   obtain ⟨m, hm, hm_lower⟩ :=
     exists_pos_mul_norm_sq_le_quadraticForm P hP
   let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
@@ -138,6 +147,11 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
         gcongr
         dsimp [M]
         linarith
+  -- Step 3: the weighted energy `e^{ks} V(φ s)` is antitone on `[t₀, t₁]`.
+  have hVcurve : ∀ s ∈ Ioo t₀ t₁,
+      HasDerivAt (V ∘ φ) (fderiv ℝ V (φ s) (f (φ s))) s := fun _ hs =>
+    hasDerivAt_V_comp_traj
+      ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)) hφ hs
   have hWanti : AntitoneOn
       (fun s : ℝ ↦ Real.exp (k * s) * V (φ s)) (Icc t₀ t₁) := by
     -- Not an instance of `antitoneOn_V_add_linear`: the weight `exp (k * s)` is multiplicative,
@@ -150,21 +164,15 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
             hφ.continuousOn))
     · intro s hs
       rw [interior_Icc] at hs
-      have hVcurve : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ s) (f (φ s))) s :=
-        hasDerivAt_V_comp_traj
-          ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)) hφ hs
-      exact ((((hasDerivAt_id s).const_mul k).exp.mul hVcurve).differentiableAt)
+      exact ((((hasDerivAt_id s).const_mul k).exp.mul (hVcurve s hs)).differentiableAt)
         |>.differentiableWithinAt
     · intro s hs
       rw [interior_Icc] at hs
       have hsIcc : s ∈ Icc t₀ t₁ := Ioo_subset_Icc_self hs
-      have hVcurve : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ s) (f (φ s))) s :=
-        hasDerivAt_V_comp_traj
-          ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)) hφ hs
       have hWderiv : HasDerivAt (fun q : ℝ ↦ Real.exp (k * q) * V (φ q))
           (Real.exp (k * s) *
             (k * V (φ s) + fderiv ℝ V (φ s) (f (φ s)))) s := by
-        convert (((hasDerivAt_id s).const_mul k).exp.mul hVcurve) using 1
+        convert (((hasDerivAt_id s).const_mul k).exp.mul (hVcurve s hs)) using 1
         simp only [id_eq, Function.comp_apply]
         ring
       rw [hWderiv.deriv]
@@ -184,6 +192,7 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
               exact add_le_add (mul_le_mul_of_nonneg_left hv hk.le)
                 (by simpa only [neg_mul] using hdV)
         _ = 0 := by rw [← mul_assoc, hkM]; ring
+  -- Step 4: `V` decays along the solution, `V(φ t) ≤ e^{-k(t - t₀)} V(φ t₀)`.
   have hweighted : Real.exp (k * t) * V (φ t) ≤ Real.exp (k * t₀) * V (φ t₀) := by
     have hmono := hWanti (left_mem_Icc.mpr (ht.1.trans ht.2)) ht ht.1
     simpa using hmono
@@ -199,6 +208,7 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
         rw [← mul_assoc, ← Real.exp_add]
         congr 2
         ring
+  -- Step 5: sandwich `V` between `m‖·‖²` and `M‖·‖²` and take square roots.
   have hlower := hm_lower (φ t - x_eq)
   have hupper0 := hVupper (φ t₀)
   have hsq_mul : m * ‖φ t - x_eq‖ ^ 2 ≤
@@ -231,9 +241,11 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
       _ = C * Real.exp (-a * (t - t₀)) ^ 2 * ‖φ t₀ - x_eq‖ ^ 2 := by rw [hexp_sq]
       _ ≤ C ^ 2 * Real.exp (-a * (t - t₀)) ^ 2 * ‖φ t₀ - x_eq‖ ^ 2 := by
         gcongr
+        -- `C ≤ C²` because `1 ≤ C`.
         nlinarith [hC]
       _ = rhs ^ 2 := by simp [rhs]; ring
   have hnorm : ‖φ t - x_eq‖ ≤ rhs := by
+    -- Both sides are nonnegative, so `‖·‖² ≤ rhs²` gives `‖·‖ ≤ rhs`.
     nlinarith [norm_nonneg (φ t - x_eq), hrhs]
   simpa [rhs] using hnorm
 

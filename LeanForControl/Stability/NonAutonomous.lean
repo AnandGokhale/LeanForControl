@@ -79,6 +79,9 @@ private lemma hasDerivWithinAt_V_comp_traj_NA
 
 /-! ## V nonincreasing along trajectories -/
 
+/-- If `V̇ = DV(t, φ t)[(1, f t (φ t))] ≤ 0` on `(a, b)`, then `V` is nonincreasing along the
+trajectory between `a` and `b`: `V(b, φ b) ≤ V(a, φ a)`.  This is the mean value theorem
+applied to `t ↦ V(t, φ t)`, which is differentiable by the chain rule above. -/
 private lemma V_NA_nonincreasing
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
@@ -105,10 +108,15 @@ private lemma V_NA_nonincreasing
     (Set.left_mem_Icc.mpr hab) (Set.right_mem_Icc.mpr hab)
   exact hab
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Helper: trajectories stay inside B_r when V starts below the threshold d
--- ─────────────────────────────────────────────────────────────────────────────
+/-! ## Trajectories stay inside the ball -/
 
+/-- **Ball invariance.** Let `α₁(‖x‖) ≤ W₁(x) ≤ V(t, x)` and `V̇ ≤ 0` on the ball of radius `r`,
+and pick a level `d` with `α₁⁻¹(d) < r`.  A trajectory that starts inside the ball with
+`V(t₀, φ t₀) < d` stays inside the ball, on every interval `[t₀, t]`.
+
+Were `φ` to reach the sphere `‖x‖ = r` first at `T_exit`, it would cross `‖x‖ = α₁⁻¹(d)` at
+some earlier `T₁` while still inside the ball.  There `V` has not increased, so
+`V(T₁, φ T₁) < d`; but also `V(T₁, φ T₁) ≥ W₁(φ T₁) ≥ α₁(‖φ T₁‖) > d`. -/
 private lemma NA_ball_invariant
     {f : ℝ → ℝⁿ → ℝⁿ} {V : ℝ → ℝⁿ → ℝ} {W₁ : ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ (Function.uncurry V))
@@ -194,9 +202,51 @@ private lemma NA_ball_invariant
          _ ≤ W₁ (φ T₁)             := hW1_lb (φ T₁) hT₁_lt_r
   linarith [hV_lb T₁ (ht₀.trans hT₁_ico.1) (φ T₁) hT₁_lt_r.le, hV_T₁_dec]
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Main theorem: Lyapunov's uniform stability theorem (non-autonomous)
--- ─────────────────────────────────────────────────────────────────────────────
+/-! ## Setup shared by the two Lyapunov theorems -/
+
+/-- The level and radius both Lyapunov proofs work at: a level `d > 0` below `b₁` and `b₂`
+(the ranges of the class `K` bounds `α₁` on `W₁` and `α₂` on `W₂`), and the radius
+`c = α₂⁻¹(d)`, which lies in `(0, r)` and satisfies `α₂(c) = d`. -/
+private lemma exists_sandwich_level {r b₁ b₂ : ℝ} (hb₁ : 0 < b₁) (α₂ : ClassK r b₂) :
+    ∃ d : ℝ, 0 < d ∧ d < b₁ ∧ d < b₂ ∧
+      0 < α₂.invFun d ∧ α₂.invFun d < r ∧ α₂.toFun (α₂.invFun d) = d := by
+  set d := min (b₁ / 2) (b₂ / 2)
+  have hd_pos : 0 < d := lt_min (half_pos hb₁) (half_pos α₂.hb)
+  have hd_lt_b₁ : d < b₁ := (min_le_left ..).trans_lt (half_lt_self hb₁)
+  have hd_lt_b₂ : d < b₂ := (min_le_right ..).trans_lt (half_lt_self α₂.hb)
+  have hd_mem : d ∈ Set.Ico 0 b₂ := ⟨hd_pos.le, hd_lt_b₂⟩
+  have hc_pos : 0 < α₂.invFun d :=
+    calc 0 = α₂.invFun 0 := α₂.symm.map_zero.symm
+         _ < α₂.invFun d := α₂.symm.strict_mono ⟨le_rfl, α₂.hb⟩ hd_mem hd_pos
+  exact ⟨d, hd_pos, hd_lt_b₁, hd_lt_b₂, hc_pos, (α₂.inv_maps_to hd_mem).2, α₂.right_inv hd_mem⟩
+
+/-- Starting within `c` of the origin, where `c < r` and `α₂(c) = d`, forces `V(t, x) < d`:
+`V(t, x) ≤ W₂(x) ≤ α₂(‖x‖) < α₂(c) = d`. -/
+private lemma V_lt_d_of_norm_lt_c {V : ℝ → ℝⁿ → ℝ} {W₂ : ℝⁿ → ℝ} {r b₂ : ℝ}
+    {α₂ : ClassK r b₂}
+    (hV_ub : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r → V t x ≤ W₂ x)
+    (hW₂_ub : ∀ x : ℝⁿ, ‖x‖ < r → W₂ x ≤ α₂.toFun ‖x‖)
+    {c d : ℝ} (hc_lt_r : c < r) (h_α₂_c : α₂.toFun c = d)
+    {t : ℝ} (ht : 0 ≤ t) {x : ℝⁿ} (hx : ‖x‖ < c) :
+    V t x < d := by
+  have hx_lt_r : ‖x‖ < r := hx.trans hc_lt_r
+  calc V t x
+      ≤ W₂ x         := hV_ub t ht x hx_lt_r.le
+    _ ≤ α₂.toFun ‖x‖ := hW₂_ub x hx_lt_r
+    _ < α₂.toFun c   := α₂.strict_mono ⟨norm_nonneg _, hx_lt_r⟩
+                          ⟨(norm_nonneg _).trans hx.le, hc_lt_r⟩ hx
+    _ = d            := h_α₂_c
+
+/-- A function vanishing at the origin and positive elsewhere on the closed `r`-ball is
+nonnegative on that ball. -/
+private lemma W_nonneg {W : ℝⁿ → ℝ} {r : ℝ} (hW_zero : W 0 = 0)
+    (hW_pos : ∀ x ∈ closedBall (0 : ℝⁿ) r, x ≠ 0 → 0 < W x) {x : ℝⁿ} (hx : ‖x‖ ≤ r) :
+    0 ≤ W x := by
+  by_cases hx0 : x = 0
+  · simp [hx0, hW_zero]
+  · exact (hW_pos x (mem_closedBall_zero_iff.mpr hx) hx0).le
+
+/-! ## Lyapunov's uniform stability theorem (non-autonomous) -/
 
 /-- **Lyapunov's uniform stability theorem** for `ẋ = f(t, x)`.
 
@@ -245,22 +295,18 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
     (hLie_nonpos : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
         fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ 0) :
     UniformlyStableNA f 0 := by
+  -- Exhibit the class K bound `α₁⁻¹ ∘ α₂` on `[0, c)`: from the `c`-ball `V` starts below `d`,
+  -- so the trajectory stays in the `r`-ball, where
+  -- `α₁(‖φ t‖) ≤ V(t, φ t) ≤ V(t₀, φ t₀) ≤ α₂(‖φ t₀‖)`.
   -- ── Step 1: class K bounds sandwiching W₁ and W₂ ─────────────────────────
   obtain ⟨b1_lower, b1_upper, α1, α1_upper, hW1_bounds⟩ :=
       LyapunovClassKBounds hr hW₁_cont hW₁_zero hW₁_pos
   obtain ⟨b2_lower, b2_upper, α2_lower, α2, hW2_bounds⟩ :=
       LyapunovClassKBounds hr hW₂_cont hW₂_zero hW₂_pos
-  set d := min (b1_lower / 2) (b2_upper / 2)
-  have hd_pos : 0 < d := lt_min (half_pos α1.hb) (half_pos α2.hb)
-  have hd_lt_b1 : d < b1_lower := (min_le_left ..).trans_lt (half_lt_self α1.hb)
-  have hd_lt_b2 : d < b2_upper := (min_le_right ..).trans_lt (half_lt_self α2.hb)
+  -- ── Step 2: a level `d` below both ranges, and the radius `c = α₂⁻¹(d)` ─────
+  obtain ⟨d, hd_pos, hd_lt_b1, -, hc_pos, hc_lt_r, h_α2_c⟩ := exists_sandwich_level α1.hb α2
   set c := α2.invFun d
-  have hc_pos : 0 < c := by
-    calc 0 = α2.invFun 0 := α2.symm.map_zero.symm
-         _ < α2.invFun d := α2.symm.strict_mono ⟨le_rfl, α2.hb⟩ ⟨hd_pos.le, hd_lt_b2⟩ hd_pos
-  have hc_lt_r : c < r := (α2.inv_maps_to ⟨hd_pos.le, hd_lt_b2⟩).2
-  -- The fundamental theorem of inverse functions: α₂(c) = d
-  have h_α2_c : α2.toFun c = d := α2.right_inv ⟨hd_pos.le, hd_lt_b2⟩
+  -- ── Step 3: the class K bound `α₁⁻¹ ∘ α₂` on `[0, c)` ───────────────────────
   let α2_res : ClassK c d :=
     ClassK.of_strictMono hc_pos hd_pos α2.toFun α2.map_zero h_α2_c
       (α2.continuous.mono (fun x hx => ⟨hx.1, hx.2.trans_lt hc_lt_r⟩))
@@ -268,19 +314,16 @@ theorem lyapunov_uniformly_stable_NA [NeZero n]
   let α1_inv_res := α1.symm.restrict hd_pos hd_lt_b1
   let α_comp : ClassK c (α1_inv_res.toFun d) :=
     ClassK.comp α1_inv_res α2_res
-  -- Provide the composed function to the US characterization
+  -- ── Step 4: every trajectory from the `c`-ball obeys it ──────────────────────
   rw [uniformlyStableNA_iff_classK f 0]
   refine ⟨c, α1_inv_res.toFun d, α_comp, ?_⟩
   intro t₀ ht₀ φ hφ h_init t ht
   simp only [sub_zero] at h_init ⊢
   have h_φt₀_lt_r : ‖φ t₀‖ < r := h_init.trans hc_lt_r
   have h_Vt₀_lt_d : V t₀ (φ t₀) < d :=
-    calc V t₀ (φ t₀)
-        ≤ W₂ (φ t₀)          := (hV_sandwich t₀ ht₀ (φ t₀) h_φt₀_lt_r.le).2
-      _ ≤ α2.toFun ‖φ t₀‖    := (hW2_bounds (φ t₀) h_φt₀_lt_r).2
-      _ < α2.toFun c          := α2.strict_mono ⟨norm_nonneg _, h_φt₀_lt_r⟩
-                                                ⟨hc_pos.le, hc_lt_r⟩ h_init
-      _ = d                   := h_α2_c
+    V_lt_d_of_norm_lt_c (fun t ht x hx => (hV_sandwich t ht x hx).2)
+      (fun x hx => (hW2_bounds x hx).2) hc_lt_r h_α2_c ht₀ h_init
+  -- The trajectory stays in the `r`-ball, so the sandwich applies all along it.
   have hd_Ico : d ∈ Set.Ico 0 b1_lower := ⟨hd_pos.le, hd_lt_b1⟩
   have h_invd_lt_r : α1.invFun d < r := (α1.inv_maps_to hd_Ico).2
   have h_ball : ∀ s : ℝ, t₀ ≤ s → s ≤ t → ‖φ s‖ < r :=
@@ -374,92 +417,67 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
     (hLie_bound : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
         fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ - W₃ x) :
     UniformlyAsymptoticStableNA f 0 := by
-  -- ── Step 1: Extract Class K bounds ──────────────────────────────────────────
+  -- Along a trajectory `v(t) = V(t, φ t)` obeys `D⁺v ≤ -α₃(α₂⁻¹(v))`, so the comparison lemma
+  -- bounds it by a class KL `σ(v(t₀), t - t₀)`; the sandwich turns this into the class KL
+  -- bound `‖φ t‖ ≤ α₁⁻¹(σ(α₂(‖φ t₀‖), t - t₀))`.
+  -- ── Step 1: class K bounds for W₁, W₂, W₃ ──────────────────────────────────
   obtain ⟨b1_lower, b1_upper, α1, α1_upper, hW1_bounds⟩ :=
       LyapunovClassKBounds hr hW₁_cont hW₁_zero hW₁_pos
   obtain ⟨b2_lower, b2_upper, α2_lower, α2, hW2_bounds⟩ :=
       LyapunovClassKBounds hr hW₂_cont hW₂_zero hW₂_pos
-  -- ── Step 2: `d` and `c` exactly as in the uniform-stability proof ─────────
-  set d := min (b1_lower / 2) (b2_upper / 2)
-  have hd_pos : 0 < d := lt_min (half_pos α1.hb) (half_pos α2.hb)
-  have hd_lt_b1 : d < b1_lower := (min_le_left ..).trans_lt (half_lt_self α1.hb)
-  have hd_lt_b2 : d < b2_upper := (min_le_right ..).trans_lt (half_lt_self α2.hb)
-  set c := α2.invFun d
-  have hc_pos : 0 < c := by
-    calc 0 = α2.invFun 0 := α2.symm.map_zero.symm
-         _ < α2.invFun d := α2.symm.strict_mono ⟨le_rfl, α2.hb⟩ ⟨hd_pos.le, hd_lt_b2⟩ hd_pos
-  have hc_lt_r : c < r := (α2.inv_maps_to ⟨hd_pos.le, hd_lt_b2⟩).2
-  have h_α2_c : α2.toFun c = d := α2.right_inv ⟨hd_pos.le, hd_lt_b2⟩
-  -- Downgrade hLie_bound to hLie_nonpos so we can reuse NA_ball_invariant
-  have hLie_nonpos : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
-      fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ 0 := by
-    intro t ht x hx
-    have hW3_nonneg : 0 ≤ W₃ x := by
-      by_cases hx0 : x = 0
-      · simp [hx0, hW₃_zero]
-      · exact (hW₃_pos x (mem_closedBall_zero_iff.mpr hx) hx0).le
-    linarith [hLie_bound t ht x hx]
-  -- ── Step 3: The Comparison Lemma ───────────────────────────────────────────
-  -- Since V̇ ≤ -W₃(x) ≤ -α₃(α₂⁻¹(V)), standard comparison theory yields a Class KL function σ.
   obtain ⟨b3_lower, b3_upper, α3, α3_upper, hW3_bounds⟩ :=
       LyapunovClassKBounds hr hW₃_cont hW₃_zero hW₃_pos
+  -- ── Step 2: `d` and `c = α₂⁻¹(d)` as in the uniform-stability proof ────────
+  obtain ⟨d, hd_pos, hd_lt_b1, hd_lt_b2, hc_pos, hc_lt_r, h_α2_c⟩ :=
+    exists_sandwich_level α1.hb α2
+  set c := α2.invFun d
+  -- `V̇ ≤ -W₃ ≤ 0`, so the ball invariance of the uniform-stability proof applies.
+  have hLie_nonpos : ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖x‖ ≤ r →
+      fderiv ℝ (Function.uncurry V) (t, x) (1, f t x) ≤ 0 := fun t ht x hx => by
+    linarith [hLie_bound t ht x hx, W_nonneg hW₃_zero hW₃_pos hx]
+  -- From the `c`-ball, `V` starts in `[0, d)` ...
+  have hV_start : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝⁿ, ‖x‖ < c → V t₀ x ∈ Set.Ico 0 d :=
+    fun t₀ ht₀ x hx =>
+      ⟨(W_nonneg hW₁_zero hW₁_pos (hx.trans hc_lt_r).le).trans
+          (hV_sandwich t₀ ht₀ x (hx.trans hc_lt_r).le).1,
+        V_lt_d_of_norm_lt_c (fun t ht x hx => (hV_sandwich t ht x hx).2)
+          (fun x hx => (hW2_bounds x hx).2) hc_lt_r h_α2_c ht₀ hx⟩
+  -- ... and the trajectory never leaves the `r`-ball.
+  have h_in_ball : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ, IsTrajectoryNA φ f t₀ → ‖φ t₀‖ < c →
+      ∀ s : ℝ, t₀ ≤ s → ‖φ s‖ < r := fun t₀ ht₀ φ hφ h_init s hs =>
+    NA_ball_invariant hV_diff ⟨hd_pos.le, hd_lt_b1⟩ (α1.inv_maps_to ⟨hd_pos.le, hd_lt_b1⟩).2
+      (fun x hx => (hW1_bounds x hx).1) (fun t ht x hx => (hV_sandwich t ht x hx).1)
+      hLie_nonpos hφ ht₀ hs (h_init.trans hc_lt_r) (hV_start t₀ ht₀ (φ t₀) h_init).2
+      s hs le_rfl
+  -- ── Step 3: the comparison function `α₃ ∘ α₂⁻¹` and its class KL bound `σ` ─
+  -- Along trajectories `V̇ ≤ -W₃(x) ≤ -α₃(‖x‖) ≤ -α₃(α₂⁻¹(V))`.
   have h_α_comp : ∃ α_comp : ClassK d (α3.toFun c), ∀ y ∈ Set.Ico 0 d,
       α_comp.toFun y = α3.toFun (α2.invFun y) := by
-    -- Restrict α2⁻¹ to the domain [0, d)
+    -- Compose `α₂⁻¹ : [0, d) → [0, c)` with `α₃` restricted to `[0, c)`.  As `c` is by
+    -- definition `α₂⁻¹(d)`, the two domains match definitionally, so `ClassK.comp` needs no
+    -- cast and the composite agrees with `α₃ ∘ α₂⁻¹` by `rfl`.
     let α2_inv_res := α2.symm.restrict hd_pos hd_lt_b2
-    -- Restrict α3 to the domain [0, c)
-    let α3_res := α3.restrict hc_pos hc_lt_r
-    -- Cast α3_res so its domain syntactically matches the codomain of α2_inv_res.
-    -- This works flawlessly because c is definitionally equal to α2.symm.toFun d!
-    let α3_res' : ClassK (α2.symm.toFun d) (α3.toFun c) := α3_res
-    -- Compose them directly
-    let α_comp := ClassK.comp α3_res' α2_inv_res
-    use α_comp
-    intro y hy
-    -- Because we just composed the functions without using Eq.rec (▸) casts,
-    -- they are definitionally identical.
-    exact rfl
+    let α3_res : ClassK (α2.symm.toFun d) (α3.toFun c) := α3.restrict hc_pos hc_lt_r
+    exact ⟨ClassK.comp α3_res α2_inv_res, fun _ _ => rfl⟩
   obtain ⟨α_comp, h_α_comp_eq⟩ := h_α_comp
-  -- Shared helper: W₁ is non-negative on B(0, r)
-  have hW1_nonneg_of : ∀ x : ℝⁿ, ‖x‖ ≤ r → 0 ≤ W₁ x := fun x hx => by
-    by_cases hx0 : x = 0
-    · simp [hx0, hW₁_zero]
-    · exact (hW₁_pos x (mem_closedBall_zero_iff.mpr hx) hx0).le
-  -- Get the comparison KL function σ (ODE infrastructure hidden in classK_dini_bound)
   obtain ⟨σ, hσ_zero, hσ_general⟩ := classK_dini_bound α_comp
-  -- ── Trajectory bound: V(t, φ(t)) ≤ σ(V(t₀, φ(t₀)), t − t₀) ─────────────────
+  -- ── Step 4: along trajectories, `V(t, φ t) ≤ σ(V(t₀, φ t₀), t − t₀)` ────────
   have hσ_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ φ : ℝ → ℝⁿ,
       IsTrajectoryNA φ f t₀ → ‖φ t₀‖ < c → ∀ t : ℝ, t₀ ≤ t →
       V t (φ t) ≤ σ.toFun (V t₀ (φ t₀)) (t - t₀) := by
     intro t₀ ht₀ φ hφ h_init t ht
-    have h_Vt₀_lt_d' : V t₀ (φ t₀) < d :=
-      calc V t₀ (φ t₀)
-          ≤ W₂ (φ t₀)       := (hV_sandwich t₀ ht₀ (φ t₀) (h_init.trans hc_lt_r).le).2
-        _ ≤ α2.toFun ‖φ t₀‖ := (hW2_bounds (φ t₀) (h_init.trans hc_lt_r)).2
-        _ < α2.toFun c      := α2.strict_mono ⟨norm_nonneg _, h_init.trans hc_lt_r⟩
-                                 ⟨hc_pos.le, hc_lt_r⟩ h_init
-        _ = d               := h_α2_c
-    have h_φs_lt_r : ∀ s ∈ Set.Icc t₀ t, ‖φ s‖ < r := fun s hs =>
-      NA_ball_invariant hV_diff ⟨hd_pos.le, hd_lt_b1⟩
-        ((α1.inv_maps_to ⟨hd_pos.le, hd_lt_b1⟩).2)
-        (fun x hx => (hW1_bounds x hx).1)
-        (fun t' ht' x hx => (hV_sandwich t' ht' x hx).1)
-        hLie_nonpos hφ ht₀ ht (h_init.trans hc_lt_r) h_Vt₀_lt_d'
-        s hs.1 hs.2
-    have hV_nonneg_t₀ : 0 ≤ V t₀ (φ t₀) :=
-      (hW1_nonneg_of (φ t₀) (h_init.trans hc_lt_r).le).trans
-        (hV_sandwich t₀ ht₀ (φ t₀) (h_init.trans hc_lt_r).le).1
-    have hV_Ico_t₀ : V t₀ (φ t₀) ∈ Set.Ico 0 d := ⟨hV_nonneg_t₀, h_Vt₀_lt_d'⟩
+    have h_φs_lt_r : ∀ s : ℝ, t₀ ≤ s → ‖φ s‖ < r := h_in_ball t₀ ht₀ φ hφ h_init
+    have hV_Ico_t₀ : V t₀ (φ t₀) ∈ Set.Ico 0 d := hV_start t₀ ht₀ (φ t₀) h_init
     -- V stays in [0, d) along the trajectory (needed by classK_dini_bound)
     have hv_range : ∀ s ∈ Set.Ico t₀ t, V s (φ s) ∈ Set.Ico 0 d := fun s hs => by
-      have h_φs_r  := h_φs_lt_r s ⟨hs.1, hs.2.le⟩
-      have hV_nn   := (hW1_nonneg_of (φ s) h_φs_r.le).trans
+      have h_φs_r := h_φs_lt_r s hs.1
+      have hV_nonneg : 0 ≤ V s (φ s) := (W_nonneg hW₁_zero hW₁_pos h_φs_r.le).trans
         (hV_sandwich s (ht₀.trans hs.1) (φ s) h_φs_r.le).1
-      have hV_lt_d :=
+      have hV_lt_d : V s (φ s) < d :=
         (V_NA_nonincreasing hV_diff hφ le_rfl hs.1
           (fun t' ht' => hLie_nonpos t' (ht₀.trans ht'.1.le) (φ t')
-            (h_φs_lt_r t' ⟨ht'.1.le, (ht'.2.trans hs.2).le⟩).le)).trans_lt h_Vt₀_lt_d'
-      exact ⟨hV_nn, hV_lt_d⟩
+            (h_φs_lt_r t' ht'.1.le).le)).trans_lt hV_Ico_t₀.2
+      exact ⟨hV_nonneg, hV_lt_d⟩
     -- The comparison hypothesis: D⁺(V(·, φ(·)))(s) ≤ −α_comp(V(s, φ(s))), by the chain
     -- V̇ ≤ −W₃(φ s) ≤ −α₃(‖φ s‖) ≤ −α₃(α₂⁻¹(V(s, φ(s)))) = −α_comp(V(s, φ(s))).
     have hDv : ∀ s ∈ Set.Ico t₀ t,
@@ -467,16 +485,16 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       intro s hs
       rw [diniDerivRight_of_hasDerivWithinAt
             (hasDerivWithinAt_V_comp_traj_NA hV_diff hφ hs.1)]
-      have h_Lie    := hLie_bound s (ht₀.trans hs.1) (φ s) (h_φs_lt_r s ⟨hs.1, hs.2.le⟩).le
-      have h_φs_r   := h_φs_lt_r s ⟨hs.1, hs.2.le⟩
-      have h1       : α3.toFun ‖φ s‖ ≤ W₃ (φ s) := (hW3_bounds (φ s) h_φs_r).1
-      have h2       : V s (φ s) ≤ α2.toFun ‖φ s‖ :=
+      have h_φs_r   := h_φs_lt_r s hs.1
+      have h_Lie    := hLie_bound s (ht₀.trans hs.1) (φ s) h_φs_r.le
+      have hW3_lb   : α3.toFun ‖φ s‖ ≤ W₃ (φ s) := (hW3_bounds (φ s) h_φs_r).1
+      have hV_le_α2 : V s (φ s) ≤ α2.toFun ‖φ s‖ :=
         (hV_sandwich s (ht₀.trans hs.1) (φ s) h_φs_r.le).2.trans (hW2_bounds (φ s) h_φs_r).2
       have hV_Ico   : V s (φ s) ∈ Set.Ico 0 d := hv_range s hs
       have hV_in_b2 : V s (φ s) ∈ Set.Ico 0 b2_upper := ⟨hV_Ico.1, hV_Ico.2.trans hd_lt_b2⟩
       calc fderiv ℝ (Function.uncurry V) (s, φ s) (1, f s (φ s))
           ≤ -W₃ (φ s)                 := h_Lie
-        _ ≤ -α3.toFun ‖φ s‖           := neg_le_neg h1
+        _ ≤ -α3.toFun ‖φ s‖           := neg_le_neg hW3_lb
         _ ≤ -α_comp.toFun (V s (φ s)) := neg_le_neg (by
               rw [h_α_comp_eq (V s (φ s)) hV_Ico]
               exact α3.strict_mono.monotoneOn (α2.inv_maps_to hV_in_b2)
@@ -484,7 +502,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
                 (calc α2.symm.toFun (V s (φ s))
                     ≤ α2.symm.toFun (α2.toFun ‖φ s‖) :=
                         α2.symm.strict_mono.monotoneOn hV_in_b2
-                          (α2.maps_to ⟨norm_nonneg _, h_φs_r⟩) h2
+                          (α2.maps_to ⟨norm_nonneg _, h_φs_r⟩) hV_le_α2
                   _ = ‖φ s‖ := α2.left_inv ⟨norm_nonneg _, h_φs_r⟩))
     -- Difference quotients are bounded (from HasDerivAt)
     have hv_bdd : ∀ s ∈ Set.Ico t₀ t,
@@ -492,13 +510,13 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       intro s hs
       have h_deriv := hasDerivWithinAt_V_comp_traj_NA hV_diff hφ hs.1
       exact h_deriv.tendsto_forward_slope.isBoundedUnder_le
-    -- Apply the comparison wrapper
+    -- Apply the comparison lemma.
     have hv_cont : ContinuousOn (fun s => V s (φ s)) (Set.Icc t₀ t) :=
       hV_diff.continuous.comp_continuousOn
         (continuousOn_id.prodMk
           (hφ.continuousOn.mono (fun s hs => Set.mem_Ici.mpr hs.1)))
     exact hσ_general ht (fun s => V s (φ s)) hv_cont hV_Ico_t₀ hv_range hDv hv_bdd
-  -- ── Step 4: β(r, s) = α₁⁻¹(σ(α₂(r), s)) ──────────────────────────────────
+  -- ── Step 5: the class KL bound β(r, s) = α₁⁻¹(σ(α₂(r), s)) ─────────────────
   -- `ClassKL.comp_left` takes a `ClassKInfty`, so the composition is assembled by hand from
   -- `comp_right` and `comp_left_K` rather than in one step.
   have h_beta : ∃ β : ClassKL c, ∀ r ∈ Set.Ico 0 c, ∀ s ≥ 0,
@@ -506,7 +524,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
     set inner := σ.comp_right (α2.restrictTo hc_pos hc_lt_r h_α2_c)
     have h_inner_eq : ∀ r_val s, inner.toFun r_val s = σ.toFun (α2.toFun r_val) s := by
       intro r_val s
-      -- A generic lemma to strip the `Eq.rec` cast away from `.toFun`
+      -- `restrictTo` casts along `α₂(c) = d`; generalizing `d` lets `cases` remove the cast.
       have h_cast : ∀ {e} (h : α2.toFun c = e),
           (α2.restrictTo hc_pos hc_lt_r h).toFun r_val = α2.toFun r_val := by
         intro e h
@@ -515,11 +533,10 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       exact congrArg (fun x => σ.toFun x s) (h_cast h_α2_c)
     have h_range : ∀ r_val ∈ Set.Ico 0 c, ∀ s ≥ 0, inner.toFun r_val s < b1_lower := by
       intro r_val hr_val s hs
+      -- `α₂` maps `[0, c)` into `[0, α₂(c)) = [0, d)`.
       have hα2r : α2.toFun r_val ∈ Set.Ico 0 d := by
-        -- Step 1: Prove domain memberships for the global radius `r`
         have hr_in : r_val ∈ Set.Ico 0 r := ⟨hr_val.1, hr_val.2.trans hc_lt_r⟩
         have hc_in : c ∈ Set.Ico 0 r := ⟨hc_pos.le, hc_lt_r⟩
-        -- Step 2: Use `maps_to` for the lower bound, and `strict_mono`
         exact ⟨(α2.maps_to hr_in).1, h_α2_c ▸ α2.strict_mono hr_in hc_in hr_val.2⟩
       calc inner.toFun r_val s
           = σ.toFun (α2.toFun r_val) s := h_inner_eq r_val s
@@ -532,39 +549,21 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       exact congrArg α1.symm.toFun (h_inner_eq r_val s).symm
     )⟩
   obtain ⟨β, hβ_bound⟩ := h_beta
-  -- ── Step 5: Unpack UAS Definition and Apply ───────────────────────────────
+  -- ── Step 6: every trajectory from the `c`-ball obeys β ─────────────────────
   rw [uniformlyAsymptoticStableNA_iff_classKL f 0]
   use c, β
   intro t₀ ht₀ φ hφ h_init t ht
   simp only [sub_zero] at h_init ⊢
   have h_φt₀_lt_r : ‖φ t₀‖ < r := h_init.trans hc_lt_r
-  have h_Vt₀_lt_d : V t₀ (φ t₀) < d :=
-    calc V t₀ (φ t₀)
-        ≤ W₂ (φ t₀)          := (hV_sandwich t₀ ht₀ (φ t₀) h_φt₀_lt_r.le).2
-      _ ≤ α2.toFun ‖φ t₀‖    := (hW2_bounds (φ t₀) h_φt₀_lt_r).2
-      _ < α2.toFun c         := α2.strict_mono
-                                  ⟨norm_nonneg _, h_init.trans hc_lt_r⟩
-                                  ⟨hc_pos.le, hc_lt_r⟩
-                                  h_init
-      _ = d                  := h_α2_c
-  -- Prove it never leaves the ball so h_comparison is valid
-  have h_ball : ∀ s : ℝ, t₀ ≤ s → s ≤ t → ‖φ s‖ < r :=
-    NA_ball_invariant hV_diff ⟨hd_pos.le, hd_lt_b1⟩ ((α1.inv_maps_to ⟨hd_pos.le, hd_lt_b1⟩).2)
-      (fun x hx => (hW1_bounds x hx).1)
-      (fun s hs x hx => (hV_sandwich s hs x hx).1)
-      hLie_nonpos hφ ht₀ ht h_φt₀_lt_r h_Vt₀_lt_d
-  have h_φt_lt_r : ‖φ t‖ < r := h_ball t ht le_rfl
+  have h_φt_lt_r : ‖φ t‖ < r := h_in_ball t₀ ht₀ φ hφ h_init t ht
   have ht_sub : 0 ≤ t - t₀ := sub_nonneg.mpr ht
-  have hV_t0_Ico : V t₀ (φ t₀) ∈ Set.Ico 0 d :=
-    ⟨(hW1_nonneg_of (φ t₀) h_φt₀_lt_r.le).trans
-       (hV_sandwich t₀ ht₀ (φ t₀) h_φt₀_lt_r.le).1,
-     h_Vt₀_lt_d⟩
+  have hV_t0_Ico : V t₀ (φ t₀) ∈ Set.Ico 0 d := hV_start t₀ ht₀ (φ t₀) h_init
   have h_α2_t0_Ico : α2.toFun ‖φ t₀‖ ∈ Set.Ico 0 d :=
     ⟨(α2.maps_to ⟨norm_nonneg _, h_φt₀_lt_r⟩).1,
      (α2.strict_mono ⟨norm_nonneg _, h_φt₀_lt_r⟩ ⟨hc_pos.le, hc_lt_r⟩ h_init).trans_eq h_α2_c⟩
   have h_V_le_α2 : V t₀ (φ t₀) ≤ α2.toFun ‖φ t₀‖ :=
     (hV_sandwich t₀ ht₀ (φ t₀) h_φt₀_lt_r.le).2.trans (hW2_bounds (φ t₀) h_φt₀_lt_r).2
-  -- The Core Inequality Chain
+  -- `α₁(‖φ t‖) ≤ W₁ ≤ V ≤ σ(V(t₀, φ t₀), t - t₀) ≤ σ(α₂(‖φ t₀‖), t - t₀)`
   have h_chain : α1.toFun ‖φ t‖ ≤ σ.toFun (α2.toFun ‖φ t₀‖) (t - t₀) :=
     calc α1.toFun ‖φ t‖
       _ ≤ W₁ (φ t) := (hW1_bounds (φ t) h_φt_lt_r).1
@@ -572,7 +571,7 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
       _ ≤ σ.toFun (V t₀ (φ t₀)) (t - t₀) := hσ_bound t₀ ht₀ φ hφ h_init t ht
       _ ≤ σ.toFun (α2.toFun ‖φ t₀‖) (t - t₀) :=
             (σ.strict_mono_r (t - t₀) ht_sub).monotoneOn hV_t0_Ico h_α2_t0_Ico h_V_le_α2
-  -- Invert α1 and apply β
+  -- Invert `α₁`, then bound by `β`.
   have h_left_in : α1.toFun ‖φ t‖ ∈ Set.Ico 0 b1_lower := α1.maps_to ⟨norm_nonneg _, h_φt_lt_r⟩
   have h_right_in : σ.toFun (α2.toFun ‖φ t₀‖) (t - t₀) ∈ Set.Ico 0 b1_lower := by
     refine ⟨σ.nonneg (α2.toFun ‖φ t₀‖) h_α2_t0_Ico (t - t₀) ht_sub, ?_⟩
@@ -587,5 +586,5 @@ theorem lyapunov_uniformly_asymptotic_stable_NA [NeZero n]
   change α1.invFun (α1.toFun ‖φ t‖) ≤ α1.invFun (σ.toFun (α2.toFun ‖φ t₀‖) (t - t₀)) at h_inv_bound
   have h_beta_eval : α1.invFun (σ.toFun (α2.toFun ‖φ t₀‖) (t - t₀)) ≤ β.toFun ‖φ t₀‖ (t - t₀) :=
     hβ_bound ‖φ t₀‖ ⟨norm_nonneg _, h_init⟩ (t - t₀) ht_sub
-  have:=  h_inv_bound.trans h_beta_eval
-  rwa [α1.left_inv ⟨norm_nonneg _, h_φt_lt_r⟩] at this
+  have h_norm_bound := h_inv_bound.trans h_beta_eval
+  rwa [α1.left_inv ⟨norm_nonneg _, h_φt_lt_r⟩] at h_norm_bound

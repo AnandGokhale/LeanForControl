@@ -243,7 +243,6 @@ theorem diniDerivRight_add_differentiable {f g : ℝ → ℝ} {t : ℝ}
       (fun h => (f (t + h) - f t) / h))
     (hg : DifferentiableAt ℝ g t) :
     D⁺ (fun s => f s + g s) t = D⁺ f t + deriv g t := by
-  classical
   simp only [diniDerivRight]
   set q_f : ℝ → ℝ := fun h => (f (t + h) - f t) / h
   set q_g : ℝ → ℝ := fun h => (g (t + h) - g t) / h
@@ -258,25 +257,17 @@ theorem diniDerivRight_add_differentiable {f g : ℝ → ℝ} {t : ℝ}
     have hslope := hg.hasDerivAt.tendsto_slope_zero_right
     simp only [Set.Ioi] at hslope
     refine hslope.congr' ?_
-    filter_upwards [self_mem_nhdsWithin] with h (hh : h > 0)
-    have h_eq : g (t + h) - g t = (g (t + h) - g t) := rfl
-    rw [h_eq]
+    filter_upwards with h
     ring
-  have hq_g_bdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) q_g :=
-    hq_g_tendsto.isBoundedUnder_le
-  have hq_g_bdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0) q_g :=
-    hq_g_tendsto.isBoundedUnder_ge
   have hzero : Tendsto (fun h => q_g h - deriv g t) (𝓝[>] 0) (𝓝 0) := by
     simpa using hq_g_tendsto.sub_const (deriv g t)
   have hrw : q_f + q_g = fun h => (q_f h + (q_g h - deriv g t)) + deriv g t := by
     ext h; simp [q_f, q_g]; ring
-  have hcobdd : IsCoboundedUnder (· ≤ ·) (𝓝[>] 0) q_f :=
-    hf_bdd_below.isCoboundedUnder_le
   rw [hrw, limsup_add_const]
-  · -- main goal: limsup (fun h => q_f h + (q_g h - deriv g t)) = limsup q_f
+  · -- Main goal: `limsup (q_f + (q_g - g'(t))) = limsup q_f`, since `q_g - g'(t) → 0`.
     congr 1
     convert limsup_add_tendsto_zero hf_bdd_below hf_bdd_above hzero using 2
-  · -- IsBoundedUnder (· ≤ ·) for q_f + (q_g - deriv g t)
+  · -- Side goal: `q_f + (q_g - g'(t))` is bounded above.
     have hzero_bdd : IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => q_g h - deriv g t) :=
       hzero.isBoundedUnder_le
     obtain ⟨bf, hbf⟩ := hf_bdd_above
@@ -285,15 +276,16 @@ theorem diniDerivRight_add_differentiable {f g : ℝ → ℝ} {t : ℝ}
     simp only [Filter.eventually_map] at *
     filter_upwards [hbf, hbg] with h h1 h2
     linarith
-  have hzero_bdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0) (fun h => q_g h - deriv g t) :=
-    hzero.isBoundedUnder_ge
-  apply IsBoundedUnder.isCoboundedUnder_le
-  obtain ⟨bf, hbf⟩ := hf_bdd_below
-  obtain ⟨bg, hbg⟩ := hzero_bdd_below
-  refine ⟨bf + bg, ?_⟩
-  simp only [IsBoundedUnder, IsBounded, eventually_map] at *
-  filter_upwards [hbf, hbg] with h h1 h2
-  linarith
+  · -- Side goal: `q_f + (q_g - g'(t))` is cobounded, since it is bounded below.
+    have hzero_bdd_below : IsBoundedUnder (· ≥ ·) (𝓝[>] 0) (fun h => q_g h - deriv g t) :=
+      hzero.isBoundedUnder_ge
+    apply IsBoundedUnder.isCoboundedUnder_le
+    obtain ⟨bf, hbf⟩ := hf_bdd_below
+    obtain ⟨bg, hbg⟩ := hzero_bdd_below
+    refine ⟨bf + bg, ?_⟩
+    simp only [IsBoundedUnder, IsBounded, eventually_map] at *
+    filter_upwards [hbf, hbg] with h h1 h2
+    linarith
 
 
 /-- Shifting by a linear function shifts `D⁺` by the slope:
@@ -438,9 +430,7 @@ theorem neg_diniDerivRight_neg_le (f : ℝ → ℝ) (t : ℝ)
         -- Strip away the '∈ S' and '∈ T' wrappers from the hypotheses
         have ha_ev : ∀ᶠ x in 𝓝[>] 0, q x ≤ a := ha
         have hb_ev : ∀ᶠ x in 𝓝[>] 0, -q x ≤ b' := hb'
-        -- Now .and works perfectly
         have h_inter : ∀ᶠ x in 𝓝[>] 0, q x ≤ a ∧ -q x ≤ b' := ha_ev.and hb_ev
-        haveI : (𝓝[>] (0:ℝ)).NeBot := inferInstance
         obtain ⟨x, hx⟩ := Filter.Eventually.exists h_inter
         linarith
     linarith
@@ -470,33 +460,13 @@ lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b
   let q_z := fun h => (z (a + h) - z a) / h
   have h_eventual_le : ∀ᶠ h in 𝓝[>] 0, q_z h ≤ q_v h := by
     have h_nhds : Iio (b - a) ∈ 𝓝 0 := Iio_mem_nhds (sub_pos.mpr hab)
-    filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds h_nhds] with h h_gt0 h_lt
-    -- Expose the inequalities explicitly so `linarith` can see them
-    have h1 : 0 < h := h_gt0
-    have h2 : h < b - a := h_lt
-    apply div_le_div_of_nonneg_right _ h1.le
+    filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds h_nhds]
+      with h (h_pos : 0 < h) (h_lt : h < b - a)
+    apply div_le_div_of_nonneg_right _ h_pos.le
     rw [h_eq]
-    -- Now linarith has the ammo it needs
-    have h_in_Ioc : a + h ∈ Ioc a b := ⟨by linarith, by linarith⟩
-    have h_str := h_strict (a + h) h_in_Ioc
+    have h_below := h_strict (a + h) ⟨by linarith, by linarith⟩
     linarith
-  have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 d_z) := by
-    rw [hasDerivWithinAt_iff_tendsto_slope] at hz_deriv
-    have h_shift : Tendsto (fun h => a + h) (𝓝[>] 0) (𝓝[Ici a \ {a}] a) := by
-      apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-      · exact (continuous_const.add continuous_id).tendsto' 0 a (add_zero a)
-          |>.mono_left nhdsWithin_le_nhds
-      · filter_upwards [self_mem_nhdsWithin] with h hh
-        -- Expose the inequality here too
-        have h1 : 0 < h := hh
-        simp only [mem_diff, mem_Ici, mem_singleton_iff]
-        exact ⟨by linarith, by linarith⟩
-    apply Tendsto.congr' _ (hz_deriv.comp h_shift)
-    filter_upwards with h
-    dsimp [q_z, slope]
-    rw [show a + h - a = h by ring]
-    rw [div_eq_mul_inv]
-    ring_nf
+  have hz_lim : Tendsto q_z (𝓝[>] 0) (𝓝 d_z) := hz_deriv.tendsto_forward_slope
   calc d_z
     _ = limsup q_z (𝓝[>] 0) := hz_lim.limsup_eq.symm
     _ ≤ limsup q_v (𝓝[>] 0) :=
