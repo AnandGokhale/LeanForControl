@@ -2,7 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
-import LeanForControl.axioms
+import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Comparison.ClassK
 import Architect
 

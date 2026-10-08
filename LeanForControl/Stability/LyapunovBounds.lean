@@ -1,4 +1,4 @@
-import LeanForControl.axioms
+import LeanForControl.Analysis.MonotoneFunctions
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
@@ -31,8 +31,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 2. Show `ψ(‖x‖) ≤ V(x) ≤ φ(‖x‖)` (`V_ge_psi`, `V_le_phi`).
 3. Establish that `ψ` is zero at 0, positive away from 0, and monotone (`psi_fn_zero`,
    `psi_fn_pos`, `psi_fn_mono`); similarly for `φ` (`phi_fn_zero`, `phi_fn_mono`).
-4. Apply the smoothing axioms from `LeanForControl.axioms` to obtain strictly monotone
-   continuous functions `f ≤ ψ` and `φ ≤ g`.
+4. Apply the smoothing lemmas from `LeanForControl.Analysis.MonotoneFunctions` to obtain
+   strictly monotone continuous functions `f ≤ ψ` and `φ ≤ g`.
 5. Package via `ClassK.of_strictMono` to get the class K bounds `α₁ ≤ ψ ≤ V` and
    `V ≤ φ ≤ α₂`.
 -/
@@ -255,9 +255,9 @@ private lemma V_le_phi {r : ℝ} {V : ℝⁿ → ℝ}
 
 /-! ### Packaging ψ and φ into Class K Functions
 
-We apply the smoothing results from `LeanForControl.axioms` to turn the (merely monotone)
-comparison functions `ψ` and `φ` into full `ClassK` structures.  The final bounds follow
-by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
+We apply the smoothing results from `LeanForControl.Analysis.MonotoneFunctions` to turn the
+(merely monotone) comparison functions `ψ` and `φ` into full `ClassK` structures.  The final
+bounds follow by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
 
 /-- There exists a class K function `α₁` on `[0, r]` with `α₁(s) ≤ ψ(s)`.
     Combined with `V_ge_psi`, this gives `α₁(‖x‖) ≤ V(x)`. -/
@@ -268,13 +268,13 @@ private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
   -- Derive non-negativity from V(0) = 0 and strict positivity away from 0
   have hV_nonneg : ∀ x ∈ closedBall (0 : ℝⁿ) r, 0 ≤ V x := fun x hx =>
     if h : x = 0 then by simp [h, hV_zero] else (hV_pos x hx h).le
-  -- Verify the three hypotheses of the lower smoothing axiom for ψ
+  -- Verify the three hypotheses of the lower smoothing lemma for ψ
   have hψ_zero : psi_fn r V 0 = 0 := psi_fn_zero hr hV_zero hV_nonneg
   have hψ_pos : ∀ s, 0 < s → s ≤ r → 0 < psi_fn r V s := fun s hs hs_le =>
     psi_fn_pos hV_cont hV_pos hs hs_le
   have hψ_mono : ∀ s₁ s₂, 0 ≤ s₁ → s₁ ≤ s₂ → s₂ ≤ r → psi_fn r V s₁ ≤ psi_fn r V s₂ :=
     fun s₁ s₂ hs1 hs_le hs2_le => psi_fn_mono hV_cont hs_le hs2_le hs1
-  -- Apply the smoothing axiom to get a strictly monotone continuous f ≤ ψ
+  -- Apply the smoothing lemma to get a strictly monotone continuous f ≤ ψ
   rcases exists_strictMono_lower_bound r hr (psi_fn r V) hψ_zero hψ_pos hψ_mono
     with ⟨f, b₁, hb₁_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
   exact ⟨b₁, ClassK.of_strictMono hr hb₁_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩

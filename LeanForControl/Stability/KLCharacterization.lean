@@ -3,10 +3,9 @@ import LeanForControl.Stability.KLCharacterizationTools
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
-import LeanForControl.Comparison.Axioms
 import LeanForControl.Comparison.ComparisonFunctions
 
-import LeanForControl.axioms
+import LeanForControl.Analysis.MonotoneFunctions
 
 import Architect
 

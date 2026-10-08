@@ -765,8 +765,8 @@ $\omega(\varphi)$ supplies, and it is the only place uniqueness of solutions is 
 
 A Lyapunov function is positive definite: a pointwise condition, awkward to combine with
 estimates. The theorem below converts it into monotone bounds in the single variable $\|x\|$,
-after which every Lyapunov argument can be run in the comparison-function calculus. The two
-smoothing results it rests on are assumed, not proved.
+after which every Lyapunov argument can be run in the comparison-function calculus. It rests on
+two smoothing results, which replace a monotone bound by a continuous strictly increasing one.
 
 \inputleannode{lem:exists-strictMono-lower-bound}
 
@@ -1110,6 +1110,9 @@ A candidate bound that has the right qualitative behaviour — monotone in the i
 decaying in time — need not itself be class $\mathcal{KL}$: it may fail continuity or strict
 monotonicity. These two results replace such a candidate by a genuine class $\mathcal{KL}$
 function dominating it, which is how the stability characterizations produce their bounds.
+The first lemma below is the continuity criterion the construction rests on.
+
+\inputleannode{lem:continuous-uncurry-of-monotone-antitone}
 
 \inputleannode{lem:exists-classKL-upper-bound}
 
@@ -1123,17 +1126,6 @@ stability statement, and it is where the scalar ODE $\dot y = -\alpha(y)$ enters
 
 \inputleannode{thm:class-KL-osgood}
 
-\inputleannode{thm:classK-dini-bound}
-
-\section{Assumed comparison-function results}
-
-The three statements below are \texttt{axiom}s in the Lean development: they are assumed, not
-proved, and every result that depends on one inherits that assumption.  They are standard
-comparison-function facts, the first being the global analogue of Lemma 9 of Kellett's
-compendium.  Discharging them is open work.
-
-\inputleannode{lem:exists-classKLGlobal-of-stability-properties}
-
 \inputleannode{lem:exists-classK-minorant-lipschitz}
 
-\inputleannode{lem:classK-exists-global-extension}
+\inputleannode{thm:classK-dini-bound}

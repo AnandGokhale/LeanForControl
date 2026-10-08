@@ -1,7 +1,6 @@
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
-import LeanForControl.Comparison.Axioms
 import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.ODE_properties
@@ -43,7 +42,7 @@ Reference for the construction: Osgood's condition; see Khalil, Appendix C.
 open Set Filter Topology MeasureTheory intervalIntegral
 
 /-- Adding a constant is an isometry, so it preserves a Lipschitz bound.  Mathlib has no
-`LipschitzWith.add_const`, and the perturbed field `-β_ext + λ` needs one. -/
+`LipschitzWith.add_const`, and the perturbed field `-β + λ` needs one. -/
 private lemma lipschitzWith_add_const {L : NNReal} {f : ℝ → ℝ}
     (h : LipschitzWith L f) (c : ℝ) : LipschitzWith L (fun x => f x + c) :=
   LipschitzWith.of_dist_le_mul fun x y => by
@@ -631,7 +630,7 @@ theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
     $\sigma(v(t_0), 0)$, \cref{thm:comparison-lemma} bounds $v$ by it — the perturbed
     solutions that lemma requires coming from
     \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz}, whose hypotheses hold because
-    $\beta$'s Lipschitz extension is globally Lipschitz. -/)]
+    $\beta$ is globally Lipschitz (\cref{lem:exists-classK-minorant-lipschitz}). -/)]
 lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
@@ -642,11 +641,11 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
         (∀ s ∈ Set.Ico t₀ t,
             IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (s + h) - v s) / h)) →
         v t ≤ σ.toFun (v t₀) (t - t₀) := by
-  obtain ⟨β, β_ext, L, hL_pos, hβ_le_α, hβ_ext_eq, hLip, hβ_ext_cont, hLip_ext⟩ :=
-    exists_classK_minorant_lipschitz α (a / 2) ⟨half_pos α.ha, half_lt_self α.ha⟩
+  obtain ⟨_, L, β, hL_pos, hβ_le_α, hβ_lin, hLip⟩ := exists_classK_minorant_lipschitz α
   have h_base : a / 2 ∈ Set.Ioo 0 a := ⟨half_pos α.ha, half_lt_self α.ha⟩
   obtain ⟨σ, hσ_zero_s, hσ_init, hσ_deriv⟩ :=
-    ClassK.exists_classKL_decaySolution β (a / 2) h_base L hL_pos hLip
+    ClassK.exists_classKL_decaySolution β (a / 2) h_base L hL_pos
+      fun x hx => hβ_lin x hx.1.le
   refine ⟨σ, ?_, ?_⟩
   · -- σ(r, 0) ≤ r for r ∈ [0, a)
     intro r hr
@@ -656,34 +655,22 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
     rcases eq_or_lt_of_le ht with rfl | ht_lt
     · simp only [sub_self]
       exact le_of_eq (hσ_init (v t₀) hv₀).symm
-    · -- Strengthen: D⁺v ≤ -α(v) ≤ -β(v) = -β_ext(v)
-      have hDv' : ∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ (fun _ x => -β_ext x) s (v s) := by
+    · -- Strengthen: D⁺v ≤ -α(v) ≤ -β(v)
+      have hDv' : ∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ (fun _ x => -β.toFun x) s (v s) := by
         intro s hs
-        have hvs := hv_range s hs
         have h1 : D⁺ v s ≤ -α.toFun (v s) := hDv s hs
-        have h2 : β.toFun (v s) ≤ α.toFun (v s) := hβ_le_α (v s) hvs
-        have h3 : β_ext (v s) = β.toFun (v s) := hβ_ext_eq (v s) hvs
+        have h2 : β.toFun (v s) ≤ α.toFun (v s) := hβ_le_α (v s) (hv_range s hs)
         linarith
-      -- σ satisfies the comparison ODE u̇ = -β_ext(u)
+      -- σ satisfies the comparison ODE u̇ = -β(u)
       have hu_deriv : ∀ s ∈ Set.Ioo t₀ t,
           HasDerivAt (fun x => σ.toFun (v t₀) (x - t₀))
-            ((fun _ x => -β_ext x) s (σ.toFun (v t₀) (s - t₀))) s := by
+            ((fun _ x => -β.toFun x) s (σ.toFun (v t₀) (s - t₀))) s := by
         intro s hs
         have hs_sub_pos : 0 < s - t₀ := sub_pos.mpr hs.1
-        -- σ(v t₀, s - t₀) stays in [0, a), so `β` and its extension agree there
-        have h_sigma_ico : σ.toFun (v t₀) (s - t₀) ∈ Set.Ico 0 a := by
-          refine ⟨σ.nonneg _ hv₀ _ hs_sub_pos.le, ?_⟩
-          calc σ.toFun (v t₀) (s - t₀)
-              ≤ σ.toFun (v t₀) 0 :=
-                  σ.anti_s _ hv₀ (Set.mem_Ici.mpr le_rfl)
-                    (Set.mem_Ici.mpr hs_sub_pos.le) hs_sub_pos.le
-            _ = v t₀ := hσ_init (v t₀) hv₀
-            _ < a := hv₀.2
         -- σ(v t₀, ·) solves the decay ODE; compose with the shift `· - t₀`
         have h_comp := (hσ_deriv (v t₀) hv₀ (s - t₀) hs_sub_pos).comp s
           ((hasDerivAt_id s).sub_const t₀)
-        simp only [mul_one] at h_comp
-        rwa [← hβ_ext_eq _ h_sigma_ico] at h_comp
+        simpa only [mul_one] using h_comp
       -- σ is continuous on [t₀, t]
       have hu_cont : ContinuousOn (fun s => σ.toFun (v t₀) (s - t₀)) (Set.Icc t₀ t) :=
         (σ.continuous.comp
@@ -695,13 +682,13 @@ lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
         simp only [sub_self]; exact hσ_init (v t₀) hv₀
       -- Apply comparison_lemma
       have h_bound : ∀ s ∈ Set.Icc t₀ t, v s ≤ σ.toFun (v t₀) (s - t₀) :=
-        comparison_lemma (f := fun _ x => -β_ext x) ht_lt hL_pos
-          ((hβ_ext_cont.neg.comp continuous_snd))
-          (fun _ _ => hLip_ext.neg)
+        comparison_lemma (f := fun _ x => -β.toFun x) ht_lt hL_pos
+          ((hLip.continuous.neg.comp continuous_snd))
+          (fun _ _ => hLip.neg)
           hu_deriv hu_cont hu₀
           hv_cont hDv' hv_bdd le_rfl
           (fun lam _ =>
-            exists_isIntegralSolution_Icc_of_lipschitz (g := fun _ x => -β_ext x + lam)
-              ((hβ_ext_cont.neg.add continuous_const).comp continuous_snd)
-              (fun _ => lipschitzWith_add_const hLip_ext.neg lam) ht_lt.le)
+            exists_isIntegralSolution_Icc_of_lipschitz (g := fun _ x => -β.toFun x + lam)
+              ((hLip.continuous.neg.add continuous_const).comp continuous_snd)
+              (fun _ => lipschitzWith_add_const hLip.neg lam) ht_lt.le)
       exact h_bound t ⟨ht_lt.le, le_rfl⟩

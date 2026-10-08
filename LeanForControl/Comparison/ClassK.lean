@@ -2,7 +2,6 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
-import LeanForControl.axioms
 import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral
@@ -369,3 +368,111 @@ def ClassK.comp {a b c : ℝ} (β : ClassK b c) (α : ClassK a b) : ClassK a c w
     intro y hy
     change β.toFun (α.toFun (α.invFun (β.invFun y))) = y
     rw [α.right_inv (β.inv_maps_to hy)]; exact β.right_inv hy
+
+/-! ### Lipschitz minorants -/
+
+/-- Every class K function `α` on `[0, a)` has a class K minorant `β ≤ α` (onto some `[0, b')`)
+that is Lipschitz on all of `ℝ`, and hence satisfies a linear bound `β(x) ≤ L x`.
+
+The range `b'` cannot in general be taken equal to `b`: `α(x) = 1 - √(1 - x)` on `[0, 1)`
+approaches `1` more slowly than any Lipschitz function can. -/
+@[blueprint "lem:exists-classK-minorant-lipschitz"
+  (title := "Lipschitz class $\\mathcal{K}$ minorant") (latexEnv := "lemma")
+  (statement := /-- Let $\alpha$ be a class $\mathcal{K}$ function on $[0, a)$.  Then there are
+    $b' > 0$, $L > 0$ and a class $\mathcal{K}$ function $\beta : [0, a) \to [0, b')$ with
+    $\beta(x) \le \alpha(x)$ for $x \in [0, a)$, $\beta(x) \le L x$ for $x \ge 0$, and
+    $\beta$ $L$-Lipschitz on all of $\mathbb{R}$.
+
+    The range of $\beta$ cannot in general be the range $[0, b)$ of $\alpha$:
+    $\alpha(x) = 1 - \sqrt{1 - x}$ on $[0, 1)$ approaches $1$ more slowly than any
+    Lipschitz function can. -/)
+  (proof := /-- Extend $\alpha$ to a nondecreasing $g : \mathbb{R} \to [0, b]$ by $0$ on the
+    left and $b$ from $a$ on, and set $\beta(x) = a^{-1} \int_0^x g$, so $b' = \beta(a)$.
+    Since $0 \le g \le b$, $\beta$ is $(b/a)$-Lipschitz, and with $\beta(0) = 0$ this gives
+    $\beta(x) \le (b/a)\,x$.  Since $g > 0$ on $(0, \infty)$, $\beta$ is strictly increasing,
+    hence class $\mathcal{K}$ by \cref{lem:classK-of-strictMono}.  Finally $g$ is
+    nondecreasing, so for $x \in [0, a)$,
+    $\int_0^x g \le x\,\alpha(x) \le a\,\alpha(x)$, i.e.\ $\beta(x) \le \alpha(x)$. -/)]
+theorem exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) :
+    ∃ (b' L : ℝ) (β : ClassK a b') (hL : 0 < L),
+      (∀ x ∈ Ico 0 a, β.toFun x ≤ α.toFun x) ∧
+      (∀ x ≥ 0, β.toFun x ≤ L * x) ∧
+      LipschitzWith ⟨L, hL.le⟩ β.toFun := by
+  /- We take `β x = a⁻¹ ∫₀ˣ g`, where `g` is `α` on `[0, a)`, `0` to the left and `b` to the
+     right.  Since `0 ≤ g ≤ b`, `β` is `(b / a)`-Lipschitz; since `g` is nondecreasing,
+     `∫₀ˣ g ≤ x α(x) ≤ a α(x)`, so `β ≤ α`; and since `g > 0` on `(0, ∞)`, `β` is strictly
+     increasing. -/
+  -- Step 1. Extend `α` to a monotone function `g` on all of `ℝ`, with values in `[0, b]`.
+  set g : ℝ → ℝ := fun t => if t < a then α.toFun (max t 0) else b
+  have hα_mem : ∀ t < a, max t 0 ∈ Ico 0 a := fun t ht =>
+    ⟨le_max_right t 0, max_lt ht α.ha⟩
+  have hg_eq : ∀ x ∈ Ico 0 a, g x = α.toFun x := fun x hx => by
+    simp [g, hx.2, max_eq_left hx.1]
+  have hg_mono : Monotone g := by
+    intro x y hxy
+    simp only [g]
+    split_ifs with hx hy hy
+    · exact α.strict_mono.monotoneOn (hα_mem x hx) (hα_mem y hy) (max_le_max hxy le_rfl)
+    · exact (α.maps_to (hα_mem x hx)).2.le
+    · exact absurd (hxy.trans_lt hy) hx
+    · exact le_rfl
+  have hg_bounds : ∀ t, 0 ≤ g t ∧ g t ≤ b := by
+    intro t
+    simp only [g]
+    split_ifs with ht
+    · exact ⟨(α.maps_to (hα_mem t ht)).1, (α.maps_to (hα_mem t ht)).2.le⟩
+    · exact ⟨α.hb.le, le_rfl⟩
+  have hg_pos : ∀ t > 0, 0 < g t := by
+    intro t ht
+    simp only [g]
+    split_ifs with hta
+    · rw [max_eq_left ht.le, ← α.map_zero]
+      exact α.strict_mono ⟨le_rfl, α.ha⟩ ⟨ht.le, hta⟩ ht
+    · exact α.hb
+  have hg_int : ∀ x y, IntervalIntegrable g volume x y := fun _ _ =>
+    hg_mono.intervalIntegrable
+  -- Step 2. The normalised primitive `f x = a⁻¹ ∫₀ˣ g`.
+  set f : ℝ → ℝ := fun x => a⁻¹ * ∫ t in (0 : ℝ)..x, g t
+  have hf_zero : f 0 = 0 := by simp [f]
+  have hf_sub : ∀ x y, f x - f y = a⁻¹ * ∫ t in y..x, g t := fun x y => by
+    simp only [f]
+    rw [← mul_sub, intervalIntegral.integral_interval_sub_left (hg_int 0 x) (hg_int 0 y)]
+  -- Lipschitz with constant `b / a`, because `0 ≤ g ≤ b`.
+  have hL : 0 < a⁻¹ * b := mul_pos (inv_pos.mpr α.ha) α.hb
+  have hf_lip : LipschitzWith ⟨a⁻¹ * b, hL.le⟩ f := by
+    refine LipschitzWith.of_dist_le_mul fun x y => ?_
+    have h := intervalIntegral.norm_integral_le_of_norm_le_const (a := y) (b := x)
+      fun t _ => (by rw [Real.norm_of_nonneg (hg_bounds t).1]; exact (hg_bounds t).2 :
+        ‖g t‖ ≤ b)
+    rw [Real.dist_eq, Real.dist_eq, hf_sub, abs_mul, abs_of_pos (inv_pos.mpr α.ha)]
+    change a⁻¹ * _ ≤ a⁻¹ * b * _
+    rw [mul_assoc]
+    exact mul_le_mul_of_nonneg_left (by simpa using h) (inv_pos.mpr α.ha).le
+  -- Strictly increasing: `f y - f x = a⁻¹ ∫ₓʸ g`, and `g > 0` on `(x, y)`.
+  have hf_mono : StrictMonoOn f (Icc 0 a) := by
+    intro x hx y _ hxy
+    have h_pos : 0 < ∫ t in x..y, g t :=
+      intervalIntegral.intervalIntegral_pos_of_pos_on (hg_int x y)
+        (fun t ht => hg_pos t (hx.1.trans_lt ht.1)) hxy
+    have := hf_sub y x
+    have : 0 < f y - f x := by rw [this]; exact mul_pos (inv_pos.mpr α.ha) h_pos
+    linarith
+  -- Below `α`: `∫₀ˣ g ≤ ∫₀ˣ g(x) = x α(x) ≤ a α(x)`, because `g` is nondecreasing.
+  have hf_le : ∀ x ∈ Ico 0 a, f x ≤ α.toFun x := fun x hx => by
+    have h_int : ∫ t in (0 : ℝ)..x, g t ≤ x * α.toFun x := by
+      have h := intervalIntegral.integral_mono_on hx.1 (hg_int 0 x)
+        intervalIntegrable_const fun t ht => hg_mono ht.2
+      simpa [hg_eq x hx] using h
+    have h_nonneg : 0 ≤ α.toFun x := (α.maps_to hx).1
+    simp only [f]
+    rw [inv_mul_le_iff₀ α.ha]
+    exact h_int.trans (mul_le_mul_of_nonneg_right hx.2.le h_nonneg)
+  -- Step 3. Package `f` as a class `K` function onto `[0, f a)`.
+  have hb' : 0 < f a :=
+    hf_zero ▸ hf_mono (left_mem_Icc.mpr α.ha.le) (right_mem_Icc.mpr α.ha.le) α.ha
+  refine ⟨f a, a⁻¹ * b, ClassK.of_strictMono α.ha hb' f hf_zero rfl
+    hf_lip.continuous.continuousOn hf_mono, hL, hf_le, fun x hx => ?_, hf_lip⟩
+  -- the linear bound is the Lipschitz bound against `f 0 = 0`
+  have h := hf_lip.dist_le_mul x 0
+  rw [Real.dist_eq, Real.dist_eq, hf_zero, sub_zero, sub_zero, abs_of_nonneg hx] at h
+  exact (le_abs_self _).trans h

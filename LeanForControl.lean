@@ -6,7 +6,6 @@ import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.SpectralRadius
-import LeanForControl.Comparison.Axioms
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
@@ -58,4 +57,3 @@ import LeanForControl.Stability.LyapunovIndirect.LinearizationInstability
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
 import LeanForControl.Stability.LyapunovIndirect.NonlinearInstability
 import LeanForControl.Stability.NonAutonomous
-import LeanForControl.axioms
