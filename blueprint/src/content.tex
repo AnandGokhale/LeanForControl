@@ -733,6 +733,21 @@ globally defined.
 
 \inputleannode{thm:exponential-chetaev-unstable}
 
+The next criterion is a boundary formulation of Chetaev's instability argument
+(Khalil, \emph{Nonlinear Systems}, 3rd ed., Prentice Hall, 2002,
+Theorem 4.3, p. 125), not a literal transcription. It uses an independently
+supplied open positive region and globally $C^1$ field and certificate, with
+sign and boundary conditions restricted to a fixed closed ball. The conclusion
+negates stability on all finite forward solution segments; the base point is
+not assumed to be an equilibrium. The terms ``geometric'' and ``boundary-form''
+describe this formulation.
+The topological boundary $\partial D$ is represented in Mathlib by
+\texttt{frontier D}; the certificate names its base-point condition
+\texttt{hmem\_boundary}.
+
+\inputleannode{def:isChetaevFunction}
+\inputleannode{thm:geometric-chetaev-unstable}
+
 \inputleannode{thm:positive-real-eigenvalue-unstable}
 
 \section{LaSalle's invariance principle}

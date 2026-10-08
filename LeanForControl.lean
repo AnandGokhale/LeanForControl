@@ -45,6 +45,7 @@ import LeanForControl.ODEs.PicardLindelof
 import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.ClassKDecay
 import LeanForControl.Stability.DefsAutonomous
+import LeanForControl.Stability.DefsChetaev
 import LeanForControl.Stability.DefsNonAutonomous
 import LeanForControl.Stability.KLCharacterization
 import LeanForControl.Stability.KLCharacterizationTools
