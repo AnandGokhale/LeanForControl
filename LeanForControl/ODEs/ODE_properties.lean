@@ -77,6 +77,98 @@ theorem ContDiffAt.exists_isIntegralCurveOn_Icc [CompleteSpace E]
     constructor <;> norm_num at * <;> linarith
   exact (hφ t htIoo).hasDerivWithinAt
 
+/-- **Forward-time continuous dependence** (the Gronwall bootstrap behind
+`continuous_dependence_ODE`).
+
+On a forward interval `[a, b]` (`a ≤ b`), let `u` be an integral solution of `u̇ = F(t, u)` from
+`u0`, and `v` one of the perturbed equation `v̇ = F(t, v) + G(t, v)` from `v0`, with `F` jointly
+continuous and `L`-Lipschitz in the state, and `‖G‖ ≤ μ`. Then for every `t ∈ [a, b]`
+
+  `‖u(t) − v(t)‖ ≤ ‖u0 − v0‖ · exp(L(t − a)) + (μ/L) · (exp(L(t − a)) − 1)`.
+
+It is stated for arbitrary data so that the backward case of `continuous_dependence_ODE` can
+reuse it, unchanged, on the time-reflected data. -/
+private lemma continuous_dependence_forward (hL : 0 < L) {a b : ℝ} {u v : ℝ → E}
+    {F G : ℝ → E → E} {u0 v0 : E} (hab : a ≤ b)
+    (hu : IsIntegralSolution a b u u0 F)
+    (hv : IsIntegralSolution a b v v0 (fun s x => F s x + G s x))
+    (hu_cont : ContinuousOn u (Icc a b)) (hv_cont : ContinuousOn v (Icc a b))
+    (hF_cont : Continuous (fun p : ℝ × E => F p.1 p.2))
+    (hGv : IntervalIntegrable (fun s => G s (v s)) volume a b)
+    (hLip : ∀ t ∈ Icc a b, LipschitzWith ⟨L, hL.le⟩ (F t))
+    (hG : ∀ t ∈ Icc a b, ∀ x : E, ‖G t x‖ ≤ μ) :
+    ∀ t ∈ Icc a b,
+      ‖u t - v t‖ ≤ ‖u0 - v0‖ * rexp (L * (t - a)) + (μ / L) * (rexp (L * (t - a)) - 1) := by
+  /- Subtract the two integral equations: the `F`-difference is at most `L ∫ ‖u − v‖` by the
+     Lipschitz bound, and the `G`-term at most `μ (τ − a)`.  Adding `μ / L` to both sides
+     absorbs that linear term into the integral, which is then exactly Gronwall's shape. -/
+  -- The integral equations, read on `Icc a b` rather than on the unordered segment.
+  have hu' : ∀ t ∈ Icc a b, u t = u0 + ∫ s in a..t, F s (u s) :=
+    fun t ht => hu t (by rw [uIcc_of_le hab]; exact ht)
+  have hv' : ∀ t ∈ Icc a b, v t = v0 + ∫ s in a..t, (F s (v s) + G s (v s)) :=
+    fun t ht => hv t (by rw [uIcc_of_le hab]; exact ht)
+  -- Step 1. Integrability of every integrand on `[a, b]`.
+  have hu_cont' : ContinuousOn u (uIcc a b) := by rwa [uIcc_of_le hab]
+  have hv_cont' : ContinuousOn v (uIcc a b) := by rwa [uIcc_of_le hab]
+  -- `s ↦ F s (u s)` and `s ↦ F s (v s)`
+  have hu_int := hF_cont.intervalIntegrable_comp hu_cont'
+  have hv_int := hF_cont.intervalIntegrable_comp hv_cont'
+  -- `s ↦ ‖u s − v s‖`
+  have huv_int := (hu_cont.sub hv_cont).norm.intervalIntegrable_of_Icc (μ := volume) hab
+  -- `s ↦ ‖F s (u s) − F s (v s)‖`
+  have hfuv_int := ((hF_cont.comp_continuousOn (continuousOn_id.prodMk hu_cont)).sub
+                   (hF_cont.comp_continuousOn (continuousOn_id.prodMk
+                   hv_cont))).norm.intervalIntegrable_of_Icc (μ := volume) hab
+  -- Step 2. The base inequality `‖u − v‖ ≤ ‖u0 − v0‖ + μ (τ − a) + L ∫ ‖u − v‖`.
+  have hineq_base : ∀ τ ∈ Icc a b, ‖u τ - v τ‖ ≤ ‖u0 - v0‖ + μ * (τ - a)
+    + L * ∫ s in a..τ, ‖u s - v s‖ := by
+    intro τ hτ
+    have hsub : uIcc a τ ⊆ uIcc a b := uIcc_subset_uIcc_left (Icc_subset_uIcc hτ)
+    have hu_sub := hu_int.mono_set hsub
+    have hv_sub := hv_int.mono_set hsub
+    -- Subtracting the integral equations splits `u − v` into three pieces.
+    have h_diff : u τ - v τ = (u0 - v0) +
+      (∫ s in a..τ, F s (u s) - F s (v s)) - ∫ s in a..τ, G s (v s) := by
+      rw [hu' τ hτ, hv' τ hτ, intervalIntegral.integral_add hv_sub (hGv.mono_set hsub),
+          intervalIntegral.integral_sub hu_sub hv_sub]
+      abel
+    -- The perturbation piece, by the uniform bound on `G`.
+    have h_g_bound : ‖∫ s in a..τ, G s (v s)‖ ≤ μ * (τ - a) :=
+      intervalIntegral.norm_integral_le_const_mul hτ.1 fun s hs =>
+        hG s (Icc_subset_Icc_right hτ.2 hs) (v s)
+    -- The field-difference piece, by the Lipschitz bound on `F`.
+    have h_lip_bound : ‖∫ s in a..τ, F s (u s) - F s (v s)‖ ≤ L * ∫ s in a..τ, ‖u s - v s‖ :=
+      intervalIntegral.norm_integral_le_of_norm_le_mul hτ.1
+        (hfuv_int.mono_set hsub)
+        (huv_int.mono_set hsub)
+        (fun s hs => by simpa [dist_eq_norm] using
+          (hLip s (Icc_subset_Icc_right hτ.2 hs)).dist_le_mul (u s) (v s))
+    -- Combine the three pieces with the triangle inequality.
+    have h_tri1 := norm_sub_le ((u0 - v0) + ∫ s in a..τ, F s (u s) - F s (v s))
+                                (∫ s in a..τ, G s (v s))
+    have h_tri2 := norm_add_le (u0 - v0) (∫ s in a..τ, F s (u s) - F s (v s))
+    rw [h_diff]
+    linarith [h_tri1, h_tri2, h_lip_bound, h_g_bound]
+  -- Step 3. Shift by `μ / L` into Gronwall form: `w ≤ w(a) + ∫ L w` with `w = ‖u − v‖ + μ / L`.
+  have hshift : ∀ τ ∈ Icc a b, (‖u τ - v τ‖ + μ / L) ≤ (‖u0 - v0‖ + μ / L)
+    + ∫ s in a..τ, L * (‖u s - v s‖ + μ / L) := by
+    intro τ hτ
+    have hv_sub2 := huv_int.mono_set (uIcc_subset_uIcc_left (Icc_subset_uIcc hτ))
+    -- `∫ L (‖u − v‖ + μ / L) = L ∫ ‖u − v‖ + μ (τ − a)`: the linear term is absorbed.
+    have h_int_eq : ∫ s in a..τ, L * (‖u s - v s‖ + μ / L) = (L * ∫ s in a..τ, ‖u s - v s‖)
+      + μ * (τ - a) := by
+      simp_rw [mul_add, mul_div_cancel₀ _ hL.ne']
+      rw [intervalIntegral.integral_add (hv_sub2.const_mul L) intervalIntegrable_const]
+      rw [intervalIntegral.integral_const_mul, intervalIntegral.integral_const_eq]
+      ring
+    linarith [hineq_base τ hτ]
+  -- Step 4. Gronwall gives `w(t) ≤ w(a) exp(L (t − a))`; subtract `μ / L` back off.
+  have hw_cont : ContinuousOn (fun τ => ‖u τ - v τ‖ + μ / L) (Icc a b) :=
+    (hu_cont.sub hv_cont).norm.add continuousOn_const
+  have hGron := gronwall_const hL.le hw_cont hshift
+  intro t ht
+  linarith [hGron t ht, hshift t ht, hineq_base t ht]
+
 /-- **Continuous dependence on initial states and parameters.**
 
 If `y` is an integral solution of `ẏ = f(t, y)` and `z` is an integral solution of
@@ -90,9 +182,9 @@ We work globally on the segment between `t₀` and `t₁` (rather than on a loca
 
 Proof: the Gronwall bootstrap itself (integrability setup, base inequality, shift into
 Gronwall form, apply `gronwall_const`) is inherently forward-marching — it is proved once, as
-a fully generalized local fact `hforward`, and reused twice: directly for `t₀ ≤ t₁`, and via
-the time-reflection `σ ↦ t₀ + t₁ - σ` (applied to `y, z, f, g`) for `t₁ ≤ t₀`, which turns the
-backward instance into a forward one on `[t₁, t₀]`.
+the general private lemma `continuous_dependence_forward`, and reused twice: directly for
+`t₀ ≤ t₁`, and via the time-reflection `σ ↦ t₀ + t₁ - σ` (applied to `y, z, f, g`) for
+`t₁ ≤ t₀`, which turns the backward instance into a forward one on `[t₁, t₀]`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.4. -/
 @[blueprint "thm:continuous-dependence-ODE"
@@ -143,92 +235,28 @@ theorem continuous_dependence_ODE
     (hg : ∀ t ∈ uIcc t₀ t₁, ∀ x : E, ‖g t x‖ ≤ μ) :
     ∀ t ∈ uIcc t₀ t₁,
     ‖y t - z t‖ ≤ ‖y₀ - z₀‖ * rexp (L * |t - t₀|) + (μ / L) * (rexp (L * |t - t₀|) - 1) := by
-  -- The forward-time Gronwall bootstrap (Khalil's original proof), fully generalized so
-  -- it can be reused, unchanged, on the time-reflected data in the backward case below.
-  have hforward : ∀ (a b : ℝ) (u v : ℝ → E) (F G : ℝ → E → E) (u0 v0 : E), a ≤ b →
-      IsIntegralSolution a b u u0 F →
-      IsIntegralSolution a b v v0 (fun s x => F s x + G s x) →
-      ContinuousOn u (Icc a b) → ContinuousOn v (Icc a b) →
-      Continuous (fun p : ℝ × E => F p.1 p.2) →
-      IntervalIntegrable (fun s => G s (v s)) volume a b →
-      (∀ t ∈ Icc a b, LipschitzWith ⟨L, hL.le⟩ (F t)) →
-      (∀ t ∈ Icc a b, ∀ x : E, ‖G t x‖ ≤ μ) →
-      ∀ t ∈ Icc a b,
-        ‖u t - v t‖ ≤ ‖u0 - v0‖ * rexp (L * (t - a)) + (μ / L) * (rexp (L * (t - a)) - 1) := by
-    intro a b u v F G u0 v0 hab hu hv hu_cont hv_cont hF_cont hGv hLip' hg'
-    have hu' : ∀ t ∈ Icc a b, u t = u0 + ∫ s in a..t, F s (u s) :=
-      fun t ht => hu t (by rw [uIcc_of_le hab]; exact ht)
-    have hv' : ∀ t ∈ Icc a b, v t = v0 + ∫ s in a..t, (F s (v s) + G s (v s)) :=
-      fun t ht => hv t (by rw [uIcc_of_le hab]; exact ht)
-    -- ── 1. Global Integrability Setup ─────────────────────────────────────────
-    have hu_cont' : ContinuousOn u (uIcc a b) := by rwa [uIcc_of_le hab]
-    have hv_cont' : ContinuousOn v (uIcc a b) := by rwa [uIcc_of_le hab]
-    have hu_int := hF_cont.intervalIntegrable_comp hu_cont'
-    have hv_int := hF_cont.intervalIntegrable_comp hv_cont'
-    have huv_int := (hu_cont.sub hv_cont).norm.intervalIntegrable_of_Icc (μ := volume) hab
-    have hfuv_int := ((hF_cont.comp_continuousOn (continuousOn_id.prodMk hu_cont)).sub
-                     (hF_cont.comp_continuousOn (continuousOn_id.prodMk
-                     hv_cont))).norm.intervalIntegrable_of_Icc (μ := volume) hab
-    -- ── 2. Base Inequality for every τ ────────────────────────────────────────
-    have hineq_base : ∀ τ ∈ Icc a b, ‖u τ - v τ‖ ≤ ‖u0 - v0‖ + μ * (τ - a)
-      + L * ∫ s in a..τ, ‖u s - v s‖ := by
-      intro τ hτ
-      have hsub : uIcc a τ ⊆ uIcc a b := uIcc_subset_uIcc_left (Icc_subset_uIcc hτ)
-      have hu_sub := hu_int.mono_set hsub
-      have hv_sub := hv_int.mono_set hsub
-      have h_diff : u τ - v τ = (u0 - v0) +
-        (∫ s in a..τ, F s (u s) - F s (v s)) - ∫ s in a..τ, G s (v s) := by
-        rw [hu' τ hτ, hv' τ hτ, intervalIntegral.integral_add hv_sub (hGv.mono_set hsub),
-            intervalIntegral.integral_sub hu_sub hv_sub]
-        abel
-      have h_g_bound : ‖∫ s in a..τ, G s (v s)‖ ≤ μ * (τ - a) :=
-        intervalIntegral.norm_integral_le_const_mul hτ.1 fun s hs =>
-          hg' s (Icc_subset_Icc_right hτ.2 hs) (v s)
-      have h_lip_bound : ‖∫ s in a..τ, F s (u s) - F s (v s)‖ ≤ L * ∫ s in a..τ, ‖u s - v s‖ :=
-        intervalIntegral.norm_integral_le_of_norm_le_mul hτ.1
-          (hfuv_int.mono_set hsub)
-          (huv_int.mono_set hsub)
-          (fun s hs => by simpa [dist_eq_norm] using
-            (hLip' s (Icc_subset_Icc_right hτ.2 hs)).dist_le_mul (u s) (v s))
-      have h_tri1 := norm_sub_le ((u0 - v0) + ∫ s in a..τ, F s (u s) - F s (v s))
-                                  (∫ s in a..τ, G s (v s))
-      have h_tri2 := norm_add_le (u0 - v0) (∫ s in a..τ, F s (u s) - F s (v s))
-      rw [h_diff]
-      linarith [h_tri1, h_tri2, h_lip_bound, h_g_bound]
-    -- ── 3. Shift into Gronwall Form ───────────────────────────────────────────
-    have hshift : ∀ τ ∈ Icc a b, (‖u τ - v τ‖ + μ / L) ≤ (‖u0 - v0‖ + μ / L)
-      + ∫ s in a..τ, L * (‖u s - v s‖ + μ / L) := by
-      intro τ hτ
-      have hv_sub2 := huv_int.mono_set (uIcc_subset_uIcc_left (Icc_subset_uIcc hτ))
-      have h_int_eq : ∫ s in a..τ, L * (‖u s - v s‖ + μ / L) = (L * ∫ s in a..τ, ‖u s - v s‖)
-        + μ * (τ - a) := by
-        simp_rw [mul_add, mul_div_cancel₀ _ hL.ne']
-        rw [intervalIntegral.integral_add (hv_sub2.const_mul L) intervalIntegrable_const]
-        rw [intervalIntegral.integral_const_mul, intervalIntegral.integral_const_eq]
-        ring
-      linarith [hineq_base τ hτ]
-    -- ── 4. Apply Gronwall-Bellman ─────────────────────────────────────────────
-    have hw_cont : ContinuousOn (fun τ => ‖u τ - v τ‖ + μ / L) (Icc a b) :=
-      (hu_cont.sub hv_cont).norm.add continuousOn_const
-    have hGron := gronwall_const hL.le hw_cont hshift
-    intro t ht
-    linarith [hGron t ht, hshift t ht, hineq_base t ht]
+  /- The Gronwall bootstrap `continuous_dependence_forward` only marches forward in time.  If
+     `t₀ ≤ t₁` it applies directly.  If `t₁ ≤ t₀`, reflect time by `σ ↦ t₀ + t₁ − σ`: this swaps
+     the endpoints and negates the fields, turning the backward problem into a forward one on
+     `[t₁, t₀]`, where the elapsed time `σ − t₁` equals `|t − t₀|`. -/
   rcases le_total t₀ t₁ with hle | hle
-  · -- Forward case: `t₀ ≤ t₁`.
+  · -- Case 1 (forward, `t₀ ≤ t₁`): apply the forward lemma; there `|t − t₀| = t − t₀`.
     intro t ht
     rw [uIcc_of_le hle] at hy_cont hz_cont hLip hg ht
-    have hb := hforward t₀ t₁ y z f g y₀ z₀ hle hy hz hy_cont hz_cont hf_cont hgz hLip hg t ht
+    have hb := continuous_dependence_forward hL hle hy hz hy_cont hz_cont hf_cont hgz hLip hg t ht
     rwa [abs_of_nonneg (sub_nonneg.mpr ht.1)]
-  · -- Backward case: `t₁ ≤ t₀`. Reflect via `σ ↦ t₀ + t₁ - σ`, reducing to the forward case on
-    -- `[t₁, t₀]` for `u σ := y (t₀+t₁-σ)`, `v σ := z (t₀+t₁-σ)`, `F r x := -f (t₀+t₁-r) x`,
+  · -- Case 2 (backward, `t₁ ≤ t₀`): reflect time by `σ ↦ t₀ + t₁ - σ`, reducing to the forward
+    -- case on `[t₁, t₀]` for `u σ := y (t₀+t₁-σ)`, `v σ := z (t₀+t₁-σ)`, `F r x := -f (t₀+t₁-r) x`,
     -- `G r x := -g (t₀+t₁-r) x`.
+    -- The reflection maps `[t₁, t₀]` back onto the original segment.
     have hrefl_mem : ∀ σ ∈ Icc t₁ t₀, t₀ + t₁ - σ ∈ uIcc t₀ t₁ := by
       intro σ hσ
       rw [uIcc_of_ge hle]
       constructor <;> linarith [hσ.1, hσ.2]
+    -- Step 2a. Transport every hypothesis to the reflected data.
     have hu_sol := hy.reflect
     -- `reflect` negates the whole field; split that negation across the sum so the result has
-    -- the `F + G` shape `hforward` expects.
+    -- the `F + G` shape the forward lemma expects.
     have hv_sol : IsIntegralSolution t₁ t₀ (fun σ => z (t₀ + t₁ - σ)) z₀
         (fun r x => (fun s x' => -f (t₀ + t₁ - s) x' + -g (t₀ + t₁ - s) x') r x) := by
       have hsplit : (fun r x => -((fun s x' => f s x' + g s x') (t₀ + t₁ - r) x))
@@ -241,6 +269,7 @@ theorem continuous_dependence_ODE
       hz_cont.comp (continuous_const.sub continuous_id).continuousOn hrefl_mem
     have hF_cont : Continuous (fun p : ℝ × E => -f (t₀ + t₁ - p.1) p.2) :=
       (hf_cont.comp ((continuous_const.sub continuous_fst).prodMk continuous_snd)).neg
+    -- Integrability survives the substitution `s ↦ t₀ + t₁ - s`, which swaps the endpoints.
     have hGv_int : IntervalIntegrable (fun s => -g (t₀ + t₁ - s) (z (t₀ + t₁ - s))) volume t₁
         t₀ := by
       have heq : t₀ + t₁ - t₀ = t₁ := by ring
@@ -251,20 +280,22 @@ theorem continuous_dependence_ODE
       fun t ht => (hLip _ (hrefl_mem t ht)).neg
     have hg' : ∀ t ∈ Icc t₁ t₀, ∀ x : E, ‖(-g (t₀ + t₁ - t)) x‖ ≤ μ :=
       fun t ht x => by simpa using hg _ (hrefl_mem t ht) x
-    have hb := hforward t₁ t₀ (fun σ => y (t₀ + t₁ - σ)) (fun σ => z (t₀ + t₁ - σ))
-      (fun r x => -f (t₀ + t₁ - r) x) (fun r x => -g (t₀ + t₁ - r) x) y₀ z₀ hle hu_sol hv_sol
+    -- Step 2b. The forward lemma on `[t₁, t₀]`, for the reflected data.
+    have hb := continuous_dependence_forward (u := fun σ => y (t₀ + t₁ - σ))
+      (v := fun σ => z (t₀ + t₁ - σ)) (F := fun r x => -f (t₀ + t₁ - r) x)
+      (G := fun r x => -g (t₀ + t₁ - r) x) hL hle hu_sol hv_sol
       hu_cont hv_cont hF_cont hGv_int hLip' hg'
+    -- Step 2c. Read it back at `σ = t₀ + t₁ − t`, which reflects to `t` itself and has elapsed
+    -- reflected time `σ − t₁ = t₀ − t = |t − t₀|` (as `t ≤ t₀`).
     intro t ht
     rw [uIcc_of_ge hle] at ht
-    have ht' : t₀ + t₁ - t ∈ Icc t₁ t₀ := by constructor <;> linarith [ht.1, ht.2]
-    have hbt := hb (t₀ + t₁ - t) ht'
+    have hσ_mem : t₀ + t₁ - t ∈ Icc t₁ t₀ := by constructor <;> linarith [ht.1, ht.2]
+    have hσ_back : t₀ + t₁ - (t₀ + t₁ - t) = t := by ring
+    have hσ_elapsed : t₀ + t₁ - t - t₁ = |t - t₀| := by
+      rw [abs_of_nonpos (sub_nonpos.mpr ht.2)]; ring
+    have hbt := hb (t₀ + t₁ - t) hσ_mem
     dsimp only at hbt
-    have heq : t₀ + t₁ - (t₀ + t₁ - t) = t := by ring
-    rw [heq] at hbt
-    have harith : t₀ + t₁ - t - t₁ = t₀ - t := by ring
-    rw [harith] at hbt
-    have habs : t₀ - t = |t - t₀| := by rw [abs_of_nonpos (sub_nonpos.mpr ht.2)]; ring
-    rwa [habs] at hbt
+    rwa [hσ_back, hσ_elapsed] at hbt
 
 /-- **Continuous dependence on parameters.**
 

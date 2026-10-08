@@ -111,6 +111,33 @@ private lemma norm_realEigenmode_le
       congr 2
       simp
 
+/-- With a real amplitude `q = ρ`, coordinate `i` of the real eigenmode at time `T` is
+`ρ Re z`, where `z = e^{μT} vᵢ`. -/
+private lemma realEigenmode_ofReal_apply (ρ : ℝ) (μ : ℂ) (v : Fin n → ℂ) (T : ℝ) (i : Fin n) :
+    realEigenmode (ρ : ℂ) μ v T i = ρ * (Complex.exp (μ * (T : ℂ)) * v i).re := by
+  simp only [realEigenmode, mul_assoc, Complex.re_ofReal_mul]
+
+/-- With an imaginary amplitude `q = -iρ`, coordinate `i` of the real eigenmode at time `T`
+is `ρ Im z`, where `z = e^{μT} vᵢ`. -/
+private lemma realEigenmode_neg_I_apply (ρ : ℝ) (μ : ℂ) (v : Fin n → ℂ) (T : ℝ)
+    (i : Fin n) :
+    realEigenmode (-(ρ : ℂ) * Complex.I) μ v T i =
+      ρ * (Complex.exp (μ * (T : ℂ)) * v i).im := by
+  simp only [realEigenmode, mul_assoc, neg_mul, Complex.neg_re, Complex.re_ofReal_mul,
+    Complex.I_mul_re]
+  ring
+
+/-- A real eigenmode whose coordinate `i` at time `T` is `ρ c`, with `1 ≤ ρ |c|`, lies outside
+the open unit ball at time `T`. -/
+private lemma one_le_norm_realEigenmode_of_apply {q μ : ℂ} {v : Fin n → ℂ} {T ρ c : ℝ}
+    {i : Fin n} (hρ : 0 < ρ) (hcoord : realEigenmode q μ v T i = ρ * c)
+    (hgrowth : 1 ≤ ρ * |c|) :
+    1 ≤ ‖realEigenmode q μ v T‖ := by
+  have hcoord_abs : 1 ≤ |realEigenmode q μ v T i| := by
+    rw [hcoord, abs_mul, abs_of_pos hρ]
+    exact hgrowth
+  exact hcoord_abs.trans (abs_apply_le_euclideanNorm _ i)
+
 /-- An affine-linear system is forward unstable when its state matrix has a
 complex eigenvalue with positive real part.
 
@@ -151,6 +178,9 @@ theorem unstable_affineLinear_of_eigenvalue_re_pos
     (hAv : A.complexify *ᵥ v = mu • v)
     (hmu : 0 < mu.re) :
     Unstable (LinearSystems.affineLinearVectorField A x_eq) x_eq := by
+  /- Some coordinate `vᵢ` of the eigenvector is nonzero, and `|e^{μT} vᵢ|` grows without
+     bound.  At a time `T` where `ρ|e^{μT} vᵢ| ≥ 2`, its real or imaginary part carries at least
+     half, and the matching real eigenmode (amplitude `ρ` or `-iρ`) escapes the unit ball. -/
   apply unstable_of_fixed_escape (by positivity : (0 : ℝ) < 1)
   intro delta hdelta
   have hvE : WithLp.toLp 2 v ≠ (0 : EuclideanSpace ℂ (Fin n)) := by
@@ -164,6 +194,7 @@ theorem unstable_affineLinear_of_eigenvalue_re_pos
     funext j
     exact h j
   have hvinorm : 0 < ‖v i‖ := norm_pos_iff.mpr hi
+  -- Step 1. The amplitude `ρ = δ / (2‖v‖)`, and a time `T ≥ 0` with `ρ e^{(Re μ) T} |vᵢ| ≥ 2`.
   let rho := delta / (2 * ‖WithLp.toLp 2 v‖)
   have hrho : 0 < rho := div_pos hdelta (mul_pos zero_lt_two hvnorm)
   have hexp_tendsto : Tendsto (fun t : ℝ => Real.exp (mu.re * t)) atTop atTop :=
@@ -179,7 +210,9 @@ theorem unstable_affineLinear_of_eigenvalue_re_pos
   have hden : 0 < rho * ‖v i‖ := mul_pos hrho hvinorm
   have hgrowth : 2 ≤ rho * Real.exp (mu.re * T) * ‖v i‖ := by
     rw [div_le_iff₀ hden] at hgrowth_div
-    nlinarith
+    -- `2 ≤ e^{(Re μ) T} (ρ |vᵢ|)`, with the factors reordered.
+    linarith
+  -- Step 2. `z = e^{μT} vᵢ` has `ρ |z| ≥ 2`, hence `ρ (|Re z| + |Im z|) ≥ 2`.
   let z := Complex.exp (mu * (T : ℂ)) * v i
   have hznorm : ‖z‖ = Real.exp (mu.re * T) * ‖v i‖ := by
     dsimp [z]
@@ -192,11 +225,9 @@ theorem unstable_affineLinear_of_eigenvalue_re_pos
       _ ≤ rho * (|z.re| + |z.im|) := by
         gcongr
         exact Complex.norm_le_abs_re_add_abs_im z
-  let qre : ℂ := rho
-  let qim : ℂ := -(rho : ℂ) * Complex.I
+  -- Step 3. The candidate solutions `x_eq + Re (q e^{μt} v)` with `|q| = ρ` solve the system
+  -- on `[0, T]` and start within `δ` of `x_eq`.
   let phi (q : ℂ) : ℝ → ℝⁿ := fun t => x_eq + realEigenmode q mu v t
-  have hqre_norm : ‖qre‖ = rho := by simp [qre, abs_of_pos hrho]
-  have hqim_norm : ‖qim‖ = rho := by simp [qim, hrho.le]
   have hphi_traj (q : ℂ) : IsTrajectoryOn (phi q)
       (LinearSystems.affineLinearVectorField A x_eq) 0 T := by
     intro t ht
@@ -213,35 +244,23 @@ theorem unstable_affineLinear_of_eigenvalue_re_pos
       field_simp
     have hhalf : delta / 2 < delta := by linarith
     simpa [phi] using hbound.trans_lt (hrho_eq.trans_lt hhalf)
+  have hphi_escape (q : ℂ) (h : 1 ≤ ‖realEigenmode q mu v T‖) : 1 ≤ ‖phi q T - x_eq‖ := by
+    simpa [phi] using h
+  -- Step 4. Whichever component of `z` carries half gives the escaping solution.
   by_cases hre : 1 ≤ rho * |z.re|
-  · refine ⟨T, phi qre, T, hphi_traj qre, hphi_initial qre hqre_norm,
-      ⟨hT, le_rfl⟩, ?_⟩
-    have hcoord : 1 ≤ |realEigenmode qre mu v T i| := by
-      have heq : (realEigenmode qre mu v T i) = rho * z.re := by
-        dsimp [realEigenmode, qre, z]
-        simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re,
-          Complex.ofReal_im, zero_mul, add_zero, sub_zero]
-        ring
-      rw [heq, abs_mul, abs_of_pos hrho]
-      exact hre
-    have : 1 ≤ ‖realEigenmode qre mu v T‖ :=
-      hcoord.trans (abs_apply_le_euclideanNorm _ i)
-    simpa [phi] using this
-  · have him : 1 ≤ rho * |z.im| := by
+  · -- Real part carries half: take `q = ρ`, whose coordinate `i` at time `T` is `ρ Re z`.
+    let qre : ℂ := rho
+    have hqre_norm : ‖qre‖ = rho := by simp [qre, abs_of_pos hrho]
+    refine ⟨T, phi qre, T, hphi_traj qre, hphi_initial qre hqre_norm, ⟨hT, le_rfl⟩, ?_⟩
+    exact hphi_escape qre
+      (one_le_norm_realEigenmode_of_apply hrho (realEigenmode_ofReal_apply rho mu v T i) hre)
+  · -- Imaginary part carries half: take `q = -iρ`, whose coordinate `i` is `ρ Im z`.
+    have him : 1 ≤ rho * |z.im| := by
       push Not at hre
-      nlinarith
-    refine ⟨T, phi qim, T, hphi_traj qim, hphi_initial qim hqim_norm,
-      ⟨hT, le_rfl⟩, ?_⟩
-    have hcoord : 1 ≤ |realEigenmode qim mu v T i| := by
-      have heq : (realEigenmode qim mu v T i) = rho * z.im := by
-        dsimp [realEigenmode, qim, z]
-        simp only [Complex.neg_re,
-          Complex.ofReal_re, Complex.ofReal_im, Complex.I_re, Complex.I_im,
-          Complex.mul_re, Complex.mul_im, zero_mul, mul_zero, mul_one, sub_zero,
-          neg_mul]
-        ring
-      rw [heq, abs_mul, abs_of_pos hrho]
-      exact him
-    have : 1 ≤ ‖realEigenmode qim mu v T‖ :=
-      hcoord.trans (abs_apply_le_euclideanNorm _ i)
-    simpa [phi] using this
+      -- `ρ |Re z| < 1` and `ρ |Re z| + ρ |Im z| ≥ 2`.
+      linarith
+    let qim : ℂ := -(rho : ℂ) * Complex.I
+    have hqim_norm : ‖qim‖ = rho := by simp [qim, hrho.le]
+    refine ⟨T, phi qim, T, hphi_traj qim, hphi_initial qim hqim_norm, ⟨hT, le_rfl⟩, ?_⟩
+    exact hphi_escape qim
+      (one_le_norm_realEigenmode_of_apply hrho (realEigenmode_neg_I_apply rho mu v T i) him)

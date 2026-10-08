@@ -162,6 +162,88 @@ lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
     simpa using Filter.Tendsto.const_mul c hU
   simpa [Real.sqrt_zero] using (Real.continuous_sqrt.tendsto 0).comp h_mul
 
+/-- If `0 ≤ x ≤ u` then `x ≤ √(x u)`, so `min x (√(x u)) = x`: once `U` dominates `α`, the
+    geometric-mean cap is inactive. -/
+private lemma min_sqrt_mul_eq_left {x u : ℝ} (hx : 0 ≤ x) (hxu : x ≤ u) :
+    min x (Real.sqrt (x * u)) = x := by
+  apply min_eq_left
+  -- `x² ≤ x u`, and taking square roots gives `x ≤ √(x u)`.
+  have h_sq_le : x * x ≤ x * u := mul_le_mul_of_nonneg_left hxu hx
+  calc x = Real.sqrt (x * x) := (Real.sqrt_mul_self hx).symm
+    _ ≤ Real.sqrt (x * u) := Real.sqrt_le_sqrt h_sq_le
+
+/-- The function behind `ClassKL.mk_singular_cap`: `α(r)` at `s = 0`, and
+    `min(α(r), √(α(r) U(s)))` for `s ≠ 0`.  Definitionally equal to that structure's `toFun`. -/
+private noncomputable def singularCap {a b : ℝ} (α : ClassK a b) (U : ClassLSingular)
+    (r s : ℝ) : ℝ :=
+  if s = 0 then α.toFun r else min (α.toFun r) (Real.sqrt (α.toFun r * U.toFun s))
+
+/-- Continuity of the singular cap at a point `(r₀, s₀)` with `s₀ > 0`: nearby points also have
+    `s > 0`, where the cap is the continuous `min(α(r), √(α(r) U(s)))`. -/
+private lemma continuousWithinAt_singularCap_of_pos {a b : ℝ} (α : ClassK a b)
+    (U : ClassLSingular) {r₀ s₀ : ℝ} (hr₀ : r₀ ∈ Ico 0 a) (hs₀ : 0 < s₀) :
+    ContinuousWithinAt (Function.uncurry (singularCap α U)) (Ico 0 a ×ˢ Ici 0) (r₀, s₀) := by
+  -- Step 1. The `min` branch is continuous at `(r₀, s₀)`, as a composition of continuous maps.
+  have h_alpha : ContinuousWithinAt (fun p : ℝ × ℝ => α.toFun p.1)
+      (Ico 0 a ×ˢ Ici 0) (r₀, s₀) :=
+    (α.continuous r₀ hr₀).comp continuous_fst.continuousWithinAt (fun _ hp => hp.1)
+  -- `U` is continuous on `(0, ∞)`, an open set containing `s₀`.
+  have h_U : ContinuousWithinAt (fun p : ℝ × ℝ => U.toFun p.2) (Ico 0 a ×ˢ Ici 0) (r₀, s₀) :=
+    ((U.continuous s₀ hs₀).continuousAt (Ioi_mem_nhds hs₀)).comp_continuousWithinAt
+      continuous_snd.continuousWithinAt
+  have h_sqrt := Real.continuous_sqrt.continuousAt.comp_continuousWithinAt (h_alpha.mul h_U)
+  have h_min : ContinuousWithinAt
+      (fun p : ℝ × ℝ => min (α.toFun p.1) (Real.sqrt (α.toFun p.1 * U.toFun p.2)))
+      (Ico 0 a ×ˢ Ici 0) (r₀, s₀) :=
+    continuous_min.continuousAt.tendsto.comp (h_alpha.tendsto.prodMk_nhds h_sqrt)
+  -- Step 2. Near `(r₀, s₀)` we have `s > 0`, so the cap agrees with the `min` branch.
+  have h_eq : Function.uncurry (singularCap α U) =ᶠ[𝓝[Ico 0 a ×ˢ Ici 0] (r₀, s₀)]
+      fun p => min (α.toFun p.1) (Real.sqrt (α.toFun p.1 * U.toFun p.2)) := by
+    have h_snd : Tendsto (fun p : ℝ × ℝ => p.2) (𝓝[Ico 0 a ×ˢ Ici 0] (r₀, s₀)) (𝓝 s₀) :=
+      continuous_snd.continuousWithinAt
+    filter_upwards [h_snd.eventually (Ioi_mem_nhds hs₀)] with p hp_pos
+    exact if_neg hp_pos.ne'
+  exact h_min.congr_of_eventuallyEq h_eq (if_neg hs₀.ne')
+
+/-- Continuity of the singular cap at a point `(r₀, 0)` of the edge `s = 0`.
+
+    Pick a buffer radius `r₁ ∈ (r₀, a)`.  Since `U(s) → ∞` as `s → 0⁺`, near `(r₀, 0)` we have
+    `α(r) < α(r₁) < U(s)`, so the cap is inactive and the function is just the continuous
+    `α(r)`.  This covers the corner `r₀ = 0` as well. -/
+private lemma continuousWithinAt_singularCap_of_zero {a b : ℝ} (α : ClassK a b)
+    (U : ClassLSingular) {r₀ : ℝ} (hr₀ : r₀ ∈ Ico 0 a) :
+    ContinuousWithinAt (Function.uncurry (singularCap α U)) (Ico 0 a ×ˢ Ici 0) (r₀, 0) := by
+  -- Step 1. The proxy `α(r)` is continuous at `(r₀, 0)`.
+  have h_alpha : ContinuousWithinAt (fun p : ℝ × ℝ => α.toFun p.1)
+      (Ico 0 a ×ˢ Ici 0) (r₀, 0) :=
+    (α.continuous r₀ hr₀).comp continuous_fst.continuousWithinAt (fun _ hp => hp.1)
+  -- Step 2. Pick a buffer radius `r₁ ∈ (r₀, a)`.
+  obtain ⟨r₁, hr₀_lt_r₁, hr₁_lt_a⟩ := exists_between hr₀.2
+  have hr₁ : r₁ ∈ Ico 0 a := ⟨hr₀.1.trans hr₀_lt_r₁.le, hr₁_lt_a⟩
+  -- Step 3. `U(s) → ∞` as `s → 0⁺`, so `U(s) > α(r₁)` for small `s > 0`; restated on the full
+  -- neighbourhood `𝓝 0`, with `0 < s` as a hypothesis.
+  have h_U_large : ∀ᶠ s in 𝓝 0, 0 < s → α.toFun r₁ < U.toFun s :=
+    eventually_nhdsWithin_iff.mp (U.tendsto_top (eventually_gt_atTop (α.toFun r₁)))
+  -- Step 4. Near `(r₀, 0)` the cap agrees with `α(r)`.
+  have h_eq : Function.uncurry (singularCap α U) =ᶠ[𝓝[Ico 0 a ×ˢ Ici 0] (r₀, 0)]
+      fun p => α.toFun p.1 := by
+    -- Pull `r < r₁` and `h_U_large` back along `fst`/`snd` to a neighbourhood of `(r₀, 0)`.
+    filter_upwards [
+      continuous_fst.continuousWithinAt.eventually (Iio_mem_nhds hr₀_lt_r₁),
+      continuous_snd.continuousWithinAt.eventually h_U_large,
+      self_mem_nhdsWithin
+    ] with ⟨r, s⟩ (hr_lt : r < r₁) hs_U ⟨hr, hs⟩
+    simp only [Function.uncurry_apply_pair, singularCap]
+    split_ifs with hs_zero
+    · -- Case `s = 0`: the cap is `α(r)` by definition.
+      rfl
+    · -- Case `s > 0`: `α(r) < α(r₁) < U(s)`, so the cap is inactive.
+      have hs_pos : 0 < s := lt_of_le_of_ne hs (Ne.symm hs_zero)
+      have h_alpha_le_U : α.toFun r ≤ U.toFun s :=
+        (α.strict_mono hr hr₁ hr_lt).le.trans (hs_U hs_pos).le
+      exact min_sqrt_mul_eq_left (α.maps_to hr).1 h_alpha_le_U
+  exact h_alpha.congr_of_eventuallyEq h_eq (if_pos rfl)
+
 /-- Sontag-style KL construction from a class K spatial bound and a singular class L time decay.
     `β(r, 0) = α(r)` and `β(r, s) = min(α(r), √(α(r) * U(s)))` for `s > 0`. -/
 @[blueprint "lem:classKL-mk-singular-cap"
@@ -178,9 +260,8 @@ lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
     is class $\mathcal{KL}$ on $[0,a)$. -/)
   (proof := /-- Every field but continuity is immediate from the corresponding property of
     $\alpha$ and $U$, the decay in $s$ being \cref{lem:tendstoMinSqrtMulZero}.  Continuity is
-    checked in three regimes.  For $s > 0$ the $\min$ branch is a composition of continuous
-    maps.  At $(0,0)$ the value is squeezed between $0$ and $\alpha(r) \to 0$.  At $(r, 0)$
-    with $r > 0$, pick a buffer radius $r_1 \in (r, a)$; since $U(s) \to \infty$ as
+    checked in two regimes.  For $s > 0$ the $\min$ branch is a composition of continuous
+    maps.  At $(r, 0)$, pick a buffer radius $r_1 \in (r, a)$; since $U(s) \to \infty$ as
     $s \to 0^{+}$, on a neighbourhood we have $\alpha(r_1) < U(s)$, hence
     $\alpha(r') \le U(s)$ and so $\alpha(r') \le \sqrt{\alpha(r')U(s)}$ — the minimum is
     locally just $\alpha$, which is continuous. -/)]
@@ -233,117 +314,16 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
     exact (if_neg hs).symm
 
   continuous := by
-    -- Split on the point (r₀, s₀):
-    -- • s₀ > 0: nearby points also have s > 0, so there β = min(α(r), √(α(r) U(s))),
-    --   a composition of continuous functions.
-    -- • s₀ = 0, r₀ = 0: squeeze 0 ≤ β(r, s) ≤ α(r), and α(r) → α(0) = 0.
-    -- • s₀ = 0, r₀ > 0: pick r₁ ∈ (r₀, a). Since U(s) → ∞ as s → 0⁺, near (r₀, 0) we have
-    --   α(r) < α(r₁) < U(s), so the minimum is α(r) and β agrees with the continuous α(r).
+    -- Two regimes, according to whether (r₀, s₀) lies on the edge s = 0:
+    -- • s₀ = 0: U(s) → ∞ as s → 0⁺ makes the cap inactive nearby, so β agrees with α(r).
+    -- • s₀ > 0: nearby s > 0 too, where β = min(α(r), √(α(r) U(s))) is a composition of
+    --   continuous functions.
     rintro ⟨r₀, s₀⟩ ⟨hr₀, hs₀⟩
-    change ContinuousWithinAt (fun p : ℝ × ℝ => if p.2 = 0 then α.toFun p.1
-      else min (α.toFun p.1) (Real.sqrt (α.toFun p.1 * U.toFun p.2)))
-      (Set.Ico 0 a ×ˢ Set.Ici 0) (r₀, s₀)
-    have hs_nn : 0 ≤ s₀ := hs₀
-    have hr_nn : 0 ≤ r₀ := hr₀.1
-    rcases eq_or_lt_of_le hs_nn with rfl | hs₀_pos
-    · rcases eq_or_lt_of_le hr_nn with rfl | hr_pos
-      · -- r₀ = 0, s₀ = 0: squeeze β between 0 and α(p.1), which tends to α(0) = 0.
-        have h_bound : ∀ p ∈ Set.Ico 0 a ×ˢ Set.Ici 0,
-            0 ≤ (if p.2 = 0 then α.toFun p.1 else min (α.toFun p.1)
-                  (Real.sqrt (α.toFun p.1 * U.toFun p.2))) ∧
-                (if p.2 = 0 then α.toFun p.1 else min (α.toFun p.1)
-                  (Real.sqrt (α.toFun p.1 * U.toFun p.2))) ≤ α.toFun p.1 := by
-          rintro ⟨r, s⟩ ⟨hr, hs⟩; dsimp only
-          split_ifs
-          · exact ⟨(α.maps_to hr).1, le_rfl⟩
-          · exact ⟨le_min (α.maps_to hr).1 (Real.sqrt_nonneg _), min_le_left _ _⟩
-        have h_tendsto_zero : Filter.Tendsto
-              (fun _ : ℝ × ℝ => (0 : ℝ))
-              (𝓝[Set.Ico 0 a ×ˢ Set.Ici 0] (0, 0)) (𝓝 0) :=
-          tendsto_const_nhds
-        have h_tendsto_alpha : Filter.Tendsto (fun p : ℝ × ℝ => α.toFun p.1)
-          (𝓝[Set.Ico 0 a ×ˢ Set.Ici 0] (0, 0)) (𝓝 0) := by
-          have h_cont_alpha : ContinuousWithinAt α.toFun (Set.Ico 0 a) 0 :=
-            α.continuous 0 ⟨le_rfl, α.ha⟩
-          have h_comp : ContinuousWithinAt (fun p : ℝ × ℝ => α.toFun p.1)
-              (Ico 0 a ×ˢ Ici 0) (0, 0) :=
-              ContinuousWithinAt.comp h_cont_alpha continuous_fst.continuousWithinAt
-                (fun _ hp => hp.1)
-          have h_tendsto : Tendsto (fun p : ℝ × ℝ => α.toFun p.1) (𝓝[Ico 0 a ×ˢ Ici 0] (0, 0))
-              (𝓝 (α.toFun 0)) := h_comp
-          simp only [α.map_zero] at h_tendsto
-          exact h_tendsto
-        rw [ContinuousWithinAt]
-        simp only [α.map_zero]
-        apply tendsto_of_tendsto_of_tendsto_of_le_of_le' h_tendsto_zero h_tendsto_alpha
-        · filter_upwards [self_mem_nhdsWithin] with p hp; exact (h_bound p hp).1
-        · filter_upwards [self_mem_nhdsWithin] with p hp; exact (h_bound p hp).2
-      · -- r₀ > 0, s₀ = 0: near (r₀, 0) we have U(s) ≥ α(r), so β(r, s) = α(r) locally.
-        have h_cont_proxy : ContinuousWithinAt (fun p : ℝ × ℝ => α.toFun p.1)
-          (Set.Ico 0 a ×ˢ Set.Ici 0) (r₀, 0) :=
-          (α.continuous r₀ hr₀).comp continuous_fst.continuousWithinAt (fun _ hp => hp.1)
-        refine ContinuousWithinAt.congr_of_eventuallyEq h_cont_proxy ?_ ?_
-        · -- 1. Pick r₁ ∈ (r₀, a); near (r₀, 0) we have r < r₁, hence α(r) < α(r₁).
-          obtain ⟨r₁, hr₀_lt_r₁, hr₁_lt_a⟩ := exists_between hr₀.2
-          have hr₁_Ico : r₁ ∈ Set.Ico 0 a := ⟨(hr₀.1.trans hr₀_lt_r₁.le), hr₁_lt_a⟩
-          -- 2. Since U(s) → ∞ as s → 0⁺, U(s) > α(r₁) for all small s > 0.
-          have h_U_huge : ∀ᶠ s in 𝓝[>] 0, α.toFun r₁ < U.toFun s :=
-            U.tendsto_top (eventually_gt_atTop (α.toFun r₁))
-          -- Restate on the full neighbourhood 𝓝 0, with `0 < s` as a hypothesis.
-          have h_U_nhd : ∀ᶠ s in 𝓝 0, 0 < s → α.toFun r₁ < U.toFun s :=
-            eventually_nhdsWithin_iff.mp h_U_huge
-          -- 3. Pull both conditions back along `fst`/`snd` to a neighbourhood of (r₀, 0).
-          filter_upwards [
-            continuous_fst.continuousWithinAt.eventually (Iio_mem_nhds hr₀_lt_r₁),
-            continuous_snd.continuousWithinAt.eventually h_U_nhd,
-            self_mem_nhdsWithin
-          ] with p hp_x hp_U hp_domain
-          -- 4. On that neighbourhood the minimum is attained by α(p.1).
-          have h_px_lt : p.1 < r₁ := hp_x
-          have h_px_Ico : p.1 ∈ Set.Ico 0 a := hp_domain.1
-          by_cases hy0 : p.2 = 0
-          · simp [hy0]
-          · simp only [hy0, if_false]
-            have hy_pos : 0 < p.2 := lt_of_le_of_ne hp_domain.2 (Ne.symm hy0)
-            -- p.2 > 0, so U(p.2) > α(r₁)
-            have h_U_gt : α.toFun r₁ < U.toFun p.2 := hp_U hy_pos
-            -- p.1 < r₁, so α(p.1) < α(r₁)
-            have h_alpha_px_lt : α.toFun p.1 < α.toFun r₁ :=
-              α.strict_mono h_px_Ico hr₁_Ico h_px_lt
-            -- α(p.1) ≤ U(p.2) gives α(p.1)² ≤ α(p.1) U(p.2), so α(p.1) ≤ √(α(p.1) U(p.2)).
-            have h_alpha_px_le_U : α.toFun p.1 ≤ U.toFun p.2 := h_alpha_px_lt.le.trans h_U_gt.le
-            have h_px_pos : 0 ≤ α.toFun p.1 := (α.maps_to h_px_Ico).1
-            apply min_eq_left
-            have h_sq_le : α.toFun p.1 * α.toFun p.1 ≤ α.toFun p.1 * U.toFun p.2 :=
-              mul_le_mul_of_nonneg_left h_alpha_px_le_U h_px_pos
-            have h_sqrt : Real.sqrt (α.toFun p.1 * α.toFun p.1) ≤
-              Real.sqrt (α.toFun p.1 * U.toFun p.2) :=
-              Real.sqrt_le_sqrt h_sq_le
-            rwa [Real.sqrt_mul_self h_px_pos] at h_sqrt
-        · -- At (r₀, 0) itself, β(r₀, 0) = α(r₀) by definition.
-          simp
-    · -- s₀ > 0: β agrees near (r₀, s₀) with the continuous min(α(r), √(α(r) U(s))).
-      have hs_ne : s₀ ≠ 0 := hs₀_pos.ne'
-      refine ContinuousWithinAt.congr_of_eventuallyEq
-        (f := fun p => min (α.toFun p.1)
-          (Real.sqrt (α.toFun p.1 * U.toFun p.2))
-          ) ?_ ?_ (by simp [hs_ne])
-      · have h_alpha : ContinuousWithinAt (fun p : ℝ × ℝ => α.toFun p.1)
-            (Set.Ico 0 a ×ˢ Set.Ici 0) (r₀, s₀) :=
-          (α.continuous r₀ hr₀).comp continuous_fst.continuousWithinAt (fun _ hp => hp.1)
-        have h_U_1d : ContinuousAt U.toFun s₀ :=
-        (U.continuous s₀ hs₀_pos).continuousAt (Ioi_mem_nhds hs₀_pos)
-        have h_U_2d : ContinuousWithinAt (fun p : ℝ × ℝ => U.toFun p.2)
-          (Set.Ico 0 a ×ˢ Set.Ici 0) (r₀, s₀) :=
-        h_U_1d.comp_continuousWithinAt continuous_snd.continuousWithinAt
-        have h_mul := ContinuousWithinAt.mul h_alpha h_U_2d
-        have h_sqrt := Real.continuous_sqrt.continuousAt.comp_continuousWithinAt h_mul
-        exact continuous_min.continuousAt.tendsto.comp (h_alpha.tendsto.prodMk_nhds h_sqrt)
-      · have h_snd : Filter.Tendsto (fun p : ℝ × ℝ => p.2)
-            (𝓝[Set.Ico 0 a ×ˢ Set.Ici 0] (r₀, s₀)) (𝓝 s₀) :=
-          continuous_snd.continuousWithinAt
-        filter_upwards [h_snd.eventually (Ioi_mem_nhds hs₀_pos)] with p hp_pos
-        exact if_neg hp_pos.ne'
+    rcases (mem_Ici.mp hs₀).eq_or_lt with rfl | hs₀_pos
+    · -- Case s₀ = 0: on the edge.
+      exact continuousWithinAt_singularCap_of_zero α U hr₀
+    · -- Case s₀ > 0: off the edge.
+      exact continuousWithinAt_singularCap_of_pos α U hr₀ hs₀_pos
 
 
 

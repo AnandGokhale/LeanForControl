@@ -91,48 +91,49 @@ private lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     {y : ℝ} (hy : y ∈ Ioo 0 a) :
     HasDerivAt (α.eta base) (-1 / α.toFun y) y := by
-    have hcont_inv: ContinuousOn (fun x => 1 / α.toFun x) (Ioo 0 a) :=
-      continuousOn_const.div (α.continuous.mono Ioo_subset_Ico_self)
+  have hcont_inv : ContinuousOn (fun x => 1 / α.toFun x) (Ioo 0 a) :=
+    continuousOn_const.div (α.continuous.mono Ioo_subset_Ico_self)
       (fun x hx => (α.pos_on_Ioo hx).ne')
-    have hf_cont : ContinuousAt (fun x => 1 / α.toFun x) y :=
-      hcont_inv.continuousAt (Ioo_mem_nhds hy.1 hy.2)
-    have hf_intble : IntervalIntegrable (fun x => 1 / α.toFun x) volume base y := by
-      apply (hcont_inv.mono _).intervalIntegrable
-      intro x hx
-      -- hx : x ∈ uIcc base y = Icc (min base y) (max base y)
-      -- so hx.1 : min base y ≤ x,  hx.2 : x ≤ max base y
-      exact ⟨lt_of_lt_of_le (lt_min hbase.1 hy.1) hx.1,
-            lt_of_le_of_lt hx.2 (max_lt hbase.2 hy.2)⟩
-    have hmeas : StronglyMeasurableAtFilter (fun x => 1 / α.toFun x) (𝓝 y) volume :=
-      ⟨Ioo 0 a, Ioo_mem_nhds hy.1 hy.2, hcont_inv.aestronglyMeasurable measurableSet_Ioo⟩
-    -- FTC: d/dy ∫_base^y f = f(y)
-    have hderiv : HasDerivAt (fun u => ∫ x in base..u, 1 / α.toFun x) (1 / α.toFun y) y :=
-      integral_hasDerivAt_right hf_intble hmeas hf_cont
-    change HasDerivAt (fun u => -(∫ x in base..u, 1 / α.toFun x)) (-1 / α.toFun y) y
-    have := hderiv.neg
-    simp only at this
-    convert this using 1
-    ring
+  have hf_cont : ContinuousAt (fun x => 1 / α.toFun x) y :=
+    hcont_inv.continuousAt (Ioo_mem_nhds hy.1 hy.2)
+  have hf_intble : IntervalIntegrable (fun x => 1 / α.toFun x) volume base y := by
+    apply (hcont_inv.mono _).intervalIntegrable
+    intro x hx
+    -- hx : x ∈ uIcc base y = Icc (min base y) (max base y)
+    -- so hx.1 : min base y ≤ x,  hx.2 : x ≤ max base y
+    exact ⟨lt_of_lt_of_le (lt_min hbase.1 hy.1) hx.1,
+      lt_of_le_of_lt hx.2 (max_lt hbase.2 hy.2)⟩
+  have hmeas : StronglyMeasurableAtFilter (fun x => 1 / α.toFun x) (𝓝 y) volume :=
+    ⟨Ioo 0 a, Ioo_mem_nhds hy.1 hy.2, hcont_inv.aestronglyMeasurable measurableSet_Ioo⟩
+  -- FTC: d/dy ∫_base^y f = f(y)
+  have hderiv : HasDerivAt (fun u => ∫ x in base..u, 1 / α.toFun x) (1 / α.toFun y) y :=
+    integral_hasDerivAt_right hf_intble hmeas hf_cont
+  change HasDerivAt (fun u => -(∫ x in base..u, 1 / α.toFun x)) (-1 / α.toFun y) y
+  -- Negate: η is minus the primitive, so its derivative is `-(1/α(y))`.
+  have hderiv_neg := hderiv.neg
+  simp only at hderiv_neg
+  convert hderiv_neg using 1
+  ring
 
 /-- η is strictly anti-monotone on `(0, a)`: `α > 0` implies `η' = −1/α < 0` throughout. -/
 private lemma eta_strictAntiOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a) :
     StrictAntiOn (α.eta base) (Ioo 0 a) := by
-    apply strictAntiOn_of_deriv_neg (convex_Ioo 0 a)
-    · -- ContinuousOn: each point has a HasDerivAt, hence is continuous
-      exact fun y hy =>
-        (eta_hasDerivAt α base hbase hy).continuousAt.continuousWithinAt
-    · -- deriv < 0 on the interior (= Ioo 0 a itself)
-      intro x hx
-      rw [interior_Ioo] at hx
-      rw [(eta_hasDerivAt α base hbase hx).deriv]
-      exact div_neg_of_neg_of_pos (by norm_num) (α.pos_on_Ioo hx)
+  apply strictAntiOn_of_deriv_neg (convex_Ioo 0 a)
+  · -- ContinuousOn: each point has a HasDerivAt, hence is continuous
+    exact fun y hy =>
+      (eta_hasDerivAt α base hbase hy).continuousAt.continuousWithinAt
+  · -- deriv < 0 on the interior (= Ioo 0 a itself)
+    intro x hx
+    rw [interior_Ioo] at hx
+    rw [(eta_hasDerivAt α base hbase hx).deriv]
+    exact div_neg_of_neg_of_pos (by norm_num) (α.pos_on_Ioo hx)
 
 /-- η is continuous on `(0, a)` (differentiability at each point implies continuity). -/
 private lemma eta_continuousOn (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a) :
     ContinuousOn (α.eta base) (Ioo 0 a) := fun _ hy =>
-    (eta_hasDerivAt α base hbase hy).continuousAt.continuousWithinAt
+  (eta_hasDerivAt α base hbase hy).continuousAt.continuousWithinAt
 
 /-- For `r ∈ (0, a)` and `s ≥ 0`, the value `η(r) + s` lies in the range of η on `(0, a)`.
     `EtaDiverges` supplies `ε` near 0 with `η(ε) ≥ η(r) + s`; IVT on `[ε, r]` gives the witness. -/
@@ -140,21 +141,21 @@ private lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Ioo 0 a)
     (hdiv : α.EtaDiverges base)
     {r : ℝ} (hr : r ∈ Ioo 0 a) {s : ℝ} (hs : 0 ≤ s) :
-    ∃ r' ∈ Ioo 0 a, α.eta base r' = α.eta base r + s:= by
-    have hev : ∀ᶠ x in nhdsWithin 0 (Set.Ioi 0), α.eta base r + s ≤ α.eta base x :=
+    ∃ r' ∈ Ioo 0 a, α.eta base r' = α.eta base r + s := by
+  have hev : ∀ᶠ x in nhdsWithin 0 (Set.Ioi 0), α.eta base r + s ≤ α.eta base x :=
     hdiv.eventually (Filter.eventually_ge_atTop _)
-    have hIoo_nhd : Set.Ioo 0 r ∈ nhdsWithin 0 (Set.Ioi 0) := by
-      rw [mem_nhdsWithin]
-      exact ⟨Set.Iio r, isOpen_Iio, hr.1, fun x ⟨hlt, hgt⟩ => ⟨hgt, hlt⟩⟩
-    obtain ⟨ε, hε_large, hε_ioo⟩ :=
+  have hIoo_nhd : Set.Ioo 0 r ∈ nhdsWithin 0 (Set.Ioi 0) := by
+    rw [mem_nhdsWithin]
+    exact ⟨Set.Iio r, isOpen_Iio, hr.1, fun x ⟨hlt, hgt⟩ => ⟨hgt, hlt⟩⟩
+  obtain ⟨ε, hε_large, hε_ioo⟩ :=
     (hev.and (Filter.eventually_of_mem hIoo_nhd (fun x hx => hx))).exists
-    have hcont_Icc : ContinuousOn (α.eta base) (Set.Icc ε r) :=
+  have hcont_Icc : ContinuousOn (α.eta base) (Set.Icc ε r) :=
     (eta_continuousOn α base hbase).mono
       (fun x hx => ⟨lt_of_lt_of_le hε_ioo.1 hx.1, lt_of_le_of_lt hx.2 hr.2⟩)
-    obtain ⟨r', hr'_icc, hr'_eq⟩ :=
+  obtain ⟨r', hr'_icc, hr'_eq⟩ :=
     intermediate_value_Icc' (le_of_lt hε_ioo.2) hcont_Icc
       ⟨le_add_of_nonneg_right hs, hε_large⟩
-    exact ⟨r', ⟨lt_of_lt_of_le hε_ioo.1 hr'_icc.1, lt_of_le_of_lt hr'_icc.2 hr.2⟩, hr'_eq⟩
+  exact ⟨r', ⟨lt_of_lt_of_le hε_ioo.1 hr'_icc.1, lt_of_le_of_lt hr'_icc.2 hr.2⟩, hr'_eq⟩
 
 /-! ### Properties of η⁻¹ -/
 
@@ -199,12 +200,12 @@ private lemma etaInv_strictAntiOn (α : ClassK a b) (base : ℝ)
   · exfalso
     rcases eq_or_lt_of_le h with h_eq | hlt'
     · -- etaInv t₁ = etaInv t₂  →  t₁ = t₂
-      have := congr_arg (α.eta base) h_eq
-      rw [heq₁, heq₂] at this
+      have h_eta_eq := congr_arg (α.eta base) h_eq
+      rw [heq₁, heq₂] at h_eta_eq
       linarith
     · -- etaInv t₁ < etaInv t₂  →  t₂ < t₁
-      have := eta_strictAntiOn α base hbase h₁ h₂ hlt'
-      rw [heq₁, heq₂] at this
+      have h_eta_lt := eta_strictAntiOn α base hbase h₁ h₂ hlt'
+      rw [heq₁, heq₂] at h_eta_lt
       linarith
 
 /-- `η⁻¹(t) → 0` as `t → +∞`: large `t` forces the preimage near 0, because η is
@@ -245,11 +246,17 @@ private lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     {t : ℝ} (ht : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t) :
     ContinuousAt (α.etaInv base) t := by
+  /- Write `r = η⁻¹(t)`.  For any `x₁ < r < x₂` in `(0, a)`, the values `t'` strictly between
+     `η(x₂)` and `η(x₁)` form a neighbourhood of `t`, and by IVT each such `t'` is `η(r')` for
+     some `r' ∈ [x₁, x₂]`; so `η⁻¹(t') ∈ [x₁, x₂]`.  Given an order bound `z₁ < r` (or
+     `r < z₂`), choose `x₁` between `z₁` and `r` (or `x₂` between `r` and `z₂`). -/
   have h_r_mem := etaInv_mem_Ioo α base ht
   have h_r_eq := eta_etaInv α base ht
   set r := α.etaInv base t
-  have heta_inj : ∀ x ∈ Set.Ioo 0 a, ∀ y ∈ Set.Ioo 0 a, α.eta base x = α.eta base y → x = y := by
-    exact (eta_strictAntiOn α base hbase).injOn
+  have heta_inj : ∀ x ∈ Set.Ioo 0 a, ∀ y ∈ Set.Ioo 0 a,
+      α.eta base x = α.eta base y → x = y :=
+    (eta_strictAntiOn α base hbase).injOn
+  -- Step 1. Near `η(r)`, `η⁻¹` is trapped in `[x₁, x₂]` for any `x₁ < r < x₂` in `(0, a)`.
   have h_IVT : ∀ x₁ x₂, x₁ ∈ Set.Ioo 0 a → x₂ ∈ Set.Ioo 0 a → x₁ < r → r < x₂ →
       ∀ᶠ t' in 𝓝 (α.eta base r), x₁ ≤ α.etaInv base t' ∧ α.etaInv base t' ≤ x₂ := by
     intro x₁ x₂ hx₁ hx₂ hlt₁ hlt₂
@@ -267,55 +274,54 @@ private lemma etaInv_continuousAt (α : ClassK a b) (base : ℝ)
       heta_inj _ (etaInv_mem_Ioo α base ⟨r', hr'_ioo, hr'_eq⟩) _ hr'_ioo
         (by rw [eta_etaInv α base ⟨r', hr'_ioo, hr'_eq⟩, hr'_eq])
     rwa [hetaInv_eq]
+  -- Step 2. Fixed partner points `0 < x_lo < r < x_hi < a`, one for each side.
+  obtain ⟨x_lo, hx_lo_pos, hx_lo_lt⟩ := exists_between h_r_mem.1
+  obtain ⟨x_hi, hx_hi_gt, hx_hi_lt⟩ := exists_between h_r_mem.2
+  have hx_lo_mem : x_lo ∈ Set.Ioo 0 a := ⟨hx_lo_pos, hx_lo_lt.trans h_r_mem.2⟩
+  have hx_hi_mem : x_hi ∈ Set.Ioo 0 a := ⟨h_r_mem.1.trans hx_hi_gt, hx_hi_lt⟩
+  -- Step 3. Continuity in the order topology: check each one-sided bound.
   rw [ContinuousAt]
   change Filter.Tendsto (α.etaInv base) (𝓝 t) (𝓝 r)
   rw [← h_r_eq]
   apply tendsto_order.mpr
   constructor
-  · -- Lower bound: z₁ < r
+  · -- Lower bound `z₁ < r`: pick `x₁ ∈ (max 0 z₁, r)`; then `z₁ < x₁ ≤ η⁻¹(t')`.
     intro z₁ hz₁
-    set x₁ := (max 0 z₁ + r) / 2
-    set x₂ := (r + a) / 2
-    have h_max_lt : max 0 z₁ < r := max_lt h_r_mem.1 hz₁
-    have h_max_ge : 0 ≤ max 0 z₁ := le_max_left 0 z₁
-    -- Prove bounds on the explicit formulas so linarith can see the math
-    have hx₁_pos : 0 < (max 0 z₁ + r) / 2 := by linarith
-    have hx₁_lt_r : (max 0 z₁ + r) / 2 < r := by linarith
-    have hx₂_gt_r : r < (r + a) / 2 := by linarith [h_r_mem.2]
-    have hx₂_lt_a : (r + a) / 2 < a := by linarith [h_r_mem.2]
-    have hx₁_mem : x₁ ∈ Set.Ioo 0 a := ⟨hx₁_pos, lt_trans hx₁_lt_r h_r_mem.2⟩
-    have hx₂_mem : x₂ ∈ Set.Ioo 0 a := ⟨lt_trans h_r_mem.1 hx₂_gt_r, hx₂_lt_a⟩
-    filter_upwards [h_IVT x₁ x₂ hx₁_mem hx₂_mem hx₁_lt_r hx₂_gt_r] with t' ht'
-    linarith [ht'.1, show z₁ < x₁ by grind]
-  · -- Upper bound: z₂ > r
+    obtain ⟨x₁, hx₁_gt, hx₁_lt⟩ := exists_between (max_lt h_r_mem.1 hz₁)
+    have hx₁_mem : x₁ ∈ Set.Ioo 0 a :=
+      ⟨(le_max_left 0 z₁).trans_lt hx₁_gt, hx₁_lt.trans h_r_mem.2⟩
+    have hz₁_lt : z₁ < x₁ := (le_max_right 0 z₁).trans_lt hx₁_gt
+    filter_upwards [h_IVT x₁ x_hi hx₁_mem hx_hi_mem hx₁_lt hx_hi_gt] with t' ht'
+    exact hz₁_lt.trans_le ht'.1
+  · -- Upper bound `r < z₂`: pick `x₂ ∈ (r, min a z₂)`; then `η⁻¹(t') ≤ x₂ < z₂`.
     intro z₂ hz₂
-    set x₁ := r / 2
-    set x₂ := (r + min a z₂) / 2
-    have h_min_gt : r < min a z₂ := lt_min h_r_mem.2 hz₂
-    have h_min_le_a : min a z₂ ≤ a := min_le_left a z₂
-    -- Prove bounds on the explicit formulas
-    have hx₁_pos : 0 < r / 2 := by linarith [h_r_mem.1]
-    have hx₁_lt_r : r / 2 < r := by linarith [h_r_mem.1]
-    have hx₂_gt_r : r < (r + min a z₂) / 2 := by linarith
-    have hx₂_lt_a : (r + min a z₂) / 2 < a := by linarith
-    have hx₁_mem : x₁ ∈ Set.Ioo 0 a := ⟨hx₁_pos, lt_trans hx₁_lt_r h_r_mem.2⟩
-    have hx₂_mem : x₂ ∈ Set.Ioo 0 a := ⟨lt_trans h_r_mem.1 hx₂_gt_r, hx₂_lt_a⟩
-    filter_upwards [h_IVT x₁ x₂ hx₁_mem hx₂_mem hx₁_lt_r hx₂_gt_r] with t' ht'
-    linarith [ht'.2, show x₂ < z₂ by grind [min_le_right a z₂]]
+    obtain ⟨x₂, hx₂_gt, hx₂_lt⟩ := exists_between (lt_min h_r_mem.2 hz₂)
+    have hx₂_mem : x₂ ∈ Set.Ioo 0 a :=
+      ⟨h_r_mem.1.trans hx₂_gt, hx₂_lt.trans_le (min_le_left a z₂)⟩
+    have hz₂_gt : x₂ < z₂ := hx₂_lt.trans_le (min_le_right a z₂)
+    filter_upwards [h_IVT x_lo x₂ hx_lo_mem hx₂_mem hx_lo_lt hx₂_gt] with t' ht'
+    exact ht'.2.trans_lt hz₂_gt
 
+/-- **Osgood's condition from a linear bound.**  If `α(x) ≤ L x` on `(0, base]`, then
+    `η_base(y) → +∞` as `y → 0⁺`.
 
+    Comparing integrands, `η(y) = ∫_y^{base} 1/α ≥ ∫_y^{base} 1/(L x) = (log base − log y)/L`,
+    and the right-hand side diverges as `y → 0⁺`. -/
 private lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (L : ℝ) (hL_pos : 0 < L)
     (h_lin : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x) :
     α.EtaDiverges base := by
+  -- Step 1. The logarithmic lower bound `(log base − log y)/L` diverges as `y → 0⁺`.
   have h_tendsto_log : Filter.Tendsto (fun y => (Real.log base - Real.log y) / L)
       (𝓝[>] 0) Filter.atTop := by
     have h_eq : (fun y => (Real.log base - Real.log y) / L) =
-                (fun y => (1 / L) * (-Real.log y) + Real.log base / L) := by ext; ring
+        (fun y => (1 / L) * (-Real.log y) + Real.log base / L) := by ext; ring
     rw [h_eq]
     exact (Filter.Tendsto.const_mul_atTop (one_div_pos.mpr hL_pos)
-      (Filter.tendsto_neg_atTop_iff.mpr Real.tendsto_log_nhdsGT_zero)).atTop_add tendsto_const_nhds
+      (Filter.tendsto_neg_atTop_iff.mpr Real.tendsto_log_nhdsGT_zero)).atTop_add
+        tendsto_const_nhds
+  -- Step 2. For `0 < y < base`, it is below `∫_y^{base} 1/α`.
   have h_bound : ∀ᶠ y in 𝓝[>] 0, (Real.log base - Real.log y) / L ≤
       ∫ x in y..base, 1 / α.toFun x := by
     filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds (Iio_mem_nhds hbase.1)]
@@ -324,9 +330,18 @@ private lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (bas
       fun x hx => (lt_min hy_pos hbase.1).trans_le hx.1
     have hα_pos : ∀ x ∈ Set.Icc y base, 0 < α.toFun x := fun x hx =>
       α.pos_on_Ioo ⟨hy_pos.trans_le hx.1, hx.2.trans_lt hbase.2⟩
+    -- `1/(L x)` is integrable on `[y, base]`: continuous with nonvanishing denominator.
     have h1_intble : IntervalIntegrable (fun x => 1 / (L * x)) MeasureTheory.volume y base :=
       (continuousOn_const.div (continuousOn_const.mul continuousOn_id)
         (fun x hx => (mul_pos hL_pos (hx_pos x hx)).ne')).intervalIntegrable
+    -- `1/α` is integrable on `[y, base]`: `α` is continuous and positive there.
+    have h_inv_intble : IntervalIntegrable (fun x => 1 / α.toFun x) volume y base := by
+      have h_sub : Set.uIcc y base ⊆ Set.Ico 0 a := fun x hx => by
+        rw [Set.uIcc_of_le hy_lt_base.le] at hx
+        exact ⟨hy_pos.le.trans hx.1, hx.2.trans_lt hbase.2⟩
+      refine (continuousOn_const.div (α.continuous.mono h_sub) fun x hx => ?_).intervalIntegrable
+      rw [Set.uIcc_of_le hy_lt_base.le] at hx
+      exact (hα_pos x hx).ne'
     calc (Real.log base - Real.log y) / L
         = ∫ x in y..base, 1 / (L * x) := by
             have h_deriv : ∀ x ∈ Set.uIcc y base,
@@ -335,20 +350,166 @@ private lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (bas
               rwa [show x⁻¹ / L = 1 / (L * x) from by rw [inv_eq_one_div]; ring] at h
             rw [intervalIntegral.integral_eq_sub_of_hasDerivAt h_deriv h1_intble]; ring
       _ ≤ ∫ x in y..base, 1 / α.toFun x :=
-            intervalIntegral.integral_mono_on hy_lt_base.le h1_intble
-              ((continuousOn_const.div
-                (α.continuous.mono fun x hx => by
-                  rw [Set.uIcc_of_le hy_lt_base.le] at hx
-                  exact ⟨hy_pos.le.trans hx.1, hx.2.trans_lt hbase.2⟩)
-                fun x hx => by
-                  rw [Set.uIcc_of_le hy_lt_base.le] at hx
-                  exact (hα_pos x hx).ne').intervalIntegrable)
+            intervalIntegral.integral_mono_on hy_lt_base.le h1_intble h_inv_intble
               fun x hx => div_le_div_of_nonneg_left zero_le_one (hα_pos x hx)
                 (h_lin x ⟨hy_pos.trans_le hx.1, hx.2⟩)
+  -- Step 3. `η(y) = ∫_y^{base} 1/α`, so `η` dominates a divergent function.
   exact tendsto_atTop_mono' _ (h_bound.mono fun y hy => by
     change (Real.log base - Real.log y) / L ≤ -∫ x in base..y, 1 / α.toFun x
     rwa [intervalIntegral.integral_symm, neg_neg]) h_tendsto_log
 
+
+/-! ### Properties of σ -/
+
+/-- Away from `r = 0`, `σ` is given by its defining formula `σ(r, s) = η⁻¹(η(r) + s)`. -/
+private lemma sigma_of_pos (α : ClassK a b) (base : ℝ) {r : ℝ} (hr : 0 < r) {s : ℝ} :
+    α.sigma base r s = α.etaInv base (α.eta base r + s) :=
+  if_neg hr.ne'
+
+/-- `σ(0, s) = 0`: the solution started at the origin stays there. -/
+private lemma sigma_zero_left (α : ClassK a b) (base s : ℝ) : α.sigma base 0 s = 0 :=
+  if_pos rfl
+
+/-- `σ(r, 0) = r`: at time zero the solution is at its initial state. -/
+private lemma sigma_zero_right (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    {r : ℝ} (hr : r ∈ Ioo 0 a) :
+    α.sigma base r 0 = r := by
+  rw [sigma_of_pos α base hr.1, add_zero]
+  exact etaInv_eta α base hbase hr
+
+/-- For `r ∈ (0, a)` and `s ≥ 0`, the state `σ(r, s)` stays in `(0, a)`: by Osgood's
+    condition `η(r) + s` is a value of `η` on `(0, a)`, so `η⁻¹` maps it back there. -/
+private lemma sigma_mem_Ioo (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) {r s : ℝ} (hr : r ∈ Ioo 0 a) (hs : 0 ≤ s) :
+    α.sigma base r s ∈ Ioo 0 a := by
+  rw [sigma_of_pos α base hr.1]
+  exact etaInv_mem_Ioo α base (eta_add_mem_range α base hbase hdiv hr hs)
+
+/-- Comparison of two interior values of `σ`: a smaller time-to-go argument `η(r) + s` means a
+    larger state, because `η⁻¹` is strictly decreasing. -/
+private lemma sigma_lt_sigma (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) {r₁ r₂ s₁ s₂ : ℝ} (hr₁ : r₁ ∈ Ioo 0 a) (hr₂ : r₂ ∈ Ioo 0 a)
+    (hs₁ : 0 ≤ s₁) (hs₂ : 0 ≤ s₂) (h : α.eta base r₂ + s₂ < α.eta base r₁ + s₁) :
+    α.sigma base r₁ s₁ < α.sigma base r₂ s₂ := by
+  rw [sigma_of_pos α base hr₁.1, sigma_of_pos α base hr₂.1]
+  exact etaInv_strictAntiOn α base hbase (eta_add_mem_range α base hbase hdiv hr₂ hs₂)
+    (eta_add_mem_range α base hbase hdiv hr₁ hs₁) h
+
+/-- `σ ≥ 0` on `[0, a) × [0, ∞)`: either `r = 0` and `σ = 0`, or `σ(r, s) ∈ (0, a)`. -/
+private lemma sigma_nonneg (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) {r s : ℝ} (hr : r ∈ Ico 0 a) (hs : 0 ≤ s) :
+    0 ≤ α.sigma base r s := by
+  rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
+  · -- Case `r = 0`: `σ(0, s) = 0`.
+    exact (sigma_zero_left α base s).ge
+  · -- Case `r > 0`: `σ(r, s) ∈ (0, a)`.
+    exact (sigma_mem_Ioo α base hbase hdiv ⟨hr_pos, hr.2⟩ hs).1.le
+
+/-- `σ(r, s) ≤ r` on `[0, a) × [0, ∞)`: the solution never rises above its initial state. -/
+private lemma sigma_le_self (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) {r s : ℝ} (hr : r ∈ Ico 0 a) (hs : 0 ≤ s) :
+    α.sigma base r s ≤ r := by
+  rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
+  · -- Case `r = 0`: `σ(0, s) = 0`.
+    exact (sigma_zero_left α base s).le
+  · have hr' : r ∈ Ioo 0 a := ⟨hr_pos, hr.2⟩
+    rcases eq_or_lt_of_le hs with rfl | hs_pos
+    · -- Case `s = 0`: `σ(r, 0) = r`.
+      exact (sigma_zero_right α base hbase hr').le
+    · -- Case `s > 0`: `η(r) + 0 < η(r) + s`, so `σ(r, s) < σ(r, 0) = r`.
+      have h_lt : α.sigma base r s < α.sigma base r 0 :=
+        sigma_lt_sigma α base hbase hdiv hr' hr' hs le_rfl (by linarith)
+      exact (h_lt.trans_eq (sigma_zero_right α base hbase hr')).le
+
+/-- Near an interior initial state `r ∈ (0, a)`, `σ` is jointly continuous: there it equals
+    `η⁻¹(η(p.1) + p.2)`, a composition of continuous maps. -/
+private lemma sigma_continuousAt_of_pos (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) {r s : ℝ} (hr : r ∈ Ioo 0 a) (hs : 0 ≤ s) :
+    ContinuousAt (Function.uncurry (α.sigma base)) (r, s) := by
+  -- Near `(r, s)` the first coordinate is positive, so `σ` is given by its formula.
+  have h_eq : (fun p : ℝ × ℝ => α.etaInv base (α.eta base p.1 + p.2)) =ᶠ[𝓝 (r, s)]
+      Function.uncurry (α.sigma base) := by
+    filter_upwards [continuous_fst.continuousAt.preimage_mem_nhds (Ioi_mem_nhds hr.1)]
+      with p hp
+    exact (sigma_of_pos α base hp).symm
+  -- Inner map `p ↦ η(p.1) + p.2`: `η` is differentiable, hence continuous, at `r`.
+  have h_eta : ContinuousAt (α.eta base) r := (eta_hasDerivAt α base hbase hr).continuousAt
+  have h_eta_fst : ContinuousAt (fun p : ℝ × ℝ => α.eta base p.1) (r, s) :=
+    ContinuousAt.comp (g := α.eta base) (f := Prod.fst) h_eta continuousAt_fst
+  have h_inner : ContinuousAt (fun p : ℝ × ℝ => α.eta base p.1 + p.2) (r, s) :=
+    h_eta_fst.add continuousAt_snd
+  -- Outer map `η⁻¹`: continuous at `η(r) + s`, which is in the range of `η`.
+  have h_outer : ContinuousAt (α.etaInv base) (α.eta base r + s) :=
+    etaInv_continuousAt α base hbase (eta_add_mem_range α base hbase hdiv hr hs)
+  have h_comp : ContinuousAt (fun p : ℝ × ℝ => α.etaInv base (α.eta base p.1 + p.2)) (r, s) :=
+    ContinuousAt.comp (g := α.etaInv base) h_outer h_inner
+  exact h_comp.congr h_eq
+
+/-- **KL field `continuous`.**  `σ` is jointly continuous on `[0, a) × [0, ∞)`. -/
+private lemma sigma_continuousOn (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) :
+    ContinuousOn (Function.uncurry (α.sigma base)) (Ico 0 a ×ˢ Ici 0) := by
+  rintro ⟨r, s⟩ ⟨hr, hs⟩
+  rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
+  · -- Case `r = 0`: squeeze `0 ≤ σ(p) ≤ p.1`, and `p.1 → 0`.
+    have h_lower : ∀ᶠ p in 𝓝[Ico 0 a ×ˢ Ici 0] ((0 : ℝ), s),
+        0 ≤ Function.uncurry (α.sigma base) p :=
+      eventually_nhdsWithin_of_forall fun p hp => sigma_nonneg α base hbase hdiv hp.1 hp.2
+    have h_upper : ∀ᶠ p in 𝓝[Ico 0 a ×ˢ Ici 0] ((0 : ℝ), s),
+        Function.uncurry (α.sigma base) p ≤ p.1 :=
+      eventually_nhdsWithin_of_forall fun p hp => sigma_le_self α base hbase hdiv hp.1 hp.2
+    rw [ContinuousWithinAt, Function.uncurry_apply_pair, sigma_zero_left]
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+      continuous_fst.continuousWithinAt h_lower h_upper
+  · -- Case `r > 0`: `σ` is continuous at `(r, s)` outright.
+    exact (sigma_continuousAt_of_pos α base hbase hdiv ⟨hr_pos, hr.2⟩ hs).continuousWithinAt
+
+/-- **KL field `strict_mono_r`.**  For fixed `s ≥ 0`, `σ(·, s)` is strictly increasing. -/
+private lemma sigma_strictMonoOn_r (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) :
+    ∀ s ≥ 0, StrictMonoOn (fun r => α.sigma base r s) (Ico 0 a) := by
+  intro s hs r₁ hr₁ r₂ hr₂ hr_lt
+  dsimp only
+  have hr₂' : r₂ ∈ Ioo 0 a := ⟨hr₁.1.trans_lt hr_lt, hr₂.2⟩
+  rcases eq_or_lt_of_le hr₁.1 with rfl | hr₁_pos
+  · -- Case `r₁ = 0`: `σ(0, s) = 0 < σ(r₂, s)`.
+    rw [sigma_zero_left]
+    exact (sigma_mem_Ioo α base hbase hdiv hr₂' hs).1
+  · -- Case `0 < r₁ < r₂`: `η(r₂) < η(r₁)`, and `η⁻¹` reverses the order again.
+    have hr₁' : r₁ ∈ Ioo 0 a := ⟨hr₁_pos, hr₁.2⟩
+    have h_eta_lt := eta_strictAntiOn α base hbase hr₁' hr₂' hr_lt
+    exact sigma_lt_sigma α base hbase hdiv hr₁' hr₂' hs hs (by linarith)
+
+/-- **KL field `anti_s`.**  For fixed `r`, `σ(r, ·)` is nonincreasing: a later time means a
+    larger argument `η(r) + s` to the decreasing map `η⁻¹`. -/
+private lemma sigma_antitoneOn_s (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
+    (hdiv : α.EtaDiverges base) :
+    ∀ r ∈ Ico 0 a, AntitoneOn (fun s => α.sigma base r s) (Ici 0) := by
+  intro r hr s₁ hs₁ s₂ hs₂ hs_le
+  dsimp only
+  rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
+  · -- Case `r = 0`: both sides vanish.
+    simp only [sigma_zero_left, le_refl]
+  · have hr' : r ∈ Ioo 0 a := ⟨hr_pos, hr.2⟩
+    rcases eq_or_lt_of_le hs_le with rfl | hs_lt
+    · -- Case `s₁ = s₂`.
+      exact le_rfl
+    · -- Case `s₁ < s₂`.
+      exact (sigma_lt_sigma α base hbase hdiv hr' hr' hs₂ hs₁ (by linarith)).le
+
+/-- **KL field `tendsto_zero`.**  `σ(r, s) → 0` as `s → ∞`: the argument `η(r) + s` tends to
+    `+∞`, and `η⁻¹(t) → 0` as `t → ∞`. -/
+private lemma sigma_tendsto_zero (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a) :
+    ∀ r ∈ Ico 0 a, Tendsto (fun s => α.sigma base r s) atTop (𝓝 0) := by
+  intro r hr
+  rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
+  · -- Case `r = 0`: `σ(0, ·)` is identically `0`.
+    simp only [sigma_zero_left]
+    exact tendsto_const_nhds
+  · -- Case `r > 0`: compose `η⁻¹ → 0` with `s ↦ η(r) + s → ∞`.
+    simp only [sigma_of_pos α base hr_pos]
+    exact (etaInv_tendsto_zero α base hbase).comp
+      (tendsto_atTop_add_const_left _ (α.eta base r) tendsto_id)
 
 /-! ### The σ function is Class KL -/
 
@@ -361,111 +522,20 @@ private theorem ClassK.sigma_isClassKL (α : ClassK a b) (base : ℝ)
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ioo 0 a, ∀ s ≥ 0, σ.toFun r s = α.sigma base r s) ∧
       (∀ s ≥ 0, σ.toFun 0 s = 0) := by
-    have hdiv : α.EtaDiverges base :=
-      ClassK.etaDiverges_of_le_linear α base hbase L hL_pos hLip
-    refine ⟨{
-      ha           := α.ha
-      toFun        := α.sigma base
-      -- σ(0, s) = 0 by definition
-      map_zero     := fun s _ => by simp [ClassK.sigma]
-      -- Continuity at r=0 needs etaInv_tendsto_zero; interior is composition of continuous fns
-      continuous := by
-        rintro ⟨r, s⟩ ⟨hr, hs⟩
-        change ContinuousWithinAt (fun p : ℝ × ℝ => α.sigma base p.1 p.2)
-            (Set.Ico 0 a ×ˢ Set.Ici 0) (r, s)
-        simp only [ClassK.sigma]
-        rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
-        · -- r = 0: squeeze 0 ≤ σ(p) ≤ p.1 → 0
-          simp only [ContinuousWithinAt]
-          apply tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
-              continuous_fst.continuousWithinAt
-          · -- lower: 0 ≤ f(p) on domain
-            filter_upwards [self_mem_nhdsWithin] with ⟨r', s'⟩ hp
-            simp only [Set.mem_prod, Set.mem_Ico, Set.mem_Ici] at hp
-            split_ifs with h
-            · exact le_refl 0
-            · exact (etaInv_mem_Ioo α base
-                  (eta_add_mem_range α base hbase hdiv
-                    ⟨lt_of_le_of_ne hp.1.1 (Ne.symm h), hp.1.2⟩ hp.2)).1.le
-          · -- upper: f(p) ≤ p.1 on domain
-            filter_upwards [self_mem_nhdsWithin] with ⟨r', s'⟩ hp
-            simp only [Set.mem_prod, Set.mem_Ico, Set.mem_Ici] at hp
-            split_ifs with h
-            · exact hp.1.1
-            · have hr'_pos : 0 < r' := lt_of_le_of_ne hp.1.1 (Ne.symm h)
-              rcases eq_or_lt_of_le hp.2 with rfl | hs'_pos
-              · simp [etaInv_eta α base hbase ⟨hr'_pos, hp.1.2⟩]
-              · exact le_of_lt ((etaInv_strictAntiOn α base hbase
-                    ⟨r', ⟨hr'_pos, hp.1.2⟩, rfl⟩
-                    (eta_add_mem_range α base hbase hdiv ⟨hr'_pos, hp.1.2⟩ hs'_pos.le)
-                    (by linarith)).trans_eq
-                    (etaInv_eta α base hbase ⟨hr'_pos, hp.1.2⟩))
-        · -- r > 0: etaInv(eta(·) + ·) is jointly continuous at (r, s)
-          apply ContinuousAt.continuousWithinAt
-          have heta_sum : ContinuousAt (fun p : ℝ × ℝ => α.eta base p.1 + p.2) (r, s) :=
-            ((eta_hasDerivAt α base hbase ⟨hr_pos, hr.2⟩).continuousAt.comp
-              continuousAt_fst).add continuousAt_snd
-          have hetaInv : ContinuousAt (α.etaInv base)
-              ((fun p : ℝ × ℝ => α.eta base p.1 + p.2) (r, s)) :=
-            etaInv_continuousAt α base hbase
-              (eta_add_mem_range α base hbase hdiv ⟨hr_pos, hr.2⟩ hs)
-          have h_comp : ContinuousAt
-            (fun p : ℝ × ℝ => α.etaInv base (α.eta base p.1 + p.2)) (r, s) :=
-            ContinuousAt.comp (f := fun p : ℝ × ℝ => α.eta base p.1 + p.2) hetaInv heta_sum
-          have h_eq : (fun p : ℝ × ℝ => α.etaInv base (α.eta base p.1 + p.2)) =ᶠ[𝓝 (r, s)]
-              (fun p => if p.1 = 0 then 0 else α.etaInv base (α.eta base p.1 + p.2)) := by
-            filter_upwards [continuous_fst.continuousAt.preimage_mem_nhds
-                (Ioi_mem_nhds hr_pos)] with p hp
-            exact (if_neg (Set.mem_Ioi.mp hp).ne').symm
-          exact h_comp.congr h_eq
-
-      -- σ strictly increasing in r: two cases
-      strict_mono_r := fun s hs => by
-        intro r₁ hr₁ r₂ hr₂ hr_lt
-        rcases eq_or_lt_of_le hr₁.1 with rfl | hr₁_pos
-        · -- r₁ = 0: σ(0,s) = 0, and σ(r₂,s) = etaInv(...) > 0
-          simp only [ClassK.sigma, if_true, if_neg hr_lt.ne']
-          exact (etaInv_mem_Ioo α base
-            (eta_add_mem_range α base hbase hdiv ⟨hr_lt, hr₂.2⟩ hs)).1
-        · -- 0 < r₁ < r₂: eta anti-mono gives eta(r₁)+s > eta(r₂)+s,
-          --               then etaInv anti-mono flips back
-          have hr₂_pos : (0 : ℝ) < r₂ := lt_trans hr₁_pos hr_lt
-          simp only [ClassK.sigma, if_neg hr₁_pos.ne', if_neg hr₂_pos.ne']
-          apply etaInv_strictAntiOn α base hbase
-          · exact eta_add_mem_range α base hbase hdiv ⟨hr₂_pos, hr₂.2⟩ hs
-          · exact eta_add_mem_range α base hbase hdiv ⟨hr₁_pos, hr₁.2⟩ hs
-          · linarith [eta_strictAntiOn α base hbase
-              ⟨hr₁_pos, hr₁.2⟩ ⟨hr₂_pos, hr₂.2⟩ hr_lt]
-      -- σ ≥ 0: either r=0 (trivial) or etaInv lands in Ioo 0 a
-      nonneg := fun r hr s hs => by
-        simp only [ClassK.sigma]
-        rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
-        · simp
-        · rw [if_neg hr_pos.ne']
-          exact le_of_lt (etaInv_mem_Ioo α base
-            (eta_add_mem_range α base hbase hdiv ⟨hr_pos, hr.2⟩ hs)).1
-      -- σ antitone in s: larger s → larger input to etaInv → smaller output
-      anti_s := fun r hr => by
-        intro s₁ hs₁ s₂ hs₂ hs_le
-        simp only [ClassK.sigma]
-        rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
-        · simp
-        · simp only [if_neg hr_pos.ne']
-          rcases eq_or_lt_of_le hs_le with rfl | hs_lt
-          · exact le_refl _
-          · exact le_of_lt (etaInv_strictAntiOn α base hbase
-              (eta_add_mem_range α base hbase hdiv ⟨hr_pos, hr.2⟩ hs₁)
-              (eta_add_mem_range α base hbase hdiv ⟨hr_pos, hr.2⟩ hs₂)
-              (by linarith))
-      -- σ(r,s) → 0 as s → ∞: compose etaInv_tendsto_zero with (eta(r) + ·) → ∞
-      tendsto_zero := fun r hr => by
-        simp only [ClassK.sigma]
-        rcases eq_or_lt_of_le hr.1 with rfl | hr_pos
-        · simp only; exact tendsto_const_nhds
-        · simp only  [if_neg hr_pos.ne']
-          exact (etaInv_tendsto_zero α base hbase).comp
-            (tendsto_atTop_add_const_left _ (α.eta base r) tendsto_id)
-    }, ⟨fun r _ s _ => rfl, fun s _ => by simp [ClassK.sigma]⟩⟩
+  /- The linear bound gives Osgood's condition; with it, each class KL field is one of the
+     `sigma_*` lemmas above. -/
+  have hdiv : α.EtaDiverges base :=
+    ClassK.etaDiverges_of_le_linear α base hbase L hL_pos hLip
+  refine ⟨{
+    ha            := α.ha
+    toFun         := α.sigma base
+    map_zero      := fun s _ => sigma_zero_left α base s
+    continuous    := sigma_continuousOn α base hbase hdiv
+    strict_mono_r := sigma_strictMonoOn_r α base hbase hdiv
+    nonneg        := fun _ hr _ hs => sigma_nonneg α base hbase hdiv hr hs
+    anti_s        := sigma_antitoneOn_s α base hbase hdiv
+    tendsto_zero  := sigma_tendsto_zero α base hbase
+  }, fun _ _ _ _ => rfl, fun s _ => sigma_zero_left α base s⟩
 
 
 private lemma ClassK.sigma_hasDerivAt {a b : ℝ} (α : ClassK a b) (base : ℝ)
@@ -575,8 +645,7 @@ theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
     rcases eq_or_lt_of_le hr.1 with h_eq | hr_pos
     · rw [← h_eq]; exact hσ_zero_s 0 le_rfl
     · rw [hσ_eq r ⟨hr_pos, hr.2⟩ 0 le_rfl]
-      simp only [ClassK.sigma, if_neg hr_pos.ne', add_zero]
-      exact etaInv_eta α base hbase ⟨hr_pos, hr.2⟩
+      exact sigma_zero_right α base hbase ⟨hr_pos, hr.2⟩
   · -- σ(r, ·) solves the ODE.  At `r = 0` the solution is the constant `0`, which solves it
     -- because `α 0 = 0`; away from `0` it is the Osgood construction.
     rcases eq_or_lt_of_le hr.1 with h_eq | hr_pos

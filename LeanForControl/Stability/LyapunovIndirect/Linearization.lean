@@ -67,6 +67,89 @@ private theorem exists_centeredQuadraticForm_decay
     _ = -(1 / 2 : ℝ) * ‖y‖ ^ 2 := by ring
     _ = -(1 / 2 : ℝ) * ‖x - x_eq‖ ^ 2 := by rfl
 
+/-- **Exponential decay from a linear differential inequality.** If `g` is continuous on
+`[t₀, t₁]` and `g' ≤ -k g` on `(t₀, t₁)`, then `g t ≤ e^{-k(t - t₀)} g t₀` on `[t₀, t₁]`.
+
+The weighted function `e^{ks} g(s)` has derivative `e^{ks} (k g + g') ≤ 0`, so it is
+antitone.  (This is not an instance of `antitoneOn_V_add_linear`: the weight is
+multiplicative, not additive, so the product rule rather than the sum rule drives the
+derivative.) -/
+private lemma le_exp_neg_mul_of_hasDerivAt {g g' : ℝ → ℝ} {k t₀ t₁ : ℝ}
+    (hg_cont : ContinuousOn g (Icc t₀ t₁))
+    (hg_deriv : ∀ s ∈ Ioo t₀ t₁, HasDerivAt g (g' s) s)
+    (hg_decay : ∀ s ∈ Ioo t₀ t₁, k * g s + g' s ≤ 0) :
+    ∀ t ∈ Icc t₀ t₁, g t ≤ Real.exp (-k * (t - t₀)) * g t₀ := by
+  -- Step 1. The weighted function `W s = e^{ks} g(s)` has derivative `e^{ks} (k g s + g' s)`.
+  set W : ℝ → ℝ := fun s => Real.exp (k * s) * g s with hW_def
+  have hW_deriv : ∀ s ∈ Ioo t₀ t₁,
+      HasDerivAt W (Real.exp (k * s) * (k * g s + g' s)) s := by
+    intro s hs
+    convert ((hasDerivAt_id s).const_mul k).exp.mul (hg_deriv s hs) using 1
+    simp only [id_eq]
+    ring
+  -- Step 2. `W' ≤ 0` on the interior, so `W` is antitone on `[t₀, t₁]`.
+  have hW_anti : AntitoneOn W (Icc t₀ t₁) := by
+    apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
+    · exact (Real.continuous_exp.comp_continuousOn
+        (continuousOn_const.mul continuousOn_id)).mul hg_cont
+    · intro s hs
+      rw [interior_Icc] at hs
+      exact (hW_deriv s hs).differentiableAt.differentiableWithinAt
+    · intro s hs
+      rw [interior_Icc] at hs
+      rw [(hW_deriv s hs).deriv]
+      exact mul_nonpos_of_nonneg_of_nonpos (Real.exp_pos _).le (hg_decay s hs)
+  -- Step 3. Remove the weight: `g t = e^{-kt} W t ≤ e^{-kt} W t₀ = e^{-k(t - t₀)} g t₀`.
+  intro t ht
+  have hW_le : W t ≤ W t₀ := hW_anti (left_mem_Icc.mpr (ht.1.trans ht.2)) ht ht.1
+  calc
+    g t = Real.exp (-k * t) * W t := by
+      rw [hW_def, ← mul_assoc, ← Real.exp_add]
+      simp
+    _ ≤ Real.exp (-k * t) * W t₀ := mul_le_mul_of_nonneg_left hW_le (Real.exp_pos _).le
+    _ = Real.exp (-k * (t - t₀)) * g t₀ := by
+      rw [hW_def, ← mul_assoc, ← Real.exp_add]
+      congr 2
+      ring
+
+/-- **From a squared sandwich to an exponential bound.** If `m u² ≤ e^{-kτ} M v²` with
+`0 < m ≤ M` and `u, v ≥ 0`, then `u ≤ (M/m) e^{-(k/2)τ} v`.
+
+Dividing by `m` gives `u² ≤ (M/m) e^{-kτ} v²`; since `M/m ≥ 1` the factor `M/m` may be
+enlarged to `(M/m)²`, which makes the right side a perfect square. -/
+private lemma le_div_mul_exp_mul_of_mul_sq_le {m M k τ u v : ℝ} (hm : 0 < m) (hmM : m ≤ M)
+    (hu : 0 ≤ u) (hv : 0 ≤ v) (h : m * u ^ 2 ≤ Real.exp (-k * τ) * (M * v ^ 2)) :
+    u ≤ M / m * Real.exp (-(k / 2) * τ) * v := by
+  set C : ℝ := M / m with hC_def
+  set rhs : ℝ := C * Real.exp (-(k / 2) * τ) * v
+  have hC : 1 ≤ C := (le_div_iff₀ hm).2 (by simpa using hmM)
+  have hrhs : 0 ≤ rhs := by positivity
+  -- Step 1. Divide by `m`: `u² ≤ C e^{-kτ} v²`.
+  have hsq : u ^ 2 ≤ C * Real.exp (-k * τ) * v ^ 2 := by
+    calc
+      u ^ 2 ≤ Real.exp (-k * τ) * (M * v ^ 2) / m := by
+        apply (le_div_iff₀ hm).2
+        simpa [mul_comm] using h
+      _ = C * Real.exp (-k * τ) * v ^ 2 := by
+        rw [hC_def]
+        field_simp
+  -- Step 2. `e^{-kτ}` is the square of `e^{-(k/2)τ}`.
+  have hexp_sq : Real.exp (-k * τ) = Real.exp (-(k / 2) * τ) ^ 2 := by
+    rw [pow_two, ← Real.exp_add]
+    congr 1
+    ring
+  -- Step 3. `C ≤ C²`, so `u² ≤ rhs²`.
+  have hsq_rhs : u ^ 2 ≤ rhs ^ 2 := by
+    calc
+      u ^ 2 ≤ C * Real.exp (-(k / 2) * τ) ^ 2 * v ^ 2 := by rw [← hexp_sq]; exact hsq
+      _ ≤ C ^ 2 * Real.exp (-(k / 2) * τ) ^ 2 * v ^ 2 := by
+        gcongr
+        -- `C ≤ C²` because `1 ≤ C`.
+        nlinarith [hC]
+      _ = rhs ^ 2 := by ring
+  -- Step 4. Both sides are nonnegative, so take square roots.
+  exact (sq_le_sq₀ hu hrhs).1 hsq_rhs
+
 /-- A positive-definite solution of the identity-forced Lyapunov equation for the
 linearization gives local exponential stability of the nonlinear equilibrium on every
 finite forward solution segment.
@@ -83,8 +166,8 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
     LocallyExponentiallyStable f x_eq := by
   -- Idea: `V(x) = (x - x_eq)ᵀ P (x - x_eq)` is sandwiched between `m‖x - x_eq‖²` and
   -- `M‖x - x_eq‖²`, and near `x_eq` its Lie derivative is at most `-½‖x - x_eq‖² ≤ -k V`
-  -- with `k = 1/(2M)`.  So `e^{ks} V(φ s)` is antitone, `V` decays like `e^{-kt}`, and taking
-  -- square roots gives `‖φ t - x_eq‖ ≤ C e^{-(k/2)(t - t₀)} ‖φ t₀ - x_eq‖` with `C = M/m`.
+  -- with `k = 1/(2M)`.  So `V` decays like `e^{-kt}` along solutions, and taking square roots
+  -- gives `‖φ t - x_eq‖ ≤ C e^{-(k/2)(t - t₀)} ‖φ t₀ - x_eq‖` with `C = M/m`.
   letI : NeZero n := ⟨Nat.ne_of_gt hn⟩
   -- Step 1: `V` is a local Lyapunov function on `ball x_eq r`, so solutions starting within
   -- `ρ` of `x_eq` stay in that ball.
@@ -126,18 +209,6 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
     dsimp [p, M]
     rw [hu_norm, one_pow, mul_one] at hlower hupper
     linarith
-  let k : ℝ := 1 / (2 * M)
-  let C : ℝ := M / m
-  let a : ℝ := k / 2
-  have hk : 0 < k := by dsimp [k]; positivity
-  have hC : 1 ≤ C := by
-    dsimp [C]
-    exact (le_div_iff₀ hm).2 (by simpa using hmM)
-  have ha : 0 < a := by dsimp [a]; positivity
-  refine ⟨ρ, C, a, hρ, hC, ha, ?_⟩
-  intro t₀ t₁ φ hφ hφ0 t ht
-  have hstay' : ∀ s ∈ Icc t₀ t₁, ‖φ s - x_eq‖ < r :=
-    hstay t₀ t₁ φ hφ hφ0
   have hVupper (x : ℝⁿ) : V x ≤ M * ‖x - x_eq‖ ^ 2 := by
     calc
       V x ≤ ‖p‖ * ‖x - x_eq‖ ^ 2 := by
@@ -147,107 +218,46 @@ private theorem locallyExponentiallyStable_of_continuousLyapunovEquation
         gcongr
         dsimp [M]
         linarith
-  -- Step 3: the weighted energy `e^{ks} V(φ s)` is antitone on `[t₀, t₁]`.
+  let k : ℝ := 1 / (2 * M)
+  let C : ℝ := M / m
+  let a : ℝ := k / 2
+  have hk : 0 < k := by dsimp [k]; positivity
+  have hC : 1 ≤ C := (le_div_iff₀ hm).2 (by simpa using hmM)
+  have ha : 0 < a := by dsimp [a]; positivity
+  refine ⟨ρ, C, a, hρ, hC, ha, ?_⟩
+  intro t₀ t₁ φ hφ hφ0 t ht
+  have hstay' : ∀ s ∈ Icc t₀ t₁, ‖φ s - x_eq‖ < r :=
+    hstay t₀ t₁ φ hφ hφ0
+  -- Step 3: along the solution, `(V ∘ φ)' ≤ -½‖φ - x_eq‖² ≤ -k V(φ)`.
   have hVcurve : ∀ s ∈ Ioo t₀ t₁,
       HasDerivAt (V ∘ φ) (fderiv ℝ V (φ s) (f (φ s))) s := fun _ hs =>
     hasDerivAt_V_comp_traj
       ((centeredQuadraticForm_contDiff P x_eq).differentiable (by norm_num)) hφ hs
-  have hWanti : AntitoneOn
-      (fun s : ℝ ↦ Real.exp (k * s) * V (φ s)) (Icc t₀ t₁) := by
-    -- Not an instance of `antitoneOn_V_add_linear`: the weight `exp (k * s)` is multiplicative,
-    -- not additive, so the product rule rather than the sum rule drives the derivative.
-    apply antitoneOn_of_deriv_nonpos (convex_Icc t₀ t₁)
-    · exact
-        ((Real.continuous_exp.comp_continuousOn
-          (continuousOn_const.mul continuousOn_id)).mul
-          ((centeredQuadraticForm_contDiff P x_eq).continuous.comp_continuousOn
-            hφ.continuousOn))
-    · intro s hs
-      rw [interior_Icc] at hs
-      exact ((((hasDerivAt_id s).const_mul k).exp.mul (hVcurve s hs)).differentiableAt)
-        |>.differentiableWithinAt
-    · intro s hs
-      rw [interior_Icc] at hs
-      have hsIcc : s ∈ Icc t₀ t₁ := Ioo_subset_Icc_self hs
-      have hWderiv : HasDerivAt (fun q : ℝ ↦ Real.exp (k * q) * V (φ q))
-          (Real.exp (k * s) *
-            (k * V (φ s) + fderiv ℝ V (φ s) (f (φ s)))) s := by
-        convert (((hasDerivAt_id s).const_mul k).exp.mul (hVcurve s hs)) using 1
-        simp only [id_eq, Function.comp_apply]
-        ring
-      rw [hWderiv.deriv]
-      apply mul_nonpos_of_nonneg_of_nonpos (Real.exp_pos _).le
-      have hd := hdecay (φ s) (hstay' s hsIcc)
-      have hdV : fderiv ℝ V (φ s) (f (φ s)) ≤
-          -(1 / 2 : ℝ) * ‖φ s - x_eq‖ ^ 2 := by
-        simpa [V] using hd
-      have hv := hVupper (φ s)
-      have hkM : k * M = (1 / 2 : ℝ) := by
-        dsimp [k]
-        field_simp
-      calc
-        k * V (φ s) + fderiv ℝ V (φ s) (f (φ s))
-            ≤ k * (M * ‖φ s - x_eq‖ ^ 2) -
-                (1 / 2 : ℝ) * ‖φ s - x_eq‖ ^ 2 := by
-              exact add_le_add (mul_le_mul_of_nonneg_left hv hk.le)
-                (by simpa only [neg_mul] using hdV)
-        _ = 0 := by rw [← mul_assoc, hkM]; ring
-  -- Step 4: `V` decays along the solution, `V(φ t) ≤ e^{-k(t - t₀)} V(φ t₀)`.
-  have hweighted : Real.exp (k * t) * V (φ t) ≤ Real.exp (k * t₀) * V (φ t₀) := by
-    have hmono := hWanti (left_mem_Icc.mpr (ht.1.trans ht.2)) ht ht.1
-    simpa using hmono
-  have hVdecay : V (φ t) ≤ Real.exp (-k * (t - t₀)) * V (φ t₀) := by
-    have hid : Real.exp (-k * t) * (Real.exp (k * t) * V (φ t)) = V (φ t) := by
-      rw [← mul_assoc, ← Real.exp_add]
-      simp
+  have hVcurve_decay : ∀ s ∈ Ioo t₀ t₁,
+      k * (V ∘ φ) s + fderiv ℝ V (φ s) (f (φ s)) ≤ 0 := by
+    intro s hs
+    have hdV : fderiv ℝ V (φ s) (f (φ s)) ≤ -(1 / 2 : ℝ) * ‖φ s - x_eq‖ ^ 2 :=
+      hdecay (φ s) (hstay' s (Ioo_subset_Icc_self hs))
+    have hkM : k * M = (1 / 2 : ℝ) := by
+      dsimp [k]
+      field_simp
     calc
-      V (φ t) = Real.exp (-k * t) * (Real.exp (k * t) * V (φ t)) := hid.symm
-      _ ≤ Real.exp (-k * t) * (Real.exp (k * t₀) * V (φ t₀)) :=
-        mul_le_mul_of_nonneg_left hweighted (Real.exp_pos _).le
-      _ = Real.exp (-k * (t - t₀)) * V (φ t₀) := by
-        rw [← mul_assoc, ← Real.exp_add]
-        congr 2
-        ring
+      k * (V ∘ φ) s + fderiv ℝ V (φ s) (f (φ s))
+          ≤ k * (M * ‖φ s - x_eq‖ ^ 2) - (1 / 2 : ℝ) * ‖φ s - x_eq‖ ^ 2 :=
+            add_le_add (mul_le_mul_of_nonneg_left (hVupper (φ s)) hk.le)
+              (by simpa only [neg_mul] using hdV)
+      _ = 0 := by rw [← mul_assoc, hkM]; ring
+  -- Step 4: hence `V` decays exponentially, `V(φ t) ≤ e^{-k(t - t₀)} V(φ t₀)`.
+  have hVdecay : V (φ t) ≤ Real.exp (-k * (t - t₀)) * V (φ t₀) :=
+    le_exp_neg_mul_of_hasDerivAt
+      ((centeredQuadraticForm_contDiff P x_eq).continuous.comp_continuousOn hφ.continuousOn)
+      hVcurve hVcurve_decay t ht
   -- Step 5: sandwich `V` between `m‖·‖²` and `M‖·‖²` and take square roots.
-  have hlower := hm_lower (φ t - x_eq)
-  have hupper0 := hVupper (φ t₀)
-  have hsq_mul : m * ‖φ t - x_eq‖ ^ 2 ≤
-      Real.exp (-k * (t - t₀)) * (M * ‖φ t₀ - x_eq‖ ^ 2) := by
-    exact hlower.trans (hVdecay.trans
-      (mul_le_mul_of_nonneg_left hupper0 (Real.exp_pos _).le))
-  have hsq : ‖φ t - x_eq‖ ^ 2 ≤
-      C * Real.exp (-k * (t - t₀)) * ‖φ t₀ - x_eq‖ ^ 2 := by
-    calc
-      ‖φ t - x_eq‖ ^ 2 ≤
-          (Real.exp (-k * (t - t₀)) * (M * ‖φ t₀ - x_eq‖ ^ 2)) / m := by
-        apply (le_div_iff₀ hm).2
-        simpa [mul_comm] using hsq_mul
-      _ = C * Real.exp (-k * (t - t₀)) * ‖φ t₀ - x_eq‖ ^ 2 := by
-        dsimp [C]
-        field_simp
-  have hexp_sq : Real.exp (-k * (t - t₀)) = Real.exp (-a * (t - t₀)) ^ 2 := by
-    rw [pow_two, ← Real.exp_add]
-    congr 1
-    dsimp [a]
-    ring
-  let rhs : ℝ := C * Real.exp (-a * (t - t₀)) * ‖φ t₀ - x_eq‖
-  have hrhs : 0 ≤ rhs := by
-    dsimp [rhs]
-    positivity
-  have hsq_rhs : ‖φ t - x_eq‖ ^ 2 ≤ rhs ^ 2 := by
-    calc
-      ‖φ t - x_eq‖ ^ 2 ≤
-          C * Real.exp (-k * (t - t₀)) * ‖φ t₀ - x_eq‖ ^ 2 := hsq
-      _ = C * Real.exp (-a * (t - t₀)) ^ 2 * ‖φ t₀ - x_eq‖ ^ 2 := by rw [hexp_sq]
-      _ ≤ C ^ 2 * Real.exp (-a * (t - t₀)) ^ 2 * ‖φ t₀ - x_eq‖ ^ 2 := by
-        gcongr
-        -- `C ≤ C²` because `1 ≤ C`.
-        nlinarith [hC]
-      _ = rhs ^ 2 := by simp [rhs]; ring
-  have hnorm : ‖φ t - x_eq‖ ≤ rhs := by
-    -- Both sides are nonnegative, so `‖·‖² ≤ rhs²` gives `‖·‖ ≤ rhs`.
-    nlinarith [norm_nonneg (φ t - x_eq), hrhs]
-  simpa [rhs] using hnorm
+  have hsq_sandwich : m * ‖φ t - x_eq‖ ^ 2 ≤
+      Real.exp (-k * (t - t₀)) * (M * ‖φ t₀ - x_eq‖ ^ 2) :=
+    (hm_lower (φ t - x_eq)).trans (hVdecay.trans
+      (mul_le_mul_of_nonneg_left (hVupper (φ t₀)) (Real.exp_pos _).le))
+  exact le_div_mul_exp_mul_of_mul_sq_le hm hmM (norm_nonneg _) (norm_nonneg _) hsq_sandwich
 
 /-- **Stable branch of Lyapunov's indirect method.** If the Jacobian at a `C¹`
 equilibrium is Hurwitz, then the equilibrium is locally exponentially stable on every
