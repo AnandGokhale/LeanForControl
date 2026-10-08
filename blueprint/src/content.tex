@@ -689,6 +689,9 @@ sign and boundary conditions restricted to a fixed closed ball. The conclusion
 negates stability on all finite forward solution segments; the base point is
 not assumed to be an equilibrium. The terms ``geometric'' and ``boundary-form''
 describe this formulation.
+The topological boundary $\partial D$ is represented in Mathlib by
+\texttt{frontier D}; the certificate names its base-point condition
+\texttt{hmem\_boundary}.
 
 \inputleannode{def:isChetaevFunction}
 \inputleannode{thm:geometric-chetaev-unstable}

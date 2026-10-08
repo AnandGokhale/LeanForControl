@@ -181,9 +181,9 @@ ball, a quadratic upper bound
 Those hypotheses are enough for the quadratic certificate above.
 
 The completed `unstable_of_geometric_chetaev` packages a different set of hypotheses in
-`IsChetaevFunction`: an open set `D` with `x_eq` on its frontier, a positive radius, global
+`IsChetaevFunction`: an open set `D` with `x_eq` on its topological boundary, a positive radius, global
 `C¹` regularity of `V`, positivity and strictly positive Lie derivative on `D` inside the
-closed certificate ball, and vanishing of `V` on the relevant part of `frontier D`. Its
+closed certificate ball, and vanishing of `V` on the relevant part of that boundary. Its
 conclusion is `Unstable`, which quantifies over finite forward segments and therefore does not
 assume global trajectories. Neither the region nor the certificate is globally bounded,
 and the base point is not assumed to be an equilibrium.
@@ -197,13 +197,21 @@ describe this formulation, not distinct textbook theorem names.
 
 The proof is geometric rather than spectral:
 
-- the frontier hypothesis supplies positive seed points arbitrarily close to the base point;
+- boundary membership supplies positive seed points arbitrarily close to the base point;
 - a first-exit argument and boundary vanishing retain the cutoff solution in `D`;
 - the retained positive superlevel set in the closed ball is compact, so the strictly positive
   Lie derivative has a positive minimum and forces linear growth to the certificate sphere.
 
 The theorem reuses the smooth-cutoff continuation, finite-segment chain rule, and first-sphere
 machinery proved for the exponential criterion.
+
+The certificate field `hmem_boundary` and the boundary-hit helper names use control-theory
+boundary terminology. Mathlib's underlying operator remains `frontier D`, meaning
+`closure D \ interior D`, i.e. `∂D`. The geometric proof separates the compact superlevel's
+positive Lie-derivative bound, solution retention/nondecrease, and the final sphere-escape
+contradiction. Each helper has a docstring stating its assumptions and exact conclusion.
+`tests/Chetaev.lean` checks the criterion on constant rightward flow at a non-equilibrium
+base point, using a coordinate certificate on a positive half-space.
 
 ---
 
