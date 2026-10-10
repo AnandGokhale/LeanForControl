@@ -7,7 +7,8 @@ import Architect
 
 Restrict the state and input maps to the reachable subspace. Their matrices
 represent the controllable component in a supplied finite basis, as in the
-controllable decomposition of Hespanha, *Linear Systems Theory*.
+controllable decomposition in Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 13.2.
+These restriction maps give a coordinate-free formulation of its component.
 The matrix definitions take the state basis as an explicit argument.
 -/
 
@@ -19,7 +20,8 @@ variable {𝕜 : Type*} [Field 𝕜] {n m : ℕ}
 
 /-- The restriction of `A` to the reachable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, controllable decomposition. -/
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 13.2;
+coordinate-free construction of the controllable component. -/
 @[blueprint "def:reachable-state-map"
   (statement := /-- Let $\mathcal R(A,B)$ be the reachable subspace
     (\cref{def:reachableSubspace}). Its invariance under $A$ defines the
@@ -32,7 +34,8 @@ noncomputable def reachableStateMap
 
 /-- The input map `B` with values in the reachable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, controllable decomposition. -/
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 13.2;
+coordinate-free construction of the controllable component. -/
 @[blueprint "def:reachable-input-map"
   (statement := /-- Since $\operatorname{im}B\subseteq\mathcal R(A,B)$,
     the input map takes values in the reachable subspace:

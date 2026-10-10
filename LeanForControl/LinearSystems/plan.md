@@ -181,7 +181,10 @@ visible gap rather than an unstated assumption that this library is continuous-t
 | Block zero pattern of the decomposition | `kalman_block_matrix_zero_pattern` | `KalmanDecomposition/Decomposition.lean` | ✅ done |
 | Minimal realizations | — | — | planned, no directory settled (needs both — see open questions) |
 
-The component modules follow Hespanha's controllable and observable decompositions.
+The component modules correspond to Hespanha, *Linear Systems Theory* (2nd ed.),
+Theorems 13.2(2) and 16.2(2), respectively. Their restriction/quotient
+constructions express component properties without formalizing the full
+similarity-decomposition theorems.
 They retain separate definitions and theorems, following `CONTRIBUTING.md`.
 The four coordinate matrices take explicit bases indexed by `Fin r`; both component
 properties hold for every such basis. The observable definitions import only

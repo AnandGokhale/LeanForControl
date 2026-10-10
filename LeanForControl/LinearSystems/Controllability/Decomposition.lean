@@ -5,13 +5,14 @@ import LeanForControl.LinearSystems.Controllability.DefsDecomposition
 
 The state and input maps restricted to the reachable subspace give a
 controllable matrix pair. This is the controllable-component conclusion
-of Hespanha's controllable decomposition, expressed without choosing a
+of Hespanha's controllable decomposition (Theorem 13.2), without choosing a
 complement in the original state space.
 
 `IsControllable` uses finite input responses from the origin. The argument
 is algebraic over a field and does not require the state matrix to be invertible.
 
-Reference: Hespanha, *Linear Systems Theory*, controllable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 13.2(2).
+This proves the component conclusion in any supplied basis.
 -/
 
 namespace LinearSystems
@@ -69,7 +70,8 @@ private lemma reachableInputMatrix_mulVec_coordinates
 
 /-- The matrices of the controllable component form a controllable pair.
 
-Reference: Hespanha, *Linear Systems Theory*, controllable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 13.2(2).
+This proves the component conclusion in any supplied basis.
 The component conclusion holds in any supplied basis indexed by `Fin r`. -/
 @[blueprint "thm:reachable-matrices-controllable"
   (statement := /-- Let $A_c,B_c$ be the matrices of the restricted maps

@@ -29,7 +29,7 @@ The dual controllability Hautus lemma lives in
 `LinearSystems.Controllability.Hautus`, which imports this file and routes
 through the transpose rather than repeating the eigenvector argument.
 
-Reference: Hespanha, *Linear Systems Theory*, Hautus observability test.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.9 (PBH observability test).
 -/
 
 namespace LinearSystems

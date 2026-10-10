@@ -9,7 +9,8 @@ The state and output maps descend to the quotient by the unobservable
 subspace. This quotient-space construction corresponds to the observable
 component. The matrix definitions take the quotient basis as an explicit argument.
 
-Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 16.2;
+coordinate-free quotient construction corresponding to its observable component.
 -/
 
 namespace LinearSystems
@@ -20,7 +21,8 @@ variable {n p : ℕ}
 
 /-- The state map induced on the quotient by the unobservable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 16.2;
+coordinate-free quotient construction corresponding to its observable component.
 This is the quotient-space construction corresponding to the observable component. -/
 @[blueprint "def:observable-state-map"
   (statement := /-- The invariance of $\mathcal N(A,C)$
@@ -34,7 +36,8 @@ noncomputable def observableStateMap
 
 /-- The output map induced on the quotient by the unobservable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 16.2;
+coordinate-free quotient construction corresponding to its observable component.
 This is the quotient-space construction corresponding to the observable component. -/
 @[blueprint "def:observable-output-map"
   (statement := /-- Since $\mathcal N(A,C)\subseteq\ker C$

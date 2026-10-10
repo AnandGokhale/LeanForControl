@@ -10,7 +10,8 @@ construction corresponding to the observable component.
 The scalar field is `ℂ` because the upstream `unobservableSubspace` and
 its invariance theorem are currently defined over `ℂ`.
 
-Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 16.2(2).
+The quotient formulation proves the observable-component conclusion.
 -/
 
 namespace LinearSystems
@@ -76,7 +77,8 @@ private lemma observableOutputMatrix_mulVec_coordinates
 
 /-- The matrices of the observable component form an observable pair.
 
-Reference: Hespanha, *Linear Systems Theory*, observable decomposition.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 16.2(2).
+The quotient formulation proves the observable-component conclusion.
 The induced quotient pair is observable in any supplied basis indexed by `Fin r`. -/
 @[blueprint "thm:observable-matrices-observable"
   (statement := /-- Let $A_o,C_o$ be the matrices of the induced maps

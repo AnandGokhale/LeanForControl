@@ -176,7 +176,8 @@ theorem isObservable_iff_observabilityMatrix_rank_eq
 /-- Membership in the unobservable subspace means that every finite-horizon
 output vanishes.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace. -/
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
 @[blueprint "lem:mem-unobservableSubspace-iff"
   (statement := /-- A state $x$ belongs to $\mathcal N(A,C)$ if and only if
     $CA^k x=0$ for every $k=0,\ldots,n-1$. -/)]
@@ -190,7 +191,8 @@ lemma mem_unobservableSubspace_iff
 /-- The unobservable subspace is trivial exactly when the system is observable
 in the textbook sense `IsObservable`.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace. -/
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
 @[blueprint "thm:unobservable-eq-bot-iff-observable"
   (statement := /-- A finite-dimensional system $(A, C)$ is observable in the
     sense of \cref{def:isObservable} if and only if its unobservable subspace
@@ -246,7 +248,8 @@ unobservable state keeps it unobservable. The proof for the boundary case
 `k = n - 1` uses Cayley-Hamilton through
 `mulVec_aPowN_eq_zero_of_mem_unobservableSubspace`.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace. -/
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
 @[blueprint "lem:unobservableSubspace-invariant"
   (statement := /-- The unobservable subspace is closed under the action of
     $A$: for every $v \in \mathcal{N}(A, C)$, also $A\, v \in \mathcal{N}(A, C)$. -/)
@@ -273,7 +276,8 @@ lemma A_mulVec_mem_unobservableSubspace_of_mem
 /-- The unobservable subspace is exactly the kernel of the observability
 matrix acting by matrix-vector multiplication.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace. -/
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
 @[blueprint "thm:unobservableSubspace-eq-ker-observabilityMatrix"
   (statement := /-- The unobservable subspace is the kernel of the
     observability matrix:
@@ -297,7 +301,8 @@ theorem unobservableSubspace_eq_ker_observabilityMatrix
 /-- The dimension of the unobservable subspace plus the rank of the
 observability matrix is the state dimension.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence.
 This is the rank-nullity consequence of the observability-matrix kernel description. -/
 @[blueprint "thm:unobservableSubspace-finrank-add-rank"
   (statement := /-- The dimension of the unobservable subspace plus the rank
@@ -318,7 +323,8 @@ theorem finrank_unobservableSubspace_add_rank_observabilityMatrix
 
 /-- The unobservable subspace is contained in the output kernel.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence.
 This follows from the zero-time output condition. -/
 @[blueprint "lem:unobservableSubspace-le-ker-C"
   (statement := /-- The unobservable subspace is contained in the output
@@ -341,7 +347,8 @@ lemma unobservableSubspace_le_ker_C
 /-- Every `A`-invariant subspace contained in the output kernel is contained
 in the unobservable subspace.
 
-Reference: Hespanha, *Linear Systems Theory*, unobservable subspace.
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence.
 This is a derived invariant-subspace characterization. -/
 @[blueprint "thm:unobservableSubspace-greatest-invariant"
   (statement := /-- Every $A$-invariant subspace contained in $\ker C$ is
