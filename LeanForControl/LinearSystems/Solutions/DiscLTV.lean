@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
+import LeanForControl.LinearSystems.DefsSystem
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Tactic.Abel
 import Architect
@@ -256,5 +257,127 @@ theorem discVariationOfConstants_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ
   induction t, ht using Nat.le_induction with
   | base => rw [hz₁₀, hz₂₀]
   | succ t ht ih => rw [hz₁ t ht, hz₂ t ht, ih]
+
+/-! ## The named responses -/
+
+/-- The forced response starts at `x₀`. -/
+@[blueprint "lem:discForcedResponse-self"
+  (title := "The discrete forced response at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- The forced response (\cref{def:discForcedResponse}) takes the value $x_0$ at
+    $t = t_0$. -/)
+  (proof := /-- \cref{lem:discVariationOfConstants-self}. -/)]
+theorem discForcedResponse_self (A : ℕ → Matrix X X ℝ) (B : ℕ → Matrix X U ℝ)
+    (u : ℕ → U → ℝ) (t₀ : ℕ) (x₀ : X → ℝ) : discForcedResponse A B u t₀ x₀ t₀ = x₀ :=
+  discVariationOfConstants_self (B := B) (u := u) A t₀ x₀
+
+/-- The forced response satisfies the forced recursion forward from `t₀`. -/
+@[blueprint "lem:discForcedResponse-succ"
+  (title := "The discrete forced response solves the recursion")
+  (latexEnv := "lemma")
+  (statement := /-- For $t \ge t_0$ the forced response (\cref{def:discForcedResponse})
+    satisfies $x(t+1) = A(t)x(t) + B(t)u(t)$. -/)
+  (proof := /-- \cref{thm:discVariationOfConstants-succ}. -/)]
+theorem discForcedResponse_succ (A : ℕ → Matrix X X ℝ) (B : ℕ → Matrix X U ℝ)
+    (u : ℕ → U → ℝ) (x₀ : X → ℝ) {t₀ t : ℕ} (ht : t₀ ≤ t) :
+    discForcedResponse A B u t₀ x₀ (t + 1) =
+      A t *ᵥ discForcedResponse A B u t₀ x₀ t + B t *ᵥ u t :=
+  discVariationOfConstants_succ A ht x₀
+
+omit [Fintype U] in
+/-- The homogeneous response starts at `x₀`. -/
+@[blueprint "lem:discHomogeneousResponse-self"
+  (title := "The discrete homogeneous response at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- The homogeneous response (\cref{def:discHomogeneousResponse}) takes the value
+    $x_0$ at $t = t_0$. -/)
+  (proof := /-- $\Phi(t_0, t_0) = I$ (\cref{lem:discStateTransitionMatrix-self}). -/)]
+theorem discHomogeneousResponse_self (A : ℕ → Matrix X X ℝ) (t₀ : ℕ) (x₀ : X → ℝ) :
+    discHomogeneousResponse A t₀ x₀ t₀ = x₀ := by
+  simp [discHomogeneousResponse, discStateTransitionMatrix_self]
+
+omit [Fintype U] in
+/-- The homogeneous response satisfies the unforced recursion forward from `t₀`. -/
+@[blueprint "lem:discHomogeneousResponse-succ"
+  (title := "The discrete homogeneous response solves the unforced recursion")
+  (latexEnv := "lemma")
+  (statement := /-- For $t \ge t_0$ the homogeneous response
+    (\cref{def:discHomogeneousResponse}) satisfies $x(t+1) = A(t)x(t)$. -/)
+  (proof := /-- $\Phi(t+1, t_0) = A(t)\Phi(t, t_0)$
+    (\cref{lem:discStateTransitionMatrix-succ}). -/)]
+theorem discHomogeneousResponse_succ (A : ℕ → Matrix X X ℝ) (x₀ : X → ℝ) {t₀ t : ℕ}
+    (ht : t₀ ≤ t) :
+    discHomogeneousResponse A t₀ x₀ (t + 1) = A t *ᵥ discHomogeneousResponse A t₀ x₀ t := by
+  simp only [discHomogeneousResponse, discStateTransitionMatrix_succ A ht, Matrix.mulVec_mulVec]
+
+/-! ## The solution theory on the system object
+
+The theorems above are about matrix sequences.  Read on a `DiscreteLinearSystem`, they say that
+the named responses are exactly the trajectories of the system from a given initial state —
+which is the form in which the solution theory reaches the stability theory. -/
+
+namespace DiscreteLinearSystem
+
+variable {Y : Type*}
+
+/-- The forced response is a trajectory of the system on the forward ray. -/
+@[blueprint "thm:isTrajectoryOn-discForcedResponse"
+  (title := "The discrete forced response is a trajectory")
+  (statement := /-- For a discrete-time linear system $s$ and input $u$, the forced response
+    (\cref{def:discForcedResponse}) from $x_0$ at $t_0$ is a trajectory of $s$ under $u$ on
+    $[t_0, \infty)$ (\cref{def:discLinearSystem-isTrajectoryOn}). -/)
+  (proof := /-- \cref{lem:discForcedResponse-succ}, which is the trajectory condition on the
+    nose. -/)]
+theorem isTrajectoryOn_discForcedResponse (s : DiscreteLinearSystem X U Y ℝ) (u : ℕ → U → ℝ)
+    (t₀ : ℕ) (x₀ : X → ℝ) :
+    s.IsTrajectoryOn u (discForcedResponse s.A s.B u t₀ x₀) (Set.Ici t₀) :=
+  fun _ ht => discForcedResponse_succ s.A s.B u x₀ ht
+
+/-- Every trajectory of the system on the forward ray is its own forced response. -/
+@[blueprint "thm:eq-discForcedResponse-of-isTrajectoryOn"
+  (title := "Discrete trajectories are forced responses")
+  (statement := /-- If $x$ is a trajectory of $s$ under $u$ on $[t_0, \infty)$
+    (\cref{def:discLinearSystem-isTrajectoryOn}), then $x(t)$ is the forced response
+    (\cref{def:discForcedResponse}) from $x(t_0)$ at $t_0$, for every $t \ge t_0$. -/)
+  (proof := /-- Both satisfy the forced recursion from the same initial value, so they agree by
+    \cref{thm:discVariationOfConstants-unique}. -/)]
+theorem eq_discForcedResponse_of_isTrajectoryOn (s : DiscreteLinearSystem X U Y ℝ)
+    {u : ℕ → U → ℝ} {x : ℕ → X → ℝ} {t₀ : ℕ} (hx : s.IsTrajectoryOn u x (Set.Ici t₀))
+    {t : ℕ} (ht : t₀ ≤ t) :
+    x t = discForcedResponse s.A s.B u t₀ (x t₀) t :=
+  discVariationOfConstants_unique s.A (x t₀) rfl (discForcedResponse_self s.A s.B u t₀ (x t₀))
+    (fun t ht => hx t ht) (fun _ ht => discForcedResponse_succ s.A s.B u (x t₀) ht) t ht
+
+/-- The homogeneous response is a trajectory of the unforced system on the forward ray. -/
+@[blueprint "thm:isTrajectoryOn-discHomogeneousResponse"
+  (title := "The discrete homogeneous response is a trajectory")
+  (statement := /-- The homogeneous response (\cref{def:discHomogeneousResponse}) from $x_0$ at
+    $t_0$ is a trajectory of the unforced system on $[t_0, \infty)$
+    (\cref{def:discLinearSystem-isTrajectoryOn}). -/)
+  (proof := /-- \cref{lem:discHomogeneousResponse-succ}, after reducing the unforced state
+    equation by \cref{lem:discLinearSystem-vectorField-zero-input}. -/)]
+theorem isTrajectoryOn_discHomogeneousResponse (s : DiscreteLinearSystem X U Y ℝ) (t₀ : ℕ)
+    (x₀ : X → ℝ) :
+    s.IsTrajectoryOn 0 (discHomogeneousResponse s.A t₀ x₀) (Set.Ici t₀) := by
+  intro t ht
+  rw [vectorField_zero_input]
+  exact discHomogeneousResponse_succ s.A x₀ ht
+
+/-- Every trajectory of the unforced system on the forward ray is its own homogeneous
+response. -/
+@[blueprint "thm:eq-discHomogeneousResponse-of-isTrajectoryOn"
+  (title := "Discrete unforced trajectories are homogeneous responses")
+  (statement := /-- If $x$ is a trajectory of the unforced system on $[t_0, \infty)$
+    (\cref{def:discLinearSystem-isTrajectoryOn}), then $x(t) = \Phi(t, t_0)\,x(t_0)$ for every
+    $t \ge t_0$. -/)
+  (proof := /-- \cref{thm:discStateTransitionMatrix-mulVec-unique}, after reducing the unforced
+    state equation by \cref{lem:discLinearSystem-vectorField-zero-input}. -/)]
+theorem eq_discHomogeneousResponse_of_isTrajectoryOn (s : DiscreteLinearSystem X U Y ℝ)
+    {x : ℕ → X → ℝ} {t₀ : ℕ} (hx : s.IsTrajectoryOn 0 x (Set.Ici t₀)) {t : ℕ} (ht : t₀ ≤ t) :
+    x t = discHomogeneousResponse s.A t₀ (x t₀) t := by
+  rw [IsTrajectoryOn, vectorField_zero_input] at hx
+  exact discStateTransitionMatrix_mulVec_unique s.A (x t₀) rfl hx t ht
+
+end DiscreteLinearSystem
 
 end LinearSystems

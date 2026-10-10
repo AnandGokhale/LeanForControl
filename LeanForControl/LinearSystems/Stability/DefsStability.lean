@@ -10,7 +10,7 @@ The spectral conditions that characterize stability of a linear system, stated o
 abstract index type `X` rather than `Fin n`, matching the convention everything downstream of
 the `ContinuousLinearSystem` object follows.
 
-Only continuous-time conditions are here so far; the discrete-time counterpart (all
+The discrete-time Lyapunov equation is here too.  The discrete-time spectral condition (all
 eigenvalues inside the open unit disc) belongs in this file when it is needed.
 
 Both predicates are stated through eigenpairs of the complexification rather than through an
@@ -90,5 +90,27 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
   -/)]
 def ContinuousLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
   P * A + Aᵀ * P = -Q
+
+/-- `P` solves the **discrete-time Lyapunov equation** for `A` with forcing `Q`:
+`Aᵀ P A - P = -Q`.
+
+Along `x(k+1) = A x(k)` the quadratic form `V(x) = xᵀ P x` then changes by
+`V(A x) - V(x) = -xᵀ Q x`, the discrete counterpart of `V̇ = -xᵀ Q x`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8. -/
+@[blueprint "def:discreteLyapunovEquation"
+  (title := "Discrete Lyapunov equation")
+  (statement := /-- For real square matrices $A$, $P$ and $Q$, the matrix $P$ satisfies the
+    \emph{discrete-time Lyapunov equation} for $A$ with forcing $Q$ when
+    \[
+      A^{\mathsf T} P A - P = -Q.
+    \]
+    Along $x(k+1) = Ax(k)$ the quadratic form $V(x) = x^{\mathsf T}Px$ then changes by
+    $V(Ax) - V(x) = -x^{\mathsf T}Qx$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8.
+  -/)]
+def DiscreteLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
+  Aᵀ * P * A - P = -Q
 
 end LinearSystems

@@ -26,6 +26,7 @@ import LeanForControl.LinearSystems.Solutions.CtsLTI
 import LeanForControl.LinearSystems.Solutions.CtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
+import LeanForControl.LinearSystems.Solutions.DiscLTI
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
@@ -33,6 +34,7 @@ import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTI
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
 import LeanForControl.LinearSystems.Stability.DefsStability
+import LeanForControl.LinearSystems.Stability.Discrete.LyapunovLTI
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
@@ -45,11 +47,13 @@ import LeanForControl.ODEs.PicardLindelof
 import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.ClassKDecay
 import LeanForControl.Stability.DefsAutonomous
+import LeanForControl.Stability.DefsDiscrete
 import LeanForControl.Stability.DefsNonAutonomous
 import LeanForControl.Stability.KLCharacterization
 import LeanForControl.Stability.KLCharacterizationTools
 import LeanForControl.Stability.LaSalle
 import LeanForControl.Stability.LyapunovBounds
+import LeanForControl.Stability.LyapunovDiscrete
 import LeanForControl.Stability.LyapunovIndirect.Chetaev
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.Stability.LyapunovIndirect.Linearization

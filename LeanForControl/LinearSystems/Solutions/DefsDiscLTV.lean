@@ -1,5 +1,6 @@
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
+import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Data.Real.Basic
 import Architect
 
@@ -15,11 +16,16 @@ Like `DefsCtsLTV.lean`, this file is about a genuinely *time-varying* state matr
 
 * `discStateTransitionMatrix` — the discrete-time state transition matrix,
   `Φ(t, t₀) := A(t-1) A(t-2) ⋯ A(t₀+1) A(t₀)` for `t > t₀`, `Φ(t₀, t₀) := I`.
+* `discForcedResponse` — the discrete variation-of-constants formula
+  `x(t) = Φ(t, t₀) x₀ + Σ_{τ=t₀}^{t-1} Φ(t, τ+1) B(τ) u(τ)`.
+* `discHomogeneousResponse` — its unforced part, `x(t) = Φ(t, t₀) x₀`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3.
 -/
 
 namespace LinearSystems
+
+open Matrix
 
 variable {X : Type*} [Fintype X] [DecidableEq X]
 
@@ -47,5 +53,49 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, equation (5.1
 noncomputable def discStateTransitionMatrix (A : ℕ → Matrix X X ℝ) (t t₀ : ℕ) :
     Matrix X X ℝ :=
   ((List.range (t - t₀)).map (fun k => A (t - 1 - k))).prod
+
+variable {U : Type*} [Fintype U]
+
+/-- The *forced response* of `x(t+1) = A(t) x(t) + B(t) u(t)` from the state `x₀` at time `t₀`,
+given by the discrete variation-of-constants formula
+`x(t) = Φ(t, t₀) x₀ + Σ_{τ=t₀}^{t-1} Φ(t, τ+1) B(τ) u(τ)`.
+
+It solves the recursion forward from `t₀` only: for `t < t₀` the sum is empty and the value
+is `x₀`, which carries no meaning.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3. -/
+@[blueprint "def:discForcedResponse"
+  (title := "Forced response, discrete time")
+  (statement := /-- The \emph{forced response} of $x(t+1) = A(t)x(t) + B(t)u(t)$ from the state
+    $x_0$ at time $t_0$,
+    \[
+      x(t) = \Phi(t, t_0)\,x_0 + \sum_{\tau=t_0}^{t-1} \Phi(t, \tau+1)\,B(\tau)\,u(\tau),
+    \]
+    with $\Phi$ the discrete state transition matrix (\cref{def:discStateTransitionMatrix}).
+    It solves the recursion forward from $t_0$ only.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Section 5.3.
+  -/)]
+noncomputable def discForcedResponse (A : ℕ → Matrix X X ℝ) (B : ℕ → Matrix X U ℝ)
+    (u : ℕ → U → ℝ) (t₀ : ℕ) (x₀ : X → ℝ) : ℕ → X → ℝ :=
+  fun t => discStateTransitionMatrix A t t₀ *ᵥ x₀ +
+    ∑ τ ∈ Finset.Ico t₀ t, discStateTransitionMatrix A t (τ + 1) *ᵥ (B τ *ᵥ u τ)
+
+/-- The *homogeneous response* of `x(t+1) = A(t) x(t)` from the state `x₀` at time `t₀`,
+namely `x(t) = Φ(t, t₀) x₀`: the forced response with the input switched off, and the object
+stability is stated about.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3. -/
+@[blueprint "def:discHomogeneousResponse"
+  (title := "Homogeneous response, discrete time")
+  (statement := /-- The \emph{homogeneous response} of $x(t+1) = A(t)x(t)$ from the state $x_0$
+    at time $t_0$, $x(t) = \Phi(t, t_0)\,x_0$: the forced response
+    (\cref{def:discForcedResponse}) with the input switched off.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Section 5.3.
+  -/)]
+noncomputable def discHomogeneousResponse (A : ℕ → Matrix X X ℝ) (t₀ : ℕ) (x₀ : X → ℝ) :
+    ℕ → X → ℝ :=
+  fun t => discStateTransitionMatrix A t t₀ *ᵥ x₀
 
 end LinearSystems

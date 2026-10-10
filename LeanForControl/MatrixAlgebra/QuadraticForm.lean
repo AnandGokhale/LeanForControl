@@ -249,4 +249,83 @@ lemma quadraticForm_le_opNorm_mul_norm_sq
       ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖ ^ 2 :=
   (le_abs_self _).trans (abs_quadraticForm_le P x)
 
+/-! ## Quadratic forms on `X → ℝ`
+
+The forms above live on Euclidean space.  The linear-systems track uses `X → ℝ` with the sup
+norm instead, so the two-sided coercivity bound is restated there.  Only the norm is used, and
+the argument is the same: the form is continuous and positive on the compact unit sphere, so it
+has a positive minimum and a finite maximum there, and homogeneity of degree two transfers both
+to every `x`. -/
+
+section General
+
+variable {X : Type*} [Fintype X] [DecidableEq X]
+
+omit [DecidableEq X] in
+/-- A positive-definite matrix quadratic form on `X → ℝ` is comparable to the square of the
+(sup) norm: `c₁ ‖x‖² ≤ xᵀ P x ≤ c₂ ‖x‖²` with `0 < c₁ ≤ c₂`.
+
+Reference: coercivity of positive-definite quadratic forms in finite dimensions. -/
+@[blueprint "lem:exists-norm-sq-bounds-dotProduct-mulVec"
+  (title := "Two-sided norm bounds for a positive-definite quadratic form")
+  (latexEnv := "lemma")
+  (statement := /-- If $P$ is positive definite, there are $0 < c_1 \le c_2$ with
+    $c_1 \|x\|^{2} \le x^{\mathsf T} P x \le c_2 \|x\|^{2}$ for every $x \in \mathbb{R}^{X}$,
+    under the sup norm.
+
+    Reference: coercivity of positive-definite quadratic forms in finite dimensions. -/)
+  (proof := /-- The form is continuous and positive on the compact unit sphere, so it attains a
+    positive minimum $c_1$ and a maximum $c_2 \ge c_1$ there.  For $x \ne 0$, write
+    $x = \|x\|\,y$ with $\|y\| = 1$; homogeneity of degree two gives
+    $x^{\mathsf T}Px = \|x\|^{2}\, y^{\mathsf T}Py$.  If $X$ is empty every vector is $0$ and
+    any constants work. -/)]
+lemma exists_norm_sq_bounds_dotProduct_mulVec (P : Matrix X X ℝ) (hP : P.PosDef) :
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ c₁ ≤ c₂ ∧
+      ∀ x : X → ℝ, c₁ * ‖x‖ ^ 2 ≤ x ⬝ᵥ (P *ᵥ x) ∧ x ⬝ᵥ (P *ᵥ x) ≤ c₂ * ‖x‖ ^ 2 := by
+  classical
+  set q : (X → ℝ) → ℝ := fun x => x ⬝ᵥ (P *ᵥ x) with hq_def
+  -- Step 1. `q` is continuous, homogeneous of degree two, and positive away from `0`.
+  have hq_cont : Continuous q := continuous_id.dotProduct (continuous_const.matrix_mulVec
+    continuous_id)
+  have hq_smul : ∀ (c : ℝ) (x : X → ℝ), q (c • x) = c ^ 2 * q x := fun c x => by
+    simp only [hq_def, Matrix.mulVec_smul, smul_dotProduct, dotProduct_smul, smul_eq_mul]
+    ring
+  have hq_zero : q 0 = 0 := by simp [hq_def]
+  have hq_pos : ∀ x : X → ℝ, x ≠ 0 → 0 < q x := fun x hx => by
+    simpa [hq_def] using hP.dotProduct_mulVec_pos hx
+  rcases isEmpty_or_nonempty X with hX | ⟨⟨i⟩⟩
+  · -- Empty index type: every vector is `0`.
+    refine ⟨1, 1, one_pos, le_rfl, fun x => ?_⟩
+    rw [Subsingleton.elim x 0]
+    simp
+  -- Step 2. Minimum `c₁ > 0` and maximum `c₂` of `q` on the unit sphere.
+  set S : Set (X → ℝ) := sphere 0 1 with hS_def
+  have hS_compact : IsCompact S := isCompact_sphere 0 1
+  have hS_nonempty : S.Nonempty := ⟨Pi.single i 1, by simp [hS_def, Pi.norm_single]⟩
+  obtain ⟨u, hu_S, hu_min⟩ := hS_compact.exists_isMinOn hS_nonempty hq_cont.continuousOn
+  obtain ⟨w, hw_S, hw_max⟩ := hS_compact.exists_isMaxOn hS_nonempty hq_cont.continuousOn
+  have hu_ne : u ≠ 0 := by
+    rintro rfl
+    simp [hS_def] at hu_S
+  refine ⟨q u, q w, hq_pos u hu_ne, (show q u ≤ q w from hu_min hw_S), fun x => ?_⟩
+  -- Step 3. Rescale `x ≠ 0` to the sphere and use homogeneity.
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp [hq_def]
+  set y : X → ℝ := ‖x‖⁻¹ • x with hy_def
+  have hy_S : y ∈ S := by simp [hS_def, hy_def, norm_smul, hx]
+  have hx_eq : q x = ‖x‖ ^ 2 * q y := by
+    rw [← hq_smul, hy_def, smul_smul, mul_inv_cancel₀ (norm_ne_zero_iff.mpr hx), one_smul]
+  rw [show x ⬝ᵥ (P *ᵥ x) = q x from rfl, hx_eq]
+  constructor
+  · -- lower bound: `q u ≤ q y`
+    calc q u * ‖x‖ ^ 2 = ‖x‖ ^ 2 * q u := mul_comm _ _
+      _ ≤ ‖x‖ ^ 2 * q y :=
+        mul_le_mul_of_nonneg_left (show q u ≤ q y from hu_min hy_S) (sq_nonneg _)
+  · -- upper bound: `q y ≤ q w`
+    calc ‖x‖ ^ 2 * q y ≤ ‖x‖ ^ 2 * q w :=
+          mul_le_mul_of_nonneg_left (show q y ≤ q w from hw_max hy_S) (sq_nonneg _)
+      _ = q w * ‖x‖ ^ 2 := mul_comm _ _
+
+end General
+
 end MatrixAlgebra

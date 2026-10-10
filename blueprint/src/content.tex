@@ -186,6 +186,8 @@ it: an element of spectral radius below one has a contractive power.
 
 \inputleannode{def:continuousLyapunovEquation}
 
+\inputleannode{def:discreteLyapunovEquation}
+
 \inputleannode{def:quadraticForm}
 
 \inputleannode{thm:hurwitz-lyapunov-equation}
@@ -340,6 +342,61 @@ genuinely requires $\tau \le s \le t$ instead of holding in any order.
 \inputleannode{thm:discVariationOfConstants-succ}
 
 \inputleannode{thm:discVariationOfConstants-unique}
+
+\subsection{The named responses and the system object}
+
+The variation-of-constants formula and its unforced part get names, and are then read on a
+\texttt{DiscreteLinearSystem}: they are exactly its trajectories from a given initial state. A
+discrete response runs forward only, so it is a trajectory on $[t_0, \infty)$ rather than for
+all time as in continuous time.
+
+\inputleannode{def:discForcedResponse}
+
+\inputleannode{def:discHomogeneousResponse}
+
+\inputleannode{lem:discForcedResponse-self}
+
+\inputleannode{lem:discForcedResponse-succ}
+
+\inputleannode{lem:discHomogeneousResponse-self}
+
+\inputleannode{lem:discHomogeneousResponse-succ}
+
+\inputleannode{thm:isTrajectoryOn-discForcedResponse}
+
+\inputleannode{thm:eq-discForcedResponse-of-isTrajectoryOn}
+
+\inputleannode{thm:isTrajectoryOn-discHomogeneousResponse}
+
+\inputleannode{thm:eq-discHomogeneousResponse-of-isTrajectoryOn}
+
+\subsection{The LTI case: matrix powers}
+
+For a constant state matrix the ordered product is a matrix power, and the unforced system is
+the autonomous map $x \mapsto Ax$, whose trajectories are its iterates. That is the bridge to the
+autonomous discrete-time stability notions, which are stated in terms of iterates.
+
+\inputleannode{thm:discStateTransitionMatrix-const}
+
+\inputleannode{lem:discHomogeneousResponse-timeInvariant}
+
+\inputleannode{lem:iterate-mulVec}
+
+\inputleannode{lem:discLinearSystem-timeInvariant-vectorField-zero}
+
+\inputleannode{thm:discLinearSystem-timeInvariant-eq-pow-mulVec}
+
+\subsection{Lyapunov stability of discrete LTI systems}
+
+A positive-definite solution of the discrete Lyapunov equation makes $V(x) = x^{\mathsf T}Px$ a
+quadratic Lyapunov function, and the general discrete-time direct method
+(\cref{thm:globallyExponentiallyStableDT-of-lyapunov}) does the rest.
+
+\inputleannode{lem:exists-norm-sq-bounds-dotProduct-mulVec}
+
+\inputleannode{lem:discreteLyapunovEquation-dotProduct-mulVec-sub}
+
+\inputleannode{thm:globallyExponentiallyStableDT-of-discreteLyapunovEquation}
 
 \subsection{The LTI case: the matrix exponential}
 
@@ -1039,6 +1096,75 @@ nonresonance condition on the spectrum --- which is what the lemmas below supply
 \inputleannode{lem:toBilin-left-transpose-mul}
 
 \inputleannode{lem:toBilin-symm-real}
+
+\chapter{Discrete-time systems}
+
+An autonomous discrete-time system $x_{k+1} = f(x_k)$, $k \in \mathbb{N}$, has exactly one
+trajectory from each initial state, the sequence of iterates $x_k = f^{k}(x_0)$, so its stability
+notions quantify over initial states rather than over solutions. They follow Jungers and van de
+Wouw, \emph{Discrete-time nonlinear control systems}, Encyclopedia of Systems and Control
+Engineering (2026), Definition 2, with a general equilibrium $x_{\mathrm{eq}}$ in place of the
+origin. The state space is only assumed normed: there are no derivatives in discrete time, which
+is also what lets the linear track instantiate it at $X \to \mathbb{R}$.
+
+\section{Stability predicates}
+
+\inputleannode{def:lyapunovStableDT}
+
+\inputleannode{def:unstableDT}
+
+\inputleannode{def:locallyAttractiveDT}
+
+\inputleannode{def:localAsymptoticStableDT}
+
+\inputleannode{def:locallyExponentiallyStableDT}
+
+\section{Global versions and ultimate boundedness}
+
+Remark 2 of the reference obtains the global notions by taking $\delta = +\infty$; Definition 3
+adds ultimate boundedness, a property of the system rather than of an equilibrium.
+
+\inputleannode{def:globalAsymptoticStableDT}
+
+\inputleannode{def:globallyExponentiallyStableDT}
+
+\inputleannode{def:locallyUltimatelyBoundedDT}
+
+\inputleannode{def:globallyUltimatelyBoundedDT}
+
+\section{Basic consequences}
+
+\inputleannode{lem:lyapunovStableDT-isFixedPt}
+
+\inputleannode{lem:localAsymptoticStableDT-of-exponentiallyStable}
+
+\inputleannode{lem:globalAsymptoticStableDT-of-exponentiallyStable}
+
+\inputleannode{lem:locallyExponentiallyStableDT-of-global}
+
+\inputleannode{lem:localAsymptoticStableDT-of-global}
+
+\section{Lyapunov's direct method}
+
+Theorem 2 of the reference lists Lyapunov conditions for each notion, in terms of
+$\Delta V(x) = V(f(x)) - V(x)$. The rows proved so far follow. The local rows need $f$ continuous
+at the equilibrium, which the reference does not state: in discrete time a trajectory can jump
+out of a ball in one step without crossing its boundary, and nothing in the decrease of $V$
+prevents that.
+
+\inputleannode{thm:lyapunovStableDT-of-lyapunov}
+
+\inputleannode{thm:locallyExponentiallyStableDT-of-lyapunov}
+
+\inputleannode{thm:globallyExponentiallyStableDT-of-lyapunov}
+
+Rows 2 and 3, asymptotic stability, need more than the bookkeeping above: $\Delta V < 0$ gives no
+rate, so the proofs pass to a limit point of the trajectory and use continuity of $f$ there,
+which is why both assume $f$ continuous on $\mathcal{D}$.
+
+\inputleannode{thm:localAsymptoticStableDT-of-lyapunov}
+
+\inputleannode{thm:globalAsymptoticStableDT-of-lyapunov}
 
 \chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
