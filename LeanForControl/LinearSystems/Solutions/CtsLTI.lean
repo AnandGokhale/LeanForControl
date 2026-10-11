@@ -55,11 +55,8 @@ theorem peanoBakerTerm_const (k : ℕ) (t t₀ : ℝ) :
     simp_rw [ih, Algebra.mul_smul_comm, ← pow_succ']
     rw [intervalIntegral.integral_smul_const]
     congr 1
-    have hpow_integral : (∫ s in t₀..t, (s - t₀) ^ k) = (t - t₀) ^ (k + 1) / (k + 1) := by
-      rw [intervalIntegral.integral_comp_sub_right (fun x : ℝ => x ^ k) t₀]
-      simp [integral_pow]
     have hk_fac_ne : ((k)! : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero k)
-    simp_rw [div_eq_inv_mul, intervalIntegral.integral_const_mul, hpow_integral,
+    simp_rw [div_eq_inv_mul, intervalIntegral.integral_const_mul, integral_sub_pow,
       Nat.factorial_succ]
     push_cast
     field_simp

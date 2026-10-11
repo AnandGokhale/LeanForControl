@@ -143,7 +143,7 @@ open Matrix
 /-- A `C¹` equilibrium is forward unstable when its Jacobian has a nonzero
 complex eigenvector whose eigenvalue has positive real part.
 
-The spectral hypothesis is converted to an axiom-free real quadratic Chetaev
+The spectral hypothesis is converted to a real quadratic Chetaev
 certificate, and the nonlinear first-order remainder is absorbed locally.
 
 Reference: Khalil, *Nonlinear Systems* (Lyapunov's indirect method).

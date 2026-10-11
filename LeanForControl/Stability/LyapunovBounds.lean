@@ -19,10 +19,14 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
 ## Main result
 
-**Class K sandwich bounds** (`LyapunovClassKBounds`): Let `V : ℝⁿ → ℝ` be continuous on
-`B(0, r)` with
-`V(0) = 0` and `V(x) > 0` for `x ≠ 0`. Then there exist class K functions `α₁, α₂` on
-`[0, r]` such that `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `‖x‖ ≤ r`.
+**Class K sandwich bounds** (`LyapunovClassKBounds`): Let `V : ℝⁿ → ℝ` be continuous on the
+closed ball `closedBall 0 r`, with `V(0) = 0` and `V(x) > 0` for every nonzero `x` in that ball.
+Then there exist class K functions `α₁, α₂` on `[0, r)` (i.e. `ClassK r b₁`, `ClassK r b₂`) such
+that `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ < r`.
+
+The intermediate comparisons `α₁ ≤ ψ` and `φ ≤ α₂` (steps 4–5 below) hold on the closed
+interval `[0, r]`; the final bound is stated on the open ball because `α₁, α₂` are class K only
+on `[0, r)`.
 
 ## Proof sketch
 
@@ -259,8 +263,10 @@ We apply the smoothing results from `LeanForControl.Analysis.MonotoneFunctions` 
 (merely monotone) comparison functions `ψ` and `φ` into full `ClassK` structures.  The final
 bounds follow by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
 
-/-- There exists a class K function `α₁` on `[0, r]` with `α₁(s) ≤ ψ(s)`.
-    Combined with `V_ge_psi`, this gives `α₁(‖x‖) ≤ V(x)`. -/
+/-- There exists a class K function `α₁ : ClassK r b₁` (class K on `[0, r)`) with
+    `α₁(s) ≤ ψ(s)` for every `s ∈ [0, r]`. The comparison includes the endpoint `s = r`, where
+    `α₁.toFun` is still defined although it lies outside the class-K domain.
+    Combined with `V_ge_psi`, this gives `α₁(‖x‖) ≤ V(x)` for `‖x‖ ≤ r`. -/
 private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
     (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
@@ -279,8 +285,10 @@ private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
     with ⟨f, b₁, hb₁_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
   exact ⟨b₁, ClassK.of_strictMono hr hb₁_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
 
-/-- There exists a class K function `α₂` on `[0, r]` with `φ(s) ≤ α₂(s)`.
-    Combined with `V_le_phi`, this gives `V(x) ≤ α₂(‖x‖)`. -/
+/-- There exists a class K function `α₂ : ClassK r b₂` (class K on `[0, r)`) with
+    `φ(s) ≤ α₂(s)` for every `s ∈ [0, r]`. The comparison includes the endpoint `s = r`, where
+    `α₂.toFun` is still defined although it lies outside the class-K domain.
+    Combined with `V_le_phi`, this gives `V(x) ≤ α₂(‖x‖)` for `‖x‖ ≤ r`. -/
 private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) :
     ∃ (b₂ : ℝ) (α₂ : ClassK r b₂), ∀ s, 0 ≤ s → s ≤ r → phi_fn V s ≤ α₂.toFun s := by
@@ -297,16 +305,16 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 
 -- ─── 7. Main Theorem ──────────────────────────────────────────────────────────
 
-/-- **Class K sandwich bounds**: For any continuous positive-definite `V` on `B(0, r)`,
-    there exist class K functions `α₁`, `α₂` such that
+/-- **Class K sandwich bounds**: For any `V` continuous and positive definite on the closed
+    ball `closedBall 0 r`, there exist class K functions `α₁`, `α₂` on `[0, r)` such that
 
-      `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ ≤ r`. 
-      
-      Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
-      Differences:
-      - The bound holds on the open ball `‖x‖ < r`, with `α₁, α₂` class `K` on `[0, r)`; Khalil
-        states it on `[0, r]`.
-      - The radially unbounded `K∞` case is not derived here. -/
+      `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ < r`.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
+    Differences:
+    - The bound holds on the open ball `‖x‖ < r`, with `α₁, α₂` class `K` on `[0, r)`; Khalil
+      states it on `[0, r]`.
+    - The radially unbounded `K∞` case is not derived here. -/
 @[blueprint "thm:lyapunov-class-K-bounds"
   (title := "Class $\\mathcal{K}$ sandwich bounds")
   (statement := /-- Let $V : \mathbb{R}^{n} \to \mathbb{R}$ be continuous on $\overline{B}(0,r)$

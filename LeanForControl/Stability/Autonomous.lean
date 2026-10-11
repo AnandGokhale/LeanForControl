@@ -29,11 +29,20 @@ Lyapunov stability theorems for autonomous ODEs `ẋ = f(x)` on `ℝⁿ`.
 
 The proofs follow the classical Lyapunov stability arguments (Khalil, *Nonlinear Systems*,
 3rd ed.):
-1. **Lyapunov stability**: first-exit-time argument using monotonicity of `V ∘ φ` on `[0, T*]`
-   and a minimum-on-sphere lower bound.
-2. **GAS**: monotone convergence `V(φ t) → L`, then `L = 0` via a compact-sublevel-set
-   linear-bound contradiction, then `φ t → x_eq` via the EVT minimum on `{V ≥ γ}`.
-3. **LAS**: same as GAS but restricted to a compact sublevel set `{V ≤ c₀} ⊆ D`.
+1. **Lyapunov stability** (`lyapunov_stable`): `V` has a positive minimum `m` on a small sphere
+   about `x_eq` inside `D`, and `V < m` near `x_eq`. A solution that reached the sphere would,
+   at its first hit (`exists_first_sphere_hit`), have `V ≥ m`, while monotonicity of `V ∘ φ` up
+   to that time gives `V < m`.
+2. **Uniform entry time** (`time_outside_ball_le`): on the compact set
+   `{V ≤ M} ∩ {δ ≤ ‖x - x_eq‖}` the Lie derivative is at most `-γ < 0`, so `V (φ t) + γ t` is
+   antitone there and a solution starting in `{V ≤ M}` can stay outside the `δ`-ball for at
+   most time `M / γ`.
+3. **GAS** (`lyapunov_asymptotic_stable`): for each `ε`, stability gives a radius `δ`; by (2)
+   with `M = V (φ t₀)` the solution enters the `δ`-ball by a fixed time, and stability applied
+   *at that entry time* keeps it in the `ε`-ball afterwards (`norm_sub_lt_of_enters_ball`).
+4. **LAS** (`lyapunov_local_asymptotic_stable`): as GAS, with `M = c₀` for a compact sublevel
+   set `{V ≤ c₀} ⊆ D`; starting close enough to `x_eq` gives `V (φ t₀) < c₀`, and
+   `sublevel_set_invariant` keeps the solution inside `D`.
 -/
 
 /-! ## Infrastructure -/
@@ -47,6 +56,17 @@ private lemma sphere_nonempty
   rw [Metric.mem_sphere, dist_eq_norm]
   simp [PiLp.norm_single, abs_of_pos hε]
 
+/-- Proof plumbing: continuity of `V` at the equilibrium, where `V` vanishes. For every level
+`c > 0` there is a radius `δ > 0` such that `V x < c` whenever `‖x - x_eq‖ < δ`. -/
+private lemma exists_radius_V_lt
+    {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hcont : Continuous V) (hzero : V x_eq = 0)
+    {c : ℝ} (hc : 0 < c) :
+    ∃ δ > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < δ → V x < c := by
+  obtain ⟨δ, hδ_pos, hδ⟩ := Metric.continuousAt_iff.mp hcont.continuousAt c hc
+  refine ⟨δ, hδ_pos, fun x hx => ?_⟩
+  have hnear : dist (V x) (V x_eq) < c := hδ (by rwa [dist_eq_norm])
+  rw [Real.dist_eq, hzero, sub_zero] at hnear
+  exact (abs_lt.mp hnear).2
 
 /-! ## Chain rule for V along trajectories -/
 
@@ -326,14 +346,15 @@ open Set in
     `x_eq` is stable with respect to every finite forward solution segment.
 
 Proof sketch:
-1. `D` open + `x_eq ∈ D` → `closedBall x_eq ε₀ ⊆ D` for some `ε₀ > 0`.
-2. `m = min V` on `sphere x_eq ε' > 0` (compact sphere, `V > 0` away from `x_eq`).
-3. Find `δ` with `V(y) < m` for `‖y − x_eq‖ < δ` (continuity at `x_eq`, `V(x_eq) = 0`).
-4. If `‖φ t₀ − x_eq‖ < δ` and `‖φ t* − x_eq‖ ≥ ε` for some `t*`, let `T* = sInf Q`
-   where `Q = {t ∈ [t₀, t*] | ε' ≤ ‖φ t − x_eq‖}`.
-5. `V_nonincreasing_on` on `[t₀, T*]` gives `V(φ T*) ≤ V(φ t₀) < m ≤ V(φ T*)`. Contradiction.
-
-The first-exit argument runs at the segment's own left endpoint `t₀`.
+1. `D` open + `x_eq ∈ D` → `closedBall x_eq ε₀ ⊆ D` for some `ε₀ > 0`; given `ε`, work at the
+   radius `ε' = min ε ε₀`, so `closedBall x_eq ε' ⊆ D`.
+2. `m = min V` on `sphere x_eq ε'` is `> 0` (compact sphere, `V > 0` away from `x_eq`).
+3. Continuity at `x_eq` (`V(x_eq) = 0`) gives `δ₀` with `V(y) < m` for `‖y − x_eq‖ < δ₀`; take
+   `δ = min δ₀ ε'`, so a segment starting within `δ` has `V(φ t₀) < m` and starts inside the
+   `ε'`-ball.
+4. If `‖φ t − x_eq‖ ≥ ε ≥ ε'` for some `t`, `exists_first_sphere_hit` gives a first time `τ`
+   with `‖φ τ − x_eq‖ = ε'`, the solution staying in `closedBall x_eq ε' ⊆ D` on `[t₀, τ]`.
+5. `V_nonincreasing_on` on `[t₀, τ]` gives `V(φ τ) ≤ V(φ t₀) < m ≤ V(φ τ)`. Contradiction.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.1, first conclusion. -/
 @[blueprint "thm:lyapunov-stable"
@@ -355,6 +376,7 @@ theorem lyapunov_stable
     {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
     (hV : IsLocalLyapunovFunction f V x_eq D) :
     LyapunovStable f x_eq := by
+  -- Step 1: choose `ε₀` so that the closed `ε₀`-ball lies in `D`.
   obtain ⟨r, hr_pos, hr_ball⟩ := Metric.isOpen_iff.mp hV.hD_open x_eq hV.hD_mem
   set ε₀ := r / 2
   have hε₀_pos : 0 < ε₀ := by dsimp [ε₀]; linarith
@@ -372,29 +394,25 @@ theorem lyapunov_stable
     (Metric.closedBall_subset_closedBall (min_le_right _ _)).trans hcBall_sub_D
   have hsphere'_sub_D : Metric.sphere x_eq ε' ⊆ D :=
     Metric.sphere_subset_closedBall.trans hcBall'_sub_D
+  -- Step 2: `m` is the minimum of `V` on the `ε'`-sphere, and it is positive.
   obtain ⟨x_min, hx_min_mem, hx_min_le⟩ :=
     (isCompact_sphere x_eq ε').exists_isMinOn
       (sphere_nonempty x_eq hn hε'_pos) hV.hcont.continuousOn
   set m := V x_min
   have hm_pos : 0 < m := by
     apply hV.hpos x_min (hsphere'_sub_D hx_min_mem)
-    intro heq
-    have hx := hx_min_mem
-    rw [heq, Metric.mem_sphere, dist_self] at hx
-    exact (ne_of_gt hε'_pos) hx.symm
-  have hV_cont_at : ContinuousAt V x_eq := hV.hcont.continuousAt
-  rw [Metric.continuousAt_iff] at hV_cont_at
-  obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := hV_cont_at m hm_pos
+    intro hx_min_eq
+    have hx_min_dist := hx_min_mem
+    rw [hx_min_eq, Metric.mem_sphere, dist_self] at hx_min_dist
+    exact (ne_of_gt hε'_pos) hx_min_dist.symm
+  -- Step 3: `δ` from continuity of `V` at `x_eq`: starting within `δ` forces `V (φ t₀) < m`.
+  obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := exists_radius_V_lt hV.hcont hV.hzero hm_pos
   set δ := min δ₀ ε'
   refine ⟨δ, lt_min hδ₀_pos hε'_pos, ?_⟩
   intro t₀ t₁ φ hφ hφ0 t ht
   have hφ0ε' : ‖φ t₀ - x_eq‖ < ε' := hφ0.trans_le (min_le_right _ _)
-  have hV0_lt_m : V (φ t₀) < m := by
-    have hnear : dist (V (φ t₀)) (V x_eq) < m := hδ₀ (by
-      rw [dist_eq_norm]
-      exact hφ0.trans_le (min_le_left _ _))
-    simp only [Real.dist_eq, hV.hzero, sub_zero] at hnear
-    exact (abs_lt.mp hnear).2
+  have hV0_lt_m : V (φ t₀) < m := hδ₀ (φ t₀) (hφ0.trans_le (min_le_left _ _))
+  -- Step 4: suppose the solution reaches distance `ε`; then it hits the `ε'`-sphere.
   by_contra hnot
   push Not at hnot
   have hge_ε' : ε' ≤ ‖φ t - x_eq‖ := hε'_le_ε.trans hnot
@@ -404,7 +422,8 @@ theorem lyapunov_stable
       hφ0ε' ⟨ht.1, le_rfl⟩ hge_ε'
   have hstay : ∀ s ∈ Icc t₀ τ, φ s ∈ D := fun s hs =>
     hcBall'_sub_D (by rw [Metric.mem_closedBall, dist_eq_norm]; exact hτ_stay s hs)
-  -- `V` cannot have decreased to `φ τ` on the sphere, where it is at least `m > V (φ t₀)`.
+  -- Step 5: contradiction. `V` cannot have decreased to `φ τ` on the sphere, where it is at
+  -- least `m > V (φ t₀)`.
   have hVT_le : V (φ τ) ≤ V (φ t₀) :=
     V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right (hτ_mem.2.trans ht.2)))
       hτ_mem.1 hstay
@@ -516,6 +535,7 @@ lemma time_outside_ball_le
     ∃ τ ≥ 0, ∀ (t₀ t₁ : ℝ) (φ : ℝ → ℝⁿ), IsTrajectoryOn φ f t₀ t₁ → t₀ ≤ t₁ →
       V (φ t₀) ≤ M → (∀ t ∈ Icc t₀ t₁, φ t ∈ D) →
       (∀ t ∈ Icc t₀ t₁, δ ≤ ‖φ t - x_eq‖) → t₁ - t₀ ≤ τ := by
+  -- Step 1: `K = {V ≤ M} ∩ {δ ≤ ‖x - x_eq‖}` is compact, lies in `D`, and avoids `x_eq`.
   have hout_closed : IsClosed {x : ℝⁿ | δ ≤ ‖x - x_eq‖} :=
     isClosed_le continuous_const (continuous_norm.comp (continuous_id.sub continuous_const))
   set K : Set ℝⁿ := SublevelSet V M ∩ {x : ℝⁿ | δ ≤ ‖x - x_eq‖} with hK_def
@@ -524,32 +544,37 @@ lemma time_outside_ball_le
   have hK_sub_D : ∀ x ∈ K, x ∈ D := fun x hx => hM_sub hx.1
   have hK_ne_eq : ∀ x ∈ K, x ≠ x_eq := by
     intro x hx hxeq
-    have h2 : δ ≤ ‖x - x_eq‖ := hx.2
-    rw [hxeq, sub_self, norm_zero] at h2
+    have hfar : δ ≤ ‖x - x_eq‖ := hx.2
+    rw [hxeq, sub_self, norm_zero] at hfar
     linarith
   rcases K.eq_empty_or_nonempty with hKempty | hKne
+  -- Case `K = ∅`: no segment can start in `K`, so the claim is vacuous (take `τ = 0`).
   · refine ⟨0, le_rfl, fun t₀ t₁ φ _ hle hM _ hout => ?_⟩
     have hmem : φ t₀ ∈ K := hmem_K (φ t₀) hM (hout t₀ ⟨le_rfl, hle⟩)
     rw [hKempty] at hmem
     simp at hmem
+  -- Case `K ≠ ∅`: the elapsed time is at most `M / γ`.
   · have hM_pos : 0 < M := by
       obtain ⟨x, hx⟩ := hKne
       exact lt_of_lt_of_le (hV.hpos x (hK_sub_D x hx) (hK_ne_eq x hx)) hx.1
+    -- Step 2: the Lie derivative attains its maximum `-γ` on `K`, and `γ > 0`.
     obtain ⟨x_max, hx_max_mem, hx_max⟩ :=
       hK_compact.exists_isMaxOn hKne (lie_deriv_continuous hV_c1 hf_cont).continuousOn
     set γ := -(fderiv ℝ V x_max (f x_max)) with hγ_def
     have hγ_pos : 0 < γ := by
-      have h := hLie_neg x_max (hK_sub_D x_max hx_max_mem) (hK_ne_eq x_max hx_max_mem)
+      have hLie_x_max :=
+        hLie_neg x_max (hK_sub_D x_max hx_max_mem) (hK_ne_eq x_max hx_max_mem)
       rw [hγ_def]; linarith
     refine ⟨M / γ, le_of_lt (div_pos hM_pos hγ_pos), ?_⟩
     intro t₀ t₁ φ hφ hle hMle hstayD hout
+    -- Step 3: `V ≤ M` along the segment, so the segment stays in `K`.
     have hVle : ∀ t ∈ Icc t₀ t₁, V (φ t) ≤ M := by
       intro t ht
       refine le_trans ?_ hMle
       exact V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right ht.2)) ht.1
         (fun r hr => hstayD r ⟨hr.1, hr.2.trans ht.2⟩)
-    -- Outside the ball the Lie derivative is at most `-γ`, so `V (φ t) + γ t` is antitone.
-    have hW_anti : AntitoneOn (fun t => V (φ t) + γ * t) (Icc t₀ t₁) :=
+    -- Step 4: in `K` the Lie derivative is at most `-γ`, so `V (φ t) + γ t` is antitone.
+    have hVγ_anti : AntitoneOn (fun t => V (φ t) + γ * t) (Icc t₀ t₁) :=
       antitoneOn_V_add_linear (hV_c1.differentiable (by norm_num)) hV.hcont
         (convex_Icc t₀ t₁) hφ fun t ht => by
           rw [interior_Icc] at ht
@@ -558,18 +583,46 @@ lemma time_outside_ball_le
             hx_max (hmem_K (φ t) (hVle t ht') (hout t ht'))
           rw [hγ_def]
           linarith
-    have hstep : V (φ t₁) + γ * t₁ ≤ V (φ t₀) + γ * t₀ :=
-      hW_anti (left_mem_Icc.mpr hle) (right_mem_Icc.mpr hle) hle
+    -- Step 5: `V ≥ 0`, so `γ (t₁ - t₀) ≤ V (φ t₀) - V (φ t₁) ≤ M`.
+    have hVγ_endpoints : V (φ t₁) + γ * t₁ ≤ V (φ t₀) + γ * t₀ :=
+      hVγ_anti (left_mem_Icc.mpr hle) (right_mem_Icc.mpr hle) hle
     have hV1_nonneg : 0 ≤ V (φ t₁) := by
       rcases eq_or_ne (φ t₁) x_eq with h | h
       · rw [h, hV.hzero]
       · exact (hV.hpos _ (hstayD t₁ (right_mem_Icc.mpr hle)) h).le
     have hbound : γ * (t₁ - t₀) ≤ M := by
-      have hexp : γ * (t₁ - t₀) = γ * t₁ - γ * t₀ := by ring
-      rw [hexp]
+      have hmul_sub : γ * (t₁ - t₀) = γ * t₁ - γ * t₀ := by ring
+      rw [hmul_sub]
       linarith [hVle t₀ ⟨le_rfl, hle⟩]
     rw [le_div_iff₀ hγ_pos]
     linarith [hbound, mul_comm γ (t₁ - t₀)]
+
+open Set in
+/-- **Entry, then confinement.** The common final step of the asymptotic stability theorems.
+
+Let `δ` be a stability radius for `ε`: every solution segment starting within `δ` of `x_eq`
+stays within `ε` of it. Suppose `φ`, a solution on `[t₀, ∞)`, cannot stay outside the `δ`-ball
+for the whole window `[t₀, t₀ + (τ₀ + 1)]`, because doing so would force the window's length
+`τ₀ + 1` to be at most `τ₀` (the bound `time_outside_ball_le` supplies). Then `φ` is within `ε`
+of `x_eq` at every time `t ≥ t₀ + (τ₀ + 1)`. -/
+private lemma norm_sub_lt_of_enters_ball
+    {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {φ : ℝ → ℝⁿ} {t₀ τ₀ δ ε : ℝ}
+    (hφ : IsIntegralCurveOn φ (fun _ y => f y) (Ici t₀))
+    (hδ : ∀ (s t : ℝ) (ψ : ℝ → ℝⁿ), IsTrajectoryOn ψ f s t → ‖ψ s - x_eq‖ < δ →
+      ∀ u ∈ Icc s t, ‖ψ u - x_eq‖ < ε)
+    (hdwell : (∀ s ∈ Icc t₀ (t₀ + (τ₀ + 1)), δ ≤ ‖φ s - x_eq‖) →
+      t₀ + (τ₀ + 1) - t₀ ≤ τ₀)
+    {t : ℝ} (ht : t₀ + (τ₀ + 1) ≤ t) :
+    ‖φ t - x_eq‖ < ε := by
+  by_cases hentered : ∃ s ∈ Icc t₀ (t₀ + (τ₀ + 1)), ‖φ s - x_eq‖ < δ
+  -- Case 1: entered the `δ`-ball at some time `s`; apply stability to the segment `[s, t]`.
+  · obtain ⟨s, hs_mem, hs_near⟩ := hentered
+    have hsub : Icc s t ⊆ Ici t₀ := fun r hr => le_trans hs_mem.1 hr.1
+    exact hδ s t φ (hφ.mono hsub) hs_near t ⟨le_trans hs_mem.2 ht, le_rfl⟩
+  -- Case 2: stayed outside the `δ`-ball for the whole window, too long; contradicts `τ₀`.
+  · push Not at hentered
+    have hlen := hdwell hentered
+    linarith
 
 open Set in
 /-- **Lyapunov's global asymptotic stability theorem.** `IsStrictLyapunovFunction` implies
@@ -616,15 +669,9 @@ theorem lyapunov_asymptotic_stable
       (hV.hbounded_sublevel (V (φ t₀))) hδ_pos
   refine ⟨t₀ + (τ₀ + 1), fun t ht => ?_⟩
   rw [dist_eq_norm]
-  by_cases hex : ∃ s ∈ Icc t₀ (t₀ + (τ₀ + 1)), ‖φ s - x_eq‖ < δ
-  · obtain ⟨s, hs_mem, hs⟩ := hex
-    have hsub : Icc s t ⊆ Ici t₀ := fun r hr => le_trans hs_mem.1 hr.1
-    exact hδ s t φ (hφ.mono hsub) hs t ⟨le_trans hs_mem.2 ht, le_rfl⟩
-  · push Not at hex
-    have hsub : Icc t₀ (t₀ + (τ₀ + 1)) ⊆ Ici t₀ := fun r hr => hr.1
-    have hdwell := hτ₀ t₀ (t₀ + (τ₀ + 1)) φ (hφ.mono hsub) (by linarith) le_rfl
-      (fun _ _ => Set.mem_univ _) hex
-    linarith
+  exact norm_sub_lt_of_enters_ball hφ hδ (fun hout =>
+    hτ₀ t₀ (t₀ + (τ₀ + 1)) φ (hφ.mono fun r hr => hr.1) (by linarith) le_rfl
+      (fun _ _ => Set.mem_univ _) hout) ht
 
 /-- **Corollary.** `IsAsymptoticLyapunovFunction` implies `GlobalAsymptoticStable`
     (the classical radially-unbounded form of the theorem).
@@ -690,15 +737,10 @@ theorem lyapunov_local_asymptotic_stable
   have hV_local := strict_local_implies_semidefinite hV
   have hstable : LyapunovStable f x_eq := lyapunov_stable hn hV_local
   refine ⟨hstable, ?_⟩
-  have hVcont_at : ContinuousAt V x_eq := hV.hcont.continuousAt
-  rw [Metric.continuousAt_iff] at hVcont_at
-  obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := hVcont_at c₀ hc₀_pos
+  obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := exists_radius_V_lt hV.hcont hV.hzero hc₀_pos
   refine ⟨δ₀, hδ₀_pos, ?_⟩
   intro t₀ φ hφ hφ0
-  have hV0_lt : V (φ t₀) < c₀ := by
-    have h := hδ₀ (by rw [dist_eq_norm]; exact hφ0)
-    rw [Real.dist_eq, hV.hzero, sub_zero] at h
-    exact (abs_lt.mp h).2
+  have hV0_lt : V (φ t₀) < c₀ := hδ₀ (φ t₀) hφ0
   have hstayD : ∀ (t₁ : ℝ), ∀ s ∈ Icc t₀ t₁, φ s ∈ D := fun t₁ s hs =>
     hΩ_sub_D (le_of_lt (sublevel_set_invariant hV_local
       (hφ.mono (fun r hr => hr.1)) hΩ_sub_D hV0_lt s hs))
@@ -709,12 +751,6 @@ theorem lyapunov_local_asymptotic_stable
     time_outside_ball_le hV_local hV.hV_c1 hV.hLie_neg hf_cont hΩ_sub_D hΩ_compact hδ_pos
   refine ⟨t₀ + (τ₀ + 1), fun t ht => ?_⟩
   rw [dist_eq_norm]
-  by_cases hex : ∃ s ∈ Icc t₀ (t₀ + (τ₀ + 1)), ‖φ s - x_eq‖ < δ
-  · obtain ⟨s, hs_mem, hs⟩ := hex
-    have hsub : Icc s t ⊆ Ici t₀ := fun r hr => le_trans hs_mem.1 hr.1
-    exact hδ s t φ (hφ.mono hsub) hs t ⟨le_trans hs_mem.2 ht, le_rfl⟩
-  · push Not at hex
-    have hsub : Icc t₀ (t₀ + (τ₀ + 1)) ⊆ Ici t₀ := fun r hr => hr.1
-    have hdwell := hτ₀ t₀ (t₀ + (τ₀ + 1)) φ (hφ.mono hsub) (by linarith)
-      (le_of_lt hV0_lt) (fun s hs => hstayD _ s hs) hex
-    linarith
+  exact norm_sub_lt_of_enters_ball hφ hδ (fun hout =>
+    hτ₀ t₀ (t₀ + (τ₀ + 1)) φ (hφ.mono fun r hr => hr.1) (by linarith)
+      (le_of_lt hV0_lt) (fun s hs => hstayD _ s hs) hout) ht

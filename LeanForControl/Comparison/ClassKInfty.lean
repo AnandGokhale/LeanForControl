@@ -208,41 +208,9 @@ def ClassKInfty.symm (α : ClassKInfty) : ClassKInfty where
   right_inv   := α.left_inv
   map_zero    := α.invFun_zero
   strict_mono := α.invFun_strictMono
-  continuous  := by
-    have inv_mono : StrictMonoOn α.invFun (Set.Ici 0) := α.invFun_strictMono
-    have inv_zero : α.invFun 0 = 0 := α.invFun_zero
-    have inv_surj : ∀ x : ℝ, 0 ≤ x → ∃ w ∈ Set.Ici 0, α.invFun w = x :=
-      fun x hx => ⟨α.toFun x, α.maps_to hx, α.left_inv hx⟩
-    intro y hy
-    by_cases h0 : y = 0
-    · -- Left endpoint: right-continuity suffices
-      subst h0
-      apply StrictMonoOn.continuousWithinAt_right_of_exists_between inv_mono
-      · rw [mem_nhdsGE_iff_exists_Ico_subset' (by norm_num : (0:ℝ) < 1)]
-        exact ⟨1, by norm_num, Set.Ico_subset_Ici_self⟩
-      · rw [inv_zero]
-        intro z hz
-        obtain ⟨w, hw, hinv⟩ := inv_surj z (le_of_lt hz)
-        exact ⟨w, hw, by rw [hinv]; exact ⟨hz, le_refl z⟩⟩
-    · -- Interior point: ContinuousAt via between-points criterion
-      have hy0' : 0 < y := lt_of_le_of_ne hy (Ne.symm h0)
-      have hici_nhd : Set.Ici 0 ∈ 𝓝 y :=
-        mem_of_superset (Ioi_mem_nhds hy0') Set.Ioi_subset_Ici_self
-      apply ContinuousAt.continuousWithinAt
-      apply StrictMonoOn.continuousAt_of_exists_between inv_mono hici_nhd
-      · intro z hz
-        have hinvy_pos : 0 < α.invFun y := by
-          have h0ci : (0 : ℝ) ∈ Set.Ici 0 := self_mem_Ici
-          have := inv_mono h0ci hy hy0'; rwa [inv_zero] at this
-        have hmax : max z 0 < α.invFun y := max_lt hz hinvy_pos
-        obtain ⟨x, hxl, hxr⟩ := exists_between hmax
-        have hx0 : 0 ≤ x := le_of_lt (lt_of_le_of_lt (le_max_right z 0) hxl)
-        obtain ⟨w, hw, hinv⟩ := inv_surj x hx0
-        exact ⟨w, hw, hinv ▸ ⟨le_of_lt (lt_of_le_of_lt (le_max_left z 0) hxl), hxr⟩⟩
-      · intro z hz
-        have hz0 : 0 ≤ z := le_of_lt (lt_of_le_of_lt (α.inv_maps_to hy) hz)
-        obtain ⟨w, hw, hinv⟩ := inv_surj z hz0
-        exact ⟨w, hw, by rw [hinv]; exact ⟨hz, le_refl z⟩⟩
+  -- `α⁻¹` is strictly increasing and maps `[0, ∞)` onto `[0, ∞)` (it is a left inverse of `α`).
+  continuous  := continuousOn_of_strictMonoOn_of_surjOn α.invFun_strictMono α.inv_maps_to
+    (α.left_inv.surjOn α.maps_to)
   tendsto_atTop := by
     rw [Filter.tendsto_atTop_atTop]
     intro b

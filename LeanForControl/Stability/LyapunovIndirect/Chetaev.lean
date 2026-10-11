@@ -3,7 +3,7 @@ import LeanForControl.Stability.Autonomous
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
-import Mathlib.Analysis.ODE.PicardLindelof
+import LeanForControl.ODEs.PicardLindelof
 import Architect
 
 /-!
@@ -26,39 +26,6 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 namespace NonlinearInstability
 
-/-- A globally Lipschitz, globally bounded autonomous vector field has a solution
-on every prescribed finite forward interval.
-
-Reference: the Picard--Lindelöf theorem. -/
-private theorem exists_forward_segment_of_lipschitz_bounded
-    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
-    (g : E → E) (K L : ℝ≥0)
-    (hg_lip : LipschitzWith K g) (hg_bound : ∀ x, ‖g x‖ ≤ L)
-    {T : ℝ} (hT : 0 ≤ T) (x₀ : E) :
-    ∃ φ : ℝ → E, φ 0 = x₀ ∧
-      IsIntegralCurveOn φ (fun _ x => g x) (Icc 0 T) := by
-  let t₀ : Icc (0 : ℝ) T := ⟨0, le_rfl, hT⟩
-  let Tₙ : ℝ≥0 := ⟨T, hT⟩
-  let a : ℝ≥0 := L * Tₙ
-  have hpl : IsPicardLindelof (fun _ : ℝ ↦ g) t₀ x₀ a 0 L K := {
-    lipschitzOnWith := by
-      intro t ht
-      exact hg_lip.lipschitzOnWith
-    continuousOn := by
-      intro x hx
-      exact (continuous_const : Continuous (fun _ : ℝ ↦ g x)).continuousOn
-    norm_le := by
-      intro t ht x hx
-      exact hg_bound x
-    mul_max_le := by
-      change (L : ℝ) * max (T - 0) (0 - 0) ≤ (a : ℝ) - 0
-      simp only [sub_zero, max_eq_left hT, a, NNReal.coe_mul]
-      change (L : ℝ) * T ≤ (L : ℝ) * T
-      exact le_rfl
-  }
-  obtain ⟨φ, hφ0, hφ⟩ := hpl.exists_eq_forall_mem_Icc_hasDerivWithinAt₀
-  exact ⟨φ, hφ0, hφ⟩
-
 /-- A `C¹` vector field can be globalized by a smooth bump without changing it
 on a prescribed closed ball.  Consequently it has a solution on every finite
 horizon whose derivative agrees with the original field whenever the solution
@@ -69,7 +36,7 @@ private theorem exists_cutoff_forward_segment
     {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E]
     (f : E → E) (hf : ContDiff ℝ 1 f) (x_eq : E)
-    {ρ T : ℝ} (hρ : 0 < ρ) (hT : 0 ≤ T) (x₀ : E) :
+    {ρ T : ℝ} (hρ : 0 < ρ) (x₀ : E) :
     ∃ φ : ℝ → E, φ 0 = x₀ ∧ ContinuousOn φ (Icc 0 T) ∧
       ∀ t ∈ Icc (0 : ℝ) T, ‖φ t - x_eq‖ ≤ ρ →
         HasDerivWithinAt φ (f (φ t)) (Icc 0 T) t := by
@@ -80,12 +47,9 @@ private theorem exists_cutoff_forward_segment
   have hg_compact : HasCompactSupport g := by
     exact b.hasCompactSupport.smul_right
   obtain ⟨K, hg_lip⟩ := hg_c1.lipschitzWith_of_hasCompactSupport hg_compact (by norm_num)
-  obtain ⟨C, hC⟩ := hg_c1.continuous.bounded_above_of_compact_support hg_compact
-  have hC0 : 0 ≤ C := le_trans (norm_nonneg (g 0)) (hC 0)
-  let L : ℝ≥0 := ⟨C, hC0⟩
   obtain ⟨φ, hφ0, hφg⟩ :=
-    exists_forward_segment_of_lipschitz_bounded g K L hg_lip
-      (fun x ↦ by simpa [L] using hC x) hT x₀
+    exists_isIntegralCurveOn_Icc (f := fun _ x ↦ g x) (K := K)
+      (hg_lip.continuous.comp continuous_snd) (fun _ ↦ hg_lip) 0 T x₀
   refine ⟨φ, hφ0, hφg.continuousOn, ?_⟩
   intro t ht hball
   have hb_one : b (φ t) = 1 := by
@@ -219,7 +183,7 @@ private theorem exists_cutoff_segment_reaching_radius
     (heventually_large.and (eventually_ge_atTop (1 : ℝ))).exists
   have hT0 : 0 ≤ T := by linarith
   obtain ⟨φ, hφ0, hφcont, hφderiv⟩ :=
-    exists_cutoff_forward_segment f hf x_eq hρ hT0 x₀
+    exists_cutoff_forward_segment f hf x_eq hρ (T := T) x₀
   obtain ⟨t, ht, hfar⟩ := exists_radius_escape_on_segment hT0 hρ hC hV
     hφ0 hφcont hφderiv hbound hgrowth hlarge
   exact ⟨T, φ, t, hφ0, hφcont, hφderiv, ht, hfar⟩
