@@ -17,14 +17,14 @@ matrix `Φ(t, t₀)`. For a constant `A` that matrix is `e^{A(t-t₀)}`
 
 ## Contents
 
-* **Theorem 8.1(2)** — `ContinuousLinearSystem.timeInvariant.asymptoticStableNA_iff_isHurwitz`:
+* **Theorem 8.1(2)** — `ContinuousLTI.asymptoticStableNA_iff_isHurwitz`:
   asymptotic stability holds exactly when every eigenvalue of `A` has strictly negative real
   part.
-* **Theorem 8.1(3)** — `ContinuousLinearSystem.timeInvariant.exponentiallyStableNA_iff_isHurwitz`:
+* **Theorem 8.1(3)** — `ContinuousLTI.exponentiallyStableNA_iff_isHurwitz`:
   and so does exponential stability, under the same condition.
 
-Both are in the `ContinuousLinearSystem.timeInvariant` namespace, so that with
-`open ContinuousLinearSystem` they read `timeInvariant.asymptoticStableNA_iff_isHurwitz`.
+Both are stated for an LTI system `sys : ContinuousLTI X U Y ℝ`, so that they read
+`sys.asymptoticStableNA_iff_isHurwitz`.
 
 ## Scope
 
@@ -38,12 +38,12 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1.
 
 namespace LinearSystems
 
-open Matrix Set Filter Topology NormedSpace ContinuousLinearSystem
+open Matrix Set Filter Topology NormedSpace ContinuousLTV
 open scoped Matrix.Norms.Operator
 
 variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U]
 
-namespace ContinuousLinearSystem.timeInvariant
+namespace ContinuousLTI
 
 /-! ## Theorem 8.1(2): asymptotic stability -/
 
@@ -82,11 +82,12 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(2
     which supplies the stability half, and tends to zero
     (\cref{lem:tendsto-const-mul-exp-neg}), which supplies the attractivity half. -/)]
 theorem asymptoticStableNA_iff_isHurwitz
-    (A : Matrix X X ℝ) (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ) :
-    AsymptoticStableNA ((timeInvariant A B C D).vectorField 0) (0 : X → ℝ) ↔
-      IsHurwitz A := by
+    (sys : ContinuousLTI X U Y ℝ) :
+    AsymptoticStableNA (sys.vectorField 0) (0 : X → ℝ) ↔
+      IsHurwitz sys.A := by
   classical
-  have hcoeff : (timeInvariant A B C D).A = fun _ => A := rfl
+  obtain ⟨A, B, C, D⟩ := sys
+  have hcoeff : (⟨A, B, C, D⟩ : ContinuousLTI X U Y ℝ).toLTV.A = fun _ => A := rfl
   have hhr : ∀ (t₀ : ℝ) (x₀ : X → ℝ), homogeneousResponse (fun _ => A) t₀ x₀
       = fun t => exp ((t - t₀) • A) *ᵥ x₀ := by
     intro t₀ x₀
@@ -143,11 +144,12 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(3
     envelope and applies \cref{thm:isHurwitz-of-tendsto-exp-mulVec}; the converse is
     \cref{thm:isHurwitz-exists-norm-exp-mulVec-le} re-anchored from $0$ to $t_0$. -/)]
 theorem exponentiallyStableNA_iff_isHurwitz
-    (A : Matrix X X ℝ) (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ) :
-    ExponentiallyStableNA ((timeInvariant A B C D).vectorField 0) (0 : X → ℝ) ↔
-      IsHurwitz A := by
+    (sys : ContinuousLTI X U Y ℝ) :
+    ExponentiallyStableNA (sys.vectorField 0) (0 : X → ℝ) ↔
+      IsHurwitz sys.A := by
   classical
-  have hcoeff : (timeInvariant A B C D).A = fun _ => A := rfl
+  obtain ⟨A, B, C, D⟩ := sys
+  have hcoeff : (⟨A, B, C, D⟩ : ContinuousLTI X U Y ℝ).toLTV.A = fun _ => A := rfl
   rw [exponentiallyStableNA_iff_decayingStateTransition _ (by simpa using continuous_const)]
   simp only [hcoeff, stateTransitionMatrix_const]
   constructor
@@ -212,23 +214,23 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
     $3 \Leftrightarrow 5$ is \cref{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}, and
     $3 \Leftrightarrow 6$ is \cref{thm:isHurwitz-iff-exists-posDef-lyapunovRate}. -/)]
 theorem lyapunovStability_tfae
-    (A : Matrix X X ℝ) (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ) :
-    [ AsymptoticStableNA ((timeInvariant A B C D).vectorField 0) (0 : X → ℝ),
-      ExponentiallyStableNA ((timeInvariant A B C D).vectorField 0) (0 : X → ℝ),
-      IsHurwitz A,
+    (sys : ContinuousLTI X U Y ℝ) :
+    [ AsymptoticStableNA (sys.vectorField 0) (0 : X → ℝ),
+      ExponentiallyStableNA (sys.vectorField 0) (0 : X → ℝ),
+      IsHurwitz sys.A,
       ∀ R : Matrix X X ℝ, R.PosDef →
-        ∃ S : Matrix X X ℝ, S.PosDef ∧ ContinuousLyapunovEquation A S R ∧
-          ∀ T : Matrix X X ℝ, ContinuousLyapunovEquation A T R → T = S,
-      ∃ S : Matrix X X ℝ, S.PosDef ∧ (-(S * A + Aᵀ * S)).PosDef,
+        ∃ S : Matrix X X ℝ, S.PosDef ∧ ContinuousLyapunovEquation sys.A S R ∧
+          ∀ T : Matrix X X ℝ, ContinuousLyapunovEquation sys.A T R → T = S,
+      ∃ S : Matrix X X ℝ, S.PosDef ∧ (-(S * sys.A + sys.Aᵀ * S)).PosDef,
       ∃ (S : Matrix X X ℝ) (c : ℝ), 0 < c ∧ S.PosDef ∧
-        (-(S * A + Aᵀ * S) - (2 * c) • S).PosSemidef ].TFAE := by
-  tfae_have 1 ↔ 3 := asymptoticStableNA_iff_isHurwitz A B C D
-  tfae_have 2 ↔ 3 := exponentiallyStableNA_iff_isHurwitz A B C D
-  tfae_have 3 ↔ 4 := isHurwitz_iff_forall_posDef_exists_solution A
-  tfae_have 3 ↔ 5 := isHurwitz_iff_exists_posDef_lyapunovResidual A
-  tfae_have 3 ↔ 6 := isHurwitz_iff_exists_posDef_lyapunovRate A
+        (-(S * sys.A + sys.Aᵀ * S) - (2 * c) • S).PosSemidef ].TFAE := by
+  tfae_have 1 ↔ 3 := asymptoticStableNA_iff_isHurwitz sys
+  tfae_have 2 ↔ 3 := exponentiallyStableNA_iff_isHurwitz sys
+  tfae_have 3 ↔ 4 := isHurwitz_iff_forall_posDef_exists_solution sys.A
+  tfae_have 3 ↔ 5 := isHurwitz_iff_exists_posDef_lyapunovResidual sys.A
+  tfae_have 3 ↔ 6 := isHurwitz_iff_exists_posDef_lyapunovRate sys.A
   tfae_finish
 
-end ContinuousLinearSystem.timeInvariant
+end ContinuousLTI
 
 end LinearSystems

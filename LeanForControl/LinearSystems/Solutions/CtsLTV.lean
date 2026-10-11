@@ -1,5 +1,5 @@
 import LeanForControl.Analysis.Continuity
-import LeanForControl.LinearSystems.DefsSystem
+import LeanForControl.LinearSystems.Continuous
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.ODEs.ODE_properties
 import Mathlib.Analysis.Calculus.SmoothSeries
@@ -15,8 +15,8 @@ building up to Theorem 5.1 (Peano-Baker series): the state transition matrix sol
 matrix ODE `Φ̇(t, t₀) = A(t) Φ(t, t₀)`, `Φ(t₀, t₀) = I`, and `x(t) := Φ(t, t₀) *ᵥ x₀` is the
 unique solution of `ẋ = A(t) x`, `x(t₀) = x₀`.
 
-The final section restates the solution for the `ContinuousLinearSystem` object: the forced
-response is a *trajectory* in the sense of `ContinuousLinearSystem.IsTrajectoryOn`, which is the
+The final section restates the solution for the `ContinuousLTV` object: the forced
+response is a *trajectory* in the sense of `ContinuousLTV.IsTrajectoryOn`, which is the
 predicate the stability theory quantifies over. Everything before it works with the coefficient
 maps `A` and `B` directly, which is where the analysis lives.
 
@@ -1280,11 +1280,11 @@ theorem eq_homogeneousResponse_of_isIntegralCurveOn (hA : Continuous A) {z : ℝ
 
 /-! ## The solution as a trajectory of the system
 
-`ContinuousLinearSystem` (`LinearSystems/DefsSystem.lean`) bundles the coefficient maps and
+`ContinuousLTV` (`LinearSystems/Continuous.lean`) bundles the coefficient maps and
 says what equation they satisfy. The results above are stated on `A` and `B` directly; this
 section is the thin skin that restates them for the bundled object. -/
 
-namespace ContinuousLinearSystem
+namespace ContinuousLTV
 
 omit [Fintype Y] in
 /-- The forced response of a system is a trajectory of that system — at every time, with a
@@ -1304,11 +1304,11 @@ integral form on `[t₀, t₀+1]` and `[t₀-1, t₀]` and glued. -/
   (statement := /-- Let $s$ be a continuous-time linear system with continuous coefficients
     $A$ and $B$, and let $u$ be a continuous input.  Then the forced response
     (\cref{def:forcedResponse}) from any state $x_0$ at any time $t_0$ is a trajectory of $s$
-    (\cref{def:ctsLinearSystem-isTrajectory}) — it satisfies the state equation at every
+    (\cref{def:continuousLTV-isTrajectory}) — it satisfies the state equation at every
     $t \in \mathbb{R}$, with a two-sided derivative.
 
     Restriction to an interval, in particular to the ray $[t_0,\infty)$ that the stability
-    predicates quantify over, is \cref{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}.
+    predicates quantify over, is \cref{lem:continuousSystem-isTrajectory-isTrajectoryOn}.
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
   -/)
@@ -1321,7 +1321,7 @@ integral form on `[t₀, t₀+1]` and `[t₀-1, t₀]` and glued. -/
     (\cref{thm:isIntegralSolution-forcedResponse}) on $[t_0, t_0+1]$ and on $[t_0-1, t_0]$; each
     yields a one-sided derivative at $t_0$ (\cref{lem:isIntegralSolution-isIntegralCurveOn}),
     and the two glue to a two-sided one. -/)]
-theorem isTrajectory_forcedResponse (s : ContinuousLinearSystem X U Y ℝ) (hA : Continuous s.A)
+theorem isTrajectory_forcedResponse (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
     (hB : Continuous s.B) (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
     s.IsTrajectory u (forcedResponse s.A s.B u t₀ x₀) := by
   -- A one-sided derivative at every point of any compact window, from the integral form.
@@ -1381,7 +1381,7 @@ theory reaches the stability theory. -/
   (title := "The homogeneous response is a trajectory")
   (statement := /-- For a continuous-time linear system with continuous coefficients, the
     homogeneous response (\cref{def:homogeneousResponse}) from any state $x_0$ at any time
-    $t_0$ is a trajectory (\cref{def:ctsLinearSystem-isTrajectory}) under zero input.
+    $t_0$ is a trajectory (\cref{def:continuousLTV-isTrajectory}) under zero input.
 
     Definition 8.1 is stated about this map, so this is the form in which the solution theory
     reaches the stability theory. -/)
@@ -1389,16 +1389,16 @@ theory reaches the stability theory. -/
     forcing integral vanishes (\cref{lem:forcedResponse-zero-input}).  The dummy system is an
     artefact of the proof: only $A$ appears in the statement, and no hypothesis on $B$ is
     needed. -/)]
-theorem isTrajectory_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+theorem isTrajectory_homogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) (t₀ : ℝ) (x₀ : X → ℝ) :
     s.IsTrajectory 0 (homogeneousResponse s.A t₀ x₀) := by
   have h := isTrajectory_forcedResponse
     (s := ({ A := s.A, B := fun _ => (0 : Matrix X Unit ℝ),
              C := fun _ => (0 : Matrix Unit X ℝ),
-             D := fun _ => (0 : Matrix Unit Unit ℝ) } : ContinuousLinearSystem X Unit Unit ℝ))
+             D := fun _ => (0 : Matrix Unit Unit ℝ) } : ContinuousLTV X Unit Unit ℝ))
     (u := (0 : ℝ → Unit → ℝ)) hA continuous_const continuous_const t₀ x₀
   rw [forcedResponse_zero_input] at h
-  simpa [IsTrajectory, vectorField_zero_input] using h
+  simpa [isTrajectory_iff, vectorField_zero_input] using h
 
 omit [Fintype Y] in
 /-- The homogeneous response is a trajectory of the unforced system on the forward ray.
@@ -1408,10 +1408,10 @@ predicates quantify over. -/
 @[blueprint "thm:isTrajectoryOn-homogeneousResponse"
   (title := "The homogeneous response is a trajectory on the forward ray")
   (statement := /-- The homogeneous response (\cref{def:homogeneousResponse}) is a trajectory
-    of the unforced system (\cref{def:ctsLinearSystem-isTrajectoryOn}) on $[t_{0}, \infty)$. -/)
+    of the unforced system (\cref{def:continuousLTV-isTrajectoryOn}) on $[t_{0}, \infty)$. -/)
   (proof := /-- \cref{thm:isTrajectory-homogeneousResponse}, restricted to the ray by
-    \cref{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}. -/)]
-theorem isTrajectoryOn_homogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+    \cref{lem:continuousSystem-isTrajectory-isTrajectoryOn}. -/)]
+theorem isTrajectoryOn_homogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) (t₀ : ℝ) (x₀ : X → ℝ) :
     s.IsTrajectoryOn 0 (homogeneousResponse s.A t₀ x₀) (Set.Ici t₀) :=
   (isTrajectory_homogeneousResponse s hA t₀ x₀).isTrajectoryOn _
@@ -1424,17 +1424,17 @@ Uniqueness, read on the system object. This is where Grönwall enters, through
 @[blueprint "thm:eq-homogeneousResponse-of-isTrajectoryOn"
   (title := "Trajectories of the unforced system are homogeneous responses")
   (statement := /-- Let $s$ have continuous $A$ and let $\varphi$ be a trajectory of the
-    unforced system on $[t_{0}, \infty)$ (\cref{def:ctsLinearSystem-isTrajectoryOn}).  Then
+    unforced system on $[t_{0}, \infty)$ (\cref{def:continuousLTV-isTrajectoryOn}).  Then
     $\varphi(t) = \Phi(t, t_{0})\,\varphi(t_{0})$ for every $t \ge t_{0}$. -/)
   (proof := /-- \cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}, after reducing the
-    unforced state equation by \cref{lem:ctsLinearSystem-vectorField-zero-input}. -/)]
-theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLinearSystem X U Y ℝ)
+    unforced state equation by \cref{lem:continuousLTV-vectorField-zero-input}. -/)]
+theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) {x : ℝ → X → ℝ} {t₀ : ℝ}
     (hx : s.IsTrajectoryOn 0 x (Set.Ici t₀)) {t : ℝ} (ht : t₀ ≤ t) :
     x t = homogeneousResponse s.A t₀ (x t₀) t := by
-  rw [IsTrajectoryOn, vectorField_zero_input] at hx
+  rw [isTrajectoryOn_iff, vectorField_zero_input] at hx
   exact eq_homogeneousResponse_of_isIntegralCurveOn hA hx ht
 
-end ContinuousLinearSystem
+end ContinuousLTV
 
 end LinearSystems

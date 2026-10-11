@@ -75,7 +75,7 @@ spectral mapping that is pure power-series algebra: no spectral theory is used, 
 `exp`.
 
 Stated over an arbitrary index type, since everything downstream of the
-`ContinuousLinearSystem` object is, and over an arbitrary `RCLike` scalar field, since the
+`ContinuousLTV` object is, and over an arbitrary `RCLike` scalar field, since the
 eigenpairs it is applied to live over `ℂ` while the matrices they come from live over `ℝ`.
 -/
 

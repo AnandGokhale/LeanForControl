@@ -227,31 +227,29 @@ theorem forcedResponse_timeInvariant (B : Matrix X U ℝ) (u : ℝ → U → ℝ
   congr 1
   exact intervalIntegral.integral_congr fun τ _ => by rw [stateTransitionMatrix_const]
 
-namespace ContinuousLinearSystem.timeInvariant
+namespace ContinuousLTI
 
-/-- The closed-form response of a time-invariant system is a trajectory of that system. -/
+/-- The closed-form response of an LTI system is a trajectory of that system. -/
 @[blueprint "thm:isTrajectory-timeInvariant"
-  (title := "The time-invariant response is a trajectory")
-  (statement := /-- For a time-invariant system (\cref{def:ctsLinearSystem-timeInvariant}) with
-    continuous input $u$, the closed form
+  (title := "The LTI response is a trajectory")
+  (statement := /-- For an LTI system (\cref{def:continuousLTI}) with continuous input $u$, the
+    closed form
     \[
       t \mapsto e^{A(t-t_0)}x_0 + \int_{t_0}^{t} e^{A(t-\tau)}\,B\,u(\tau)\,\mathrm{d}\tau
     \]
-    is a trajectory (\cref{def:ctsLinearSystem-isTrajectory}) of that system. -/)
-  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at the time-invariant system, whose
-    coefficient maps are constant and so continuous, rewritten by
-    \cref{lem:forcedResponse-timeInvariant}. -/)]
-theorem isTrajectory (B : Matrix X U ℝ) (C : Matrix Y X ℝ) (D : Matrix Y U ℝ)
-    (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
-    (timeInvariant A B C D).IsTrajectory u
-      (fun t => NormedSpace.exp ((t - t₀) • A) *ᵥ x₀
-        + ∫ τ in t₀..t, NormedSpace.exp ((t - τ) • A) *ᵥ (B *ᵥ u τ)) := by
-  have h : (timeInvariant A B C D).IsTrajectory u
-      (forcedResponse (fun _ => A) (fun _ => B) u t₀ x₀) :=
-    isTrajectory_forcedResponse (timeInvariant A B C D) continuous_const continuous_const hu t₀ x₀
-  rwa [funext fun t => forcedResponse_timeInvariant A B u t₀ x₀ t] at h
+    is a trajectory (\cref{def:continuousLTV-isTrajectory}) of that system. -/)
+  (proof := /-- \cref{thm:isTrajectory-forcedResponse} at the LTV system of the LTI system
+    (\cref{def:continuousLTI-toLTV}), whose coefficient maps are constant and so continuous,
+    rewritten by \cref{lem:forcedResponse-timeInvariant}. -/)]
+theorem isTrajectory (sys : ContinuousLTI X U Y ℝ) (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
+    sys.IsTrajectory u
+      (fun t => NormedSpace.exp ((t - t₀) • sys.A) *ᵥ x₀
+        + ∫ τ in t₀..t, NormedSpace.exp ((t - τ) • sys.A) *ᵥ (sys.B *ᵥ u τ)) := by
+  have h : sys.toLTV.IsTrajectory u (forcedResponse (fun _ => sys.A) (fun _ => sys.B) u t₀ x₀) :=
+    ContinuousLTV.isTrajectory_forcedResponse sys.toLTV continuous_const continuous_const hu t₀ x₀
+  rwa [funext fun t => forcedResponse_timeInvariant sys.A sys.B u t₀ x₀ t] at h
 
-end ContinuousLinearSystem.timeInvariant
+end ContinuousLTI
 
 end TimeInvariant
 

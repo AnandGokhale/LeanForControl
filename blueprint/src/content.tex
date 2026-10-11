@@ -9,76 +9,186 @@
   \input{../../.lake/build/blueprint/library/LeanForControl}%
 }{}
 
+\chapter{Systems}
+
+The most general systems the library considers are $\dot x = F(t, x, u)$ in continuous time and
+$x^{+} = F(k, x, u)$ in discrete time, each with an output $y = h(t, x, u)$. As for linear
+systems, there is one object per time domain: the data has the same shape, but a continuous
+trajectory is an integral curve and a discrete one is a recursion.
+
+Special cases are constructors on the general object, each with a predicate recognising it:
+\emph{time invariance} drops $t$, and \emph{autonomy} drops $u$. Autonomy is used here in the
+control-theory sense, \emph{without input}; much of the dynamical-systems literature uses the word
+for time invariance instead.
+
+\section{Continuous time}
+
+\inputleannode{def:continuousSystem}
+
+\inputleannode{def:continuousSystem-timeInvariant}
+
+\inputleannode{def:continuousSystem-isTimeInvariant}
+
+\inputleannode{lem:continuousSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isTimeInvariant-exists-eq}
+
+\inputleannode{def:continuousSystem-autonomous}
+
+\inputleannode{def:continuousSystem-isAutonomous}
+
+\inputleannode{lem:continuousSystem-isAutonomous-autonomous}
+
+\inputleannode{lem:continuousSystem-isAutonomous-exists}
+
+\inputleannode{def:continuousSystem-vectorField}
+
+\inputleannode{def:continuousSystem-outputMap}
+
+\inputleannode{def:continuousSystem-isTrajectoryOn}
+
+\inputleannode{def:continuousSystem-isTrajectory}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+The derivative form above excludes the solutions produced by discontinuous inputs, which have
+corners where the input jumps. The integral form admits them, and is the one input-driven notions
+such as input-to-state stability are stated with; for continuous right-hand sides the two agree.
+
+\inputleannode{def:continuousSystem-isCaratheodoryTrajectoryOn}
+
+\inputleannode{def:continuousSystem-isCaratheodoryTrajectory}
+
+\inputleannode{lem:continuousSystem-isCaratheodoryTrajectory-isCaratheodoryTrajectoryOn}
+
+\inputleannode{thm:continuousSystem-isCaratheodoryTrajectoryOn-Icc-iff}
+
+\inputleannode{thm:continuousSystem-isCaratheodoryTrajectoryOn-iff}
+
+\section{Discrete time}
+
+\inputleannode{def:discreteSystem}
+
+\inputleannode{def:discreteSystem-timeInvariant}
+
+\inputleannode{def:discreteSystem-isTimeInvariant}
+
+\inputleannode{lem:discreteSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:discreteSystem-isTimeInvariant-exists-eq}
+
+\inputleannode{def:discreteSystem-autonomous}
+
+\inputleannode{def:discreteSystem-isAutonomous}
+
+\inputleannode{lem:discreteSystem-isAutonomous-autonomous}
+
+\inputleannode{lem:discreteSystem-isAutonomous-exists}
+
+\inputleannode{def:discreteSystem-vectorField}
+
+\inputleannode{def:discreteSystem-outputMap}
+
+\inputleannode{def:discreteSystem-isTrajectoryOn}
+
+\inputleannode{def:discreteSystem-isTrajectory}
+
+\inputleannode{lem:discreteSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:discreteSystem-isTrajectory-isTrajectoryOn}
+
 \chapter{Linear systems}
 
 \section{The linear system objects}
 
-The data of a linear system --- the four coefficient maps $A$, $B$, $C$, $D$ --- together with
-the equations that data satisfies. There are two objects, one per time domain, carrying the same
-API under the same names: a continuous-time trajectory is an integral curve, a discrete-time one
-is a sequence satisfying a recursion, and those are not two cases of one notion.
+Linear systems are a special case of the general systems of the Systems chapter: the
+continuous-time system with $F(t, x, u) = A(t)x + B(t)u$ and $h(t, x, u) = C(t)x + D(t)u$, and its
+discrete-time counterpart. The objects below carry only the coefficient data. Each is the input of
+a constructor into the general system, and the semantics --- state equation, output equation,
+trajectories --- are defined through that constructor, so every result about general systems
+applies to linear ones unchanged.
 
-\subsection{Continuous time}
+There are two objects per time domain: a \emph{linear time-varying} (LTV) system with coefficient
+maps $A(t), B(t), C(t), D(t)$, and a \emph{linear time-invariant} (LTI) system with constant
+matrices. An LTI system is not a different kind of system: it builds the LTV system with constant
+coefficients, and the general system it describes is the time-invariant system of the Systems
+chapter, by definition.
 
-\inputleannode{def:ctsLinearSystem}
+\subsection{Continuous-time LTV systems}
 
-\inputleannode{def:ctsLinearSystem-vectorField}
+\inputleannode{def:continuousLTV}
 
-\inputleannode{lem:ctsLinearSystem-vectorField-zero-input}
+\inputleannode{def:continuousLTV-toContinuousSystem}
 
-\inputleannode{lem:ctsLinearSystem-vectorField-apply-zero}
+\inputleannode{def:continuousLTV-vectorField}
 
-\inputleannode{def:ctsLinearSystem-outputMap}
+\inputleannode{lem:continuousLTV-vectorField-zero-input}
 
-\inputleannode{def:ctsLinearSystem-isTrajectoryOn}
+\inputleannode{lem:continuousLTV-vectorField-apply-zero}
 
-\inputleannode{def:ctsLinearSystem-isTrajectory}
+\inputleannode{def:continuousLTV-outputMap}
 
-\inputleannode{lem:ctsLinearSystem-isTrajectoryOn-univ}
+\inputleannode{def:continuousLTV-isTrajectoryOn}
 
-\inputleannode{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}
+\inputleannode{def:continuousLTV-isTrajectory}
 
-\subsection{Discrete time}
+\inputleannode{def:continuousLTV-isCaratheodoryTrajectoryOn}
 
-\inputleannode{def:discLinearSystem}
+\inputleannode{def:continuousLTV-isTimeInvariant}
 
-\inputleannode{def:discLinearSystem-vectorField}
+\inputleannode{lem:continuousLTV-isTimeInvariant-toContinuousSystem}
 
-\inputleannode{lem:discLinearSystem-vectorField-zero-input}
+\subsection{Continuous-time LTI systems}
 
-\inputleannode{lem:discLinearSystem-vectorField-apply-zero}
+\inputleannode{def:continuousLTI}
 
-\inputleannode{def:discLinearSystem-outputMap}
+\inputleannode{def:continuousLTI-toLTV}
 
-\inputleannode{def:discLinearSystem-isTrajectoryOn}
+\inputleannode{lem:continuousLTI-isTimeInvariant-toLTV}
 
-\inputleannode{def:discLinearSystem-isTrajectory}
+\inputleannode{lem:continuousLTV-isTimeInvariant-exists-eq}
 
-\inputleannode{lem:discLinearSystem-isTrajectoryOn-univ}
+\inputleannode{def:continuousLTI-toContinuousSystem}
 
-\inputleannode{lem:discLinearSystem-isTrajectory-isTrajectoryOn}
+\inputleannode{lem:continuousLTI-toContinuousSystem-eq-timeInvariant}
 
-\subsection{Time-invariant systems}
+\subsection{Discrete-time LTV systems}
 
-A linear time-invariant system is a linear system whose coefficients do not vary with time,
-not an object of its own kind, so that every result about the time-varying object applies to it
-unchanged.
+\inputleannode{def:discreteLTV}
 
-\inputleannode{def:ctsLinearSystem-timeInvariant}
+\inputleannode{def:discreteLTV-toDiscreteSystem}
 
-\inputleannode{def:ctsLinearSystem-isTimeInvariant}
+\inputleannode{def:discreteLTV-vectorField}
 
-\inputleannode{lem:ctsLinearSystem-isTimeInvariant-timeInvariant}
+\inputleannode{lem:discreteLTV-vectorField-zero-input}
 
-\inputleannode{lem:ctsLinearSystem-exists-eq}
+\inputleannode{lem:discreteLTV-vectorField-apply-zero}
 
-\inputleannode{def:discLinearSystem-timeInvariant}
+\inputleannode{def:discreteLTV-outputMap}
 
-\inputleannode{def:discLinearSystem-isTimeInvariant}
+\inputleannode{def:discreteLTV-isTrajectoryOn}
 
-\inputleannode{lem:discLinearSystem-isTimeInvariant-timeInvariant}
+\inputleannode{def:discreteLTV-isTrajectory}
 
-\inputleannode{lem:discLinearSystem-exists-eq}
+\inputleannode{def:discreteLTV-isTimeInvariant}
+
+\inputleannode{lem:discreteLTV-isTimeInvariant-toDiscreteSystem}
+
+\subsection{Discrete-time LTI systems}
+
+\inputleannode{def:discreteLTI}
+
+\inputleannode{def:discreteLTI-toLTV}
+
+\inputleannode{lem:discreteLTI-isTimeInvariant-toLTV}
+
+\inputleannode{lem:discreteLTV-isTimeInvariant-exists-eq}
+
+\inputleannode{def:discreteLTI-toDiscreteSystem}
+
+\inputleannode{lem:discreteLTI-toDiscreteSystem-eq-timeInvariant}
 
 \section{Observability and controllability matrices}
 
@@ -272,8 +382,8 @@ argument.
 
 The solution theory above is stated on the coefficient maps $A$ and $B$, which is where the
 analysis lives. The results below restate it for the system object of
-\cref{def:ctsLinearSystem}: the variation-of-constants formula is a \emph{trajectory} in the
-sense of \cref{def:ctsLinearSystem-isTrajectory}, which the stability theory
+\cref{def:continuousLTV}: the variation-of-constants formula is a \emph{trajectory} in the
+sense of \cref{def:continuousLTV-isTrajectory}, which the stability theory
 quantifies over.
 
 \inputleannode{def:forcedResponse}

@@ -8,7 +8,7 @@ import Architect
 
 The spectral conditions that characterize stability of a linear system, stated over an
 abstract index type `X` rather than `Fin n`, matching the convention everything downstream of
-the `ContinuousLinearSystem` object follows.
+the `ContinuousLTV` object follows.
 
 Only continuous-time conditions are here so far; the discrete-time counterpart (all
 eigenvalues inside the open unit disc) belongs in this file when it is needed.

@@ -18,7 +18,7 @@ available on the other.
 
 ## Contents
 
-Each result is stated about a `ContinuousLinearSystem`, since these are properties of a system,
+Each result is stated about a `ContinuousLTV`, since these are properties of a system,
 and needs only `Continuous s.A` — the input and output matrices play no part in Lyapunov
 stability.
 
@@ -36,7 +36,7 @@ stability.
 
 Every one of them is the trajectory characterization plus homogeneity. The trajectory
 characterization itself is solution theory and lives in `Solutions/CtsLTV.lean`:
-`ContinuousLinearSystem.isTrajectory_homogeneousResponse` for existence and
+`ContinuousLTV.isTrajectory_homogeneousResponse` for existence and
 `eq_homogeneousResponse_of_isIntegralCurveOn` for uniqueness.
 
 ## One state space, one set of stability predicates
@@ -47,7 +47,7 @@ converges. `Stability/DefsNonAutonomous.lean` is stated over an arbitrary real n
 so its predicates apply here directly: there is no second notion of stability for linear
 systems and no transport between state spaces.
 
-The unforced system is `s.vectorField 0`, which `ContinuousLinearSystem.vectorField_zero_input`
+The unforced system is `s.vectorField 0`, which `ContinuousLTV.vectorField_zero_input`
 reduces to `fun t z => s.A t *ᵥ z`. That reduction is what lets the left-hand sides speak about
 the system while the proofs work with the state matrix.
 
@@ -57,7 +57,7 @@ Two things separate the textbook statements from the predicates:
 
 * The textbook quantifies over *initial conditions*, the predicates over *trajectories*. The
   gap closes in both directions only because `Φ` both solves the equation
-  (`ContinuousLinearSystem.isTrajectory_homogeneousResponse`) and is the unique solution
+  (`ContinuousLTV.isTrajectory_homogeneousResponse`) and is the unique solution
   (`eq_homogeneousResponse_of_isIntegralCurveOn`) — the second is where Grönwall enters,
   through `stateTransitionMatrix_mulVec_unique`.
 * The textbook's bounds are on the response from *every* initial state; the predicates'
@@ -75,7 +75,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Definition 8.
 
 namespace LinearSystems
 
-open Matrix Set Filter Topology ContinuousLinearSystem
+open Matrix Set Filter Topology ContinuousLTV
 open scoped Matrix.Norms.Operator
 
 variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U]
@@ -85,14 +85,14 @@ variable {A : ℝ → Matrix X X ℝ}
 
 "The solutions of `ẋ = A(t) x` from `t₀` are exactly the homogeneous responses `Φ(·, t₀) x₀`"
 is solution theory and lives in `Solutions/CtsLTV.lean`, stated on the system:
-`ContinuousLinearSystem.isTrajectoryOn_homogeneousResponse` for existence and
-`ContinuousLinearSystem.eq_homogeneousResponse_of_isTrajectoryOn` for uniqueness. No bridging
+`ContinuousLTV.isTrajectoryOn_homogeneousResponse` for existence and
+`ContinuousLTV.eq_homogeneousResponse_of_isTrajectoryOn` for uniqueness. No bridging
 is needed here, because `IsTrajectoryNA φ (s.vectorField 0) t₀` *is*
 `s.IsTrajectoryOn 0 φ (Set.Ici t₀)` — both unfold to `IsIntegralCurveOn φ (s.vectorField 0)
 (Set.Ici t₀)`.
 
 That the origin is an equilibrium is likewise a property of the system,
-`ContinuousLinearSystem.vectorField_apply_zero`. Everything below is those facts plus
+`ContinuousLTV.vectorField_apply_zero`. Everything below is those facts plus
 homogeneity. -/
 
 /-! ## Homogeneity
@@ -153,7 +153,7 @@ each of the two theorems is nothing but quantifier placement on top of them. -/
 
 Apply the margin to the homogeneous response from each `x` in the `δ`-ball: it stays inside the
 unit ball, and homogeneity scales that to every `x`. -/
-private lemma bound_of_margin (s : ContinuousLinearSystem X U Y ℝ) (hA : Continuous s.A)
+private lemma bound_of_margin (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
     {t₀ δ : ℝ} (hδ : 0 < δ)
     (hstab : ∀ φ : ℝ → X → ℝ, IsTrajectoryNA φ (s.vectorField 0) t₀ →
       ‖φ t₀ - 0‖ < δ → ∀ t ≥ t₀, ‖φ t - 0‖ < 1) :
@@ -170,7 +170,7 @@ private lemma bound_of_margin (s : ContinuousLinearSystem X U Y ℝ) (hA : Conti
 Every trajectory is its own homogeneous response, so the bound applies to it directly; the
 margin `ε/(C+1)` is then real arithmetic. No positivity hypothesis on `ε` is needed: for
 `ε ≤ 0` the margin hypothesis is already impossible. -/
-private lemma margin_of_bound (s : ContinuousLinearSystem X U Y ℝ) (hA : Continuous s.A)
+private lemma margin_of_bound (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
     {t₀ C : ℝ} (hC0 : 0 ≤ C)
     (hC : ∀ t ≥ t₀, ∀ x : X → ℝ, ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C * ‖x‖)
     {ε : ℝ} :
@@ -218,7 +218,7 @@ on every state, not the per-initial-condition one, is what later results consume
     ($\Leftarrow$) Given $\varepsilon$, take $\delta = \varepsilon/(C+1)$.  A trajectory is its
     own response (\cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}), so
     $\|\varphi(t)\| \le C\|\varphi(t_{0})\| < \varepsilon$. -/)]
-theorem stableNA_iff_boundedStateTransition (s : ContinuousLinearSystem X U Y ℝ)
+theorem stableNA_iff_boundedStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     StableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ C ≥ (0 : ℝ), ∀ t ≥ t₀, ∀ x : X → ℝ,
@@ -258,7 +258,7 @@ norm-bounded. -/
     \cref{lem:stableNA-iff-boundedStateTransition}.  A bound on $\Phi$ gives
     the response bound $C\|x_{0}\|$; conversely a family of operators bounded at every point of
     a Banach space is norm-bounded, by the uniform boundedness principle. -/)]
-theorem stableNA_iff_boundedHomogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+theorem stableNA_iff_boundedHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     StableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ, ∃ C : ℝ, ∀ t ≥ t₀,
@@ -305,7 +305,7 @@ response may depend on `t₀`. -/
   -/)
   (proof := /-- Identical to \cref{lem:stableNA-iff-boundedStateTransition}, with the
     margin $\delta$ and the bound $C$ both carried outside the quantifier on $t_{0}$. -/)]
-theorem uniformlyStableNA_iff_uniformlyBoundedStateTransition (s : ContinuousLinearSystem X U Y ℝ)
+theorem uniformlyStableNA_iff_uniformlyBoundedStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     UniformlyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ C ≥ (0 : ℝ), ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
@@ -349,7 +349,7 @@ it is needed: a continuous response that converges is bounded. -/
     the response is linear in the initial state; conversely every trajectory is a response
     (\cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}), so convergence of the responses is
     convergence of the trajectories, from any radius. -/)]
-theorem asymptoticStableNA_iff_decayingHomogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+theorem asymptoticStableNA_iff_decayingHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     AsymptoticStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       (∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ, ∃ C : ℝ, ∀ t ≥ t₀,
@@ -411,7 +411,7 @@ theorem asymptoticStableNA_iff_decayingHomogeneousResponse (s : ContinuousLinear
     exponential estimate along every trajectory is the estimate applied to the initial state,
     and conversely the estimate on any ball scales to the estimate everywhere. -/)]
 theorem globallyExponentiallyStableNA_iff_decayingStateTransition
-    (s : ContinuousLinearSystem X U Y ℝ) (hA : Continuous s.A) :
+    (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A) :
     GloballyExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
         ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
@@ -458,7 +458,7 @@ definition carries no information for a linear system. -/
   -/)
   (proof := /-- As in the global case; the radius $c$ of the local definition is absorbed by
     the scaling argument, and $c = 1$ serves in the converse. -/)]
-theorem exponentiallyStableNA_iff_decayingStateTransition (s : ContinuousLinearSystem X U Y ℝ)
+theorem exponentiallyStableNA_iff_decayingStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     ExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
@@ -503,7 +503,7 @@ radius, and the response is homogeneous, so the radius scales away. -/
   (proof := /-- Both are equivalent to the same estimate,
     \cref{thm:exponentiallyStableNA-iff-decayingStateTransition} and
     \cref{thm:globallyExponentiallyStableNA-iff-decayingStateTransition}. -/)]
-theorem exponentiallyStableNA_iff_globallyExponentiallyStableNA (s : ContinuousLinearSystem X U Y ℝ)
+theorem exponentiallyStableNA_iff_globallyExponentiallyStableNA (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     ExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) ↔
       GloballyExponentiallyStableNA (s.vectorField 0) (0 : X → ℝ) := by
@@ -531,7 +531,7 @@ some initial condition has an unbounded homogeneous response. -/
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(4).
   -/)
   (proof := /-- The negation of \cref{thm:stableNA-iff-boundedHomogeneousResponse}. -/)]
-theorem unstableNA_iff_unboundedHomogeneousResponse (s : ContinuousLinearSystem X U Y ℝ)
+theorem unstableNA_iff_unboundedHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
     UnstableNA (s.vectorField 0) (0 : X → ℝ) ↔
       ∃ t₀ : ℝ, 0 ≤ t₀ ∧ ∃ x₀ : X → ℝ, ∀ C : ℝ, ∃ t ≥ t₀,
