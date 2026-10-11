@@ -1,4 +1,6 @@
+import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.IntegralCurves
+import Mathlib.Analysis.ODE.Gronwall
 import Architect
 
 /-!
@@ -259,7 +261,178 @@ lemma IsTrajectory.isTrajectoryOn {s : ContinuousSystem E U Y} {u : ℝ → U} {
     (h : s.IsTrajectory u x) (I : Set ℝ) : s.IsTrajectoryOn u x I :=
   IsIntegralCurve.isIntegralCurveOn h I
 
+/-! ### The derivative of a function along the system -/
+
+/-- The derivative of `V(t, x)` along the system at the input value `u`,
+`∂V/∂t + ∂V/∂x · F(t, x, u)`: the rate of change of `V` along a trajectory through `x` at time
+`t` while the input takes the value `u`.  It is the Lie derivative (`_root_.lieDerivative`) of
+`V` along the field `F(·, ·, u)`; for `V` independent of `t` it is `∇V · F`
+(`lieDerivative_const`).  Input-free notions such as Lyapunov stability use `u = ()`;
+input-to-state notions use a general `u`. -/
+@[blueprint "def:continuousSystem-lieDerivative"
+  (title := "Derivative along the system")
+  (statement := /-- For $V : \mathbb{R} \times E \to \mathbb{R}$ and an input value $u \in U$,
+    the \emph{derivative of $V$ along the system} $\dot x = F(t, x, u)$ is
+    \[
+      \dot V(t, x, u) = \frac{\partial V}{\partial t}(t, x)
+        + \frac{\partial V}{\partial x}(t, x)\, F(t, x, u),
+    \]
+    the Lie derivative of $V$ along the field $F(\cdot, \cdot, u)$ (\cref{def:lieDerivative}).
+    -/)]
+noncomputable def lieDerivative (s : ContinuousSystem E U Y) (V : ℝ → E → ℝ) (t : ℝ) (x : E)
+    (u : U) : ℝ :=
+  _root_.lieDerivative V (fun t x => s.F t x u) t x
+
+/-- For `V` independent of time, the derivative along the system is the directional derivative
+of `V` along the state equation. -/
+@[blueprint "lem:continuousSystem-lieDerivative-const"
+  (title := "Derivative along the system of a time-invariant function")
+  (latexEnv := "lemma")
+  (statement := /-- If $V$ does not depend on $t$ and is differentiable at $x$, then
+    $\dot V(t, x, u) = DV(x)\, F(t, x, u)$. -/)]
+lemma lieDerivative_const {s : ContinuousSystem E U Y} {V : E → ℝ} {t : ℝ} {x : E} {u : U}
+    (hV : DifferentiableAt ℝ V x) :
+    s.lieDerivative (fun _ => V) t x u = fderiv ℝ V x (s.F t x u) :=
+  _root_.lieDerivative_const hV
+
+/-- **Chain rule along a trajectory**: the rate of change of `t ↦ V(t, x(t))` is the derivative
+of `V` along the system at the current input. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-hasDerivWithinAt-lieDerivative"
+  (title := "Chain rule along a trajectory")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be differentiable and $x$ a trajectory of $s$ under the input $u$
+    on $I$.  Then for $t \in I$, within $I$,
+    $\frac{d}{dt} V(t, x(t)) = \dot V(t, x(t), u(t))$.  This is
+    \cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}, a trajectory being an integral
+    curve. -/)]
+lemma IsTrajectoryOn.hasDerivWithinAt_lieDerivative {s : ContinuousSystem E U Y} {u : ℝ → U}
+    {x : ℝ → E} {I : Set ℝ} (hx : s.IsTrajectoryOn u x I) {V : ℝ → E → ℝ}
+    (hV : Differentiable ℝ (Function.uncurry V)) {t : ℝ} (ht : t ∈ I) :
+    HasDerivWithinAt (fun τ => V τ (x τ)) (s.lieDerivative V t (x t) (u t)) I t :=
+  IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV ht
+
+/-- If the derivative of `V` along the system is nonpositive along a trajectory on `[a, b]`,
+then `V` does not increase along it. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-antitoneOn-of-lieDerivative-nonpos"
+  (title := "$V$ does not increase along a trajectory")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be differentiable and $x$ a trajectory of $s$ under the input $u$
+    on $[a, b]$ with $\dot V(t, x(t), u(t)) \le 0$ for $t \in (a, b)$.  Then
+    $t \mapsto V(t, x(t))$ is nonincreasing on $[a, b]$.  This is
+    \cref{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}. -/)]
+lemma IsTrajectoryOn.antitoneOn_of_lieDerivative_nonpos {s : ContinuousSystem E U Y}
+    {u : ℝ → U} {x : ℝ → E} {a b : ℝ} (hx : s.IsTrajectoryOn u x (Set.Icc a b))
+    {V : ℝ → E → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
+    (h_nonpos : ∀ t ∈ Set.Ioo a b, s.lieDerivative V t (x t) (u t) ≤ 0) :
+    AntitoneOn (fun τ => V τ (x τ)) (Set.Icc a b) :=
+  IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos hx hV h_nonpos
+
+/-! ### Well-posedness -/
+
+/-- Every solution segment starting at time `t₀` in the set `S` extends to a solution on
+`[t₀, ∞)`: such solutions do not escape in finite time.
+
+Forward completeness is kept apart from the notions that need it.  Statements about limits as
+`t → ∞` quantify over solutions on `[t₀, ∞)`, and without it a solution that escapes in finite
+time would be silently left out of them. -/
+@[blueprint "def:continuousSystem-isForwardCompleteOn"
+  (title := "Forward completeness from a set")
+  (statement := /-- A continuous-time system is \emph{forward complete} from a set $S$ at time
+    $t_0$ under the input $u$ when every trajectory on a segment $[t_0, t_1]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) with $x(t_0) \in S$ agrees on that segment with
+    a trajectory on $[t_0, \infty)$. -/)]
+def IsForwardCompleteOn (s : ContinuousSystem E U Y) (u : ℝ → U) (t₀ : ℝ) (S : Set E) : Prop :=
+  ∀ (t₁ : ℝ) (x : ℝ → E), t₀ ≤ t₁ → s.IsTrajectoryOn u x (Set.Icc t₀ t₁) → x t₀ ∈ S →
+    ∃ y : ℝ → E, s.IsTrajectoryOn u y (Set.Ici t₀) ∧ Set.EqOn y x (Set.Icc t₀ t₁)
+
+/-- Every solution segment, from any initial time and state, extends to a solution on
+`[t₀, ∞)`. -/
+@[blueprint "def:continuousSystem-isForwardComplete"
+  (title := "Forward completeness")
+  (statement := /-- A continuous-time system is \emph{forward complete} under the input $u$ when
+    it is forward complete (\cref{def:continuousSystem-isForwardCompleteOn}) from every state at
+    every initial time. -/)]
+def IsForwardComplete (s : ContinuousSystem E U Y) (u : ℝ → U) : Prop :=
+  ∀ t₀ : ℝ, s.IsForwardCompleteOn u t₀ Set.univ
+
+/-- Solutions are *unique* forward in time: two solution segments on `[t₀, t₁]` that agree at
+`t₀` agree on the whole segment.
+
+Kept apart from the stability notions, which quantify over every solution and so need no
+uniqueness: theorems that use it assume it. -/
+@[blueprint "def:continuousSystem-hasUniqueSolutions"
+  (title := "Uniqueness of solutions")
+  (statement := /-- A continuous-time system has \emph{unique solutions} under the input $u$
+    when any two trajectories on a segment $[t_0, t_1]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) that agree at $t_0$ agree on all of
+    $[t_0, t_1]$. -/)]
+def HasUniqueSolutions (s : ContinuousSystem E U Y) (u : ℝ → U) : Prop :=
+  ∀ (t₀ t₁ : ℝ) (x y : ℝ → E), s.IsTrajectoryOn u x (Set.Icc t₀ t₁) →
+    s.IsTrajectoryOn u y (Set.Icc t₀ t₁) → x t₀ = y t₀ → Set.EqOn x y (Set.Icc t₀ t₁)
+
+/-- **Lipschitz right-hand sides have unique solutions.**  If `x ↦ F(t, x, u(t))` is
+`K`-Lipschitz for every `t`, solutions are unique forward in time. -/
+@[blueprint "thm:continuousSystem-hasUniqueSolutions-of-lipschitz"
+  (title := "Lipschitz systems have unique solutions")
+  (statement := /-- If $x \mapsto F(t, x, u(t))$ is $K$-Lipschitz for every $t$, the system has
+    unique solutions under $u$ (\cref{def:continuousSystem-hasUniqueSolutions}). -/)
+  (proof := /-- Grönwall's inequality, in the form of Mathlib's
+    \texttt{ODE\_solution\_unique\_of\_mem\_Icc\_right}: a derivative within $[t_0, t_1]$ at a point
+    of $[t_0, t_1)$ is a right derivative there. -/)]
+theorem hasUniqueSolutions_of_lipschitz {s : ContinuousSystem E U Y} {u : ℝ → U} {K : NNReal}
+    (hL : ∀ t, LipschitzWith K (s.vectorField u t)) : s.HasUniqueSolutions u := by
+  intro t₀ t₁ x y hx hy h₀
+  -- a derivative within the segment, at a point other than its right end, is a right derivative
+  have h_right : ∀ {z : ℝ → E}, s.IsTrajectoryOn u z (Set.Icc t₀ t₁) → ∀ t ∈ Set.Ico t₀ t₁,
+      HasDerivWithinAt z (s.vectorField u t (z t)) (Set.Ici t) t := fun hz t ht =>
+    (hz t (Set.Ico_subset_Icc_self ht)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem ht)
+  exact ODE_solution_unique_of_mem_Icc_right (s := fun _ => Set.univ)
+    (fun t _ => (hL t).lipschitzOnWith) (fun t ht => (hx t ht).continuousWithinAt) (h_right hx)
+    (fun _ _ => Set.mem_univ _) (fun t ht => (hy t ht).continuousWithinAt) (h_right hy)
+    (fun _ _ => Set.mem_univ _) h₀
+
 end Trajectory
+
+/-! ### The unforced system -/
+
+section ZeroInput
+
+variable [Zero U]
+
+/-- The *unforced* system: the input held at `0`, as an autonomous system `ẋ = F(t, x, 0)`,
+`y = h(t, x, 0)`.  Stability of a system with input is stability of this system; input–output
+notions such as input-to-state stability are stated on the system itself. -/
+@[blueprint "def:continuousSystem-zeroInput"
+  (title := "The unforced system")
+  (statement := /-- The autonomous system (\cref{def:continuousSystem-autonomous})
+    $\dot x = F(t, x, 0)$, $y = h(t, x, 0)$ obtained by holding the input at $0$.  Stability of a
+    system with input means stability of this system. -/)]
+def zeroInput (s : ContinuousSystem E U Y) : ContinuousSystem E Unit Y :=
+  autonomous (fun t x => s.F t x 0) (fun t x => s.h t x 0)
+
+@[simp] lemma zeroInput_F (s : ContinuousSystem E U Y) (t : ℝ) (x : E) (v : Unit) :
+    s.zeroInput.F t x v = s.F t x 0 := rfl
+
+@[simp] lemma zeroInput_h (s : ContinuousSystem E U Y) (t : ℝ) (x : E) (v : Unit) :
+    s.zeroInput.h t x v = s.h t x 0 := rfl
+
+/-- The unforced system is autonomous. -/
+lemma isAutonomous_zeroInput (s : ContinuousSystem E U Y) : s.zeroInput.IsAutonomous :=
+  isAutonomous_autonomous _ _
+
+/-- The trajectories of the unforced system are those of the system under the zero input. -/
+@[blueprint "lem:continuousSystem-zeroInput-isTrajectoryOn-iff"
+  (title := "Trajectories of the unforced system")
+  (latexEnv := "lemma")
+  (statement := /-- A map is a trajectory of the unforced system
+    (\cref{def:continuousSystem-zeroInput}) on $I$ exactly when it is a trajectory of $s$ under
+    the zero input on $I$. -/)]
+lemma zeroInput_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (s : ContinuousSystem E U Y) {x : ℝ → E} {I : Set ℝ} :
+    s.zeroInput.IsTrajectoryOn (fun _ => ()) x I ↔ s.IsTrajectoryOn 0 x I :=
+  Iff.rfl
+
+end ZeroInput
 
 /-! ### Carathéodory trajectories -/
 

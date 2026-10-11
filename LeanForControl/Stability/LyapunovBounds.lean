@@ -1,4 +1,5 @@
 import LeanForControl.Analysis.MonotoneFunctions
+import LeanForControl.Analysis.PositiveDefinite
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
@@ -19,10 +20,11 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
 ## Main result
 
-**Class K sandwich bounds** (`LyapunovClassKBounds`): Let `V : ℝⁿ → ℝ` be continuous on the
-closed ball `closedBall 0 r`, with `V(0) = 0` and `V(x) > 0` for every nonzero `x` in that ball.
-Then there exist class K functions `α₁, α₂` on `[0, r)` (i.e. `ClassK r b₁`, `ClassK r b₂`) such
-that `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ < r`.
+**Class K sandwich bounds** (`LyapunovClassKBounds`): Let `W : ℝⁿ → ℝ` be positive definite
+about `x_eq` (`IsPositiveDefiniteOn`) on a set containing `closedBall x_eq r`.  Then there exist
+class K functions `α₁, α₂` on `[0, r)` (i.e. `ClassK r b₁`, `ClassK r b₂`) such that
+`α₁(‖x - x_eq‖) ≤ W(x) ≤ α₂(‖x - x_eq‖)` for all `x` with `‖x - x_eq‖ < r`.  The construction is
+carried out about the origin and translated.
 
 The intermediate comparisons `α₁ ≤ ψ` and `φ ≤ α₂` (steps 4–5 below) hold on the closed
 interval `[0, r]`; the final bound is stated on the open ball because `α₁, α₂` are class K only
@@ -305,47 +307,10 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 
 -- ─── 7. Main Theorem ──────────────────────────────────────────────────────────
 
-/-- **Class K sandwich bounds**: For any `V` continuous and positive definite on the closed
-    ball `closedBall 0 r`, there exist class K functions `α₁`, `α₂` on `[0, r)` such that
-
-      `α₁(‖x‖) ≤ V(x) ≤ α₂(‖x‖)` for all `x` with `‖x‖ < r`.
-
-    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
-    Differences:
-    - The bound holds on the open ball `‖x‖ < r`, with `α₁, α₂` class `K` on `[0, r)`; Khalil
-      states it on `[0, r]`.
-    - The radially unbounded `K∞` case is not derived here. -/
-@[blueprint "thm:lyapunov-class-K-bounds"
-  (title := "Class $\\mathcal{K}$ sandwich bounds")
-  (statement := /-- Let $V : \mathbb{R}^{n} \to \mathbb{R}$ be continuous on $\overline{B}(0,r)$
-    with
-    $V(0) = 0$ and $V(x) > 0$ for every nonzero $x$ in that ball.  Then there are class
-    $\mathcal{K}$ functions $\alpha_1, \alpha_2$ on $[0, r)$ with
-    \[
-      \alpha_1(\|x\|) \;\le\; V(x) \;\le\; \alpha_2(\|x\|)
-      \qquad \forall\, \|x\| < r.
-    \]
-    The conclusion holds on the \emph{open} ball: $\alpha_1$ and $\alpha_2$ are class
-    $\mathcal{K}$ on $[0, r)$, so neither is defined at $\|x\| = r$.
-
-    This is what lets a Lyapunov argument be run entirely in terms of comparison functions:
-    positive definiteness is a pointwise condition, and this converts it into monotone bounds
-    in the single variable $\|x\|$.
-
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
-    Differences: \begin{itemize} \item The bound holds on the open ball $\|x\| < r$, with $\alpha_1,
-    \alpha_2$ class $\mathcal{K}$ on $[0,r)$; Khalil states it on $[0,r]$. \item The radially
-    unbounded $\mathcal{K}_{\infty}$ case is not derived here. \end{itemize}
-  -/)
-  (proof := /-- For the lower bound take $\psi(s) = \inf\{V(x) : s \le \|x\| \le r\}$,
-    the infimum of $V$ over the annulus of inner radius $s$: it vanishes at $0$, is positive for
-    $s > 0$ by compactness and positive definiteness, and is nondecreasing.  For the upper bound
-    take $\phi(s) = \sup\{V(x) : \|x\| \le s\}$, similarly nondecreasing and vanishing at
-    $0$.  Neither is continuous or strictly monotone, so smooth them:
-    \cref{lem:exists-strictMono-lower-bound} gives a class $\mathcal{K}$ minorant of $\psi$
-    and \cref{lem:exists-strictMono-upper-bound} a class $\mathcal{K}$ majorant of $\phi$.
-    Since $\psi(\|x\|) \le V(x) \le \phi(\|x\|)$ pointwise, these sandwich $V$. -/)]
-theorem LyapunovClassKBounds [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
+/-- The sandwich bounds about the origin, from the three conditions of positive definiteness
+spelled out.  `LyapunovClassKBounds` translates them to any point. -/
+private theorem classKBounds_origin [NeZero n] (hr : 0 < r)
+    (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂),
       ∀ x : ℝⁿ, ‖x‖ < r → α₁.toFun ‖x‖ ≤ V x ∧ V x ≤ α₂.toFun ‖x‖ := by
@@ -357,3 +322,55 @@ theorem LyapunovClassKBounds [NeZero n] (hr : 0 < r) (hV_cont : ContinuousOn V (
   -- Chain both inequalities: α₁ ≤ ψ ≤ V and V ≤ φ ≤ α₂
   exact ⟨le_trans (hα₁_le_psi ‖x‖ h_norm_pos hx.le) (V_ge_psi hV_zero hV_pos hx.le),
          le_trans (V_le_phi hV_cont hx.le) (hphi_le_α₂ ‖x‖ h_norm_pos hx.le)⟩
+
+/-- **Class K sandwich bounds**: for `W` positive definite on a set containing the closed ball
+    `closedBall x_eq r`, there exist class K functions `α₁`, `α₂` on `[0, r)` such that
+
+      `α₁(‖x - x_eq‖) ≤ W(x) ≤ α₂(‖x - x_eq‖)` for all `x` with `‖x - x_eq‖ < r`.
+
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
+    Differences:
+    - The bound holds on the open ball `‖x - x_eq‖ < r`, with `α₁, α₂` class `K` on `[0, r)`;
+      Khalil states it on `[0, r]`.
+    - The radially unbounded `K∞` case is not derived here. -/
+@[blueprint "thm:lyapunov-class-K-bounds"
+  (title := "Class $\\mathcal{K}$ sandwich bounds")
+  (statement := /-- Let $W : \mathbb{R}^{n} \to \mathbb{R}$ be positive definite
+    (\cref{def:isPositiveDefiniteOn}) about $x_{\mathrm{eq}}$ on a set containing
+    $\overline{B}(x_{\mathrm{eq}}, r)$.  Then there are class $\mathcal{K}$ functions
+    $\alpha_1, \alpha_2$ on $[0, r)$ with
+    \[
+      \alpha_1(\|x - x_{\mathrm{eq}}\|) \;\le\; W(x) \;\le\; \alpha_2(\|x - x_{\mathrm{eq}}\|)
+      \qquad \forall\, \|x - x_{\mathrm{eq}}\| < r.
+    \]
+    The conclusion holds on the \emph{open} ball: $\alpha_1$ and $\alpha_2$ are class
+    $\mathcal{K}$ on $[0, r)$, so neither is defined at $\|x - x_{\mathrm{eq}}\| = r$.
+
+    This is what lets a Lyapunov argument be run entirely in terms of comparison functions:
+    positive definiteness is a pointwise condition, and this converts it into monotone bounds
+    in the single variable $\|x - x_{\mathrm{eq}}\|$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.3 (proved in his Appendix C.4).
+    Differences: \begin{itemize} \item The bound holds on the open ball, with $\alpha_1,
+    \alpha_2$ class $\mathcal{K}$ on $[0,r)$; Khalil states it on $[0,r]$. \item The radially
+    unbounded $\mathcal{K}_{\infty}$ case is not derived here. \end{itemize}
+  -/)
+  (proof := /-- Translate to the origin, $V(y) = W(y + x_{\mathrm{eq}})$.  For the lower bound
+    take $\psi(s) = \inf\{V(y) : s \le \|y\| \le r\}$,
+    the infimum of $V$ over the annulus of inner radius $s$: it vanishes at $0$, is positive for
+    $s > 0$ by compactness and positive definiteness, and is nondecreasing.  For the upper bound
+    take $\phi(s) = \sup\{V(y) : \|y\| \le s\}$, similarly nondecreasing and vanishing at
+    $0$.  Neither is continuous or strictly monotone, so smooth them:
+    \cref{lem:exists-strictMono-lower-bound} gives a class $\mathcal{K}$ minorant of $\psi$
+    and \cref{lem:exists-strictMono-upper-bound} a class $\mathcal{K}$ majorant of $\phi$.
+    Since $\psi(\|y\|) \le V(y) \le \phi(\|y\|)$ pointwise, these sandwich $V$. -/)]
+theorem LyapunovClassKBounds [NeZero n] {W : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} {r : ℝ}
+    (hr : 0 < r) (hrD : closedBall x_eq r ⊆ D) (hW : IsPositiveDefiniteOn W x_eq D) :
+    ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂), ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
+      α₁.toFun ‖x - x_eq‖ ≤ W x ∧ W x ≤ α₂.toFun ‖x - x_eq‖ := by
+  have h_maps : MapsTo (· + x_eq) (closedBall (0 : ℝⁿ) r) D := fun y hy =>
+    hrD (by simpa [mem_closedBall_iff_norm] using hy)
+  obtain ⟨b₁, b₂, α₁, α₂, h⟩ := classKBounds_origin (V := fun y => W (y + x_eq)) hr
+    (hW.1.comp (continuous_add_const x_eq).continuousOn h_maps) (by simpa using hW.2.1)
+    (fun y hy hy₀ => hW.2.2 _ (h_maps hy) (by simpa using hy₀))
+  exact ⟨b₁, b₂, α₁, α₂, fun x hx => by simpa using h (x - x_eq) hx⟩

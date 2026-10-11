@@ -468,6 +468,42 @@ def ClassKL.comp_right {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL 
 
 
 
+/-! ### Bookkeeping lemmas -/
+
+/-- If `σ(y, 0) ≤ y`, a class `KL` function maps `[0, d)` into itself at every time `s ≥ 0`:
+by decay in `s`, `0 ≤ σ(y, s) ≤ σ(y, 0) ≤ y < d`. -/
+theorem ClassKL.toFun_mem_Ico {d : ℝ} (σ : ClassKL d)
+    (hσ_zero : ∀ y ∈ Set.Ico 0 d, σ.toFun y 0 ≤ y) {y s : ℝ} (hy : y ∈ Set.Ico 0 d)
+    (hs : 0 ≤ s) :
+    σ.toFun y s ∈ Set.Ico 0 d := by
+  have h_decay : σ.toFun y s ≤ σ.toFun y 0 :=
+    σ.anti_s y hy (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr hs) hs
+  exact ⟨σ.nonneg y hy s hs, (h_decay.trans (hσ_zero y hy)).trans_lt hy.2⟩
+
+/-- **Sandwiching a class `KL` function.**  Given `σ : ClassKL d` with `σ(y, 0) ≤ y`, a class `K`
+function `α₁` whose range `[0, b₁)` contains `[0, d)`, and a class `K` function `α₂` with
+`α₂(c) = d`, the composite `β(ρ, s) = α₁⁻¹(σ(α₂(ρ), s))` is class `KL` on `[0, c)`.  This is how
+a class `KL` bound on a Lyapunov function becomes one on the state. -/
+theorem ClassKL.exists_comp_sandwich {r b₁ b₂ c d : ℝ}
+    (α₁ : ClassK r b₁) (α₂ : ClassK r b₂) {σ : ClassKL d}
+    (hσ_zero : ∀ y ∈ Set.Ico 0 d, σ.toFun y 0 ≤ y)
+    (hc_pos : 0 < c) (hc_lt_r : c < r) (h_α₂_c : α₂.toFun c = d) (hd_lt_b₁ : d < b₁) :
+    ∃ β : ClassKL c, ∀ ρ s, β.toFun ρ s = α₁.invFun (σ.toFun (α₂.toFun ρ) s) := by
+  /- `ClassKL.comp_left` takes a `ClassKInfty`, so `β` is assembled in two steps: first
+     `σ ∘ α₂` by `comp_right`, then `α₁⁻¹ ∘ (σ ∘ α₂)` by `comp_left_K`. -/
+  -- Step 1. The inner composite `σ(α₂(ρ), s)`, with `α₂` restricted to `[0, c) → [0, d)`.
+  set inner := σ.comp_right (α₂.restrictTo hc_pos hc_lt_r h_α₂_c)
+  have h_inner_eq : ∀ ρ s, inner.toFun ρ s = σ.toFun (α₂.toFun ρ) s := fun ρ s =>
+    congrArg (fun y => σ.toFun y s) (α₂.restrictTo_toFun hc_pos hc_lt_r h_α₂_c ρ)
+  -- Step 2. Its values stay below `d < b₁`, inside the domain of `α₁⁻¹`.
+  have h_range : ∀ ρ ∈ Set.Ico 0 c, ∀ s ≥ 0, inner.toFun ρ s < b₁ := fun ρ hρ s hs => by
+    rw [h_inner_eq]
+    exact (σ.toFun_mem_Ico hσ_zero (α₂.toFun_mem_Ico hc_lt_r h_α₂_c hρ) hs).2.trans hd_lt_b₁
+  -- Step 3. Post-compose with `α₁⁻¹`.
+  exact ⟨inner.comp_left_K α₁.symm h_range, fun ρ s => congrArg α₁.invFun (h_inner_eq ρ s)⟩
+
+
+
 -- ─── Class KL Global ─────────────────────────────────────────────────────────
 
 /-! ### Class KL Global

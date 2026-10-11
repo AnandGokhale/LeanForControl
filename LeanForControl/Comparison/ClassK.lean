@@ -430,3 +430,33 @@ theorem exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) :
   have h := hf_lip.dist_le_mul x 0
   rw [Real.dist_eq, Real.dist_eq, hf_zero, sub_zero, sub_zero, abs_of_nonneg hx] at h
   exact (le_abs_self _).trans h
+
+
+/-! ### Bookkeeping lemmas -/
+
+/-- `ClassK.restrictTo` does not change the function: the cast along `α(c) = e` only retypes
+the bound on the range. -/
+theorem ClassK.restrictTo_toFun {a b : ℝ} (α : ClassK a b) {c e : ℝ} (hc_pos : 0 < c)
+    (hc_lt : c < a) (h_eq : α.toFun c = e) (x : ℝ) :
+    (α.restrictTo hc_pos hc_lt h_eq).toFun x = α.toFun x := by
+  -- `e` is a variable, so `cases` can substitute it away and remove the cast.
+  cases h_eq
+  rfl
+
+/-- A class `K` function maps `[0, c)` into `[0, α(c))`, written here with `α(c) = d`. -/
+theorem ClassK.toFun_mem_Ico {a b c d : ℝ} (α : ClassK a b) (hc_lt : c < a)
+    (h_eq : α.toFun c = d) {ρ : ℝ} (hρ : ρ ∈ Set.Ico 0 c) :
+    α.toFun ρ ∈ Set.Ico 0 d := by
+  have hρ_in : ρ ∈ Set.Ico 0 a := ⟨hρ.1, hρ.2.trans hc_lt⟩
+  have hc_in : c ∈ Set.Ico 0 a := ⟨hρ.1.trans hρ.2.le, hc_lt⟩
+  exact ⟨(α.maps_to hρ_in).1, h_eq ▸ α.strict_mono hρ_in hc_in hρ.2⟩
+
+/-- If `v ≤ α₂(ρ)` then `α₃(α₂⁻¹(v)) ≤ α₃(ρ)`, since both `α₂⁻¹` and `α₃` are increasing. -/
+theorem ClassK.toFun_invFun_le {r b₂ b₃ : ℝ} (α₂ : ClassK r b₂) (α₃ : ClassK r b₃)
+    {ρ v : ℝ} (hρ : ρ ∈ Set.Ico 0 r) (hv : v ∈ Set.Ico 0 b₂) (hv_le : v ≤ α₂.toFun ρ) :
+    α₃.toFun (α₂.invFun v) ≤ α₃.toFun ρ := by
+  have h_inv_le : α₂.invFun v ≤ ρ :=
+    calc α₂.invFun v
+        ≤ α₂.invFun (α₂.toFun ρ) := (α₂.inv_mono_iff hv (α₂.maps_to hρ)).mpr hv_le
+      _ = ρ                      := α₂.left_inv hρ
+  exact α₃.strict_mono.monotoneOn (α₂.inv_maps_to hv) hρ h_inv_le

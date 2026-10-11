@@ -3,6 +3,7 @@ import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.Analysis.Continuity
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.Stability.DefsAutonomous
+import LeanForControl.Stability.Continuous.Bridges
 import Architect
 
 variable {n : ℕ}
@@ -16,8 +17,8 @@ Lyapunov stability theorems for autonomous ODEs `ẋ = f(x)` on `ℝⁿ`.
 
 ## Main results
 
-* **Lyapunov's stability theorem** (`lyapunov_stable`): `IsLocalLyapunovFunction` implies
-  `LyapunovStable`.
+* **Lyapunov's stability theorem** (`lyapunov_stable`) has moved to `Continuous/Bridges.lean`,
+  where it is derived from `ContinuousSystem.IsUniformLyapunovFunction.uniformlyStable`.
 * **Lyapunov's global asymptotic stability theorem** (`lyapunov_asymptotic_stable`):
   `IsStrictLyapunovFunction` implies `GlobalAsymptoticStable`.
 * **Corollary** (`lyapunov_global_asymptotic_stable`): `IsAsymptoticLyapunovFunction` implies
@@ -46,15 +47,6 @@ The proofs follow the classical Lyapunov stability arguments (Khalil, *Nonlinear
 -/
 
 /-! ## Infrastructure -/
-
-/-- Proof plumbing: the sphere `Metric.sphere x_eq ε` is nonempty when `0 < n` and `0 < ε`,
-so a witness at distance `ε` can be picked. -/
-private lemma sphere_nonempty
-    (x_eq : ℝⁿ) (hn : 0 < n) {ε : ℝ} (hε : 0 < ε) :
-    (Metric.sphere x_eq ε).Nonempty := by
-  refine ⟨x_eq + EuclideanSpace.single (⟨0, hn⟩ : Fin n) ε, ?_⟩
-  rw [Metric.mem_sphere, dist_eq_norm]
-  simp [PiLp.norm_single, abs_of_pos hε]
 
 /-- Proof plumbing: continuity of `V` at the equilibrium, where `V` vanishes. For every level
 `c > 0` there is a radius `δ > 0` such that `V x < c` whenever `‖x - x_eq‖ < δ`. -/
@@ -85,7 +77,8 @@ extraction of `HasDerivAt φ` from the integral-curve hypothesis. Stating it onc
 `fderiv ℝ V (φ t) (f (φ t))` spelling — the form `hLie_nonpos` and its relatives are stated
 in — at every call site.
 
-The non-autonomous mirror is `hasDerivAt_V_comp_traj_NA` (`NonAutonomous.lean`). -/
+The time-varying mirror is `ContinuousSystem.hasDerivWithinAt_comp_trajectory`
+(`Continuous/LyapunovTheorems.lean`). -/
 private lemma hasDerivAt_V_comp_integralCurveOn
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ}
     (hV_diff : Differentiable ℝ V)
@@ -339,98 +332,6 @@ lemma sublevel_set_invariant
   have hVT_le : V (φ T) ≤ V (φ t₀) := le_of_tendsto hTwithin hVs_bound
   linarith
 
-/-! ## Lyapunov stability -/
-
-open Set in
-/-- **Lyapunov's stability theorem.** If `V` is a local Lyapunov function on `D`, then
-    `x_eq` is stable with respect to every finite forward solution segment.
-
-Proof sketch:
-1. `D` open + `x_eq ∈ D` → `closedBall x_eq ε₀ ⊆ D` for some `ε₀ > 0`; given `ε`, work at the
-   radius `ε' = min ε ε₀`, so `closedBall x_eq ε' ⊆ D`.
-2. `m = min V` on `sphere x_eq ε'` is `> 0` (compact sphere, `V > 0` away from `x_eq`).
-3. Continuity at `x_eq` (`V(x_eq) = 0`) gives `δ₀` with `V(y) < m` for `‖y − x_eq‖ < δ₀`; take
-   `δ = min δ₀ ε'`, so a segment starting within `δ` has `V(φ t₀) < m` and starts inside the
-   `ε'`-ball.
-4. If `‖φ t − x_eq‖ ≥ ε ≥ ε'` for some `t`, `exists_first_sphere_hit` gives a first time `τ`
-   with `‖φ τ − x_eq‖ = ε'`, the solution staying in `closedBall x_eq ε' ⊆ D` on `[t₀, τ]`.
-5. `V_nonincreasing_on` on `[t₀, τ]` gives `V(φ τ) ≤ V(φ t₀) < m ≤ V(φ τ)`. Contradiction.
-
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.1, first conclusion. -/
-@[blueprint "thm:lyapunov-stable"
-  (title := "Lyapunov's stability theorem")
-  (statement := /-- If $V$ is a local Lyapunov function (\cref{def:isLocalLyapunovFunction}) for
-    $\dot{x} = f(x)$ on a domain $D \ni x_{\mathrm{eq}}$, then $x_{\mathrm{eq}}$
-    is stable on every finite forward solution segment
-    (\cref{def:lyapunovStable}).
-
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.1, first conclusion ($x = 0$ is
-    stable under (4.2) and (4.3)).
-  -/)
-  (proof := /-- Pick $\varepsilon_{0}$ so $\overline{B}(x_{\mathrm{eq}},\varepsilon_{0})
-    \subseteq D$. Let $m = \min_{S_{\varepsilon'}} V > 0$. Choose $\delta$ with
-    $V < m$ on $B(x_{\mathrm{eq}},\delta)$. If $\|\varphi(t^{*})-x_{\mathrm{eq}}\|
-    \ge \varepsilon$, monotonicity of $V$ gives $V(\varphi(t^{*})) \le V(\varphi(0))
-    < m \le V(\varphi(t^{*}))$, a contradiction. -/)]
-theorem lyapunov_stable
-    {D : Set ℝⁿ} {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hn : 0 < n)
-    (hV : IsLocalLyapunovFunction f V x_eq D) :
-    LyapunovStable f x_eq := by
-  -- Step 1: choose `ε₀` so that the closed `ε₀`-ball lies in `D`.
-  obtain ⟨r, hr_pos, hr_ball⟩ := Metric.isOpen_iff.mp hV.hD_open x_eq hV.hD_mem
-  set ε₀ := r / 2
-  have hε₀_pos : 0 < ε₀ := by dsimp [ε₀]; linarith
-  have hcBall_sub_D : Metric.closedBall x_eq ε₀ ⊆ D := by
-    intro x hx
-    apply hr_ball
-    rw [Metric.mem_ball, Metric.mem_closedBall] at *
-    dsimp [ε₀] at *
-    linarith
-  intro ε hε
-  set ε' := min ε ε₀
-  have hε'_pos : 0 < ε' := lt_min hε hε₀_pos
-  have hε'_le_ε : ε' ≤ ε := min_le_left _ _
-  have hcBall'_sub_D : Metric.closedBall x_eq ε' ⊆ D :=
-    (Metric.closedBall_subset_closedBall (min_le_right _ _)).trans hcBall_sub_D
-  have hsphere'_sub_D : Metric.sphere x_eq ε' ⊆ D :=
-    Metric.sphere_subset_closedBall.trans hcBall'_sub_D
-  -- Step 2: `m` is the minimum of `V` on the `ε'`-sphere, and it is positive.
-  obtain ⟨x_min, hx_min_mem, hx_min_le⟩ :=
-    (isCompact_sphere x_eq ε').exists_isMinOn
-      (sphere_nonempty x_eq hn hε'_pos) hV.hcont.continuousOn
-  set m := V x_min
-  have hm_pos : 0 < m := by
-    apply hV.hpos x_min (hsphere'_sub_D hx_min_mem)
-    intro hx_min_eq
-    have hx_min_dist := hx_min_mem
-    rw [hx_min_eq, Metric.mem_sphere, dist_self] at hx_min_dist
-    exact (ne_of_gt hε'_pos) hx_min_dist.symm
-  -- Step 3: `δ` from continuity of `V` at `x_eq`: starting within `δ` forces `V (φ t₀) < m`.
-  obtain ⟨δ₀, hδ₀_pos, hδ₀⟩ := exists_radius_V_lt hV.hcont hV.hzero hm_pos
-  set δ := min δ₀ ε'
-  refine ⟨δ, lt_min hδ₀_pos hε'_pos, ?_⟩
-  intro t₀ t₁ φ hφ hφ0 t ht
-  have hφ0ε' : ‖φ t₀ - x_eq‖ < ε' := hφ0.trans_le (min_le_right _ _)
-  have hV0_lt_m : V (φ t₀) < m := hδ₀ (φ t₀) (hφ0.trans_le (min_le_left _ _))
-  -- Step 4: suppose the solution reaches distance `ε`; then it hits the `ε'`-sphere.
-  by_contra hnot
-  push Not at hnot
-  have hge_ε' : ε' ≤ ‖φ t - x_eq‖ := hε'_le_ε.trans hnot
-  -- First time the solution meets the `ε'`-sphere; it stays in the closed ball up to then.
-  obtain ⟨τ, hτ_mem, hτ_eq, hτ_stay⟩ :=
-    exists_first_sphere_hit (hφ.continuousOn.mono (Icc_subset_Icc le_rfl ht.2))
-      hφ0ε' ⟨ht.1, le_rfl⟩ hge_ε'
-  have hstay : ∀ s ∈ Icc t₀ τ, φ s ∈ D := fun s hs =>
-    hcBall'_sub_D (by rw [Metric.mem_closedBall, dist_eq_norm]; exact hτ_stay s hs)
-  -- Step 5: contradiction. `V` cannot have decreased to `φ τ` on the sphere, where it is at
-  -- least `m > V (φ t₀)`.
-  have hVT_le : V (φ τ) ≤ V (φ t₀) :=
-    V_nonincreasing_on hV (hφ.mono (Icc_subset_Icc_right (hτ_mem.2.trans ht.2)))
-      hτ_mem.1 hstay
-  have hVT_ge : m ≤ V (φ τ) :=
-    hx_min_le (by rw [Metric.mem_sphere, dist_eq_norm]; exact hτ_eq)
-  linarith
-
 /-! ## Consequences of local exponential stability -/
 
 open Set in
@@ -470,32 +371,6 @@ theorem LocallyExponentiallyStable.lyapunovStable
     _ < ε := by
       rw [mul_one, ← lt_div_iff₀' hCpos]
       simpa [mul_comm] using hinit
-
-open Set in
-/-- A fixed escape radius witnessed from arbitrarily small initial perturbations on finite
-forward segments implies instability.
-
-Reference: Khalil, *Nonlinear Systems*.
--/
-@[blueprint "thm:unstable-of-fixed-escape"
-  (title := "Instability from a fixed escape radius")
-  (statement := /-- Fix $\varepsilon > 0$.  If for every $\delta > 0$ some solution segment
-    starts within $\delta$ of $x_{\mathrm{eq}}$ and reaches distance at least $\varepsilon$
-    from it, then $x_{\mathrm{eq}}$ is unstable.  This is the contrapositive of stability, in
-    the form the instability theorems produce their witnesses.
-
-    Reference: Khalil, \emph{Nonlinear Systems}.
-  -/)]
-theorem unstable_of_fixed_escape
-    {f : ℝⁿ → ℝⁿ} {x_eq : ℝⁿ} {ε : ℝ} (hε : 0 < ε)
-    (hescape : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
-      IsTrajectoryOn φ f 0 T ∧ ‖φ 0 - x_eq‖ < δ ∧
-        t ∈ Icc (0 : ℝ) T ∧ ε ≤ ‖φ t - x_eq‖) :
-    Unstable f x_eq := by
-  intro hstable
-  obtain ⟨δ, hδ, hstay⟩ := hstable ε hε
-  obtain ⟨T, φ, t, hφ, hφ0, ht, hfar⟩ := hescape δ hδ
-  exact (not_lt_of_ge hfar) (hstay 0 T φ hφ hφ0 t ht)
 
 /-! ## Global asymptotic stability -/
 

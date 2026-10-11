@@ -44,8 +44,8 @@ Files:
 | Class-K characterization of uniform stability | `uniformlyStableNA_iff_classK` | `KLCharacterization.lean` | ✅ done |
 | Class-KL characterization of uniform asymptotic stability | `uniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
 | Class-KL characterization of global uniform asymptotic stability | `globallyUniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
-| Lyapunov's uniform stability theorem | `lyapunov_uniformly_stable_NA` | `NonAutonomous.lean` | ✅ done |
-| Lyapunov's uniform asymptotic stability theorem | `lyapunov_uniformly_asymptotic_stable_NA` | `NonAutonomous.lean` | ✅ done |
+| Lyapunov's uniform stability theorem | `IsUniformLyapunovFunction.uniformlyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Lyapunov's uniform asymptotic stability theorem | `IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
 | Exponential stability from a power-law Lyapunov sandwich | — | — | planned — Khalil Theorem 4.10; `ExponentiallyStableNA` is defined but nothing concludes it |
 | Hespanha's Definition 8.1 for `ẋ = A(t)x` ⟺ the predicates below | `stableNA_linearVectorField_iff` and friends | `LinearSystems/Stability/Continuous/LyapunovLTV.lean` | ✅ done — see `L` |
 
@@ -64,7 +64,8 @@ Files:
   `exists_decayBound_family`); everything else in the file is private construction
 - `KLCharacterization.lean` — class-K / class-KL characterizations of the stability
   predicates in `DefsNonAutonomous.lean`
-- `NonAutonomous.lean` — the two main Lyapunov theorems for non-autonomous systems
+- `Continuous/LyapunovTheorems.lean` — the two main Lyapunov theorems, stated on
+  `ContinuousSystem` with the certificates of `Continuous/LyapunovFunctions.lean`
 
 The predicates of `DefsNonAutonomous.lean` are also the ones the linear track uses: Hespanha's
 Definition 8.1, stated on the state transition matrix of `ẋ = A(t)x`, is proved equivalent to
@@ -342,4 +343,5 @@ the `forward` rename sweep: there `forward` means *forward in time from 0* — a
 - **Non-autonomous work reuses the comparison-function library** (`Comparison/ClassK.lean`
   and related files) rather than the autonomous Lyapunov-function structures directly.
   Stability notions are characterized via class-K / class-KL bounds, and the main theorems
-  in `NonAutonomous.lean` combine those bounds with the Dini-derivative comparison lemma.
+  in `Continuous/LyapunovTheorems.lean` combine those bounds with the Dini-derivative
+  comparison lemma.

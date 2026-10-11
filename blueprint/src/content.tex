@@ -41,6 +41,22 @@ for time invariance instead.
 
 \inputleannode{lem:continuousSystem-isAutonomous-exists}
 
+\inputleannode{def:continuousSystem-zeroInput}
+
+\inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
+
+Well-posedness is kept apart from stability. The stability notions quantify over every solution,
+so they need no uniqueness; forward completeness enters only where a limit as $t \to \infty$ is
+taken. Theorems that need either property assume it.
+
+\inputleannode{def:continuousSystem-isForwardCompleteOn}
+
+\inputleannode{def:continuousSystem-isForwardComplete}
+
+\inputleannode{def:continuousSystem-hasUniqueSolutions}
+
+\inputleannode{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}
+
 \inputleannode{def:continuousSystem-vectorField}
 
 \inputleannode{def:continuousSystem-outputMap}
@@ -52,6 +68,18 @@ for time invariance instead.
 \inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
 
 \inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+The derivative of a function along the system is the rate at which it changes along trajectories.
+It takes the input value as an argument: stability uses the input-free system, input-to-state
+notions a general input.
+
+\inputleannode{def:continuousSystem-lieDerivative}
+
+\inputleannode{lem:continuousSystem-lieDerivative-const}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-hasDerivWithinAt-lieDerivative}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-antitoneOn-of-lieDerivative-nonpos}
 
 The derivative form above excludes the solutions produced by discontinuous inputs, which have
 corners where the input jumps. The integral form admits them, and is the one input-driven notions
@@ -522,6 +550,22 @@ sphere.
 
 \inputleannode{thm:exists-first-sphere-hit}
 
+\section{Lie derivatives}
+
+The rate of change of a function $V(t, x)$ along the integral curves of a time-dependent vector
+field, with no differential-equation content beyond the chain rule: what every Lyapunov, Chetaev
+and invariance argument differentiates.
+
+\inputleannode{def:lieDerivative}
+
+\inputleannode{lem:lieDerivative-const}
+
+\inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
+
+\inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
+
+\inputleannode{lem:continuous-lieDerivative}
+
 \section{Interval integrals}
 
 Estimates and integrability side conditions for the interval integral, used wherever a
@@ -684,6 +728,111 @@ $\|x(t)\|$, not differentiable where a trajectory crosses the origin.
 \inputleannode{lem:isIntegralSolution-of-hasDerivAt}
 
 \inputleannode{thm:comparison-lemma}
+
+\chapter{Stability of continuous-time systems}
+
+Stability notions for an equilibrium of an autonomous continuous-time system $\dot x = f(t, x)$
+(\cref{def:continuousSystem}); a system with input is first unforced
+(\cref{def:continuousSystem-zeroInput}). Each notion is defined once, for time-varying systems,
+with the initial time $t_0 \ge 0$ explicit; a time-invariant system is a special case, and that
+its notions may be read with $t_0 = 0$ is a theorem rather than a second definition.
+
+Bounds --- stability, uniform convergence times, exponential estimates --- quantify over
+trajectories on segments $[t_0, t_1]$, so that a solution escaping in finite time counts against
+stability instead of being silently excluded. Limits quantify over trajectories on rays
+$[t_0, \infty)$.
+
+\section{Definitions}
+
+\inputleannode{def:continuousSystem-stable}
+
+\inputleannode{def:continuousSystem-unstable}
+
+\inputleannode{def:continuousSystem-uniformlyStable}
+
+\inputleannode{def:continuousSystem-globallyUniformlyStable}
+
+\inputleannode{def:continuousSystem-locallyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-globallyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-hasUniformConvergenceTime}
+
+\inputleannode{def:continuousSystem-uniformlyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-locallyExponentiallyStable}
+
+\inputleannode{def:continuousSystem-globallyExponentiallyStable}
+
+\section{Implications}
+
+\inputleannode{lem:continuousSystem-unstable-of-escape}
+
+\inputleannode{lem:continuousSystem-uniformlyStable-stable}
+
+\inputleannode{lem:continuousSystem-globallyAsymptoticallyStable-local}
+
+\inputleannode{lem:continuousSystem-uniformlyAsymptoticallyStable-local}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-global}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-uniformlyStable}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-uniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-globallyExponentiallyStable-local}
+
+\inputleannode{lem:continuousSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
+
+\section{Lyapunov functions}
+
+A Lyapunov function is a certificate: its existence implies a stability notion. The certificates
+are time-varying, $V(t, x)$, and named by what they certify. What separates them is which bounds
+hold, not whether time appears: a positive definite lower bound gives stability, and a
+positive definite upper bound as well (decrescence) is what makes the conclusion uniform. A
+time-invariant $V(x)$ is its own lower and upper bound, so it is a uniform certificate as soon as
+it decreases along the system.
+
+\inputleannode{def:isPositiveDefiniteOn}
+
+\inputleannode{def:continuousSystem-isLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isUniformLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isStrictUniformLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isExponentialLyapunovFunction}
+
+\inputleannode{lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant}
+
+\section{Lyapunov's direct method}
+
+For a time-varying $V$ the derivative along the system acquires an explicit time term, and
+positive definiteness of $V(t, \cdot)$ on its own buys nothing uniform in $t_0$: $V$ could
+flatten as $t \to \infty$. Sandwiching $V$ between two positive-definite functions of the state
+alone is what restores uniformity. Only trajectories on segments $[t_0, t_1]$ are used, so no
+solution is assumed to exist for all time.
+
+\inputleannode{lem:continuousSystem-hasUniformConvergenceTime-of-classKL}
+
+\inputleannode{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}
+
+\inputleannode{thm:continuousSystem-isStrictUniformLyapunovFunction-uniformlyAsymptoticallyStable}
+
+\section{Relation to the stability predicates on vector fields}
+
+The chapters that follow state stability on a raw vector field. For a time-invariant field
+Lyapunov stability on finite segments is exactly the notion above; the predicate on solutions
+over $[t_0, \infty)$ is strictly weaker, since it does not test solutions that escape in finite
+time.
+
+\inputleannode{thm:continuousSystem-lyapunovStable-iff-stable}
+
+\inputleannode{thm:continuousSystem-stable-stableNA}
 
 \chapter{Lyapunov stability}
 
@@ -972,19 +1121,6 @@ solutions, not a relation between two.
 \inputleannode{lem:uniformlyAsymptoticStableNA-iff-classKL}
 
 \inputleannode{lem:globallyUniformlyAsymptoticStableNA-iff-classKL}
-
-\section{Lyapunov's theorems for time-varying systems}
-
-For a time-varying $V$ the Lie derivative acquires an explicit time term, and positive
-definiteness of $V(t, \cdot)$ on its own buys nothing uniform in $t_0$: $V$ could flatten as
-$t \to \infty$. Sandwiching $V$ between two positive-definite functions of the state alone is
-what restores uniformity.
-
-\inputleannode{lem:hasDerivAt-V-comp-traj-NA}
-
-\inputleannode{thm:lyapunov-uniformly-stable-NA}
-
-\inputleannode{thm:lyapunov-uniformly-asymptotic-stable-NA}
 
 \section{Linear time-varying systems}
 
