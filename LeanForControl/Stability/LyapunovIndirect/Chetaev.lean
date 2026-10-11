@@ -1,5 +1,5 @@
 import LeanForControl.Analysis.Continuity
-import LeanForControl.Stability.Autonomous
+import LeanForControl.Stability.Continuous.Bridges
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Analysis.Calculus.Deriv.MeanValue

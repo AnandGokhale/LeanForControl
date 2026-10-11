@@ -6,6 +6,7 @@ import LeanForControl.Analysis.IntegralCurves
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
+import LeanForControl.Analysis.OmegaLimit
 import LeanForControl.Analysis.PositiveDefinite
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.Comparison.ClassK
@@ -45,7 +46,6 @@ import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
-import LeanForControl.Stability.Autonomous
 import LeanForControl.Stability.ClassKDecay
 import LeanForControl.Stability.Continuous.Bridges
 import LeanForControl.Stability.Continuous.Defs

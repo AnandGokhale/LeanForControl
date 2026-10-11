@@ -171,9 +171,8 @@ theorem IsUniformLyapunovFunction.of_timeInvariant {s : ContinuousSystem E Unit 
   differentiable := hV_diff.comp differentiable_snd
   zero := fun _ _ => hV_pos.2.1
   lower := ⟨V, hV_pos, fun _ _ _ _ => le_rfl⟩
-  lie_nonpos := fun t ht x hx => by
-    rw [lieDerivative_const (hV_diff x)]
-    exact hV_dec t ht x hx
+  lie_nonpos := fun t ht x hx =>
+    (lieDerivative_const (v := fun t x => s.F t x ()) (hV_diff x)).trans_le (hV_dec t ht x hx)
   upper := ⟨V, hV_pos, fun _ _ _ _ => le_rfl⟩
 
 /-- **A strictly decreasing time-invariant Lyapunov function is a strict uniform one.**  If in
@@ -197,8 +196,36 @@ theorem IsStrictUniformLyapunovFunction.of_timeInvariant {s : ContinuousSystem E
   toIsUniformLyapunovFunction :=
     IsUniformLyapunovFunction.of_timeInvariant hD hV_diff hV_pos fun t ht x hx => by
       linarith [hV_dec t ht x hx, hW₃.nonneg hx]
-  strict := ⟨W₃, hW₃, fun t ht x hx => by
-    rw [lieDerivative_const (hV_diff x)]
-    exact hV_dec t ht x hx⟩
+  strict := ⟨W₃, hW₃, fun t ht x hx =>
+    (lieDerivative_const (v := fun t x => s.F t x ()) (hV_diff x)).trans_le (hV_dec t ht x hx)⟩
+
+/-- **For a time-invariant system, strict decrease is enough.**  If the state equation is a
+continuous time-invariant field `f` with `f(x_eq) = 0`, and `V(x)` is `C¹`, positive definite on
+`D`, with `∇V · f < 0` off `x_eq`, then `V(t, x) = V(x)` is a strict uniform Lyapunov function:
+the rate `W₃ = -∇V · f` is itself positive definite.  For a time-varying field this fails, since
+`∇V(x) · f(t, x)` may tend to `0` as `t → ∞`. -/
+@[blueprint "lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant-of-neg"
+  (title := "Strict decrease suffices for a time-invariant system")
+  (latexEnv := "lemma")
+  (statement := /-- Let the state equation be $\dot x = f(x)$ with $f$ continuous and
+    $f(x_{\mathrm{eq}}) = 0$, and let $V : E \to \mathbb{R}$ be $C^1$ and positive definite on a
+    neighbourhood $D$ of $x_{\mathrm{eq}}$ with $\nabla V(x) \cdot f(x) < 0$ for
+    $x \in D \setminus \{x_{\mathrm{eq}}\}$.  Then $(t, x) \mapsto V(x)$ is a strict uniform
+    Lyapunov function (\cref{def:continuousSystem-isStrictUniformLyapunovFunction}). -/)
+  (proof := /-- Take $W_3 = -\nabla V \cdot f$: continuous since $V$ is $C^1$ and $f$ is
+    continuous, zero at $x_{\mathrm{eq}}$ since $f(x_{\mathrm{eq}}) = 0$, and positive elsewhere
+    on $D$; apply
+    \cref{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant}. -/)]
+theorem IsStrictUniformLyapunovFunction.of_timeInvariant_of_neg {s : ContinuousSystem E Unit Y}
+    {f : E → E} (hF : ∀ t x, s.F t x () = f x) (hf : Continuous f) {V : E → ℝ} {x_eq : E}
+    {D : Set E} (hD : D ∈ 𝓝 x_eq) (hV_c1 : ContDiff ℝ 1 V)
+    (hV_pos : IsPositiveDefiniteOn V x_eq D) (hf_eq : f x_eq = 0)
+    (hV_neg : ∀ x ∈ D, x ≠ x_eq → fderiv ℝ V x (f x) < 0) :
+    s.IsStrictUniformLyapunovFunction (fun _ => V) x_eq D :=
+  of_timeInvariant hD (hV_c1.differentiable one_ne_zero) hV_pos
+    (W₃ := fun x => -fderiv ℝ V x (f x))
+    ⟨((hV_c1.continuous_fderiv one_ne_zero).clm_apply hf).neg.continuousOn, by simp [hf_eq],
+      fun x hx hne => neg_pos.mpr (hV_neg x hx hne)⟩
+    fun t _ x _ => by rw [hF, neg_neg]
 
 end ContinuousSystem

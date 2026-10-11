@@ -4,13 +4,13 @@
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Lyapunov stability | `lyapunov_stable` | `Autonomous.lean` | ✅ done |
-| Global asymptotic stability via strict Lyapunov function | `lyapunov_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| Global asymptotic stability via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| Local asymptotic stability via strict local Lyapunov function | `lyapunov_local_asymptotic_stable` | `Autonomous.lean` | ✅ done |
+| Lyapunov stability | `lyapunov_stable` | `Continuous/Bridges.lean` (from `Continuous/LyapunovTheorems.lean`) | ✅ done |
+| Global asymptotic stability via strict Lyapunov function | `lyapunov_asymptotic_stable` | `Continuous/Bridges.lean` (from `globallyUniformlyAsymptoticallyStable_of_lyapunov`) | ✅ done |
+| Global asymptotic stability via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Continuous/Bridges.lean` | ✅ done |
+| Local asymptotic stability via strict local Lyapunov function | `lyapunov_local_asymptotic_stable` | `Continuous/Bridges.lean` (from `Continuous/LyapunovTheorems.lean`) | ✅ done |
 | Quantitative exponential Chetaev criterion | `unstable_of_exponential_chetaev` | `LyapunovIndirect/Chetaev.lean` | ✅ done |
 | Boundary-form/geometric Chetaev theorem | — | — | planned |
-| ω-limit set of a trajectory | `omegaLimitTraj`, `mem_omegaLimitTraj_iff` | `LaSalle.lean` | ✅ done |
+| ω-limit set of a trajectory | `omegaLimitSet`, `mem_omegaLimitSet_iff` | `Analysis/OmegaLimit.lean` | ✅ done |
 | ω-limit set is positively invariant (Khalil Lemma 4.1) | `isPositivelyInvariant_omegaLimitTraj` | `LaSalle.lean` | ✅ done |
 | `V̇ = 0` on the ω-limit set | `lieDeriv_eq_zero_on_omegaLimitTraj` | `LaSalle.lean` | ✅ done |
 | LaSalle's invariance principle | `lasalle_invariance_principle` | `LaSalle.lean` | ✅ done |
@@ -22,7 +22,8 @@
 Files:
 
 - `DefsAutonomous.lean` — autonomous trajectory, stability, and Lyapunov-function definitions
-- `Autonomous.lean` — Lyapunov stability / GAS / LAS
+- `Autonomous.lean` — retired: its theorems are proved in `Continuous/LyapunovTheorems.lean`, and
+  their old statements re-derived in `Continuous/Bridges.lean`
 - `LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
 - `LyapunovIndirect/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
   exponential Chetaev criterion
@@ -100,9 +101,9 @@ and `Unstable` in `DefsAutonomous.lean` *are* the finite-segment notions.
 | Finite forward solution segment | `IsTrajectoryOn` (abbrev for Mathlib's `IsIntegralCurveOn`) | `DefsAutonomous.lean` | ✅ done |
 | Lyapunov stability, local exponential stability, instability | `LyapunovStable`, `LocallyExponentiallyStable`, `Unstable` | `DefsAutonomous.lean` | ✅ done |
 | Local finite segment for a `C¹` field | `ContDiffAt.exists_isIntegralCurveOn_Icc` | `ODEs/ODE_properties.lean` | ✅ done |
-| Lyapunov first-exit theorem | `lyapunov_stable` | `Autonomous.lean` | ✅ done |
-| Exponential stability implies Lyapunov stability | `LocallyExponentiallyStable.lyapunovStable` | `Autonomous.lean` | ✅ done |
-| Escape witness gives instability | `unstable_of_fixed_escape` | `Autonomous.lean` | ✅ done |
+| Lyapunov first-exit theorem | `lyapunov_stable` | `Continuous/Bridges.lean` | ✅ done |
+| Exponential stability implies Lyapunov stability | `LocallyExponentiallyStable.lyapunovStable` | `Continuous/Bridges.lean` | ✅ done |
+| Escape witness gives instability | `unstable_of_fixed_escape` | `Continuous/Bridges.lean` | ✅ done |
 | Hurwitz exponential contractivity block | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | ✅ done |
 | Arbitrary-`Q` continuous Lyapunov equation | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `LinearSystems/Stability/Continuous/LyapunovEquation.lean` | ✅ done, axiom-free |
 | Linearization-error bound, `ε`–`δ` form | `HasFDerivAt.exists_linearization_error_bound` | `Analysis/FrechetDerivative.lean` | ✅ done |
@@ -201,13 +202,13 @@ proved for the exponential criterion should be reusable.
 
 ## Infrastructure already in place (autonomous side)
 
-Public, in `Autonomous.lean` unless noted:
+Public, in `Continuous/Bridges.lean` unless noted:
 
-- `hasDerivAt_V_comp_traj`, `hasDerivAt_V_comp_integralCurveOn` (chain rule along solutions)
-- `antitoneOn_V_comp_traj`, `V_nonincreasing_on`
-- `isCompact_sublevel_set`, `sublevel_set_invariant` (the latter in `DefsAutonomous.lean`)
-- `strict_implies_semidefinite`, `asymptotic_implies_strict`, `strict_local_implies_semidefinite`
-- `omegaLimitTraj`, `mem_omegaLimitTraj_iff` (`LaSalle.lean`) — Mathlib's `omegaLimit`
+- `hasDerivAt_V_comp_traj`, `antitoneOn_V_comp_traj`, `V_nonincreasing_on` (now legacy forms in
+  `Continuous/Bridges.lean`, derived from `Analysis/LieDerivative.lean`)
+- `isCompact_sublevel_set` (`DefsAutonomous.lean`)
+- `strict_implies_semidefinite`, `asymptotic_implies_strict`
+- `omegaLimitSet`, `mem_omegaLimitSet_iff` (`Analysis/OmegaLimit.lean`) — Mathlib's `omegaLimit`
   specialized to a single trajectory, and its membership criterion
 - `isPositivelyInvariant_omegaLimitTraj`, `lieDeriv_eq_zero_on_omegaLimitTraj`,
   `LieDerivZeroSet` (`LaSalle.lean`)

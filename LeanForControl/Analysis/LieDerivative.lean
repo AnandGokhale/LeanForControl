@@ -21,10 +21,10 @@ Along an integral curve `γ` of `v` it is the rate of change of `t ↦ V(t, γ(t
 
 * `lieDerivative V v t x` — the Lie derivative of `V` along `v`.
 * `lieDerivative_const` — for `V` independent of `t`, it is the directional derivative
-  `DV(x) v`.
+  `DV(x) v`; `lieDerivative_add_mul` adds a linear time term.
 * `IsIntegralCurveOn.hasDerivWithinAt_lieDerivative` — the chain rule along an integral curve.
-* `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos` — a nonpositive derivative along an
-  integral curve on `[a, b]` makes `V` nonincreasing along it.
+* `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos` — a nonpositive Lie derivative along an
+  integral curve on an interval makes `V` nonincreasing along it.
 * `continuous_lieDerivative` — the Lie derivative along a continuous field of a `C¹` function
   is continuous.
 -/
@@ -65,6 +65,22 @@ lemma lieDerivative_const {V : E → ℝ} {v : ℝ → E → E} {t : ℝ} {x : E
     hV.hasFDerivAt.comp (t, x) hasFDerivAt_snd
   simp [lieDerivative, h.fderiv]
 
+/-- Adding the linear time term `c t` to a time-invariant `V` adds `c` to its Lie derivative.  This
+is how a bound `L_v V ≤ -c` on a rate becomes monotonicity of `V + c t`. -/
+@[blueprint "lem:lieDerivative-add-mul"
+  (title := "Lie derivative of $V(x) + ct$")
+  (latexEnv := "lemma")
+  (statement := /-- If $V$ does not depend on $t$ and is differentiable at $x$, then the Lie
+    derivative of $(t, x) \mapsto V(x) + ct$ along $v$ is $DV(x)\, v(t, x) + c$. -/)]
+lemma lieDerivative_add_mul {V : E → ℝ} {v : ℝ → E → E} {t : ℝ} {x : E} (c : ℝ)
+    (hV : DifferentiableAt ℝ V x) :
+    lieDerivative (fun t x => V x + c * t) v t x = fderiv ℝ V x (v t x) + c := by
+  have h : HasFDerivAt (Function.uncurry fun (t : ℝ) (x : E) => V x + c * t)
+      ((fderiv ℝ V x).comp (ContinuousLinearMap.snd ℝ ℝ E) +
+        c • ContinuousLinearMap.fst ℝ ℝ E) (t, x) :=
+    (hV.hasFDerivAt.comp (t, x) hasFDerivAt_snd).add (hasFDerivAt_fst.const_mul c)
+  simp [lieDerivative, h.fderiv]
+
 /-- **Chain rule along an integral curve**: the rate of change of `t ↦ V(t, γ(t))` is the
 Lie derivative of `V` along the field. -/
 @[blueprint "lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative"
@@ -84,29 +100,25 @@ lemma IsIntegralCurveOn.hasDerivWithinAt_lieDerivative {V : ℝ → E → ℝ} {
     (hasDerivWithinAt_id t I).prodMk (hγ t ht)
   exact (hV (t, γ t)).hasFDerivAt.comp_hasDerivWithinAt t h_pair
 
-/-- A nonpositive Lie derivative along an integral curve on `[a, b]` makes `V` nonincreasing along
-it. -/
+/-- A nonpositive Lie derivative along an integral curve on a convex set `s` (an interval) makes
+`V` nonincreasing along it.  Only the interior of `s` is tested. -/
 @[blueprint "lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos"
   (title := "Nonpositive Lie derivative along an integral curve")
   (latexEnv := "lemma")
-  (statement := /-- Let $V$ be differentiable and $\gamma$ an integral curve of $v$ on
-    $[a, b]$ with $L_v V(t, \gamma(t)) \le 0$ for $t \in (a, b)$.  Then
-    $t \mapsto V(t, \gamma(t))$ is nonincreasing on $[a, b]$. -/)
+  (statement := /-- Let $V$ be differentiable and $\gamma$ an integral curve of $v$ on an
+    interval $s$ with $L_v V(t, \gamma(t)) \le 0$ at every interior point $t$ of $s$.  Then
+    $t \mapsto V(t, \gamma(t))$ is nonincreasing on $s$. -/)
   (proof := /-- The mean value theorem, with the derivative given by
     \cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}. -/)]
 lemma IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos {V : ℝ → E → ℝ} {v : ℝ → E → E}
-    {γ : ℝ → E} {a b : ℝ} (hγ : IsIntegralCurveOn γ v (Icc a b))
+    {γ : ℝ → E} {s : Set ℝ} (hγ : IsIntegralCurveOn γ v s) (hs : Convex ℝ s)
     (hV : Differentiable ℝ (Function.uncurry V))
-    (h_nonpos : ∀ t ∈ Ioo a b, lieDerivative V v t (γ t) ≤ 0) :
-    AntitoneOn (fun τ => V τ (γ τ)) (Icc a b) := by
-  refine antitoneOn_of_hasDerivWithinAt_nonpos (f' := fun t => lieDerivative V v t (γ t))
-    (convex_Icc a b)
+    (h_nonpos : ∀ t ∈ interior s, lieDerivative V v t (γ t) ≤ 0) :
+    AntitoneOn (fun τ => V τ (γ τ)) s :=
+  antitoneOn_of_hasDerivWithinAt_nonpos (f' := fun t => lieDerivative V v t (γ t)) hs
     (hV.continuous.comp_continuousOn (continuousOn_id.prodMk hγ.continuousOn))
-    (fun t ht => ?_) (fun t ht => ?_)
-  · rw [interior_Icc] at ht ⊢
-    exact (hγ.hasDerivWithinAt_lieDerivative hV (Ioo_subset_Icc_self ht)).mono Ioo_subset_Icc_self
-  · rw [interior_Icc] at ht
-    exact h_nonpos t ht
+    (fun _ ht => (hγ.hasDerivWithinAt_lieDerivative hV (interior_subset ht)).mono interior_subset)
+    h_nonpos
 
 /-- The Lie derivative along a continuous field of a `C¹` function is continuous in `(t, x)`. -/
 @[blueprint "lem:continuous-lieDerivative"

@@ -1,8 +1,8 @@
-import Mathlib.Dynamics.OmegaLimit
+import LeanForControl.Analysis.OmegaLimit
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.MonotoneConvergence
 import LeanForControl.Stability.DefsAutonomous
-import LeanForControl.Stability.Autonomous
+import LeanForControl.Stability.Continuous.Bridges
 import LeanForControl.ODEs.PicardLindelof
 import Architect
 
@@ -18,7 +18,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1 and Theorem 4.4.
 
 ## Main results
 
-* `omegaLimitTraj` and `mem_omegaLimitTraj_iff` — the ω-limit set of a trajectory.
+* `omegaLimitSet` and `mem_omegaLimitSet_iff` — the ω-limit set of a trajectory.
 * `isPositivelyInvariant_omegaLimitTraj` — it is positively invariant (Khalil, Lemma 4.1).
 * `lieDeriv_eq_zero_on_omegaLimitTraj` — `V̇` vanishes on it, i.e. `ω(φ) ⊆ E`.
 * `lasalle_invariance_principle` — `φ(t) → M` for any `M` absorbing the positively invariant
@@ -54,54 +54,6 @@ family, so the hypothesis on `M` is correspondingly stronger.
 open Filter Set Topology
 open scoped Pointwise
 
-/-- The ω-limit set of a trajectory `φ`: the points `φ` returns arbitrarily close to,
-    arbitrarily late.
-
-Mathlib's `omegaLimit` is stated for a family of maps indexed by a set; a single trajectory is
-the degenerate case where the index set is `Unit`, which is what the `fun (t : ℝ) (_ : Unit)`
-and `Set.univ` below encode.
-
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), §4.2, where it is `L⁺`, the *positive limit
-set*. -/
-@[blueprint "def:omegaLimitTraj"
-  (title := "$\\omega$-limit set of a trajectory")
-  (statement := /-- The \emph{$\omega$-limit set} of a trajectory $\varphi$ is
-    \[
-      \omega(\varphi) = \bigcap_{T \ge 0} \overline{\{\varphi(t) : t \ge T\}},
-    \]
-    the set of points $y$ such that $\varphi(t)$ is frequently in every neighbourhood of $y$ as
-    $t \to \infty$.
-
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), \S4.2, where it is written $L^{+}$ and
-    called the \emph{positive limit set}.
-  -/)]
-noncomputable def omegaLimitTraj (φ : ℝ → ℝⁿ) : Set ℝⁿ :=
-  omegaLimit Filter.atTop (fun (t : ℝ) (_ : Unit) => φ t) Set.univ
-
-/-- Membership unfolded: `y` is an ω-limit point of `φ` exactly when `φ` is frequently in every
-    neighbourhood of `y`.
-
-Mathlib's `mem_omegaLimit_iff_frequently` is stated for a family of maps, so its right-hand side
-asks for a nonempty intersection with `Set.univ`; over `Unit` that collapses to membership. -/
-@[blueprint "lem:mem-omegaLimitTraj-iff"
-  (title := "Membership in the $\\omega$-limit set")
-  (latexEnv := "lemma")
-  (statement := /-- $y \in \omega(\varphi)$ (\cref{def:omegaLimitTraj}) if and only if for
-    every neighbourhood $U$ of $y$ there are arbitrarily large $t$ with
-    $\varphi(t) \in U$.
-
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), \S4.2.  Khalil characterizes $L^{+}$ by
-    convergent sequences $x(t_i) \to y$ with $t_i \to \infty$; the frequently-in-every-neighbourhood
-    form above is the same condition stated with filters.
-  -/)]
-lemma mem_omegaLimitTraj_iff {φ : ℝ → ℝⁿ} {y : ℝⁿ} :
-    y ∈ omegaLimitTraj φ ↔ ∀ U ∈ 𝓝 y, ∃ᶠ t in Filter.atTop, φ t ∈ U := by
-  rw [omegaLimitTraj, mem_omegaLimit_iff_frequently]
-  refine forall₂_congr fun U _ => ⟨fun h => h.mono fun t ht => ?_, fun h => h.mono fun t ht => ?_⟩
-  · simp only [Set.univ_inter, Set.nonempty_def, Set.mem_preimage] at ht
-    exact ht.choose_spec
-  · exact ⟨(), by simpa using ht⟩
-
 /-! ## Invariance of the ω-limit set -/
 
 /-- **The ω-limit set of a trajectory is positively invariant** (Khalil, Lemma 4.1).
@@ -110,11 +62,11 @@ This is the step that makes LaSalle's principle a theorem about Lyapunov functio
 a fact about compact sets: it is what turns `V ≡ a` on `ω(φ)` into `V̇ = 0` on `ω(φ)`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1. -/
-@[blueprint "lem:isPositivelyInvariant-omegaLimitTraj"
+@[blueprint "lem:isPositivelyInvariant-omegaLimitSet"
   (title := "The $\\omega$-limit set is positively invariant")
   (latexEnv := "lemma")
   (statement := /-- Let $f$ be Lipschitz and let $\varphi$ be a solution of $\dot{x} = f(x)$ on
-    $[0,\infty)$.  Then the $\omega$-limit set $\omega(\varphi)$ (\cref{def:omegaLimitTraj}) is
+    $[0,\infty)$.  Then the $\omega$-limit set $\omega(\varphi)$ (\cref{def:omegaLimitSet}) is
     positively invariant (\cref{def:isPositivelyInvariant}): every solution segment starting in
     $\omega(\varphi)$ remains in $\omega(\varphi)$.
 
@@ -141,9 +93,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1. -/
 theorem isPositivelyInvariant_omegaLimitTraj
     {f : ℝⁿ → ℝⁿ} {K : NNReal} (hf : LipschitzWith K f)
     {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0)) :
-    IsPositivelyInvariant (omegaLimitTraj φ) f := by
+    IsPositivelyInvariant (omegaLimitSet φ) f := by
   intro t₀ t₁ ψ hψ hψ0 t ht
-  rw [mem_omegaLimitTraj_iff] at hψ0 ⊢
+  rw [mem_omegaLimitSet_iff] at hψ0 ⊢
   intro U hU
   obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.mp hU
   -- Shrink `ε` by the worst-case Grönwall amplification over the whole segment.
@@ -236,42 +188,7 @@ private lemma lasalle_V_tendsto
     simp [hg_def, max_eq_left ht]
   exact ⟨L, hg_tendsto.congr' ((Filter.eventually_ge_atTop 0).mono fun t ht => hgL_eq t ht)⟩
 
-/-! ## Lemma 3: V is constant on omegaLimitTraj(φ) -/
-
-/-- If `V(φ t) → L`, then `V(y) = L` for every `y ∈ ω(φ)`. -/
-private lemma V_const_on_omegaLimit
-    {V : ℝⁿ → ℝ} {φ : ℝ → ℝⁿ} {L : ℝ}
-    (hV_cont : Continuous V)
-    (hVphi_tendsto : Filter.Tendsto (V ∘ φ) Filter.atTop (nhds L)) :
-    ∀ y ∈ omegaLimitTraj φ, V y = L := by
-  intro y hy
-  -- y ∈ omegaLimitTraj(φ) means: for every neighborhood n of y, ∃ᶠ t in atTop, φ t ∈ n
-  rw [omegaLimitTraj, mem_omegaLimit_iff_frequently] at hy
-  -- V y is a cluster point of V ∘ φ along atTop
-  have hcluster : MapClusterPt (V y) Filter.atTop (V ∘ φ) := by
-    rw [mapClusterPt_iff_frequently]
-    intro U hU
-    -- V⁻¹(U) is a neighborhood of y by continuity
-    have hVU : V ⁻¹' U ∈ nhds y := hV_cont.continuousAt hU
-    -- ∃ᶠ t in atTop, φ t ∈ V⁻¹(U) (univ ∩ ...)
-    have hfreq := hy (V ⁻¹' U) hVU
-    -- the nonemptiness of univ ∩ {() | φ t ∈ V⁻¹(U)} is equivalent to φ t ∈ V⁻¹(U)
-    apply hfreq.mono
-    intro t ht
-    simp only [Set.univ_inter, Set.Nonempty] at ht
-    obtain ⟨_, hm⟩ := ht
-    simpa using hm
-  -- ClusterPt (V y) (map (V∘φ) atTop)
-  have hcp : ClusterPt (V y) (map (V ∘ φ) Filter.atTop) := hcluster.clusterPt
-  -- map (V∘φ) atTop ≤ nhds L (from tendsto)
-  -- So 𝓝 (V y) ⊓ nhds L ≠ ⊥
-  have hnebot : NeBot (𝓝 (V y) ⊓ 𝓝 L) := by
-    apply NeBot.mono hcp
-    exact inf_le_inf_left _ hVphi_tendsto
-  exact eq_of_nhds_neBot hnebot
-
-
-/-! ## Lemma 4: omegaLimitTraj(φ) ⊆ Ω when Ω is compact and positively invariant -/
+/-! ## Lemma 4: omegaLimitSet(φ) ⊆ Ω when Ω is compact and positively invariant -/
 
 /-- If `Ω` is compact, positively invariant, and `φ 0 ∈ Ω`, then `ω(φ) ⊆ Ω`. -/
 private lemma omegaLimit_subset_of_invariant
@@ -279,26 +196,10 @@ private lemma omegaLimit_subset_of_invariant
     (hΩ_compact : IsCompact Ω)
     (hΩ_inv : IsPositivelyInvariant Ω f)
     {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0)) (hφ0 : φ 0 ∈ Ω) :
-    omegaLimitTraj φ ⊆ Ω := by
-  -- Ω is closed (compact in a Hausdorff space)
-  have hΩ_closed : IsClosed Ω := hΩ_compact.isClosed
-  -- φ t ∈ Ω for t ≥ 0
-  have hphi : ∀ t ≥ 0, φ t ∈ Ω := mem_of_isPositivelyInvariant_Ici hΩ_inv hφ hφ0
-  -- omegaLimitTraj(φ) ⊆ closure (image2 (fun t () => φ t) (Ici 0) univ)
-  have hsub : omegaLimitTraj φ ⊆
-      closure (image2 (fun (t : ℝ) (_ : Unit) => φ t) (Set.Ici 0) Set.univ) :=
-    omegaLimit_subset_closure_image2 Filter.atTop
-      (fun (t : ℝ) (_ : Unit) => φ t) Set.univ (Ici_mem_atTop 0)
-  -- image2 ... ⊆ Ω
-  have himage : image2 (fun (t : ℝ) (_ : Unit) => φ t) (Set.Ici 0) Set.univ ⊆ Ω := by
-    intro x hx
-    simp only [Set.mem_image2, Set.mem_univ, Set.mem_Ici] at hx
-    obtain ⟨t, ht, _, _, rfl⟩ := hx
-    exact hphi t ht
-  calc omegaLimitTraj φ
-      ⊆ closure (image2 (fun (t : ℝ) (_ : Unit) => φ t) (Set.Ici 0) Set.univ) := hsub
-    _ ⊆ closure Ω := closure_mono himage
-    _ = Ω := hΩ_closed.closure_eq
+    omegaLimitSet φ ⊆ Ω :=
+  omegaLimitSet_subset_of_eventually_mem hΩ_compact.isClosed
+    ((Filter.eventually_ge_atTop 0).mono fun t ht =>
+      mem_of_isPositivelyInvariant_Ici hΩ_inv hφ hφ0 t ht)
 
 /-! ## Lemma 5: the Lie derivative vanishes on the ω-limit set -/
 
@@ -308,7 +209,7 @@ private lemma omegaLimit_subset_of_invariant
     exactly the Lie derivative `DV(y)[f(y)]` — vanishes.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.4. -/
-@[blueprint "lem:lieDeriv-eq-zero-on-omegaLimitTraj"
+@[blueprint "lem:lieDeriv-eq-zero-on-omegaLimitSet"
   (title := "The Lie derivative vanishes on the $\\omega$-limit set")
   (latexEnv := "lemma")
   (statement := /-- Let $\Omega$ be compact and positively invariant for $\dot{x} = f(x)$ with
@@ -327,7 +228,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.4. -/
     $\omega$-limit point sees that same value, so $V \equiv L$ on $\omega(\varphi)$.  Fix
     $y \in \omega(\varphi)$ and let $\psi$ solve $\dot{x} = f(x)$ on $[0,T]$, $T > 0$, with
     $\psi(0) = y$; such a $\psi$ exists because $f$ is $C^{1}$.  By
-    \cref{lem:isPositivelyInvariant-omegaLimitTraj} the whole segment $\psi([0,T])$ lies in
+    \cref{lem:isPositivelyInvariant-omegaLimitSet} the whole segment $\psi([0,T])$ lies in
     $\omega(\varphi)$, so $V \circ \psi \equiv L$ there.  A constant function has vanishing
     derivative, and the chain rule identifies that derivative at $0$ with
     $DV(\psi(0))[\dot\psi(0)] = DV(y)[f(y)]$.  Uniqueness of the derivative within $[0,T]$ at
@@ -340,14 +241,15 @@ theorem lieDeriv_eq_zero_on_omegaLimitTraj
     (hΩ_inv : IsPositivelyInvariant Ω f)
     (hLie : ∀ x ∈ Ω, fderiv ℝ V x (f x) ≤ 0)
     {φ : ℝ → ℝⁿ} (hφ : IsIntegralCurveOn φ (fun _ x => f x) (Set.Ici 0)) (hφ0 : φ 0 ∈ Ω) :
-    ∀ y ∈ omegaLimitTraj φ, fderiv ℝ V y (f y) = 0 := by
+    ∀ y ∈ omegaLimitSet φ, fderiv ℝ V y (f y) = 0 := by
   obtain ⟨L, hVL⟩ := lasalle_V_tendsto hV_c1 hΩ_compact hΩ_inv hLie hφ hφ0
-  have hVconst := V_const_on_omegaLimit hV_c1.continuous hVL
+  have hVconst : ∀ y ∈ omegaLimitSet φ, V y = L := fun _ hy =>
+    eq_of_tendsto_of_mem_omegaLimitSet hV_c1.continuous hVL hy
   have hinv := isPositivelyInvariant_omegaLimitTraj hf_lip hφ
   intro y hy
   -- A solution through `y`, which stays in `ω(φ)` by invariance.
   obtain ⟨T, ψ, hT, hψ0, hψ⟩ := (hf_c1.contDiffAt (x := y)).exists_isIntegralCurveOn_Icc
-  have hψ_mem : ∀ s ∈ Set.Icc 0 T, ψ s ∈ omegaLimitTraj φ :=
+  have hψ_mem : ∀ s ∈ Set.Icc 0 T, ψ s ∈ omegaLimitSet φ :=
     hinv 0 T ψ hψ (hψ0 ▸ hy)
   -- `V ∘ ψ` is therefore constantly `L` on `[0, T]`, so its derivative at `0` is `0`.
   have hconst : ∀ s ∈ Set.Icc 0 T, (V ∘ ψ) s = L := fun s hs => hVconst _ (hψ_mem s hs)
@@ -402,16 +304,16 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.4. -/
     Khalil takes $M$ to be the largest \emph{invariant} subset of $E$.  Here $M$ must absorb
     every \emph{positively} invariant subset, which is a larger family, so the hypothesis on
     $M$ is correspondingly stronger; what is proved about $\omega(\varphi)$ is forward
-    invariance (\cref{lem:isPositivelyInvariant-omegaLimitTraj}), and backward invariance would
+    invariance (\cref{lem:isPositivelyInvariant-omegaLimitSet}), and backward invariance would
     require solutions through every $\omega$-limit point to extend backwards in time.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.4.
   -/)
   (proof := /-- The $\omega$-limit set lies in $\Omega$, because $\Omega$ is closed and
     $\varphi$ stays in it, and $\dot{V}$ vanishes on it
-    (\cref{lem:lieDeriv-eq-zero-on-omegaLimitTraj}); hence
+    (\cref{lem:lieDeriv-eq-zero-on-omegaLimitSet}); hence
     $\omega(\varphi) \subseteq E$.  It is positively invariant by
-    \cref{lem:isPositivelyInvariant-omegaLimitTraj}, so the hypothesis on $M$ gives
+    \cref{lem:isPositivelyInvariant-omegaLimitSet}, so the hypothesis on $M$ gives
     $\omega(\varphi) \subseteq M$.  Finally, a trajectory confined to a compact set converges
     to its own $\omega$-limit set: for any open $W \supseteq M \supseteq \omega(\varphi)$,
     $\varphi$ is eventually in $W$. -/)]
@@ -429,28 +331,16 @@ theorem lasalle_invariance_principle
     (hM : ∀ N ⊆ LieDerivZeroSet f V Ω, IsPositivelyInvariant N f → N ⊆ M) :
     Filter.Tendsto φ Filter.atTop (𝓝ˢ M) := by
   -- ω(φ) ⊆ E: it lies in Ω, and V̇ vanishes on it.
-  have hω_sub_E : omegaLimitTraj φ ⊆ LieDerivZeroSet f V Ω := fun y hy =>
+  have hω_sub_E : omegaLimitSet φ ⊆ LieDerivZeroSet f V Ω := fun y hy =>
     ⟨omegaLimit_subset_of_invariant hΩ_compact hΩ_inv hφ hφ0 hy,
       lieDeriv_eq_zero_on_omegaLimitTraj hf_lip hf_c1 hV_c1 hΩ_compact hΩ_inv hLie hφ hφ0 y hy⟩
   -- ω(φ) is positively invariant, so `M` absorbs it.
-  have hω_sub_M : omegaLimitTraj φ ⊆ M :=
+  have hω_sub_M : omegaLimitSet φ ⊆ M :=
     hM _ hω_sub_E (isPositivelyInvariant_omegaLimitTraj hf_lip hφ)
   -- φ stays in Ω for t ≥ 0
   have hphi_in_Ω : ∀ t ≥ 0, φ t ∈ Ω := mem_of_isPositivelyInvariant_Ici hΩ_inv hφ hφ0
-  -- Build the compact absorption hypothesis: ∀ᶠ t in atTop, MapsTo (fun () => φ t) univ Ω
-  have hc₂ : ∀ᶠ t in Filter.atTop, MapsTo (fun (_ : Unit) => φ t) Set.univ Ω :=
-    (Filter.eventually_ge_atTop 0).mono fun t ht () _ => hphi_in_Ω t ht
-  rw [Filter.tendsto_def]
-  intro U hU
-  rw [mem_nhdsSet_iff_exists] at hU
-  obtain ⟨W, hW_open, hMW, hWU⟩ := hU
-  have hω_sub_W : omegaLimitTraj φ ⊆ W := hω_sub_M.trans hMW
-  have hev : ∀ᶠ t in Filter.atTop,
-      MapsTo (fun (_ : Unit) => φ t) Set.univ W :=
-    eventually_mapsTo_of_isCompact_absorbing_of_isOpen_of_omegaLimit_subset
-      Filter.atTop (fun (t : ℝ) (_ : Unit) => φ t) Set.univ
-      hΩ_compact hc₂ hW_open hω_sub_W
-  exact hev.mono fun t ht => hWU (ht (Set.mem_univ ()))
+  exact tendsto_nhdsSet_of_omegaLimitSet_subset hΩ_compact
+    ((Filter.eventually_ge_atTop 0).mono fun t ht => hphi_in_Ω t ht) hω_sub_M
 
 /-! ## Barbashin–Krasovskii theorems -/
 

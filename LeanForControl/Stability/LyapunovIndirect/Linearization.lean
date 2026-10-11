@@ -2,7 +2,7 @@ import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.Stability.LyapunovIndirect.Lyapunov
-import LeanForControl.Stability.Autonomous
+import LeanForControl.Stability.Continuous.Bridges
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Architect
 

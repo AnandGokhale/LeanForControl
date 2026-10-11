@@ -5,7 +5,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.Stability.LyapunovIndirect.DefsDynamics
 import LeanForControl.LinearSystems.Stability.DefsStability
-import LeanForControl.Stability.Autonomous
+import LeanForControl.Stability.Continuous.Bridges
 import Architect
 import LeanForControl.MatrixAlgebra.Complex
 

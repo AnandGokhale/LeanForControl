@@ -75,11 +75,6 @@ notions a general input.
 
 \inputleannode{def:continuousSystem-lieDerivative}
 
-\inputleannode{lem:continuousSystem-lieDerivative-const}
-
-\inputleannode{lem:continuousSystem-isTrajectoryOn-hasDerivWithinAt-lieDerivative}
-
-\inputleannode{lem:continuousSystem-isTrajectoryOn-antitoneOn-of-lieDerivative-nonpos}
 
 The derivative form above excludes the solutions produced by discontinuous inputs, which have
 corners where the input jumps. The integral form admits them, and is the one input-driven notions
@@ -560,11 +555,34 @@ and invariance argument differentiates.
 
 \inputleannode{lem:lieDerivative-const}
 
+\inputleannode{lem:lieDerivative-add-mul}
+
 \inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
 
 \inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
 
 \inputleannode{lem:continuous-lieDerivative}
+
+\section{\texorpdfstring{$\omega$}{omega}-limit sets}
+
+The points a curve or sequence returns arbitrarily close to, arbitrarily late: its cluster
+points at infinity, which is the $\omega$-limit of topological dynamics for a single orbit.
+These are the topological facts behind LaSalle's invariance principle, in continuous and in
+discrete time alike: a continuous function converging along the orbit is constant on its
+$\omega$-limit set, an orbit trapped in a closed set has its $\omega$-limit set there, and an orbit
+trapped in a compact set converges to its $\omega$-limit set.
+
+\inputleannode{def:omegaLimitSet}
+
+\inputleannode{lem:mem-omegaLimitSet-iff}
+
+\inputleannode{lem:omegaLimitSet-eq-omegaLimit}
+
+\inputleannode{lem:eq-of-tendsto-of-mem-omegaLimitSet}
+
+\inputleannode{lem:omegaLimitSet-subset-of-eventually-mem}
+
+\inputleannode{lem:tendsto-nhdsSet-of-omegaLimitSet-subset}
 
 \section{Interval integrals}
 
@@ -809,6 +827,8 @@ it decreases along the system.
 
 \inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant}
 
+\inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant-of-neg}
+
 \section{Lyapunov's direct method}
 
 For a time-varying $V$ the derivative along the system acquires an explicit time term, and
@@ -822,6 +842,8 @@ solution is assumed to exist for all time.
 \inputleannode{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}
 
 \inputleannode{thm:continuousSystem-isStrictUniformLyapunovFunction-uniformlyAsymptoticallyStable}
+
+\inputleannode{thm:continuousSystem-globallyUniformlyAsymptoticallyStable-of-lyapunov}
 
 \section{Relation to the stability predicates on vector fields}
 
@@ -912,8 +934,6 @@ the sense of \texttt{IsTrajectoryOn}.
 
 \inputleannode{lem:isCompact-sublevel-set}
 
-\inputleannode{lem:sublevel-set-invariant}
-
 \section{Lyapunov functions}
 
 \inputleannode{def:isLocalLyapunovFunction}
@@ -930,10 +950,6 @@ The four notions above differ only in how much they demand; each stronger one we
 next, so a theorem proved for the weakest applies to all of them.
 
 \inputleannode{lem:asymptotic-implies-strict}
-
-\inputleannode{lem:strict-implies-semidefinite}
-
-\inputleannode{lem:strict-local-implies-semidefinite}
 
 \section{Differentiating along solutions}
 
@@ -965,8 +981,6 @@ step here fixes one spelling of the Lie derivative for the whole development.
 The asymptotic results rest on a uniformity that mere per-solution convergence does not give:
 outside a ball about the equilibrium the Lie derivative is bounded away from zero, so every
 solution is drained at a shared rate.
-
-\inputleannode{lem:time-outside-ball-le}
 
 \subsection{Stability from exponential decay, and instability from escape}
 
@@ -1004,15 +1018,11 @@ $\omega(\varphi)$ --- and a set on which a solution can live while $V$ stays con
 $\dot{V} = 0$. Making that last step a theorem rather than a picture is what the invariance of
 $\omega(\varphi)$ supplies, and it is the only place uniqueness of solutions is needed.
 
-\inputleannode{def:omegaLimitTraj}
-
-\inputleannode{lem:mem-omegaLimitTraj-iff}
-
-\inputleannode{lem:isPositivelyInvariant-omegaLimitTraj}
+\inputleannode{lem:isPositivelyInvariant-omegaLimitSet}
 
 \inputleannode{def:lieDerivZeroSet}
 
-\inputleannode{lem:lieDeriv-eq-zero-on-omegaLimitTraj}
+\inputleannode{lem:lieDeriv-eq-zero-on-omegaLimitSet}
 
 \inputleannode{thm:lasalle-invariance-principle}
 

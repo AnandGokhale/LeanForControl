@@ -266,9 +266,9 @@ lemma IsTrajectory.isTrajectoryOn {s : ContinuousSystem E U Y} {u : ℝ → U} {
 /-- The derivative of `V(t, x)` along the system at the input value `u`,
 `∂V/∂t + ∂V/∂x · F(t, x, u)`: the rate of change of `V` along a trajectory through `x` at time
 `t` while the input takes the value `u`.  It is the Lie derivative (`_root_.lieDerivative`) of
-`V` along the field `F(·, ·, u)`; for `V` independent of `t` it is `∇V · F`
-(`lieDerivative_const`).  Input-free notions such as Lyapunov stability use `u = ()`;
-input-to-state notions use a general `u`. -/
+`V` along the field `F(·, ·, u)`, so the lemmas of `Analysis.LieDerivative` apply to it
+directly: a trajectory is an integral curve of `s.vectorField`.  Input-free notions such as
+Lyapunov stability use `u = ()`; input-to-state notions use a general `u`. -/
 @[blueprint "def:continuousSystem-lieDerivative"
   (title := "Derivative along the system")
   (statement := /-- For $V : \mathbb{R} \times E \to \mathbb{R}$ and an input value $u \in U$,
@@ -282,50 +282,6 @@ input-to-state notions use a general `u`. -/
 noncomputable def lieDerivative (s : ContinuousSystem E U Y) (V : ℝ → E → ℝ) (t : ℝ) (x : E)
     (u : U) : ℝ :=
   _root_.lieDerivative V (fun t x => s.F t x u) t x
-
-/-- For `V` independent of time, the derivative along the system is the directional derivative
-of `V` along the state equation. -/
-@[blueprint "lem:continuousSystem-lieDerivative-const"
-  (title := "Derivative along the system of a time-invariant function")
-  (latexEnv := "lemma")
-  (statement := /-- If $V$ does not depend on $t$ and is differentiable at $x$, then
-    $\dot V(t, x, u) = DV(x)\, F(t, x, u)$. -/)]
-lemma lieDerivative_const {s : ContinuousSystem E U Y} {V : E → ℝ} {t : ℝ} {x : E} {u : U}
-    (hV : DifferentiableAt ℝ V x) :
-    s.lieDerivative (fun _ => V) t x u = fderiv ℝ V x (s.F t x u) :=
-  _root_.lieDerivative_const hV
-
-/-- **Chain rule along a trajectory**: the rate of change of `t ↦ V(t, x(t))` is the derivative
-of `V` along the system at the current input. -/
-@[blueprint "lem:continuousSystem-isTrajectoryOn-hasDerivWithinAt-lieDerivative"
-  (title := "Chain rule along a trajectory")
-  (latexEnv := "lemma")
-  (statement := /-- Let $V$ be differentiable and $x$ a trajectory of $s$ under the input $u$
-    on $I$.  Then for $t \in I$, within $I$,
-    $\frac{d}{dt} V(t, x(t)) = \dot V(t, x(t), u(t))$.  This is
-    \cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}, a trajectory being an integral
-    curve. -/)]
-lemma IsTrajectoryOn.hasDerivWithinAt_lieDerivative {s : ContinuousSystem E U Y} {u : ℝ → U}
-    {x : ℝ → E} {I : Set ℝ} (hx : s.IsTrajectoryOn u x I) {V : ℝ → E → ℝ}
-    (hV : Differentiable ℝ (Function.uncurry V)) {t : ℝ} (ht : t ∈ I) :
-    HasDerivWithinAt (fun τ => V τ (x τ)) (s.lieDerivative V t (x t) (u t)) I t :=
-  IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV ht
-
-/-- If the derivative of `V` along the system is nonpositive along a trajectory on `[a, b]`,
-then `V` does not increase along it. -/
-@[blueprint "lem:continuousSystem-isTrajectoryOn-antitoneOn-of-lieDerivative-nonpos"
-  (title := "$V$ does not increase along a trajectory")
-  (latexEnv := "lemma")
-  (statement := /-- Let $V$ be differentiable and $x$ a trajectory of $s$ under the input $u$
-    on $[a, b]$ with $\dot V(t, x(t), u(t)) \le 0$ for $t \in (a, b)$.  Then
-    $t \mapsto V(t, x(t))$ is nonincreasing on $[a, b]$.  This is
-    \cref{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}. -/)]
-lemma IsTrajectoryOn.antitoneOn_of_lieDerivative_nonpos {s : ContinuousSystem E U Y}
-    {u : ℝ → U} {x : ℝ → E} {a b : ℝ} (hx : s.IsTrajectoryOn u x (Set.Icc a b))
-    {V : ℝ → E → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
-    (h_nonpos : ∀ t ∈ Set.Ioo a b, s.lieDerivative V t (x t) (u t) ≤ 0) :
-    AntitoneOn (fun τ => V τ (x τ)) (Set.Icc a b) :=
-  IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos hx hV h_nonpos
 
 /-! ### Well-posedness -/
 

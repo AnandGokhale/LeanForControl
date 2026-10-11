@@ -148,10 +148,11 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ �
   have hτ_lt_r : ‖x τ - x_eq‖ < r := hτ_norm ▸ hρ_lt
   -- Step 4. On `[t₀, τ]` the trajectory is inside the `r`-ball, so `V` has not increased.
   have hV_τ_lt_d : V τ (x τ) < d := by
-    have h_anti := IsTrajectoryOn.antitoneOn_of_lieDerivative_nonpos
-      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right (hτ.2.trans ht.2))) hV.differentiable
-      fun u hu =>
-        hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
+    have h_anti := IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos
+      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right (hτ.2.trans ht.2))) (convex_Icc _ _)
+      hV.differentiable fun u hu => by
+        rw [interior_Icc] at hu
+        exact hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
           (hD _ ((h_before u ⟨hu.1.le, hu.2.le⟩).trans hρ_lt.le))
     exact (h_anti ⟨le_rfl, hτ.1⟩ ⟨hτ.1, le_rfl⟩ hτ.1).trans_lt hV_start
   -- Step 5. But on the `ρ`-sphere `V ≥ W₁ ≥ α₁(ρ) > α₁(α₁⁻¹(d)) = d`.
@@ -203,7 +204,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
     below both ranges, and take $\delta = \alpha_2^{-1}(d)$: starting within $\delta$ of
     $x_{\mathrm{eq}}$ forces $V(t_0, x(t_0)) < d$.  To leave the $r$-ball the trajectory would
     first cross a sphere on which $W_1 > d$; up to that time $V$ has not increased
-    (\cref{lem:continuousSystem-isTrajectoryOn-antitoneOn-of-lieDerivative-nonpos}), so it is
+    (\cref{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}), so it is
     still below $d$, a contradiction. -/)]
 theorem IsUniformLyapunovFunction.uniformlyStable [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
     {V : ℝ → ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} (hV : s.IsUniformLyapunovFunction V x_eq D) :
@@ -253,8 +254,9 @@ private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V
   -- Before `t ≤ t₁`, the derivative within `[t₀, t₁]` is a right derivative.
   have hderiv : ∀ τ ∈ Ico t₀ t, HasDerivWithinAt (fun u => V u (x u))
       (s.lieDerivative V τ (x τ) ()) (Ici τ) τ := fun τ hτ =>
-    (hx.hasDerivWithinAt_lieDerivative hV ⟨hτ.1, hτ.2.le.trans ht.2⟩).mono_of_mem_nhdsWithin
-      (Icc_mem_nhdsGE_of_mem ⟨hτ.1, hτ.2.trans_le ht.2⟩)
+    (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV
+      ⟨hτ.1, hτ.2.le.trans ht.2⟩).mono_of_mem_nhdsWithin
+        (Icc_mem_nhdsGE_of_mem ⟨hτ.1, hτ.2.trans_le ht.2⟩)
   have hv_cont : ContinuousOn (fun u => V u (x u)) (Icc t₀ t) :=
     hV.continuous.comp_continuousOn (continuousOn_id.prodMk
       ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)))
@@ -334,8 +336,11 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [NeZero n]
       s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_eq‖ < c →
         ∀ t ∈ Icc t₀ t₁, V t (x t) ∈ Ico 0 d := fun t₀ ht₀ t₁ x hx h_init t ht => by
     have h_ball := h_in_ball t₀ ht₀ t₁ x hx h_init
-    have h_anti := hx.antitoneOn_of_lieDerivative_nonpos hV.differentiable fun u hu =>
-      hV.lie_nonpos u (ht₀.trans hu.1.le) (x u) (hD _ (h_ball u (Ioo_subset_Icc_self hu)).le)
+    have h_anti := IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos hx (convex_Icc _ _)
+      hV.differentiable fun u hu => by
+        rw [interior_Icc] at hu
+        exact hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
+          (hD _ (h_ball u (Ioo_subset_Icc_self hu)).le)
     have hx_D : x t ∈ D := hD _ (h_ball t ht).le
     exact ⟨(hW₁.nonneg hx_D).trans (hV_lb t (ht₀.trans ht.1) _ hx_D),
       (h_anti ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1).trans_lt (hV_lt_d t₀ ht₀ _ h_init)⟩
@@ -398,6 +403,189 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [NeZero n]
     _ ≤ α₁.invFun (σ.toFun (α₂.toFun ‖x t₀ - x_eq‖) (t - t₀)) :=
         (α₁.inv_mono_iff h_α₁_mem h_σ_mem_b₁).mpr h_chain
     _ = β.toFun ‖x t₀ - x_eq‖ (t - t₀) := (hβ_eq _ _).symm
+
+/-! ## Global asymptotic stability of a time-invariant system -/
+
+/-- A continuous function positive on a compact set is bounded below there by a positive
+constant. -/
+private lemma exists_pos_le_of_isCompact {K : Set ℝⁿ} (hK : IsCompact K) {g : ℝⁿ → ℝ}
+    (hg : ContinuousOn g K) (h_pos : ∀ y ∈ K, 0 < g y) : ∃ m > 0, ∀ y ∈ K, m ≤ g y := by
+  rcases K.eq_empty_or_nonempty with rfl | hne
+  · exact ⟨1, one_pos, fun _ h => h.elim⟩
+  obtain ⟨y₀, hy₀, h_min⟩ := hK.exists_isMinOn hne hg
+  exact ⟨g y₀, h_pos y₀ hy₀, fun y hy => h_min hy⟩
+
+/-- **Rate-bounded decrease** for a time-invariant system: if `∇V · f ≤ -c` along a trajectory on
+`[a, b]`, then `V(x(b)) + c b ≤ V(x(a)) + c a`.  This is monotonicity of `V(x) + c t`, whose Lie
+derivative is `∇V · f + c` (`lieDerivative_add_mul`). -/
+private lemma add_mul_le_of_lie_le {s : ContinuousSystem ℝⁿ Unit Y} {f : ℝⁿ → ℝⁿ}
+    (hF : ∀ t x, s.F t x () = f x) {V : ℝⁿ → ℝ} (hV : Differentiable ℝ V) {c a b : ℝ}
+    {x : ℝ → ℝⁿ} (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc a b)) (hab : a ≤ b)
+    (hlie : ∀ t ∈ Ioo a b, fderiv ℝ V (x t) (f (x t)) ≤ -c) :
+    V (x b) + c * b ≤ V (x a) + c * a :=
+  IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos (V := fun t y => V y + c * t) hx
+    (convex_Icc a b) ((hV.comp differentiable_snd).add (differentiable_fst.const_mul c))
+    (fun t ht => by
+      rw [interior_Icc] at ht
+      rw [lieDerivative_add_mul c (hV _)]
+      simp only [ContinuousSystem.vectorField_apply, hF]
+      linarith [hlie t ht])
+    (left_mem_Icc.mpr hab) (right_mem_Icc.mpr hab) hab
+
+/-- **Lyapunov's global asymptotic stability theorem** for a time-invariant system
+`ẋ = f(x)`: a `C¹` function `V`, positive definite on the whole space, with compact sublevel sets
+and `∇V · f < 0` away from `x_eq`, makes `x_eq` globally uniformly asymptotically stable.
+
+In `ℝⁿ`, compact sublevel sets is radial unboundedness of the continuous `V`.  No hypothesis
+`f(x_eq) = 0` is needed: `x_eq` minimizes `V`, so `∇V(x_eq) = 0`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2. -/
+@[blueprint "thm:continuousSystem-globallyUniformlyAsymptoticallyStable-of-lyapunov"
+  (title := "Lyapunov's global asymptotic stability theorem")
+  (statement := /-- Let the state equation be $\dot x = f(x)$ with $f$ continuous, on
+    $\mathbb{R}^n$.  Let $V : \mathbb{R}^n \to \mathbb{R}$ be $C^1$, positive definite about
+    $x_{\mathrm{eq}}$ on all of $\mathbb{R}^n$ (\cref{def:isPositiveDefiniteOn}), with compact
+    sublevel sets $\{V \le c\}$ (equivalently, radially unbounded) and
+    $\nabla V(x) \cdot f(x) < 0$ for $x \ne x_{\mathrm{eq}}$.  Then $x_{\mathrm{eq}}$ is
+    globally uniformly asymptotically stable
+    (\cref{def:continuousSystem-globallyUniformlyAsymptoticallyStable}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.2. -/)
+  (proof := /-- $V$ does not increase along trajectories: $\nabla V \cdot f \le 0$ everywhere,
+    since $\nabla V(x_{\mathrm{eq}}) = 0$ at the minimum.  So a trajectory starting below every
+    value $V$ takes outside the $\varepsilon$-ball never leaves it.  Take $\delta(\varepsilon)$
+    the supremum of the radii $\rho \le \varepsilon$ whose closed ball lies strictly below those
+    values: it is positive, since $V$ is bounded below by a positive constant outside the
+    $\varepsilon$-ball and small near $x_{\mathrm{eq}}$, and it tends to $\infty$, since
+    $V$ is bounded on each ball and large far out.  This is global uniform stability.
+
+    For convergence from the $c$-ball, trajectories stay in the compact set $\{V \le M\}$,
+    $M = \max_{\overline B(x_{\mathrm{eq}}, c)} V$, on which, outside the
+    $\delta(\eta)$-ball, $\nabla V \cdot f \le -\gamma < 0$.  So $V$ falls at rate $\gamma$
+    while the trajectory is outside, and since $V \ge 0$ it enters the $\delta(\eta)$-ball by
+    time $t_0 + M/\gamma + 1$; from then on it stays in the $\eta$-ball. -/)]
+theorem globallyUniformlyAsymptoticallyStable_of_lyapunov [NeZero n]
+    {s : ContinuousSystem ℝⁿ Unit Y} {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x)
+    (hf : Continuous f) {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hV_c1 : ContDiff ℝ 1 V)
+    (hV_pos : IsPositiveDefiniteOn V x_eq univ) (hV_sub : ∀ c, IsCompact {x | V x ≤ c})
+    (hV_neg : ∀ x, x ≠ x_eq → fderiv ℝ V x (f x) < 0) :
+    s.GloballyUniformlyAsymptoticallyStable x_eq := by
+  have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
+  have hV_cont : Continuous V := hV.continuous
+  have hV_nonneg : ∀ y, 0 ≤ V y := fun y => hV_pos.nonneg (mem_univ y)
+  have h_far_closed : ∀ r : ℝ, IsClosed {y : ℝⁿ | r ≤ ‖y - x_eq‖} := fun r =>
+    isClosed_le continuous_const (continuous_id.sub continuous_const).norm
+  -- Step 1. `x_eq` minimizes `V`, so `∇V(x_eq) = 0` and `∇V · f ≤ 0` everywhere.
+  have h_crit : fderiv ℝ V x_eq = 0 :=
+    (IsMinOn.isLocalMin (isMinOn_iff.mpr fun y _ => by rw [hV_pos.2.1]; exact hV_nonneg y)
+      Filter.univ_mem).fderiv_eq_zero
+  have h_nonpos : ∀ y, fderiv ℝ V y (f y) ≤ 0 := fun y => by
+    rcases eq_or_ne y x_eq with rfl | hy
+    · simp [h_crit]
+    · exact (hV_neg y hy).le
+  -- `V` does not increase along trajectories.
+  have h_dec : ∀ {a b : ℝ} {x : ℝ → ℝⁿ}, s.IsTrajectoryOn (fun _ => ()) x (Icc a b) →
+      ∀ t ∈ Icc a b, V (x t) ≤ V (x a) := fun {a b x} hx t ht => by
+    simpa using add_mul_le_of_lie_le hF hV (c := 0)
+      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right ht.2)) ht.1
+      fun τ _ => by simpa using h_nonpos (x τ)
+  -- Step 2. Trapping: a trajectory that starts below every value `V` takes outside the
+  -- `ε`-ball never leaves it.
+  have h_trap : ∀ {ε a b : ℝ} {x : ℝ → ℝⁿ}, s.IsTrajectoryOn (fun _ => ()) x (Icc a b) →
+      (∀ z, ε ≤ ‖z - x_eq‖ → V (x a) < V z) → ∀ t ∈ Icc a b, ‖x t - x_eq‖ < ε :=
+    fun hx h_lt t ht => not_le.mp fun h_out => absurd (h_dec hx t ht) (h_lt _ h_out).not_ge
+  -- Step 3. `δ(ε)` is the supremum of the radii `ρ ≤ ε` whose closed ball lies strictly below
+  -- every value `V` takes outside the `ε`-ball.
+  let S : ℝ → Set ℝ := fun ε => {ρ | ρ ∈ Icc 0 ε ∧
+    ∀ y z : ℝⁿ, ‖y - x_eq‖ ≤ ρ → ε ≤ ‖z - x_eq‖ → V y < V z}
+  have hS_bdd : ∀ ε, BddAbove (S ε) := fun ε => ⟨ε, fun _ hρ => hρ.1.2⟩
+  -- Outside the `ε`-ball `V` is bounded below by some `m > 0` ...
+  have h_far_pos : ∀ ε > 0, ∃ m > 0, ∀ z : ℝⁿ, ε ≤ ‖z - x_eq‖ → m ≤ V z := fun ε hε => by
+    obtain ⟨m₀, hm₀, h_le⟩ := exists_pos_le_of_isCompact ((hV_sub 1).inter_right (h_far_closed ε))
+      hV_cont.continuousOn fun z hz => hV_pos.2.2 z (mem_univ z) fun h => by
+        subst h
+        simp at hz
+        linarith [hz.2]
+    refine ⟨min m₀ 1, lt_min hm₀ one_pos, fun z hz => ?_⟩
+    by_cases hz₁ : V z ≤ 1
+    · exact (min_le_left _ _).trans (h_le z ⟨hz₁, hz⟩)
+    · exact (min_le_right _ _).trans (not_le.mp hz₁).le
+  -- ... so small balls qualify, and `δ(ε) > 0`.
+  have hS_pos : ∀ ε > 0, ∃ ρ > 0, ρ ∈ S ε := fun ε hε => by
+    obtain ⟨m, hm, h_m⟩ := h_far_pos ε hε
+    obtain ⟨ρ₀, hρ₀, h_near⟩ := Metric.continuousAt_iff.mp hV_cont.continuousAt m hm
+    have hρ_pos : 0 < min (ρ₀ / 2) ε := lt_min (half_pos hρ₀) hε
+    refine ⟨min (ρ₀ / 2) ε, hρ_pos, ⟨hρ_pos.le, min_le_right _ _⟩, fun y z hy hz => ?_⟩
+    have h_dist : dist y x_eq < ρ₀ := by
+      rw [dist_eq_norm]
+      linarith [min_le_left (ρ₀ / 2) ε]
+    have h_small := h_near h_dist
+    rw [Real.dist_eq, hV_pos.2.1, sub_zero, abs_of_nonneg (hV_nonneg y)] at h_small
+    exact h_small.trans_le (h_m z hz)
+  let δ : ℝ → ℝ := fun ε => sSup (S ε)
+  have hδ_pos : ∀ ε > 0, 0 < δ ε := fun ε hε => by
+    obtain ⟨ρ, hρ_pos, hρ⟩ := hS_pos ε hε
+    exact hρ_pos.trans_le (le_csSup (hS_bdd ε) hρ)
+  -- Starting within `δ(ε)` traps the trajectory in the `ε`-ball, from any initial time.
+  have h_trap_δ : ∀ ε > 0, ∀ {a b : ℝ} {x : ℝ → ℝⁿ},
+      s.IsTrajectoryOn (fun _ => ()) x (Icc a b) → ‖x a - x_eq‖ < δ ε →
+        ∀ t ∈ Icc a b, ‖x t - x_eq‖ < ε := fun ε hε {a b x} hx h_init => by
+    obtain ⟨ρ, -, hρ⟩ := hS_pos ε hε
+    obtain ⟨ρ', hρ', h_lt⟩ := exists_lt_of_lt_csSup ⟨ρ, hρ⟩ h_init
+    exact h_trap hx fun z hz => hρ'.2 _ z h_lt.le hz
+  -- `δ(ε) → ∞`: every radius `R` qualifies once `ε` is large, since `V` is bounded on the
+  -- `R`-ball and exceeds that bound far out.
+  have hδ_tendsto : Tendsto δ atTop atTop := by
+    refine tendsto_atTop.mpr fun R => ?_
+    obtain ⟨C, hC⟩ :=
+      (isCompact_closedBall x_eq (max R 0)).exists_bound_of_continuousOn hV_cont.continuousOn
+    obtain ⟨ρ₁, hρ₁⟩ := (hV_sub C).isBounded.subset_closedBall x_eq
+    refine eventually_atTop.mpr ⟨max (max R 0) (ρ₁ + 1), fun ε hε => ?_⟩
+    have hR_mem : max R 0 ∈ S ε := by
+      refine ⟨⟨le_max_right _ _, (le_max_left _ _).trans hε⟩, fun y z hy hz => ?_⟩
+      have hVy : V y ≤ C := (Real.le_norm_self _).trans (hC y (mem_closedBall_iff_norm.mpr hy))
+      have hVz : C < V z := by
+        by_contra h
+        have h_in := mem_closedBall_iff_norm.mp (hρ₁ (not_lt.mp h))
+        linarith [(le_max_right (max R 0) (ρ₁ + 1)).trans hε]
+      exact hVy.trans_lt hVz
+    exact (le_max_left R 0).trans (le_csSup (hS_bdd ε) hR_mem)
+  refine ⟨⟨δ, hδ_pos, hδ_tendsto, fun ε hε t₀ _ t₁ x hx h_init => h_trap_δ ε hε hx h_init⟩,
+    fun c hc η hη => ?_⟩
+  -- Step 4. From the `c`-ball, `V ≤ M`, and trajectories stay in the compact `{V ≤ M}` ...
+  obtain ⟨M, hM⟩ :=
+    (isCompact_closedBall x_eq c).exists_bound_of_continuousOn hV_cont.continuousOn
+  have hM_ball : ∀ y : ℝⁿ, ‖y - x_eq‖ ≤ c → V y ≤ M := fun y hy =>
+    (Real.le_norm_self _).trans (hM y (mem_closedBall_iff_norm.mpr hy))
+  have hM_nonneg : 0 ≤ M := (hV_nonneg x_eq).trans (hM_ball x_eq (by simpa using hc.le))
+  -- ... on which, outside the `δ(η)`-ball, `∇V · f ≤ -γ < 0`.
+  obtain ⟨γ, hγ, h_rate⟩ := exists_pos_le_of_isCompact (g := fun y => -fderiv ℝ V y (f y))
+    ((hV_sub M).inter_right (h_far_closed (δ η)))
+    ((hV_c1.continuous_fderiv one_ne_zero).clm_apply hf).neg.continuousOn
+    fun y hy => neg_pos.mpr (hV_neg y fun h => by
+      subst h
+      simp at hy
+      linarith [hy.2, hδ_pos η hη])
+  have hT_pos : 0 < M / γ + 1 := add_pos_of_nonneg_of_pos (div_nonneg hM_nonneg hγ.le) one_pos
+  refine ⟨M / γ + 1, hT_pos, fun t₀ _ t₁ x hx h_init t ht => ?_⟩
+  have hT_le : t₀ + (M / γ + 1) ≤ t₁ := ht.1.trans ht.2
+  have hx_T := IsIntegralCurveOn.mono hx (Icc_subset_Icc_right hT_le)
+  -- Step 5. `V` falls at rate `γ` while the trajectory is outside the `δ(η)`-ball, so it has
+  -- entered that ball by time `t₀ + M / γ + 1`.
+  obtain ⟨τ, hτ, hτ_in⟩ : ∃ τ ∈ Icc t₀ (t₀ + (M / γ + 1)), ‖x τ - x_eq‖ < δ η := by
+    by_contra h_never
+    push Not at h_never
+    have h_drop := add_mul_le_of_lie_le hF hV (c := γ) hx_T (by linarith) fun τ hτ => by
+      have hτ' : τ ∈ Icc t₀ (t₀ + (M / γ + 1)) := Ioo_subset_Icc_self hτ
+      linarith [show γ ≤ -fderiv ℝ V (x τ) (f (x τ)) from h_rate _
+        ⟨(h_dec hx_T τ hτ').trans (hM_ball _ h_init.le), h_never τ hτ'⟩]
+    have h_eq : γ * (t₀ + (M / γ + 1)) = γ * t₀ + M + γ := by
+      field_simp
+      ring
+    linarith [hM_ball _ h_init.le, hV_nonneg (x (t₀ + (M / γ + 1)))]
+  -- Step 6. From then on the trajectory stays in the `η`-ball.
+  exact h_trap_δ η hη (IsIntegralCurveOn.mono hx (Icc_subset_Icc_left hτ.1)) hτ_in t
+    ⟨hτ.2.trans ht.1, ht.2⟩
 
 end Euclidean
 
