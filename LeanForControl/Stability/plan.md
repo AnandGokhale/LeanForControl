@@ -281,9 +281,9 @@ was deleted: the linear instability theorem is a corollary of the nonlinear one,
 went with it.  The two branches were then merged into `Stability/Continuous/Linearization.lean`,
 and the `LyapunovIndirect/` directory removed.
 
-`Chetaev.lean`'s three `private` `*_forward_segment*` lemmas are **deliberately** left alone by
-the `forward` rename sweep: there `forward` means *forward in time from 0* — a solution on
-`Icc 0 T` — which is accurate and unrelated to the retired `Forward*` stability predicates.
+`Chetaev.lean`'s remaining private `exists_cutoff_forward_segment` lemma keeps `forward`
+in its name: it means *forward in time from 0* — a solution on `Icc 0 T` — which is
+accurate and unrelated to the retired `Forward*` stability predicates.
 
 ## Open questions
 
