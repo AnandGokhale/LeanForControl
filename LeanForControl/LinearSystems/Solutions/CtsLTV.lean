@@ -1229,8 +1229,8 @@ private lemma exists_norm_le_uIcc (hA : Continuous A) (a b : ℝ) :
     ∃ M : ℝ, ∀ s ∈ Set.uIcc a b, ‖A s‖ ≤ M :=
   isCompact_uIcc.exists_bound_of_continuousOn hA.continuousOn
 
-/-- Every solution of `ẋ = A(t) x` on `[t₀, ∞)` is the homogeneous response from its own
-initial state.
+/-- Every solution of `ẋ = A(t) x` on a segment `[t₀, t₁]` is the homogeneous response from its
+own initial state there.
 
 Uniqueness, repackaged from `stateTransitionMatrix_mulVec_unique` in the differential rather
 than the integral formulation. This is where Grönwall enters: together with
@@ -1239,21 +1239,21 @@ responses `Φ(·, t₀) x₀`. -/
 @[blueprint "thm:eq-homogeneousResponse-of-isIntegralCurveOn"
   (title := "Solutions are homogeneous responses")
   (statement := /-- Let $A$ be continuous and let $x$ solve $\dot x = A(t)x$ on
-    $[t_{0}, \infty)$.  Then
+    $[t_{0}, t_{1}]$.  Then
     \[
-      \varphi(t) = \Phi(t, t_{0})\, \varphi(t_{0}), \qquad \forall\, t \ge t_{0}.
+      x(t) = \Phi(t, t_{0})\, x(t_{0}), \qquad \forall\, t \in [t_{0}, t_{1}].
     \] -/)
   (proof := /-- On $[t_{0}, t]$ the solution satisfies the integral equation
     (\cref{lem:isIntegralCurveOn-isIntegralSolution}), so uniqueness for the Peano--Baker
     solution (\cref{thm:stateTransitionMatrix-mulVec-unique}) identifies it with
     $\Phi(\cdot, t_{0}) x(t_{0})$ there. -/)]
 theorem eq_homogeneousResponse_of_isIntegralCurveOn (hA : Continuous A) {z : ℝ → X → ℝ}
-    {t₀ : ℝ} (hz : IsIntegralCurveOn z (fun t v => A t *ᵥ v) (Set.Ici t₀)) {t : ℝ}
-    (ht : t₀ ≤ t) : z t = homogeneousResponse A t₀ (z t₀) t := by
+    {t₀ t₁ : ℝ} (hz : IsIntegralCurveOn z (fun t v => A t *ᵥ v) (Set.Icc t₀ t₁)) {t : ℝ}
+    (ht : t ∈ Set.Icc t₀ t₁) : z t = homogeneousResponse A t₀ (z t₀) t := by
   obtain ⟨M, hM⟩ := exists_norm_le_uIcc hA t₀ t
   have hcurve : IsIntegralCurveOn z (fun r v => A r *ᵥ v) (Set.uIcc t₀ t) := by
-    rw [Set.uIcc_of_le ht]
-    exact fun r hr => (hz r (Set.Icc_subset_Ici_self hr)).mono Set.Icc_subset_Ici_self
+    rw [Set.uIcc_of_le ht.1]
+    exact hz.mono (Set.Icc_subset_Icc_right ht.2)
   have hz_cont : ContinuousOn z (Set.uIcc t₀ t) := fun r hr => (hcurve r hr).continuousWithinAt
   have hFx : ContinuousOn (fun r => A r *ᵥ z r) (Set.uIcc t₀ t) :=
     (continuous_fst.matrix_mulVec continuous_snd).comp_continuousOn
@@ -1407,16 +1407,34 @@ Uniqueness, read on the system object. This is where Grönwall enters, through
 @[blueprint "thm:eq-homogeneousResponse-of-isTrajectoryOn"
   (title := "Trajectories of the unforced system are homogeneous responses")
   (statement := /-- Let $s$ have continuous $A$ and let $\varphi$ be a trajectory of the
-    unforced system on $[t_{0}, \infty)$ (\cref{def:continuousLTV-isTrajectoryOn}).  Then
-    $\varphi(t) = \Phi(t, t_{0})\,\varphi(t_{0})$ for every $t \ge t_{0}$. -/)
+    unforced system on $[t_{0}, t_{1}]$ (\cref{def:continuousLTV-isTrajectoryOn}).  Then
+    $\varphi(t) = \Phi(t, t_{0})\,\varphi(t_{0})$ for every $t \in [t_{0}, t_{1}]$. -/)
   (proof := /-- \cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}, after reducing the
     unforced state equation by \cref{lem:continuousLTV-vectorField-zero-input}. -/)]
 theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLTV X U Y ℝ)
-    (hA : Continuous s.A) {x : ℝ → X → ℝ} {t₀ : ℝ}
-    (hx : s.IsTrajectoryOn 0 x (Set.Ici t₀)) {t : ℝ} (ht : t₀ ≤ t) :
+    (hA : Continuous s.A) {x : ℝ → X → ℝ} {t₀ t₁ : ℝ}
+    (hx : s.IsTrajectoryOn 0 x (Set.Icc t₀ t₁)) {t : ℝ} (ht : t ∈ Set.Icc t₀ t₁) :
     x t = homogeneousResponse s.A t₀ (x t₀) t := by
   rw [isTrajectoryOn_iff, vectorField_zero_input] at hx
   exact eq_homogeneousResponse_of_isIntegralCurveOn hA hx ht
+
+omit [Fintype Y] [DecidableEq X] in
+/-- **The unforced system of an LTV system is forward complete.**  Every trajectory segment is
+the restriction of a homogeneous response, which is a trajectory for all time. -/
+@[blueprint "thm:continuousLTV-isForwardComplete-zeroInput"
+  (title := "Linear systems are forward complete")
+  (statement := /-- If $A$ is continuous, the unforced system
+    (\cref{def:continuousSystem-zeroInput}) of \cref{def:continuousLTV-toContinuousSystem} is
+    forward complete (\cref{def:continuousSystem-isForwardComplete}). -/)
+  (proof := /-- A trajectory on $[t_0, t_1]$ agrees there with the homogeneous response from its
+    initial state (\cref{thm:eq-homogeneousResponse-of-isTrajectoryOn}), which is a trajectory
+    on $[t_0, \infty)$ (\cref{thm:isTrajectoryOn-homogeneousResponse}). -/)]
+theorem isForwardComplete_zeroInput (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A) :
+    s.toContinuousSystem.zeroInput.IsForwardComplete (fun _ => ()) := by
+  classical
+  exact fun t₀ _ x _ hx _ => ⟨homogeneousResponse s.A t₀ (x t₀),
+    isTrajectoryOn_homogeneousResponse s hA t₀ (x t₀),
+    fun _ ht => (eq_homogeneousResponse_of_isTrajectoryOn s hA hx ht).symm⟩
 
 end ContinuousLTV
 

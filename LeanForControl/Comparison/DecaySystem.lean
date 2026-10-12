@@ -1,4 +1,5 @@
 import LeanForControl.Comparison.ClassK
+import LeanForControl.Systems.Continuous
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Analysis.DiniDeriv
@@ -11,19 +12,25 @@ import Architect
 
 
 /-!
-# `Stability.ClassKDecay`
+# `Comparison.DecaySystem` — the comparison system `ẏ = -α(y)`
 
-Class KL bound from the scalar decay ODE `ẏ = -α(y)` with `α ∈ ClassK`.
+For a class `K` function `α`, the scalar system `ẏ = -α(y)` (`ClassK.decaySystem`) is the
+comparison system of Lyapunov theory: a Lyapunov function `v` with `v̇ ≤ -α(v)` is a subsolution
+of it, and so decays at least as fast as its solutions.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemmas 3.4 and 4.4.
 
 ## Main results
 
-* `ClassK.exists_classKL_decaySolution` — the decay ODE `ẏ = −α(y)` has a class KL solution
-  operator, for `α` at most linear near the origin.
-* `classK_dini_bound` — a continuous `v` with `D⁺v ≤ −α(v)` is bounded by that solution.
+* `ClassK.decaySystem` — the system `ẏ = -α(y)`, as a `ContinuousSystem ℝ Unit Unit`.
+* `ClassK.exists_classKL_trajectory_decaySystem` — for `α` at most linear near the origin, the
+  decay system has a class `KL` solution operator: `t ↦ σ(y₀, t - t₀)` is its trajectory from
+  `y₀ ∈ [0, a)` (Khalil, Lemma 4.4).
+* `ClassK.exists_classKL_bound_of_subsolution` — a continuous Dini subsolution of the decay
+  system, `D⁺v ≤ -α(v)`, is bounded by a class `KL` function, for any class `K` function `α`.
 
-Only these two are public. Everything else in this file is the construction behind them.
+Only states `y ∈ [0, a)` matter: `α` is class `K` on `[0, a)`, and trajectories starting there
+stay there.
 
 ## The construction (private)
 
@@ -580,57 +587,10 @@ end OsgoodConstruction
 
 /-! ## The decay ODE has a class KL solution operator -/
 
-/-- **The decay ODE `ẏ = −α(y)` admits a class KL solution operator.**
-
-If `α` is at most linear near the origin — so that the origin is not reached in finite time —
-then there is a class KL function `σ` such that `s ↦ σ(r, s)` is the solution of `ẏ = −α(y)`
-started at `r`.
-
-This is the only thing the rest of the library needs from the Osgood construction. Stating it
-this way keeps the construction itself — the time-to-reach integral, its inverse, and the
-closed form built from them — inside the proof, where it belongs: those are steps in building
-a solution, not results about class K functions. 
-
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4. Differences:
-- Khalil assumes `α` locally Lipschitz; here the hypothesis is the linear bound `α(x) ≤ L·x`
-  near the origin, which is what the construction uses.
-- Uniqueness of the solution is not asserted, only existence of the class `KL` operator `σ`. -/
-@[blueprint "thm:class-KL-osgood"
-  (title := "The decay ODE has a class $\\mathcal{KL}$ solution operator")
-  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the
-    origin,
-    $\alpha(x) \le Lx$ on $(0, \mathrm{base}]$.  Then there is a class $\mathcal{KL}$
-    function $\sigma$ (\cref{def:isClassKL}) with $\sigma(0, s) = 0$, $\sigma(r, 0) = r$,
-    and such that for each $r$ the map $s \mapsto \sigma(r, s)$ solves
-    \[
-      \dot y = -\alpha(y), \qquad y(0) = r .
-    \]
-    That is: the decay ODE's solution operator is itself a class $\mathcal{KL}$ function.
-
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.4.  Differences: \begin{itemize}
-    \item Khalil assumes $\alpha$ locally Lipschitz; here the hypothesis is the linear bound
-    $\alpha(x) \le Lx$ near the origin, which is what the construction uses. \item Uniqueness of the
-    solution is not asserted, only existence of the class $\mathcal{KL}$ operator $\sigma$.
-    \end{itemize}
-  -/)
-  (proof := /-- \textbf{Osgood's construction.}  Let
-    $\eta(y) = -\int_{\mathrm{base}}^{y} \mathrm{d}x/\alpha(x)$ be the time for the solution
-    started at $\mathrm{base}$ to reach $y$.  Since $\alpha > 0$ on $(0,a)$, $\eta$ is
-    continuous and strictly decreasing there; and since $\alpha(x) \le Lx$ near $0$,
-    \[
-      \eta(y) \;\ge\; \int_{y}^{\mathrm{base}} \frac{\mathrm{d}x}{Lx}
-        \;=\; \frac{\log(\mathrm{base}) - \log y}{L} \;\longrightarrow\; +\infty
-      \qquad (y \to 0^{+}),
-    \]
-    so the origin is not reached in finite time and every value above $\eta(r)$ is attained.
-    Setting $\sigma(r,s) := \eta^{-1}(\eta(r) + s)$, extended by $\sigma(0,s) = 0$, advancing
-    time by $s$ moves $\eta$ up by $s$ and hence moves the state down; the class
-    $\mathcal{KL}$ conditions follow from monotonicity and continuity of $\eta^{-1}$, and
-    differentiating $\eta(\sigma) = \eta(r) + s$ gives $\dot\sigma = -\alpha(\sigma)$.
-
-    The construction is local to this proof: $\eta$ and $\eta^{-1}$ are steps in building a
-    solution, not results about class $\mathcal{K}$ functions. -/)]
-theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
+/-- The decay ODE `ẏ = −α(y)` has a class `KL` solution operator, in derivative form: `σ(r, 0) = r`
+and `s ↦ σ(r, s)` has derivative `-α(σ(r, s))` for `s > 0`.  `exists_classKL_trajectory_decaySystem`
+states it as trajectories of the decay system. -/
+private theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
     (hbase : base ∈ Set.Ioo 0 a)
     (L : ℝ) (hL_pos : 0 < L)
     (hLip : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x) :
@@ -664,23 +624,108 @@ theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
         rw [hσ_eq r hr' s hs.le]
       exact (hval ▸ hderiv).congr_of_eventuallyEq hfun
 
+
+/-! ## The decay system -/
+
+/-- The **decay system** `ẏ = -α(y)` of a class `K` function `α`: the comparison system of
+Lyapunov theory.  Only states in `[0, a)`, where `α` is class `K`, are meaningful. -/
+@[blueprint "def:classK-decaySystem"
+  (title := "The decay system of a class $\\mathcal{K}$ function")
+  (statement := /-- For $\alpha$ class $\mathcal{K}$ on $[0, a)$ (\cref{def:isClassK}), the
+    \emph{decay system} is the scalar time-invariant system
+    \[
+      \dot y = -\alpha(y),
+    \]
+    as a continuous-time system (\cref{def:continuousSystem}) with no input.  Its meaningful
+    states are $y \in [0, a)$. -/)]
+def ClassK.decaySystem (α : ClassK a b) : ContinuousSystem ℝ Unit Unit :=
+  ContinuousSystem.autonomous (fun _ y => -α.toFun y) (fun _ _ => ())
+
+/-- **The decay system has a class `KL` solution operator** (Khalil, Lemma 4.4).  If `α` is at
+most linear near the origin — so that the origin is not reached in finite time — there is a
+class `KL` function `σ` with `σ(y₀, 0) = y₀` such that, for every `y₀ ∈ [0, a)` and every `t₀`,
+`t ↦ σ(y₀, t - t₀)` is a trajectory of the decay system on `[t₀, ∞)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4.  Differences:
+- Khalil assumes `α` locally Lipschitz; here the hypothesis is the linear bound `α(x) ≤ L·x`
+  near the origin, which is what the construction uses.
+- Uniqueness of the solution is not asserted. -/
+@[blueprint "thm:class-KL-osgood"
+  (title := "The decay system has a class $\\mathcal{KL}$ solution operator")
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$ and at most linear near the
+    origin, $\alpha(x) \le Lx$ on $(0, \mathrm{base}]$.  Then there is a class $\mathcal{KL}$
+    function $\sigma$ (\cref{def:isClassKL}) with $\sigma(y_0, 0) = y_0$ such that for every
+    $y_0 \in [0, a)$ and every $t_0$, $t \mapsto \sigma(y_0, t - t_0)$ is a trajectory on
+    $[t_0, \infty)$ (\cref{def:continuousSystem-isTrajectoryOn}) of the decay system
+    $\dot y = -\alpha(y)$ (\cref{def:classK-decaySystem}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.4.  Differences:
+    \begin{itemize} \item Khalil assumes $\alpha$ locally Lipschitz; here the hypothesis is the
+    linear bound $\alpha(x) \le Lx$ near the origin, which is what the construction uses.
+    \item Uniqueness of the solution is not asserted. \end{itemize} -/)
+  (proof := /-- \textbf{Osgood's construction.}  Let
+    $\eta(y) = -\int_{\mathrm{base}}^{y} \mathrm{d}x/\alpha(x)$ be the time for the solution
+    started at $\mathrm{base}$ to reach $y$.  Since $\alpha > 0$ on $(0,a)$, $\eta$ is
+    continuous and strictly decreasing there; and since $\alpha(x) \le Lx$ near $0$,
+    $\eta(y) \ge (\log \mathrm{base} - \log y)/L \to +\infty$ as $y \to 0^{+}$, so the origin is
+    not reached in finite time.  Setting $\sigma(r,s) := \eta^{-1}(\eta(r) + s)$, extended by
+    $\sigma(0,s) = 0$, the class $\mathcal{KL}$ conditions follow from monotonicity and
+    continuity of $\eta^{-1}$, and differentiating $\eta(\sigma) = \eta(r) + s$ gives
+    $\dot\sigma = -\alpha(\sigma)$ for $s > 0$.  At $s = 0$ the one-sided derivative is the limit
+    of these, $-\alpha(r)$, by continuity of $\sigma$ and $\alpha$. -/)]
+theorem ClassK.exists_classKL_trajectory_decaySystem (α : ClassK a b) (base : ℝ)
+    (hbase : base ∈ Set.Ioo 0 a) (L : ℝ) (hL_pos : 0 < L)
+    (hLip : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x) :
+    ∃ σ : ClassKL a, (∀ y₀ ∈ Set.Ico 0 a, σ.toFun y₀ 0 = y₀) ∧
+      ∀ y₀ ∈ Set.Ico 0 a, ∀ t₀ : ℝ,
+        α.decaySystem.IsTrajectoryOn (fun _ => ()) (fun t => σ.toFun y₀ (t - t₀)) (Set.Ici t₀) := by
+  obtain ⟨σ, -, hσ_init, hσ_deriv⟩ := α.exists_classKL_decaySolution base hbase L hL_pos hLip
+  refine ⟨σ, hσ_init, fun r hr t₀ t ht => ?_⟩
+  -- `s ↦ σ(r, s)` is continuous at `0` from the right, and stays in `[0, a)`.
+  have h_cont : ContinuousWithinAt (fun s => σ.toFun r s) (Set.Ici 0) 0 :=
+    (σ.continuous (r, 0) ⟨hr, Set.self_mem_Ici⟩).comp
+      (continuousWithinAt_const.prodMk continuousWithinAt_id) fun s hs => ⟨hr, hs⟩
+  have h_mem : ∀ s > 0, σ.toFun r s ∈ Set.Ico 0 a := fun s hs =>
+    ⟨σ.nonneg r hr s hs.le, ((σ.anti_s r hr (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr hs.le)
+      hs.le).trans_eq (hσ_init r hr)).trans_lt hr.2⟩
+  -- The derivative of `s ↦ σ(r, s)` within `[0, ∞)`, at `s = t - t₀`.
+  have h_sec : HasDerivWithinAt (fun s => σ.toFun r s) (-α.toFun (σ.toFun r (t - t₀)))
+      (Set.Ici 0) (t - t₀) := by
+    rcases (sub_nonneg.mpr (Set.mem_Ici.mp ht)).eq_or_lt with h_zero | h_pos
+    · -- At the left endpoint, the limit of the derivatives `-α(σ(r, s)) → -α(r)`.
+      rw [← h_zero, hσ_init r hr]
+      have h_lim : Tendsto (fun s => σ.toFun r s) (𝓝[>] 0) (𝓝[Set.Ico 0 a] r) :=
+        tendsto_nhdsWithin_iff.mpr ⟨by
+          simpa [hσ_init r hr] using (h_cont.mono Set.Ioi_subset_Ici_self).tendsto,
+          eventually_nhdsWithin_of_forall fun s hs => h_mem s hs⟩
+      refine hasDerivWithinAt_Ici_of_tendsto_deriv (s := Set.Ioi 0)
+        (fun s hs => (hσ_deriv r hr s hs).differentiableAt.differentiableWithinAt)
+        (h_cont.mono Set.Ioi_subset_Ici_self) self_mem_nhdsWithin ?_
+      refine ((α.continuous r hr).tendsto.comp h_lim).neg.congr' ?_
+      filter_upwards [self_mem_nhdsWithin] with s hs
+      exact ((hσ_deriv r hr s hs).deriv).symm
+    · exact (hσ_deriv r hr _ h_pos).hasDerivWithinAt
+  have h_traj := h_sec.comp t ((hasDerivWithinAt_id t _).sub_const t₀)
+    fun x hx => Set.mem_Ici.mpr (sub_nonneg.mpr hx)
+  rw [mul_one] at h_traj
+  exact h_traj
+
 /-! ## Comparison bound from Dini ≤ −ClassK -/
 
-/-- **Comparison KL bound**: for any class K function `α`, there exists a class KL function `σ`
-    such that any continuous scalar function `v` with upper-right Dini derivative
-    `D⁺v(s) ≤ −α(v(s))`, starting and remaining in `[0, a)`, satisfies
-    `v(t) ≤ σ(v(t₀), t − t₀)`.
+/-- **Subsolutions of the decay system decay** (Khalil, Lemma 3.4): for any class `K` function
+`α` there is a class `KL` function `σ` such that a continuous `v` that is a Dini subsolution of
+the decay system, `D⁺v ≤ -α(v)`, starting and remaining in `[0, a)`, satisfies
+`v(t) ≤ σ(v(t₀), t − t₀)`.
 
-    The class K decay ODE `ẏ = −α(y)` determines σ; the comparison lemma supplies the
-    bound. All ODE infrastructure (Lipschitz minorant, Osgood construction,
-    Picard–Lindelöf) is hidden inside. -/
+`σ` is the solution operator of the decay system of a Lipschitz class `K` minorant of `α`; no
+hypothesis on `α` beyond class `K` is needed. -/
 @[blueprint "thm:classK-dini-bound"
-  (title := "Comparison bound from a Dini decay condition")
+  (title := "Subsolutions of the decay system decay")
   (statement := /-- Let $\alpha$ be
     class $\mathcal{K}$ on $[0,a)$.  Then there is a class $\mathcal{KL}$ function $\sigma$
     with $\sigma(r,0) \le r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
-    in $[0,a)$ there, has bounded forward difference quotients, and satisfies the Dini
-    inequality
+    in $[0,a)$ there, has bounded forward difference quotients, and is a Dini subsolution of
+    the decay system (\cref{def:classK-decaySystem}),
     \[
       D^{+}v(s) \;\le\; -\alpha(v(s)),
     \]
@@ -700,13 +745,13 @@ theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : ℝ)
     solutions that lemma requires coming from
     \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz}, whose hypotheses hold because
     $\beta$ is globally Lipschitz (\cref{lem:exists-classK-minorant-lipschitz}). -/)]
-lemma classK_dini_bound {a b : ℝ} (α : ClassK a b) :
+theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
       ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Set.Icc t₀ t) →
         v t₀ ∈ Set.Ico 0 a →
         (∀ s ∈ Set.Ico t₀ t, v s ∈ Set.Ico 0 a) →
-        (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ -α.toFun (v s)) →
+        (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ α.decaySystem.F s (v s) ()) →
         (∀ s ∈ Set.Ico t₀ t,
             IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (s + h) - v s) / h)) →
         v t ≤ σ.toFun (v t₀) (t - t₀) := by

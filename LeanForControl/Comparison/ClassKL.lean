@@ -60,6 +60,23 @@ theorem ClassKL.map_zero_r {a : ℝ} (β : ClassKL a) {s : ℝ} (hs : 0 ≤ s) :
     β.toFun 0 s = 0 :=
   β.map_zero s hs
 
+/-- Restrict a class KL function on `[0, a)` to a smaller radius `[0, a')`. -/
+@[blueprint "lem:classKL-restrict"
+  (title := "Restriction of a class $\\mathcal{KL}$ function")
+  (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0, a) \times [0, \infty)$ and
+    $0 < a' \le a$, then $\beta$ is class $\mathcal{KL}$ on $[0, a') \times [0, \infty)$. -/)]
+def ClassKL.restrict {a : ℝ} (β : ClassKL a) {a' : ℝ} (ha' : 0 < a') (h : a' ≤ a) :
+    ClassKL a' where
+  ha                 := ha'
+  toFun              := β.toFun
+  map_zero           := β.map_zero
+  continuous         := β.continuous.mono
+    (Set.prod_mono (Set.Ico_subset_Ico_right h) subset_rfl)
+  strict_mono_r s hs := (β.strict_mono_r s hs).mono (Set.Ico_subset_Ico_right h)
+  nonneg r hr        := β.nonneg r (Set.Ico_subset_Ico_right h hr)
+  anti_s r hr        := β.anti_s r (Set.Ico_subset_Ico_right h hr)
+  tendsto_zero r hr  := β.tendsto_zero r (Set.Ico_subset_Ico_right h hr)
+
 @[simp]
 theorem ClassKL.tendsto_zero_s {a : ℝ} (β : ClassKL a) {r : ℝ} (hr : r ∈ Set.Ico 0 a) :
     Filter.Tendsto (fun s => β.toFun r s) Filter.atTop (nhds 0) :=

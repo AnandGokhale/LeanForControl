@@ -17,14 +17,14 @@ matrix `Φ(t, t₀)`. For a constant `A` that matrix is `e^{A(t-t₀)}`
 
 ## Contents
 
-* **Theorem 8.1(2)** — `ContinuousLTI.asymptoticStableNA_iff_isHurwitz`:
+* **Theorem 8.1(2)** — `ContinuousLTI.locallyAsymptoticallyStable_iff_isHurwitz`:
   asymptotic stability holds exactly when every eigenvalue of `A` has strictly negative real
   part.
-* **Theorem 8.1(3)** — `ContinuousLTI.exponentiallyStableNA_iff_isHurwitz`:
+* **Theorem 8.1(3)** — `ContinuousLTI.locallyExponentiallyStable_iff_isHurwitz`:
   and so does exponential stability, under the same condition.
 
 Both are stated for an LTI system `sys : ContinuousLTI X U Y ℝ`, so that they read
-`sys.asymptoticStableNA_iff_isHurwitz`.
+`sys.locallyAsymptoticallyStable_iff_isHurwitz`.
 
 ## Scope
 
@@ -58,13 +58,13 @@ feature of the time-invariant case; for a time-varying `A(t)` the two differ, as
 the Lyapunov-equation development of Theorem 8.2.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(2). -/
-@[blueprint "thm:asymptoticStableNA-iff-isHurwitz"
+@[blueprint "thm:continuousLTI-locallyAsymptoticallyStable-iff-isHurwitz"
   (title := "Asymptotic stability of a linear time-invariant system")
   (statement := /-- Consider the time-invariant system $\dot x = Ax$ with $A$ a real square
     matrix.
 
     The origin is an asymptotically stable equilibrium
-    (\cref{def:asymptoticStableNA}) if and only if $A$ is Hurwitz
+    (\cref{def:continuousSystem-locallyAsymptoticallyStable}) if and only if $A$ is Hurwitz
     (\cref{def:stability-isHurwitz}), that is, every eigenvalue of $A$ has strictly negative
     real part.
 
@@ -72,8 +72,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(2
   -/)
   (proof := /-- For constant $A$ the state transition matrix is $e^{A(t-t_0)}$
     (\cref{thm:stateTransitionMatrix-const}), so
-    \cref{thm:asymptoticStableNA-iff-decayingHomogeneousResponse} turns the statement into one
-    about $e^{At}x_0$.
+    \cref{thm:continuousLTV-locallyAsymptoticallyStable-iff-decayingHomogeneousResponse} turns the
+    statement into one about $e^{At}x_0$.
 
     If the response converges then $A$ is Hurwitz
     (\cref{thm:isHurwitz-of-tendsto-exp-mulVec}).  Conversely a Hurwitz $A$ gives an
@@ -81,9 +81,9 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(2
     (\cref{thm:isHurwitz-exists-norm-exp-mulVec-le}); the envelope is bounded by $k\|x_0\|$,
     which supplies the stability half, and tends to zero
     (\cref{lem:tendsto-const-mul-exp-neg}), which supplies the attractivity half. -/)]
-theorem asymptoticStableNA_iff_isHurwitz
+theorem locallyAsymptoticallyStable_iff_isHurwitz
     (sys : ContinuousLTI X U Y ℝ) :
-    AsymptoticStableNA (sys.vectorField 0) (0 : X → ℝ) ↔
+    sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : X → ℝ) ↔
       IsHurwitz sys.A := by
   classical
   obtain ⟨A, B, C, D⟩ := sys
@@ -93,7 +93,8 @@ theorem asymptoticStableNA_iff_isHurwitz
     intro t₀ x₀
     funext t
     simp [homogeneousResponse, stateTransitionMatrix_const]
-  rw [asymptoticStableNA_iff_decayingHomogeneousResponse _ (by simpa using continuous_const)]
+  rw [locallyAsymptoticallyStable_iff_decayingHomogeneousResponse _
+    (by simpa using continuous_const)]
   simp only [hcoeff, hhr]
   constructor
   · rintro ⟨-, hconv⟩
@@ -123,34 +124,35 @@ The time-invariant system `ẋ = A x` is exponentially stable if and only if eve
 of `A` has strictly negative real part.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(3). -/
-@[blueprint "thm:exponentiallyStableNA-iff-isHurwitz"
+@[blueprint "thm:continuousLTI-locallyExponentiallyStable-iff-isHurwitz"
   (title := "Exponential stability of a linear time-invariant system")
   (statement := /-- Consider the time-invariant system $\dot x = Ax$ with $A$ a real square
     matrix.
 
     The origin is an exponentially stable equilibrium
-    (\cref{def:exponentiallyStableNA}) if and only if $A$ is Hurwitz
+    (\cref{def:continuousSystem-locallyExponentiallyStable}) if and only if $A$ is Hurwitz
     (\cref{def:stability-isHurwitz}).
 
-    Together with \cref{thm:asymptoticStableNA-iff-isHurwitz} this says the two notions
-    coincide for a time-invariant system — a genuine feature of constant $A$, not of linearity:
-    for time-varying $A(t)$ they differ, as $\dot x = -x/(1+t)$ shows.
+    Together with \cref{thm:continuousLTI-locallyAsymptoticallyStable-iff-isHurwitz} this says the
+    two notions coincide for a time-invariant system — a genuine feature of constant $A$, not of
+    linearity: for time-varying $A(t)$ they differ, as $\dot x = -x/(1+t)$ shows.
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.1(3).
   -/)
-  (proof := /-- As for \cref{thm:asymptoticStableNA-iff-isHurwitz}, but against
-    \cref{thm:exponentiallyStableNA-iff-decayingStateTransition}, which already asks for an
-    exponential envelope.  The forward direction squeezes $\|e^{At}x\|$ to zero under that
-    envelope and applies \cref{thm:isHurwitz-of-tendsto-exp-mulVec}; the converse is
+  (proof := /-- As for \cref{thm:continuousLTI-locallyAsymptoticallyStable-iff-isHurwitz}, but
+    against \cref{thm:continuousLTV-locallyExponentiallyStable-iff-decayingStateTransition},
+    which already asks for an exponential envelope.  The forward direction squeezes
+    $\|e^{At}x\|$ to zero under that envelope and applies
+    \cref{thm:isHurwitz-of-tendsto-exp-mulVec}; the converse is
     \cref{thm:isHurwitz-exists-norm-exp-mulVec-le} re-anchored from $0$ to $t_0$. -/)]
-theorem exponentiallyStableNA_iff_isHurwitz
+theorem locallyExponentiallyStable_iff_isHurwitz
     (sys : ContinuousLTI X U Y ℝ) :
-    ExponentiallyStableNA (sys.vectorField 0) (0 : X → ℝ) ↔
+    sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ) ↔
       IsHurwitz sys.A := by
   classical
   obtain ⟨A, B, C, D⟩ := sys
   have hcoeff : (⟨A, B, C, D⟩ : ContinuousLTI X U Y ℝ).toLTV.A = fun _ => A := rfl
-  rw [exponentiallyStableNA_iff_decayingStateTransition _ (by simpa using continuous_const)]
+  rw [locallyExponentiallyStable_iff_decayingStateTransition _ (by simpa using continuous_const)]
   simp only [hcoeff, stateTransitionMatrix_const]
   constructor
   · rintro ⟨k, hk, γ, hγ, hbd⟩
@@ -189,8 +191,10 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
   (title := "Hespanha's Theorem 8.2")
   (statement := /-- For the time-invariant system $\dot x = Ax$ the following are equivalent.
     \begin{enumerate}
-      \item The origin is asymptotically stable (\cref{def:asymptoticStableNA}).
-      \item The origin is exponentially stable (\cref{def:exponentiallyStableNA}).
+      \item The origin is asymptotically stable
+        (\cref{def:continuousSystem-locallyAsymptoticallyStable}).
+      \item The origin is exponentially stable
+        (\cref{def:continuousSystem-locallyExponentiallyStable}).
       \item $A$ is Hurwitz (\cref{def:stability-isHurwitz}).
       \item For every positive definite $Q$ there is a positive definite $P$ with
         $PA + A^{\mathsf T}P = -Q$ (\cref{def:continuousLyapunovEquation}), and this $P$ is
@@ -208,15 +212,15 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.2.
   -/)
   (proof := /-- Every clause is tied to clause 3 and the cycle is closed by transitivity:
-    $1 \Leftrightarrow 3$ is \cref{thm:asymptoticStableNA-iff-isHurwitz},
-    $2 \Leftrightarrow 3$ is \cref{thm:exponentiallyStableNA-iff-isHurwitz},
+    $1 \Leftrightarrow 3$ is \cref{thm:continuousLTI-locallyAsymptoticallyStable-iff-isHurwitz},
+    $2 \Leftrightarrow 3$ is \cref{thm:continuousLTI-locallyExponentiallyStable-iff-isHurwitz},
     $3 \Leftrightarrow 4$ is \cref{thm:isHurwitz-iff-forall-posDef-exists-solution},
     $3 \Leftrightarrow 5$ is \cref{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}, and
     $3 \Leftrightarrow 6$ is \cref{thm:isHurwitz-iff-exists-posDef-lyapunovRate}. -/)]
 theorem lyapunovStability_tfae
     (sys : ContinuousLTI X U Y ℝ) :
-    [ AsymptoticStableNA (sys.vectorField 0) (0 : X → ℝ),
-      ExponentiallyStableNA (sys.vectorField 0) (0 : X → ℝ),
+    [ sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : X → ℝ),
+      sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ),
       IsHurwitz sys.A,
       ∀ R : Matrix X X ℝ, R.PosDef →
         ∃ S : Matrix X X ℝ, S.PosDef ∧ ContinuousLyapunovEquation sys.A S R ∧
@@ -224,8 +228,8 @@ theorem lyapunovStability_tfae
       ∃ S : Matrix X X ℝ, S.PosDef ∧ (-(S * sys.A + sys.Aᵀ * S)).PosDef,
       ∃ (S : Matrix X X ℝ) (c : ℝ), 0 < c ∧ S.PosDef ∧
         (-(S * sys.A + sys.Aᵀ * S) - (2 * c) • S).PosSemidef ].TFAE := by
-  tfae_have 1 ↔ 3 := asymptoticStableNA_iff_isHurwitz sys
-  tfae_have 2 ↔ 3 := exponentiallyStableNA_iff_isHurwitz sys
+  tfae_have 1 ↔ 3 := locallyAsymptoticallyStable_iff_isHurwitz sys
+  tfae_have 2 ↔ 3 := locallyExponentiallyStable_iff_isHurwitz sys
   tfae_have 3 ↔ 4 := isHurwitz_iff_forall_posDef_exists_solution sys.A
   tfae_have 3 ↔ 5 := isHurwitz_iff_exists_posDef_lyapunovResidual sys.A
   tfae_have 3 ↔ 6 := isHurwitz_iff_exists_posDef_lyapunovRate sys.A

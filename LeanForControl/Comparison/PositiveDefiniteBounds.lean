@@ -1,18 +1,13 @@
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.PositiveDefinite
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import LeanForControl.Comparison.ClassK
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
 
-import LeanForControl.Comparison.ClassK
-import LeanForControl.Comparison.ClassKInfty
-import LeanForControl.Comparison.ClassKL
-
-
-open Set Filter Topology MeasureTheory Metric
+open Set Filter Topology Metric
 
 /-!
-# `Stability.LyapunovBounds`
+# `Comparison.PositiveDefiniteBounds`
 
 Class K sandwich bounds for continuous positive-definite functions.
 
@@ -20,11 +15,11 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
 ## Main result
 
-**Class K sandwich bounds** (`LyapunovClassKBounds`): Let `W : ℝⁿ → ℝ` be positive definite
-about `x_eq` (`IsPositiveDefiniteOn`) on a set containing `closedBall x_eq r`.  Then there exist
-class K functions `α₁, α₂` on `[0, r)` (i.e. `ClassK r b₁`, `ClassK r b₂`) such that
-`α₁(‖x - x_eq‖) ≤ W(x) ≤ α₂(‖x - x_eq‖)` for all `x` with `‖x - x_eq‖ < r`.  The construction is
-carried out about the origin and translated.
+**Class K sandwich bounds** (`IsPositiveDefiniteOn.exists_classK_bounds`): Let `W : ℝⁿ → ℝ`
+be positive definite about `x_eq` (`IsPositiveDefiniteOn`) on a set containing
+`closedBall x_eq r`.  Then there exist class K functions `α₁, α₂` on `[0, r)` (i.e.
+`ClassK r b₁`, `ClassK r b₂`) such that `α₁(‖x - x_eq‖) ≤ W(x) ≤ α₂(‖x - x_eq‖)` for all `x` with
+`‖x - x_eq‖ < r`.  The construction is carried out about the origin and translated.
 
 The intermediate comparisons `α₁ ≤ ψ` and `φ ≤ α₂` (steps 4–5 below) hold on the closed
 interval `[0, r]`; the final bound is stated on the open ball because `α₁, α₂` are class K only
@@ -308,7 +303,7 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 -- ─── 7. Main Theorem ──────────────────────────────────────────────────────────
 
 /-- The sandwich bounds about the origin, from the three conditions of positive definiteness
-spelled out.  `LyapunovClassKBounds` translates them to any point. -/
+spelled out.  `IsPositiveDefiniteOn.exists_classK_bounds` translates them to any point. -/
 private theorem classKBounds_origin [NeZero n] (hr : 0 < r)
     (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
@@ -364,7 +359,8 @@ private theorem classKBounds_origin [NeZero n] (hr : 0 < r)
     \cref{lem:exists-strictMono-lower-bound} gives a class $\mathcal{K}$ minorant of $\psi$
     and \cref{lem:exists-strictMono-upper-bound} a class $\mathcal{K}$ majorant of $\phi$.
     Since $\psi(\|y\|) \le V(y) \le \phi(\|y\|)$ pointwise, these sandwich $V$. -/)]
-theorem LyapunovClassKBounds [NeZero n] {W : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} {r : ℝ}
+theorem IsPositiveDefiniteOn.exists_classK_bounds [NeZero n] {W : ℝⁿ → ℝ} {x_eq : ℝⁿ}
+    {D : Set ℝⁿ} {r : ℝ}
     (hr : 0 < r) (hrD : closedBall x_eq r ⊆ D) (hW : IsPositiveDefiniteOn W x_eq D) :
     ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂), ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
       α₁.toFun ‖x - x_eq‖ ≤ W x ∧ W x ≤ α₂.toFun ‖x - x_eq‖ := by

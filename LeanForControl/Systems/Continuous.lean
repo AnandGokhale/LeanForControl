@@ -1,5 +1,6 @@
 import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.IntegralCurves
+import LeanForControl.ODEs.PicardLindelof
 import Mathlib.Analysis.ODE.Gronwall
 import Architect
 
@@ -346,6 +347,48 @@ theorem hasUniqueSolutions_of_lipschitz {s : ContinuousSystem E U Y} {u : ℝ �
     (fun t _ => (hL t).lipschitzOnWith) (fun t ht => (hx t ht).continuousWithinAt) (h_right hx)
     (fun _ _ => Set.mem_univ _) (fun t ht => (hy t ht).continuousWithinAt) (h_right hy)
     (fun _ _ => Set.mem_univ _) h₀
+
+/-- **Globally Lipschitz systems are forward complete.**  If `(t, x) ↦ F(t, x, u(t))` is
+continuous and `K`-Lipschitz in `x` uniformly in `t`, every trajectory segment extends to
+`[t₀, ∞)`.
+
+Global Lipschitz is what rules out escape in finite time here; a local Lipschitz condition
+alone does not (`ẋ = x²`). -/
+@[blueprint "thm:continuousSystem-isForwardComplete-of-lipschitz"
+  (title := "Globally Lipschitz systems are forward complete")
+  (statement := /-- If $(t, x) \mapsto F(t, x, u(t))$ is continuous and $K$-Lipschitz in $x$
+    uniformly in $t$, the system is forward complete under $u$
+    (\cref{def:continuousSystem-isForwardComplete}). -/)
+  (proof := /-- From the endpoint $x(t_0)$ of a segment, Picard--Lindel\"of gives a solution on
+    $[t_0, \infty)$ (\cref{thm:exists-isIntegralCurveOn-Ici}), which agrees with the segment by
+    uniqueness (\cref{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}). -/)]
+theorem isForwardComplete_of_lipschitz [CompleteSpace E] {s : ContinuousSystem E U Y}
+    {u : ℝ → U} {K : NNReal} (hF : Continuous (Function.uncurry (s.vectorField u)))
+    (hL : ∀ t, LipschitzWith K (s.vectorField u t)) : s.IsForwardComplete u := by
+  intro t₀ t₁ x ht hx _
+  obtain ⟨y, hy₀, hy, -⟩ := exists_isIntegralCurveOn_Ici hF hL t₀ (x t₀)
+  exact ⟨y, hy, hasUniqueSolutions_of_lipschitz hL t₀ t₁ y x
+    (IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self) hx hy₀⟩
+
+/-! ### Invariance -/
+
+/-- `S` is **forward invariant** (positively invariant) under the input `u`: every trajectory
+segment that starts in `S` stays in `S` for as long as it is defined.  This is for the one input
+signal `u`; robust and controlled invariance quantify over `u`.
+
+Stated on segments `[t₀, t₁]` and for every initial time, so it constrains solutions that escape
+in finite time up to their escape, and it makes sense for time-varying systems. -/
+@[blueprint "def:continuousSystem-isForwardInvariant"
+  (title := "Forward invariant set")
+  (statement := /-- A set $S \subseteq E$ is \emph{forward invariant} (or positively invariant)
+    for $s$ under the input $u$ when every trajectory on a segment $[t_0, t_1]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) that starts in $S$ stays in $S$:
+    \[
+      x(t_0) \in S \;\Rightarrow\; x(t) \in S \quad \forall\, t \in [t_0, t_1].
+    \] -/)]
+def IsForwardInvariant (s : ContinuousSystem E U Y) (u : ℝ → U) (S : Set E) : Prop :=
+  ∀ (t₀ t₁ : ℝ) (x : ℝ → E), s.IsTrajectoryOn u x (Set.Icc t₀ t₁) → x t₀ ∈ S →
+    ∀ t ∈ Set.Icc t₀ t₁, x t ∈ S
 
 end Trajectory
 

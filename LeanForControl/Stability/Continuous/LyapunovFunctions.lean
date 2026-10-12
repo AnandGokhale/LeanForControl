@@ -144,7 +144,7 @@ structure IsExponentialLyapunovFunction (s : ContinuousSystem E Unit Y) (V : ℝ
   /-- `V` is differentiable in `(t, x)`. -/
   differentiable : Differentiable ℝ (Function.uncurry V)
   /-- The power-law sandwich and decay rate. -/
-  bounds : ∃ k₁ > 0, ∃ k₂ > 0, ∃ k₃ > 0, ∃ a > 0, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D,
+  bounds : ∃ k₁ > 0, ∃ k₂ > 0, ∃ k₃ > 0, ∃ a > (0 : ℝ), ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D,
     k₁ * ‖x - x_eq‖ ^ a ≤ V t x ∧ V t x ≤ k₂ * ‖x - x_eq‖ ^ a ∧
       s.lieDerivative V t x () ≤ -(k₃ * ‖x - x_eq‖ ^ a)
 

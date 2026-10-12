@@ -2,6 +2,7 @@ import Mathlib.Analysis.Calculus.FDeriv.Prod
 import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.ODE.Basic
+import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Architect
 
 /-!
@@ -119,6 +120,46 @@ lemma IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos {V : ℝ → E → �
     (hV.continuous.comp_continuousOn (continuousOn_id.prodMk hγ.continuousOn))
     (fun _ ht => (hγ.hasDerivWithinAt_lieDerivative hV (interior_subset ht)).mono interior_subset)
     h_nonpos
+
+/-- **Integrating factor along an integral curve.**  If `L_v V ≤ -c V` along an integral curve on
+`[t₀, t₁]`, then `V` decays at least like `e^{-c(t - t₀)}`: `e^{c t} V(t, γ(t))` does not
+increase.  With `c < 0` this is a growth bound. -/
+@[blueprint "lem:isIntegralCurveOn-le-exp-mul-of-lieDerivative-le"
+  (title := "Exponential bound from a linear Lie-derivative bound")
+  (latexEnv := "lemma")
+  (statement := /-- Let $V$ be differentiable, $\gamma$ an integral curve of $v$ on $[t_0, t_1]$,
+    and $c \in \mathbb{R}$ with $L_v V(t, \gamma(t)) \le -c\, V(t, \gamma(t))$ for
+    $t \in (t_0, t_1)$.  Then
+    $V(t, \gamma(t)) \le e^{-c(t - t_0)}\, V(t_0, \gamma(t_0))$ on $[t_0, t_1]$. -/)
+  (proof := /-- The derivative of $e^{c t} V(t, \gamma(t))$ is
+    $e^{c t}\bigl(c V + L_v V\bigr) \le 0$
+    (\cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}), so it does not increase. -/)]
+lemma IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le {V : ℝ → E → ℝ} {v : ℝ → E → E}
+    {γ : ℝ → E} {c t₀ t₁ : ℝ} (hγ : IsIntegralCurveOn γ v (Icc t₀ t₁))
+    (hV : Differentiable ℝ (Function.uncurry V))
+    (h_rate : ∀ τ ∈ Ioo t₀ t₁, lieDerivative V v τ (γ τ) ≤ -c * V τ (γ τ)) :
+    ∀ t ∈ Icc t₀ t₁, V t (γ t) ≤ Real.exp (-c * (t - t₀)) * V t₀ (γ t₀) := by
+  have h_anti : AntitoneOn (fun σ => Real.exp (c * σ) * V σ (γ σ)) (Icc t₀ t₁) := by
+    refine antitoneOn_of_hasDerivWithinAt_nonpos
+      (f' := fun σ => Real.exp (c * σ) * (c * V σ (γ σ) + lieDerivative V v σ (γ σ)))
+      (convex_Icc t₀ t₁) ?_ (fun σ hσ => ?_) (fun σ hσ => ?_)
+    · exact (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn.mul
+        (hV.continuous.comp_continuousOn (continuousOn_id.prodMk hγ.continuousOn))
+    · rw [interior_Icc] at hσ ⊢
+      have he : HasDerivAt (fun σ => Real.exp (c * σ)) (Real.exp (c * σ) * c) σ := by
+        simpa using ((hasDerivAt_id σ).const_mul c).exp
+      convert he.hasDerivWithinAt.mul ((hγ.hasDerivWithinAt_lieDerivative hV
+        (Ioo_subset_Icc_self hσ)).mono Ioo_subset_Icc_self) using 1
+      ring
+    · rw [interior_Icc] at hσ
+      exact mul_nonpos_of_nonneg_of_nonpos (Real.exp_pos _).le (by linarith [h_rate σ hσ])
+  intro t ht
+  have h := h_anti ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1
+  simp only at h
+  rw [show Real.exp (-c * (t - t₀)) = Real.exp (c * t₀) / Real.exp (c * t) by
+      rw [← Real.exp_sub]; congr 1; ring,
+    div_mul_eq_mul_div, le_div_iff₀ (Real.exp_pos _)]
+  linarith [h, mul_comm (V t (γ t)) (Real.exp (c * t))]
 
 /-- The Lie derivative along a continuous field of a `C¹` function is continuous in `(t, x)`. -/
 @[blueprint "lem:continuous-lieDerivative"
