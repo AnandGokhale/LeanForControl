@@ -130,7 +130,7 @@ upstream candidate.
 Clauses 1 and 4 are the least useful clauses of Theorem 8.1 — marginal stability is the
 boundary case, and the workhorses, clauses 2 and 3, are already proved. Theorem 8.2 (the
 Lyapunov equation) needs no Jordan theory at all, and is also what structurally unblocks the
-rewrite of `LinearSystems/Stability/Continuous/`, because `Stability/LyapunovIndirect/
+rewrite of `LinearSystems/Stability/Continuous/`, because `Stability/Continuous/
 Linearization.lean` on the nonlinear side depends on `LyapunovEquation.lean`.
 
 So Jordan buys two boundary-case clauses; 8.2 buys the next textbook result and the demolition.
@@ -150,9 +150,9 @@ If clauses 1 and 4 are ever wanted before Jordan form exists, the specialized ro
 - Restate the block condition as semisimplicity on the imaginary-axis spectrum.
 - Reduce clause 1 to `(exists C, forall t >= 0, ‖exp (A t)‖ <= C) iff (spectrum in closed left
   half-plane) and (imaginary-axis eigenvalues semisimple)`, using
-  `stableNA_iff_boundedStateTransition` and `stateTransitionMatrix_const`.
-- Clause 4 is then free: `UnstableNA` is `Not StableNA`, so it follows by `push Not`, exactly
-  as `unstableNA_iff_unboundedHomogeneousResponse` did.
+  `stable_iff_boundedStateTransition` and `stateTransitionMatrix_const`.
+- Clause 4 is then free: `Unstable` is `Not Stable`, so it follows by `push Not`, exactly
+  as `unstable_iff_unboundedHomogeneousResponse` did.
 - The forward direction needs only instability certificates: `Re mu > 0` gives
   `exp (A t) v = exp (mu t) v`, and `Re mu = 0` with `(A - mu) w = v <> 0` gives
   `exp (A t) w = exp (mu t) (w + t v)`. Both are small, and reuse

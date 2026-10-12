@@ -9,188 +9,444 @@
   \input{../../.lake/build/blueprint/library/LeanForControl}%
 }{}
 
+\chapter{Analysis toolbox}
+
+Facts about real functions, limits and integrals with no differential-equation content of their
+own.  Each section says which later results consume it.
+
+\section{Continuity toolbox}
+
+Two facts about continuous real functions and curves, with no differential-equation content of
+their own, used throughout the chapters that follow: the comparison lemma needs the last root
+before a sign change, and the Lyapunov stability arguments need the first time a curve reaches a
+sphere.
+
+\inputleannode{lem:exists-greatest-zero-of-nonpos-of-pos}
+
+\inputleannode{thm:exists-first-sphere-hit}
+
+\section{Limits superior}
+
+Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
+function is bounded. The facts collected here are stated over an arbitrary filter and have no
+differential-equation content; the Dini derivative of the next section is the only current
+consumer.
+
+\inputleannode{lem:limsup-add-tendsto-zero}
+
+\section{Dini derivatives}
+
+The upper right Dini derivative replaces the ordinary derivative where a function is only known
+to be continuous, which is the situation the comparison lemma is in. It is defined here as a
+$\limsup$ valued in $\mathbb{R}$ rather than in $[-\infty, +\infty]$, so most results below carry
+a hypothesis that the forward difference quotients are bounded: without it an unbounded quotient
+makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as $0$.
+
+\inputleannode{def:diniDerivRight}
+
+\subsection{Relationship to the classical derivative}
+
+\inputleannode{lem:hasDerivWithinAt-tendsto-forward-slope}
+
+\inputleannode{lem:diniDerivRight-of-hasDerivWithinAt}
+
+\subsection{Characterization by difference quotients}
+
+\inputleannode{lem:diniDerivRight-le-iff}
+
+\inputleannode{lem:le-diniDerivRight-iff}
+
+\subsection{Linearity properties}
+
+\inputleannode{lem:diniDerivRight-add-le}
+
+\inputleannode{lem:diniDerivRight-add-differentiable}
+
+\inputleannode{lem:diniDerivRight-add-linear}
+
+\inputleannode{lem:diniDerivRight-const-mul-pos}
+
+\inputleannode{lem:neg-diniDerivRight-neg-le}
+
+\subsection{The comparison step}
+
+\inputleannode{lem:le-diniDerivRight-of-upper-bound}
+
+\section{Interval integrals}
+
+Estimates and integrability side conditions for the interval integral, used wherever a
+differential equation is handled in integral form. The last three concern an integral whose
+endpoints move: normalizing by the window length makes it a mean value, after which continuity,
+antitonicity and decay each need only a hypothesis on the endpoints themselves. They support the
+class $\mathcal{KL}$ construction of the chapter on comparison functions.
+
+\inputleannode{lem:integral-sub-adjacent-intervals}
+
+\inputleannode{lem:norm-integral-le-of-norm-le-mul}
+
+\inputleannode{lem:norm-integral-le-const-mul}
+
+\inputleannode{lem:integral-const-eq}
+
+\inputleannode{lem:intervalIntegrable-comp}
+
+\inputleannode{lem:hasDerivAt-integral}
+
+\inputleannode{lem:continuousOn-integral-Icc}
+
+\inputleannode{lem:continuousOn-integral-endpoints}
+
+\inputleannode{lem:antitoneOn-integral-average}
+
+\inputleannode{lem:tendsto-integral-average-atTop-zero}
+
+\section{Positive definite functions}
+
+Positive definiteness in the sense of functions, not matrices: a function that vanishes at a
+point and is positive elsewhere.  It is the shape every Lyapunov function and every comparison
+bound takes.
+
+\inputleannode{def:isPositiveDefiniteOn}
+
+\chapter{Ordinary differential equations}
+
+\section{Gronwall--Bellman inequality}
+
+A function obeying an integral inequality is bounded by the solution of the corresponding
+integral equation. The two specializations are what the rest of the development actually calls:
+constant $\Lambda$ gives exponential growth, and constant $\Lambda$ and $\mu$ gives the
+$C e^{\mu(t-a)}$ bound behind every continuous-dependence estimate.
+
+\inputleannode{thm:gronwall-bellman}
+
+\inputleannode{lem:gronwall-const-lambda}
+
+\inputleannode{lem:gronwall-const}
+
+\section{Existence, uniqueness and continuous dependence}
+
+\inputleannode{def:isIntegralSolution}
+
+\inputleannode{lem:isIntegralSolution-reanchor}
+
+\inputleannode{lem:isIntegralSolution-reflect}
+
+\subsection{The integral and differential formulations}
+
+An ODE can be written as a differential equation, $\dot x = F(t,x)$, or as the equivalent
+integral equation. The continuous-dependence and Gronwall arguments want the integral form, which
+presupposes no differentiability and carries its initial condition; the Lyapunov arguments want
+the differential form, so that $V \circ \varphi$ can be differentiated. The results below are the
+two directions of the fundamental theorem of calculus relating them.
+
+They are provision rather than current practice: nothing in the stability chapters has yet been
+routed through this equivalence, so it is the intended path from a trajectory to the results of
+this chapter rather than an exercised one.
+
+\inputleannode{lem:isIntegralCurveOn-isIntegralSolution}
+
+\inputleannode{lem:isIntegralSolution-isIntegralCurveOn}
+
+\inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn}
+
+\inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn-Icc}
+
+\inputleannode{lem:isIntegralCurveOn-isIntegralSolution-of-continuous}
+
+\subsection{Time invariance and local existence}
+
+A time-invariant field has no preferred time origin: a solution can be shifted to start at time
+$0$.
+
+\inputleannode{lem:isIntegralCurveOn-comp-add-autonomous}
+
+\inputleannode{lem:isIntegralCurveOn-shift-to-zero}
+
+\inputleannode{lem:contDiffAt-exists-isIntegralCurveOn-Icc}
+
+\inputleannode{thm:exists-isIntegralCurveOn-Icc}
+
+\inputleannode{lem:hasDerivWithinAt-Ici-of-isIntegralCurveOn}
+
+\inputleannode{lem:dist-le-of-isIntegralCurveOn-Icc}
+
+\inputleannode{lem:eqOn-of-isIntegralCurveOn-Icc}
+
+\inputleannode{thm:exists-isIntegralCurveOn-Ici}
+
+\inputleannode{thm:exists-isIntegralSolution-Icc-of-lipschitz}
+
+\subsection{Continuous dependence}
+
+Two solutions of the same equation, started at different points or subject to different
+perturbations, separate no faster than exponentially — at a rate fixed by the Lipschitz constant
+of the field. Everything downstream that needs uniqueness gets it from here, by taking the two
+solutions to agree initially and the perturbation to vanish, which collapses the bound to zero.
+
+\inputleannode{thm:continuous-dependence-ODE}
+
+\inputleannode{thm:continuous-dependence-parameters}
+
+\section{Comparison lemma}
+
+The comparison lemma bounds a function satisfying a differential \emph{inequality} by the
+solution of the corresponding differential \emph{equation}. The inequality is stated with the
+Dini derivative, so $v$ need only be continuous — which is what makes the lemma applicable to
+$\|x(t)\|$, not differentiable where a trajectory crosses the origin.
+
+\inputleannode{lem:isIntegralSolution-of-hasDerivAt}
+
+\inputleannode{thm:comparison-lemma}
+
+\section{Lie derivatives}
+
+The rate of change of a function $V(t, x)$ along the integral curves of a time-dependent vector
+field, with no differential-equation content beyond the chain rule: what every Lyapunov, Chetaev
+and invariance argument differentiates.
+
+\inputleannode{def:lieDerivative}
+
+\inputleannode{lem:lieDerivative-const}
+
+\inputleannode{lem:lieDerivative-add-mul}
+
+\inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
+
+\inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
+
+\inputleannode{lem:isIntegralCurveOn-le-exp-mul-of-lieDerivative-le}
+
+\inputleannode{lem:continuous-lieDerivative}
+
+\section{\texorpdfstring{$\omega$}{omega}-limit sets}
+
+The points a curve or sequence returns arbitrarily close to, arbitrarily late: its cluster
+points at infinity, which is the $\omega$-limit of topological dynamics for a single orbit.
+These are the topological facts behind LaSalle's invariance principle, in continuous and in
+discrete time alike: a continuous function converging along the orbit is constant on its
+$\omega$-limit set, an orbit trapped in a closed set has its $\omega$-limit set there, and an orbit
+trapped in a compact set converges to its $\omega$-limit set.
+
+\inputleannode{def:omegaLimitSet}
+
+\inputleannode{lem:mem-omegaLimitSet-iff}
+
+\inputleannode{lem:omegaLimitSet-eq-omegaLimit}
+
+\inputleannode{lem:eq-of-tendsto-of-mem-omegaLimitSet}
+
+\inputleannode{lem:omegaLimitSet-subset-of-eventually-mem}
+
+\inputleannode{lem:tendsto-nhdsSet-of-omegaLimitSet-subset}
+
+\chapter{Systems}
+
+The most general systems the library considers are $\dot x = F(t, x, u)$ in continuous time and
+$x^{+} = F(k, x, u)$ in discrete time, each with an output $y = h(t, x, u)$. As for the linear
+systems of the next chapter, there is one object per time domain: the data has the same shape, but a continuous
+trajectory is an integral curve and a discrete one is a recursion.
+
+Special cases are constructors on the general object, each with a predicate recognising it:
+\emph{time invariance} drops $t$, and \emph{autonomy} drops $u$. Autonomy is used here in the
+control-theory sense, \emph{without input}; much of the dynamical-systems literature uses the word
+for time invariance instead.
+
+\section{Continuous time}
+
+\inputleannode{def:continuousSystem}
+
+\inputleannode{def:continuousSystem-timeInvariant}
+
+\inputleannode{def:continuousSystem-isTimeInvariant}
+
+\inputleannode{lem:continuousSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isTimeInvariant-exists-eq}
+
+\inputleannode{def:continuousSystem-autonomous}
+
+\inputleannode{def:continuousSystem-isAutonomous}
+
+\inputleannode{lem:continuousSystem-isAutonomous-autonomous}
+
+\inputleannode{lem:continuousSystem-isAutonomous-exists}
+
+\inputleannode{def:continuousSystem-zeroInput}
+
+\inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
+
+Well-posedness is kept apart from stability. The stability notions quantify over every solution,
+so they need no uniqueness; forward completeness enters only where a limit as $t \to \infty$ is
+taken. Theorems that need either property assume it.
+
+\inputleannode{def:continuousSystem-isForwardCompleteOn}
+
+\inputleannode{def:continuousSystem-isForwardComplete}
+
+\inputleannode{def:continuousSystem-hasUniqueSolutions}
+
+\inputleannode{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}
+
+\inputleannode{thm:continuousSystem-isForwardComplete-of-lipschitz}
+
+\inputleannode{def:continuousSystem-vectorField}
+
+\inputleannode{def:continuousSystem-outputMap}
+
+\inputleannode{def:continuousSystem-isTrajectoryOn}
+
+\inputleannode{def:continuousSystem-isTrajectory}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+A set is forward invariant when trajectories that start in it stay in it.
+
+\inputleannode{def:continuousSystem-isForwardInvariant}
+
+The derivative of a function along the system is the rate at which it changes along trajectories.
+It takes the input value as an argument: stability uses the input-free system, input-to-state
+notions a general input.
+
+\inputleannode{def:continuousSystem-lieDerivative}
+
+The derivative form above excludes the solutions produced by discontinuous inputs, which have
+corners where the input jumps. The integral form admits them, and is the one input-driven notions
+such as input-to-state stability are stated with; for continuous right-hand sides the two agree.
+
+\inputleannode{def:continuousSystem-isCaratheodoryTrajectoryOn}
+
+\inputleannode{def:continuousSystem-isCaratheodoryTrajectory}
+
+\inputleannode{lem:continuousSystem-isCaratheodoryTrajectory-isCaratheodoryTrajectoryOn}
+
+\inputleannode{thm:continuousSystem-isCaratheodoryTrajectoryOn-Icc-iff}
+
+\inputleannode{thm:continuousSystem-isCaratheodoryTrajectoryOn-iff}
+
+\section{Discrete time}
+
+\inputleannode{def:discreteSystem}
+
+\inputleannode{def:discreteSystem-timeInvariant}
+
+\inputleannode{def:discreteSystem-isTimeInvariant}
+
+\inputleannode{lem:discreteSystem-isTimeInvariant-timeInvariant}
+
+\inputleannode{lem:discreteSystem-isTimeInvariant-exists-eq}
+
+\inputleannode{def:discreteSystem-autonomous}
+
+\inputleannode{def:discreteSystem-isAutonomous}
+
+\inputleannode{lem:discreteSystem-isAutonomous-autonomous}
+
+\inputleannode{lem:discreteSystem-isAutonomous-exists}
+
+\inputleannode{def:discreteSystem-vectorField}
+
+\inputleannode{def:discreteSystem-outputMap}
+
+\inputleannode{def:discreteSystem-isTrajectoryOn}
+
+\inputleannode{def:discreteSystem-isTrajectory}
+
+\inputleannode{lem:discreteSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:discreteSystem-isTrajectory-isTrajectoryOn}
+
 \chapter{Linear systems}
 
 \section{The linear system objects}
 
-The data of a linear system --- the four coefficient maps $A$, $B$, $C$, $D$ --- together with
-the equations that data satisfies. There are two objects, one per time domain, carrying the same
-API under the same names: a continuous-time trajectory is an integral curve, a discrete-time one
-is a sequence satisfying a recursion, and those are not two cases of one notion.
+Linear systems are a special case of the general systems of the Systems chapter: the
+continuous-time system with $F(t, x, u) = A(t)x + B(t)u$ and $h(t, x, u) = C(t)x + D(t)u$, and its
+discrete-time counterpart. The objects below carry only the coefficient data. Each is the input of
+a constructor into the general system, and the semantics --- state equation, output equation,
+trajectories --- are defined through that constructor, so every result about general systems
+applies to linear ones unchanged.
 
-\subsection{Continuous time}
+There are two objects per time domain: a \emph{linear time-varying} (LTV) system with coefficient
+maps $A(t), B(t), C(t), D(t)$, and a \emph{linear time-invariant} (LTI) system with constant
+matrices. An LTI system is not a different kind of system: it builds the LTV system with constant
+coefficients, and the general system it describes is the time-invariant system of the Systems
+chapter, by definition.
 
-\inputleannode{def:ctsLinearSystem}
+\subsection{Continuous-time LTV systems}
 
-\inputleannode{def:ctsLinearSystem-vectorField}
+\inputleannode{def:continuousLTV}
 
-\inputleannode{lem:ctsLinearSystem-vectorField-zero-input}
+\inputleannode{def:continuousLTV-toContinuousSystem}
 
-\inputleannode{lem:ctsLinearSystem-vectorField-apply-zero}
+\inputleannode{def:continuousLTV-vectorField}
 
-\inputleannode{def:ctsLinearSystem-outputMap}
+\inputleannode{lem:continuousLTV-vectorField-zero-input}
 
-\inputleannode{def:ctsLinearSystem-isTrajectoryOn}
+\inputleannode{lem:continuousLTV-vectorField-apply-zero}
 
-\inputleannode{def:ctsLinearSystem-isTrajectory}
+\inputleannode{def:continuousLTV-outputMap}
 
-\inputleannode{lem:ctsLinearSystem-isTrajectoryOn-univ}
+\inputleannode{def:continuousLTV-isTrajectoryOn}
 
-\inputleannode{lem:ctsLinearSystem-isTrajectory-isTrajectoryOn}
+\inputleannode{def:continuousLTV-isTrajectory}
 
-\subsection{Discrete time}
+\inputleannode{def:continuousLTV-isCaratheodoryTrajectoryOn}
 
-\inputleannode{def:discLinearSystem}
+\inputleannode{def:continuousLTV-isTimeInvariant}
 
-\inputleannode{def:discLinearSystem-vectorField}
+\inputleannode{lem:continuousLTV-isTimeInvariant-toContinuousSystem}
 
-\inputleannode{lem:discLinearSystem-vectorField-zero-input}
+\subsection{Continuous-time LTI systems}
 
-\inputleannode{lem:discLinearSystem-vectorField-apply-zero}
+\inputleannode{def:continuousLTI}
 
-\inputleannode{def:discLinearSystem-outputMap}
+\inputleannode{def:continuousLTI-toLTV}
 
-\inputleannode{def:discLinearSystem-isTrajectoryOn}
+\inputleannode{lem:continuousLTI-isTimeInvariant-toLTV}
 
-\inputleannode{def:discLinearSystem-isTrajectory}
+\inputleannode{lem:continuousLTV-isTimeInvariant-exists-eq}
 
-\inputleannode{lem:discLinearSystem-isTrajectoryOn-univ}
+\inputleannode{def:continuousLTI-toContinuousSystem}
 
-\inputleannode{lem:discLinearSystem-isTrajectory-isTrajectoryOn}
+\inputleannode{lem:continuousLTI-toContinuousSystem-eq-timeInvariant}
 
-\subsection{Time-invariant systems}
+\subsection{Discrete-time LTV systems}
 
-A linear time-invariant system is a linear system whose coefficients do not vary with time,
-not an object of its own kind, so that every result about the time-varying object applies to it
-unchanged.
+\inputleannode{def:discreteLTV}
 
-\inputleannode{def:ctsLinearSystem-timeInvariant}
+\inputleannode{def:discreteLTV-toDiscreteSystem}
 
-\inputleannode{def:ctsLinearSystem-isTimeInvariant}
+\inputleannode{def:discreteLTV-vectorField}
 
-\inputleannode{lem:ctsLinearSystem-isTimeInvariant-timeInvariant}
+\inputleannode{lem:discreteLTV-vectorField-zero-input}
 
-\inputleannode{lem:ctsLinearSystem-exists-eq}
+\inputleannode{lem:discreteLTV-vectorField-apply-zero}
 
-\inputleannode{def:discLinearSystem-timeInvariant}
+\inputleannode{def:discreteLTV-outputMap}
 
-\inputleannode{def:discLinearSystem-isTimeInvariant}
+\inputleannode{def:discreteLTV-isTrajectoryOn}
 
-\inputleannode{lem:discLinearSystem-isTimeInvariant-timeInvariant}
+\inputleannode{def:discreteLTV-isTrajectory}
 
-\inputleannode{lem:discLinearSystem-exists-eq}
+\inputleannode{def:discreteLTV-isTimeInvariant}
 
-\section{Observability and controllability matrices}
+\inputleannode{lem:discreteLTV-isTimeInvariant-toDiscreteSystem}
 
-For a finite-dimensional linear system
-\[
-  \dot{x} = A x + B u, \qquad y = C x,
-\]
-with state matrix $A$, input matrix $B$, and output matrix $C$, this section
-collects the (finite-horizon) controllability and observability matrices and
-the bridge theorem connecting the textbook observability predicate to the
-kernel of the observability matrix.
+\subsection{Discrete-time LTI systems}
 
-\subsection{Observability matrix}
+\inputleannode{def:discreteLTI}
 
-\inputleannode{def:observabilityMatrix}
+\inputleannode{def:discreteLTI-toLTV}
 
-\inputleannode{def:isObservable}
+\inputleannode{lem:discreteLTI-isTimeInvariant-toLTV}
 
-\inputleannode{lem:observabilityMatrix-apply}
+\inputleannode{lem:discreteLTV-isTimeInvariant-exists-eq}
 
-\inputleannode{lem:observabilityMatrix-mulVec-apply}
+\inputleannode{def:discreteLTI-toDiscreteSystem}
 
-\subsection{Controllability matrix}
-
-\inputleannode{def:controllabilityMatrix}
-
-\inputleannode{lem:controllabilityMatrix-apply}
-
-\inputleannode{def:isControllable}
-
-\subsection{Milestone: observability iff trivial kernel of \texorpdfstring{$\mathcal{O}$}{O}}
-
-\inputleannode{thm:isObservable-iff-ker-trivial}
-
-\subsection{Rank characterizations}
-
-\inputleannode{thm:isObservable-iff-rank}
-
-\inputleannode{thm:isControllable-iff-rank}
-
-\subsection{Hautus observability}
-
-\inputleannode{def:unobservableSubspace}
-
-\inputleannode{thm:unobservable-eq-bot-iff-observable}
-
-\inputleannode{lem:unobservableSubspace-invariant}
-
-\inputleannode{def:hautusObservabilityMatrix}
-
-\inputleannode{lem:hautus-mulVec-eq-zero-iff}
-
-\inputleannode{thm:not-isObservable-implies-hautus-failure}
-
-\inputleannode{thm:hautus-failure-implies-not-isObservable}
-
-\inputleannode{thm:isObservable-iff-hautus}
-
-\subsection{Hautus controllability}
-
-\inputleannode{def:hautusControllabilityMatrix}
-
-\inputleannode{thm:isControllable-iff-hautus}
-
-\section{Reachable subspace and Kalman decomposition}
-
-\inputleannode{def:reachableSubspace}
-
-\inputleannode{lem:mem-reachableSubspace-iff}
-
-\inputleannode{thm:reachableSubspace-eq-top-iff-controllable}
-
-\inputleannode{lem:reachableSubspace-invariant}
-
-\inputleannode{def:kalman-decomposition}
-
-\inputleannode{thm:kalman-subspaces-exist}
-
-\inputleannode{def:kalman-adapted-equivalence}
-
-\inputleannode{thm:kalman-block-matrix-zero-pattern}
-
-\section{Hurwitz stability}
-
-For a real square matrix $A$, Hurwitz stability is expressed through the complex eigenpairs
-of its entrywise complexification, over an abstract index type. The rate-indexed predicate
-records a strict spectral margin. Ordinary Hurwitz stability is the zero-rate case, but is
-stated separately rather than derived, so that it unfolds directly to
-$\operatorname{Re}(\mu) < 0$.
-
-\inputleannode{def:stability-isHurwitz}
-
-\inputleannode{def:stability-isHurwitzWithRate}
-
-\inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
-
-\inputleannode{thm:isHurwitz-exists-pos-rate}
-
-The exponential decay estimates rest on a general Banach-algebra fact, stated with no matrices in
-it: an element of spectral radius below one has a contractive power.
-
-\inputleannode{lem:exists-pow-norm-lt-one}
-
-\section{Matrix Lyapunov equations and quadratic certificates}
-
-\inputleannode{def:continuousLyapunovEquation}
-
-\inputleannode{def:quadraticForm}
-
-\inputleannode{thm:hurwitz-lyapunov-equation}
-
-\inputleannode{thm:positive-real-eigenvalue-quadratic-certificate}
+\inputleannode{lem:discreteLTI-toDiscreteSystem-eq-timeInvariant}
 
 \section{Peano--Baker series and the state transition matrix}
 
@@ -272,8 +528,8 @@ argument.
 
 The solution theory above is stated on the coefficient maps $A$ and $B$, which is where the
 analysis lives. The results below restate it for the system object of
-\cref{def:ctsLinearSystem}: the variation-of-constants formula is a \emph{trajectory} in the
-sense of \cref{def:ctsLinearSystem-isTrajectory}, which the stability theory
+\cref{def:continuousLTV}: the variation-of-constants formula is a \emph{trajectory} in the
+sense of \cref{def:continuousLTV-isTrajectory}, which the stability theory
 quantifies over.
 
 \inputleannode{def:forcedResponse}
@@ -298,7 +554,28 @@ quantifies over.
 
 \inputleannode{thm:eq-homogeneousResponse-of-isTrajectoryOn}
 
-\subsection{The time-invariant case}
+\inputleannode{thm:continuousLTV-isForwardComplete-zeroInput}
+
+\subsection{The time-invariant case: the matrix exponential}
+
+For a constant state matrix the Peano--Baker series sums to the matrix exponential, which is
+Hespanha's (6.1)--(6.2). The point of proving it is economy: every property of $\Phi$ established
+above for a time-varying $A$ then holds for $e^{A(t-t_0)}$ by specialization, with no separate LTI
+theory. The two exponential facts that need no solution theory at all — the semigroup law (P6.3)
+and the finite-polynomial form via Cayley--Hamilton (P6.5) — are proved as statements about
+$\exp$ and $A$ alone.
+
+\inputleannode{lem:peanoBakerTerm-const}
+
+\inputleannode{lem:stateTransitionMatrix-const-eq-tsum}
+
+\inputleannode{thm:stateTransitionMatrix-const}
+
+\inputleannode{thm:exp-mulVec-unique}
+
+\inputleannode{thm:exp-col-unique}
+
+\subsection{The forced response of a time-invariant system}
 
 For a time-invariant system the state transition matrix is the matrix exponential, so the
 variation-of-constants formula collapses to the closed form every textbook writes.
@@ -307,10 +584,50 @@ variation-of-constants formula collapses to the closed form every textbook write
 
 \inputleannode{thm:isTrajectory-timeInvariant}
 
-
 \inputleannode{lem:forcedResponse-output}
 
-\section{Discrete-time systems}
+\section{The matrix exponential and complexification}
+
+\subsection{Complexification}
+
+Spectral arguments must happen over $\mathbb{C}$, because $\mathbb{R}$ is not algebraically
+closed, while the systems of interest have real coefficients. Entrywise complexification is the
+bridge, and these record what it commutes with. The one with content is the transfer of positive
+definiteness: a real positive-definite matrix remains positive definite against \emph{complex}
+vectors, which is what lets a Lyapunov certificate be evaluated against an eigenvector.
+
+\inputleannode{def:matrix-complexify}
+
+\inputleannode{lem:matrix-posDef-complexify}
+
+\subsection{Spectral facts about the exponential}
+
+These say nothing about trajectories, initial times or state transition matrices — they are
+facts about $\exp$ and $A$ alone, and are proved as such. The complexification bridge is what
+lets spectral arguments, which must happen over $\mathbb{C}$, yield bounds on a real
+exponential; P6.5 collapses the exponential series to a finite polynomial in $A$. The
+eigenpair lemma is the half of spectral mapping that is pure power-series algebra, and is what
+turns an eigenvalue condition on $A$ into a statement about the growth of $e^{At}$.
+
+\inputleannode{lem:complexification-exp}
+
+\inputleannode{lem:exp-mulVec-eigenpair}
+
+\inputleannode{lem:smul-mulVec-eigenpair}
+
+\inputleannode{lem:pow-mulVec-eigenpair}
+
+\inputleannode{lem:mulVec-add-smul-one}
+
+\inputleannode{lem:mulVec-sub-smul-one-eq-zero}
+
+\inputleannode{lem:spectralRadius-exp-complexify-lt-one}
+
+\inputleannode{thm:exp-const-add}
+
+\inputleannode{thm:exists-exp-eq-sum-smul-pow}
+
+\section{The discrete-time state transition matrix}
 
 For $x(t+1) = A(t)x(t)$ the state transition matrix is an ordered product rather than a series,
 and the whole theory becomes finite: every proof below is an induction, with no convergence,
@@ -341,247 +658,14 @@ genuinely requires $\tau \le s \le t$ instead of holding in any order.
 
 \inputleannode{thm:discVariationOfConstants-unique}
 
-\subsection{The LTI case: the matrix exponential}
+\chapter{Comparison functions}
 
-For a constant state matrix the Peano--Baker series sums to the matrix exponential, which is
-Hespanha's (6.1)--(6.2). The point of proving it is economy: every property of $\Phi$ established
-above for a time-varying $A$ then holds for $e^{A(t-t_0)}$ by specialization, with no separate LTI
-theory. The two exponential facts that need no solution theory at all — the semigroup law (P6.3)
-and the finite-polynomial form via Cayley--Hamilton (P6.5) — are proved as statements about
-$\exp$ and $A$ alone.
+Comparison functions are the vocabulary of stability estimates: a class $\mathcal{K}$ function
+bounds how far a trajectory can go, a class $\mathcal{L}$ function how fast it decays, and a
+class $\mathcal{KL}$ function both at once.  This chapter builds them, and the tools that turn a
+cruder bound into one of them.
 
-\inputleannode{lem:peanoBakerTerm-const}
-
-\inputleannode{lem:stateTransitionMatrix-const-eq-tsum}
-
-\inputleannode{thm:stateTransitionMatrix-const}
-
-\inputleannode{thm:exp-mulVec-unique}
-
-\inputleannode{thm:exp-col-unique}
-
-\subsection{Complexification}
-
-Spectral arguments must happen over $\mathbb{C}$, because $\mathbb{R}$ is not algebraically
-closed, while the systems of interest have real coefficients. Entrywise complexification is the
-bridge, and these record what it commutes with. The one with content is the transfer of positive
-definiteness: a real positive-definite matrix remains positive definite against \emph{complex}
-vectors, which is what lets a Lyapunov certificate be evaluated against an eigenvector.
-
-\inputleannode{def:matrix-complexify}
-
-\inputleannode{lem:matrix-posDef-complexify}
-
-\subsection{The matrix exponential as an algebraic object}
-
-These say nothing about trajectories, initial times or state transition matrices — they are
-facts about $\exp$ and $A$ alone, and are proved as such. The complexification bridge is what
-lets spectral arguments, which must happen over $\mathbb{C}$, yield bounds on a real
-exponential; P6.5 collapses the exponential series to a finite polynomial in $A$. The
-eigenpair lemma is the half of spectral mapping that is pure power-series algebra, and is what
-turns an eigenvalue condition on $A$ into a statement about the growth of $e^{At}$.
-
-\inputleannode{lem:complexification-exp}
-
-\inputleannode{lem:exp-mulVec-eigenpair}
-
-\inputleannode{lem:smul-mulVec-eigenpair}
-
-\inputleannode{lem:pow-mulVec-eigenpair}
-
-\inputleannode{lem:mulVec-add-smul-one}
-
-\inputleannode{lem:mulVec-sub-smul-one-eq-zero}
-
-\inputleannode{lem:spectralRadius-exp-complexify-lt-one}
-
-\inputleannode{thm:exp-const-add}
-
-\inputleannode{thm:exists-exp-eq-sum-smul-pow}
-
-\chapter{Ordinary differential equations}
-
-\section{Continuity toolbox}
-
-Two facts about continuous real functions and curves, with no differential-equation content of
-their own, used throughout the chapters that follow: the comparison lemma needs the last root
-before a sign change, and the Lyapunov stability arguments need the first time a curve reaches a
-sphere.
-
-\inputleannode{lem:exists-greatest-zero-of-nonpos-of-pos}
-
-\inputleannode{thm:exists-first-sphere-hit}
-
-\section{Interval integrals}
-
-Estimates and integrability side conditions for the interval integral, used wherever a
-differential equation is handled in integral form. The last three concern an integral whose
-endpoints move: normalizing by the window length makes it a mean value, after which continuity,
-antitonicity and decay each need only a hypothesis on the endpoints themselves. They support the
-class $\mathcal{KL}$ construction in the last chapter.
-
-\inputleannode{lem:integral-sub-adjacent-intervals}
-
-\inputleannode{lem:norm-integral-le-of-norm-le-mul}
-
-\inputleannode{lem:norm-integral-le-const-mul}
-
-\inputleannode{lem:integral-const-eq}
-
-\inputleannode{lem:intervalIntegrable-comp}
-
-\inputleannode{lem:hasDerivAt-integral}
-
-\inputleannode{lem:continuousOn-integral-Icc}
-
-\inputleannode{lem:continuousOn-integral-endpoints}
-
-\inputleannode{lem:antitoneOn-integral-average}
-
-\inputleannode{lem:tendsto-integral-average-atTop-zero}
-
-\section{Limits superior}
-
-Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
-function is bounded. The facts collected here are stated over an arbitrary filter and have no
-differential-equation content; the Dini derivative of the next section is the only current
-consumer.
-
-\inputleannode{lem:limsup-add-tendsto-zero}
-
-\section{Dini derivatives}
-
-The upper right Dini derivative replaces the ordinary derivative where a function is only known
-to be continuous, which is the situation the comparison lemma is in. It is defined here as a
-$\limsup$ valued in $\mathbb{R}$ rather than in $[-\infty, +\infty]$, so most results below carry
-a hypothesis that the forward difference quotients are bounded: without it an unbounded quotient
-makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as $0$.
-
-\inputleannode{def:diniDerivRight}
-
-\subsection{Relationship to the classical derivative}
-
-\inputleannode{lem:hasDerivWithinAt-tendsto-forward-slope}
-
-\inputleannode{lem:diniDerivRight-of-hasDerivWithinAt}
-
-\subsection{Characterization by difference quotients}
-
-\inputleannode{lem:diniDerivRight-le-iff}
-
-\inputleannode{lem:le-diniDerivRight-iff}
-
-\subsection{Linearity properties}
-
-\inputleannode{lem:diniDerivRight-add-le}
-
-\inputleannode{lem:diniDerivRight-add-differentiable}
-
-\inputleannode{lem:diniDerivRight-add-linear}
-
-\inputleannode{lem:diniDerivRight-const-mul-pos}
-
-\inputleannode{lem:neg-diniDerivRight-neg-le}
-
-\subsection{The comparison step}
-
-\inputleannode{lem:le-diniDerivRight-of-upper-bound}
-
-\section{Gronwall--Bellman inequality}
-
-A function obeying an integral inequality is bounded by the solution of the corresponding
-integral equation. The two specializations are what the rest of the development actually calls:
-constant $\Lambda$ gives exponential growth, and constant $\Lambda$ and $\mu$ gives the
-$C e^{\mu(t-a)}$ bound behind every continuous-dependence estimate.
-
-\inputleannode{thm:gronwall-bellman}
-
-\inputleannode{lem:gronwall-const-lambda}
-
-\inputleannode{lem:gronwall-const}
-
-\section{Continuous dependence on parameters}
-
-\inputleannode{def:isIntegralSolution}
-
-\inputleannode{lem:isIntegralSolution-reanchor}
-
-\inputleannode{lem:isIntegralSolution-reflect}
-
-\subsection{The integral and differential formulations}
-
-An ODE can be written as a differential equation, $\dot x = F(t,x)$, or as the equivalent
-integral equation. The continuous-dependence and Gronwall arguments want the integral form, which
-presupposes no differentiability and carries its initial condition; the Lyapunov arguments want
-the differential form, so that $V \circ \varphi$ can be differentiated. The results below are the
-two directions of the fundamental theorem of calculus relating them.
-
-They are provision rather than current practice: nothing in the stability chapters has yet been
-routed through this equivalence, so it is the intended path from a trajectory to the results of
-this chapter rather than an exercised one.
-
-\inputleannode{lem:isIntegralCurveOn-isIntegralSolution}
-
-\inputleannode{lem:isIntegralSolution-isIntegralCurveOn}
-
-\inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn}
-
-\inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn-Icc}
-
-\inputleannode{lem:isIntegralCurveOn-isIntegralSolution-of-continuous}
-
-\subsection{Time invariance and local existence}
-
-An autonomous field has no preferred time origin, which is what lets the autonomous stability
-predicates fix the initial time at $0$.
-
-\inputleannode{lem:isIntegralCurveOn-comp-add-autonomous}
-
-\inputleannode{lem:isIntegralCurveOn-shift-to-zero}
-
-\inputleannode{lem:contDiffAt-exists-isIntegralCurveOn-Icc}
-
-\inputleannode{thm:exists-isIntegralCurveOn-Icc}
-
-\inputleannode{lem:hasDerivWithinAt-Ici-of-isIntegralCurveOn}
-
-\inputleannode{lem:dist-le-of-isIntegralCurveOn-Icc}
-
-\inputleannode{lem:eqOn-of-isIntegralCurveOn-Icc}
-
-\inputleannode{thm:exists-isIntegralCurveOn-Ici}
-
-\inputleannode{thm:exists-isIntegralSolution-Icc-of-lipschitz}
-
-\subsection{Continuous dependence}
-
-Two solutions of the same equation, started at different points or subject to different
-perturbations, separate no faster than exponentially — at a rate fixed by the Lipschitz constant
-of the field. Everything downstream that needs uniqueness gets it from here, by taking the two
-solutions to agree initially and the perturbation to vanish, which collapses the bound to zero.
-
-\inputleannode{thm:continuous-dependence-ODE}
-
-\inputleannode{thm:continuous-dependence-parameters}
-
-\section{Comparison lemma}
-
-The comparison lemma bounds a function satisfying a differential \emph{inequality} by the
-solution of the corresponding differential \emph{equation}. The inequality is stated with the
-Dini derivative, so $v$ need only be continuous — which is what makes the lemma applicable to
-$\|x(t)\|$, not differentiable where a trajectory crosses the origin.
-
-\inputleannode{lem:isIntegralSolution-of-hasDerivAt}
-
-\inputleannode{thm:comparison-lemma}
-
-\chapter{Lyapunov stability}
-
-\section{Trajectories, equilibria, and comparison functions}
-
-\inputleannode{def:isTrajectoryOn}
-
-\inputleannode{def:isEquilibrium}
+\section{Class \texorpdfstring{$\mathcal{K}$}{K} and \texorpdfstring{$\mathcal{K}_{\infty}$}{Kinfty} functions}
 
 \inputleannode{def:isClassK}
 
@@ -626,421 +710,6 @@ functions as the standard examples, and the restriction back to class $\mathcal{
 \inputleannode{lem:classKInfty-toClassK}
 
 \inputleannode{lem:exists-classKInfty-upper-bound}
-
-\section{Stability predicates}
-
-The predicates below quantify over every solution segment on a compact interval
-$[t_0, t_1]$.  This prevents finite escape from making a stability claim vacuous
-merely because a non-equilibrium solution is not globally defined.  A solution
-segment is an integral curve of the vector field restricted to that interval, in
-the sense of \texttt{IsTrajectoryOn}.
-
-\inputleannode{def:lyapunovStable}
-
-\inputleannode{def:locallyExponentiallyStable}
-
-\inputleannode{def:localAsymptoticStable}
-
-\inputleannode{def:globalAsymptoticStable}
-
-\inputleannode{def:unstable}
-
-\section{Sublevel sets and positive invariance}
-
-\inputleannode{def:sublevelSet}
-
-\inputleannode{def:isPositivelyInvariant}
-
-\inputleannode{lem:isCompact-sublevel-set}
-
-\inputleannode{lem:sublevel-set-invariant}
-
-\section{Lyapunov functions}
-
-\inputleannode{def:isLocalLyapunovFunction}
-
-\inputleannode{def:isStrictLocalLyapunovFunction}
-
-\inputleannode{def:isStrictLyapunovFunction}
-
-\inputleannode{def:isAsymptoticLyapunovFunction}
-
-\subsection{The hierarchy of certificates}
-
-The four notions above differ only in how much they demand; each stronger one weakens to the
-next, so a theorem proved for the weakest applies to all of them.
-
-\inputleannode{lem:asymptotic-implies-strict}
-
-\inputleannode{lem:strict-implies-semidefinite}
-
-\inputleannode{lem:strict-local-implies-semidefinite}
-
-\section{Differentiating along solutions}
-
-Every Lyapunov argument begins the same way: compose the certificate with a solution and
-differentiate. The chain rule gives the Lie derivative $DV(\varphi(t))[f(\varphi(t))]$, and a
-sign condition on it becomes a monotonicity statement about $V \circ \varphi$. Collecting that
-step here fixes one spelling of the Lie derivative for the whole development.
-
-
-
-\inputleannode{lem:hasDerivAt-V-comp-traj}
-
-\inputleannode{lem:antitoneOn-V-add-linear}
-
-\inputleannode{lem:antitoneOn-V-comp-traj}
-
-\inputleannode{lem:V-nonincreasing-on}
-
-\section{Milestone theorems for autonomous systems}
-
-\inputleannode{thm:lyapunov-stable}
-
-\inputleannode{thm:lyapunov-local-asymptotic-stable}
-
-\inputleannode{thm:lyapunov-asymptotic-stable}
-
-\inputleannode{thm:lyapunov-global-asymptotic-stable}
-
-The asymptotic results rest on a uniformity that mere per-solution convergence does not give:
-outside a ball about the equilibrium the Lie derivative is bounded away from zero, so every
-solution is drained at a shared rate.
-
-\inputleannode{lem:time-outside-ball-le}
-
-\subsection{Stability from exponential decay, and instability from escape}
-
-\inputleannode{thm:locallyExponentiallyStable-lyapunovStable}
-
-\inputleannode{thm:unstable-of-fixed-escape}
-
-\section{Lyapunov's indirect method}
-
-\inputleannode{def:affineLinearVectorField}
-
-\inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
-
-\inputleannode{thm:unstable-affineLinear-of-eigenvalue-re-pos}
-
-\inputleannode{thm:frechet-linearization-error-bound}
-
-The stable-branch theorem gives uniform local exponential decay on every finite
-forward solution segment, without silently excluding solutions that are not
-globally defined.
-
-\inputleannode{thm:hurwitz-linearization-locally-exponentially-stable}
-
-\inputleannode{thm:exponential-chetaev-unstable}
-
-\inputleannode{thm:positive-real-eigenvalue-unstable}
-
-\section{LaSalle's invariance principle}
-
-Lyapunov's theorems conclude stability from a strict decrease of $V$. LaSalle's principle covers
-the case $\dot{V} \le 0$, where $V$ may stall: a trajectory confined to a compact set must then
-settle into the region where $\dot{V}$ vanishes. The mechanism is the $\omega$-limit set. Along a
-trajectory $V$ is nonincreasing and bounded below, hence convergent, so $V$ is \emph{constant} on
-$\omega(\varphi)$ --- and a set on which a solution can live while $V$ stays constant is one where
-$\dot{V} = 0$. Making that last step a theorem rather than a picture is what the invariance of
-$\omega(\varphi)$ supplies, and it is the only place uniqueness of solutions is needed.
-
-\inputleannode{def:omegaLimitTraj}
-
-\inputleannode{lem:mem-omegaLimitTraj-iff}
-
-\inputleannode{lem:isPositivelyInvariant-omegaLimitTraj}
-
-\inputleannode{def:lieDerivZeroSet}
-
-\inputleannode{lem:lieDeriv-eq-zero-on-omegaLimitTraj}
-
-\inputleannode{thm:lasalle-invariance-principle}
-
-\inputleannode{thm:lasalle-local-asymptotic-stable}
-
-\inputleannode{thm:lasalle-global-asymptotic-stable}
-
-\section{Lyapunov class \texorpdfstring{$\mathcal{K}$}{K} bounds}
-
-A Lyapunov function is positive definite: a pointwise condition, awkward to combine with
-estimates. The theorem below converts it into monotone bounds in the single variable $\|x\|$,
-after which every Lyapunov argument can be run in the comparison-function calculus. It rests on
-two smoothing results, which replace a monotone bound by a continuous strictly increasing one.
-
-\inputleannode{lem:exists-strictMono-lower-bound}
-
-\inputleannode{lem:exists-strictMono-upper-bound-global}
-
-\inputleannode{lem:exists-strictMono-upper-bound}
-
-\inputleannode{thm:lyapunov-class-K-bounds}
-
-\chapter{Non-autonomous systems}
-
-For $\dot x = f(t, x)$ the initial time matters, and the definitions split accordingly: a bound
-may hold at each initial time with a margin depending on it, or with one margin serving every
-initial time. That distinction — plain versus \emph{uniform} — is what the whole chapter turns
-on, and it has no counterpart in the autonomous theory, where time invariance lets the initial
-time be fixed at $0$ without loss.
-
-\section{Trajectories and equilibria}
-
-\inputleannode{def:isTrajectoryNA}
-
-\inputleannode{def:isEquilibriumNA}
-
-
-\section{Uniform convergence times and comparison-function bounds}
-
-The estimates the class $\mathcal{KL}$ characterization is assembled from. Naming them here,
-rather than re-typing their quantifiers at each use, is what makes the characterization
-statements readable.
-
-\inputleannode{def:locallyHasUniformConvergenceTime}
-
-\inputleannode{def:globallyHasUniformConvergenceTime}
-
-\inputleannode{def:hasUniformClassKBound}
-
-\inputleannode{def:hasUniformClassKInftyBound}
-
-\section{Stability predicates}
-
-\inputleannode{def:stableNA}
-
-\inputleannode{def:uniformlyStableNA}
-
-\inputleannode{def:globallyUniformlyStableNA}
-
-\inputleannode{def:unstableNA}
-
-\inputleannode{lem:uniformlyStableNA-stableNA}
-
-\inputleannode{lem:globallyUniformlyStableNA-stableNA}
-
-\inputleannode{lem:isTrajectoryNA-eq-of-stableNA}
-
-\section{Asymptotic and exponential stability}
-
-\inputleannode{def:asymptoticStableNA}
-
-\inputleannode{def:uniformlyAsymptoticStableNA}
-
-\inputleannode{def:globallyUniformlyAsymptoticStableNA}
-
-\inputleannode{def:exponentiallyStableNA}
-
-\inputleannode{def:globallyExponentiallyStableNA}
-
-\section{Uniform decay envelopes}
-
-A uniform convergence-time hypothesis says that for each tolerance $\eta$ there is a delay
-$T(\eta)$ after which every trajectory is inside the $\eta$-ball. Read the other way round, it
-bounds how far a trajectory can still be after a given elapsed time — but only through a
-function of $\eta$ that may be discontinuous, and so is not yet a comparison function.
-
-The two results below do the regularization: they turn the delay into a genuine decay envelope,
-a function of elapsed time alone that is continuous, positive and vanishing at $+\infty$. That
-envelope is the time-decay half of the class $\mathcal{KL}$ bounds of the next section; the
-class $\mathcal{K}$ bound supplies the other half, the dependence on the initial deviation.
-
-\inputleannode{lem:exists-classLSingular-decayBound}
-
-\inputleannode{lem:exists-decayBound-family}
-
-\section{Comparison-function characterizations}
-
-Each stability notion above is equivalent to the existence of a comparison-function bound. These
-equivalences are what let the Lyapunov theorems conclude a stability property by exhibiting a
-bound, and conversely let a stability hypothesis be used as an estimate. Both sides quantify over
-the same trajectories — those defined on $[t_0,\infty)$ — so each is a restatement of one class of
-solutions, not a relation between two.
-
-\inputleannode{lem:uniformlyStableNA-iff-classK}
-
-\inputleannode{lem:uniformlyAsymptoticStableNA-iff-classKL}
-
-\inputleannode{lem:globallyUniformlyAsymptoticStableNA-iff-classKL}
-
-\section{Lyapunov's theorems for time-varying systems}
-
-For a time-varying $V$ the Lie derivative acquires an explicit time term, and positive
-definiteness of $V(t, \cdot)$ on its own buys nothing uniform in $t_0$: $V$ could flatten as
-$t \to \infty$. Sandwiching $V$ between two positive-definite functions of the state alone is
-what restores uniformity.
-
-\inputleannode{lem:hasDerivAt-V-comp-traj-NA}
-
-\inputleannode{thm:lyapunov-uniformly-stable-NA}
-
-\inputleannode{thm:lyapunov-uniformly-asymptotic-stable-NA}
-
-\section{Linear time-varying systems}
-
-Hespanha states Lyapunov stability for the continuous-time linear time-varying system
-$\dot x = A(t)x$ as four conditions on its homogeneous state response
-$x(t) = \Phi(t, t_0)x_0$. None of them is taken as a definition here: each is proved
-\emph{equivalent} to the corresponding predicate of the previous sections, so the linear track
-and the nonlinear track share one notion of stability rather than two.
-
-Two things stand between the textbook conditions and the predicates, and both are settled in
-this section. The predicates quantify over trajectories where the textbook quantifies over
-initial conditions, which the trajectory characterization below closes in both directions; and
-the predicates bound the response from a \emph{ball} where the textbook bounds it from every
-initial state, which homogeneity closes. The second is why a linear system has no nontrivial
-region of attraction, recorded as
-\cref{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}.
-
-\subsection{The system and its response}
-
-\subsection{Trajectories are state transition responses}
-
-\subsection{Hespanha's Definition 8.1}
-
-\inputleannode{lem:stableNA-iff-boundedStateTransition}
-
-\inputleannode{thm:stableNA-iff-boundedHomogeneousResponse}
-
-\inputleannode{thm:uniformlyStableNA-iff-uniformlyBoundedStateTransition}
-
-\inputleannode{thm:asymptoticStableNA-iff-decayingHomogeneousResponse}
-
-\inputleannode{thm:globallyExponentiallyStableNA-iff-decayingStateTransition}
-
-\inputleannode{thm:exponentiallyStableNA-iff-decayingStateTransition}
-
-\inputleannode{cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA}
-
-\inputleannode{thm:unstableNA-iff-unboundedHomogeneousResponse}
-
-\section{Linear time-invariant systems}
-
-For constant $A$ the state transition matrix is $e^{A(t-t_0)}$
-(\cref{thm:stateTransitionMatrix-const}), and the stability conditions of the previous section
-collapse to a condition on the eigenvalues of $A$ alone. This is Hespanha's Theorem 8.1.
-
-Clauses (1) and (4) of that theorem --- marginal stability and instability --- ask that the
-Jordan blocks at imaginary-axis eigenvalues be $1 \times 1$. They are not recorded here: they
-need a Jordan normal form, which is a project rather than a lemma.
-
-\subsection{The Hurwitz condition and its rate-indexed refinement}
-
-The rate-indexed predicate records a strict spectral margin. It is related to the plain Hurwitz
-condition by a spectral shift (\cref{thm:isHurwitzWithRate-iff-spectral-shift}), and the two
-agree at rate zero.
-
-\inputleannode{lem:isHurwitz-iff-isHurwitzWithRate-zero}
-
-\inputleannode{lem:isHurwitzWithRate-mono}
-
-\inputleannode{lem:isHurwitzWithRate-of-isEmpty}
-
-\inputleannode{lem:isHurwitzWithRate-neg-one-by-one}
-
-The Hurwitz condition bounds each eigenvalue away from the imaginary axis one at a time;
-because the spectrum is compact, that upgrades to a uniform margin
-(\cref{thm:isHurwitz-exists-pos-rate}). This is what turns a qualitative hypothesis into a
-quantitative rate, and it is used twice below.
-
-\subsection{Equivalent analytic conditions}
-
-Nothing in this subsection mentions a system: the Hurwitz condition, decay of $e^{At}$, and an
-explicit exponential envelope for $\|e^{At}\|$ are shown to be the same condition on the
-matrix. Two generic facts about exponential envelopes are recorded first.
-
-\inputleannode{lem:tendsto-const-mul-exp-neg}
-
-\inputleannode{lem:tendsto-zero-of-norm-le-envelope}
-
-\inputleannode{thm:isHurwitz-exists-norm-exp-le}
-
-\inputleannode{thm:isHurwitz-exists-norm-exp-mulVec-le}
-
-\inputleannode{thm:isHurwitz-of-tendsto-exp}
-
-\inputleannode{thm:isHurwitz-of-tendsto-exp-mulVec}
-
-\inputleannode{thm:isHurwitz-iff-tendsto-exp}
-
-\inputleannode{thm:isHurwitz-iff-exists-norm-exp-le}
-
-\subsection{Hespanha's Theorem 8.1}
-
-\inputleannode{thm:asymptoticStableNA-iff-isHurwitz}
-
-\inputleannode{thm:exponentiallyStableNA-iff-isHurwitz}
-
-\subsection{The Lyapunov equation}
-
-Hespanha's Theorem 8.2 ties the spectral condition to solvability of $PA + A^{\mathsf T}P = -Q$.
-The direction a Lyapunov certificate is \emph{used} in comes first: exhibiting a single
-positive-definite $P$ proves the spectrum lies in the open left half-plane.
-
-\inputleannode{thm:isHurwitz-of-continuousLyapunovEquation}
-
-\inputleannode{thm:isHurwitz-of-posDef-neg-lyapunovResidual}
-
-The converse is a construction. One finite block of the integral
-$\int_{0}^{m} e^{tA^{\mathsf T}}Qe^{tA}\,\mathrm{d}t$ is summed into a convergent discrete
-Lyapunov series, with convergence and uniqueness both coming from the contraction
-$\|e^{Am}\| < 1$. A Hurwitz matrix supplies that contraction, which is
-\cref{thm:hurwitz-lyapunov-equation}.
-
-\inputleannode{thm:exists-posDef-unique-lyapunov-solution-of-contraction}
-
-\inputleannode{lem:exists-posDef-neg-lyapunovResidual-of-forall-posDef}
-
-\subsection{The rate form}
-
-The Lyapunov inequality $PA + A^{\mathsf T}P \preceq -2cP$ carries an explicit decay rate:
-along a trajectory it gives $\dot V \le -2cV$ for $V = x^{\mathsf T}Px$. It is not one of
-Hespanha's clauses, but it is the shape every contraction and guaranteed-decay-rate condition
-is written in, so it is recorded as a sixth equivalent.
-
-\inputleannode{thm:isHurwitz-of-posDef-lyapunovRate}
-
-\inputleannode{thm:exists-posDef-lyapunovRate-of-isHurwitz}
-
-\subsection{Theorem 8.2}
-
-\inputleannode{thm:isHurwitz-iff-forall-posDef-exists-solution}
-
-\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}
-
-\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovRate}
-
-\inputleannode{thm:lyapunovStability-tfae}
-
-\subsection{Quadratic forms along a linear vector field}
-
-What makes a solution of the Lyapunov equation a Lyapunov \emph{function}: the forcing matrix
-is exactly the dissipation rate of the associated quadratic form.
-
-\inputleannode{thm:fderiv-centeredQuadraticForm-linear-general}
-
-\inputleannode{lem:fderiv-centeredQuadraticForm-linear}
-
-\subsection{A quadratic certificate for an unstable eigenmode}
-
-The instability counterpart (\cref{thm:positive-real-eigenvalue-quadratic-certificate}): an
-eigenvalue with positive real part yields a real quadratic Chetaev certificate. The
-construction solves a shifted Lyapunov--Sylvester equation, whose injectivity rests on a
-nonresonance condition on the spectrum --- which is what the lemmas below supply.
-
-\inputleannode{lem:bilinear-eq-zero-on-genEigenspaces}
-
-\inputleannode{lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero}
-
-\inputleannode{lem:bilinear-eq-zero-of-no-resonance}
-
-\inputleannode{lem:toBilin-right-mul}
-
-\inputleannode{lem:toBilin-left-transpose-mul}
-
-\inputleannode{lem:toBilin-symm-real}
-
-\chapter{Class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
 \section{Inverses of antitone functions}
 
@@ -1094,6 +763,8 @@ of that particular expression is recorded first.
 
 \inputleannode{lem:classKL-comp-right}
 
+\inputleannode{lem:classKL-restrict}
+
 \inputleannode{lem:classKLGlobal-mk-mul}
 
 \inputleannode{lem:classKLGlobal-comp-left}
@@ -1118,14 +789,509 @@ The first lemma below is the continuity criterion the construction rests on.
 
 \inputleannode{lem:classKLGlobal-of-KInfty-LSingular-family}
 
-\subsection{The decay ODE and the comparison bound}
+\section{Class \texorpdfstring{$\mathcal{K}$}{K} bounds for positive definite functions}
+
+A Lyapunov function is positive definite: a pointwise condition, awkward to combine with
+estimates. The theorem below converts it into monotone bounds in the single variable $\|x\|$,
+after which every Lyapunov argument can be run in the comparison-function calculus. It rests on
+two smoothing results, which replace a monotone bound by a continuous strictly increasing one.
+
+\inputleannode{lem:exists-strictMono-lower-bound}
+
+\inputleannode{lem:exists-strictMono-upper-bound-global}
+
+\inputleannode{lem:exists-strictMono-upper-bound}
+
+\inputleannode{thm:lyapunov-class-K-bounds}
+
+\section{The decay system and the comparison bound}
 
 A class $\mathcal{K}$ decay rate produces a class $\mathcal{KL}$ bound. This is the step that
 turns a Lyapunov estimate — which controls only the \emph{rate} of decrease — into an asymptotic
-stability statement, and it is where the scalar ODE $\dot y = -\alpha(y)$ enters.
+stability statement, and it is where the comparison system $\dot y = -\alpha(y)$ enters: a
+Lyapunov function along a trajectory is a subsolution of it.
+
+\inputleannode{def:classK-decaySystem}
 
 \inputleannode{thm:class-KL-osgood}
 
 \inputleannode{lem:exists-classK-minorant-lipschitz}
 
 \inputleannode{thm:classK-dini-bound}
+
+\chapter{Stability of continuous-time systems}
+
+Stability notions for an equilibrium of an autonomous continuous-time system $\dot x = f(t, x)$
+(\cref{def:continuousSystem}); a system with input is first unforced
+(\cref{def:continuousSystem-zeroInput}). Each notion is defined once, for time-varying systems,
+with the initial time $t_0 \ge 0$ explicit; a time-invariant system is a special case, and that
+its notions may be read with $t_0 = 0$ is a theorem rather than a second definition.
+
+Bounds --- stability, uniform convergence times, exponential estimates --- quantify over
+trajectories on segments $[t_0, t_1]$, so that a solution escaping in finite time counts against
+stability instead of being silently excluded. Limits quantify over trajectories on rays
+$[t_0, \infty)$.
+
+\section{Definitions}
+
+\inputleannode{def:continuousSystem-stable}
+
+\inputleannode{def:continuousSystem-unstable}
+
+\inputleannode{def:continuousSystem-uniformlyStable}
+
+\inputleannode{def:continuousSystem-globallyUniformlyStable}
+
+\inputleannode{def:continuousSystem-locallyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-globallyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-hasUniformConvergenceTime}
+
+\inputleannode{def:continuousSystem-uniformlyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-locallyExponentiallyStable}
+
+\inputleannode{def:continuousSystem-globallyExponentiallyStable}
+
+\section{Implications}
+
+\inputleannode{lem:continuousSystem-unstable-of-escape}
+
+\inputleannode{lem:continuousSystem-uniformlyStable-stable}
+
+\inputleannode{lem:continuousSystem-globallyAsymptoticallyStable-local}
+
+\inputleannode{lem:continuousSystem-uniformlyAsymptoticallyStable-local}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-global}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-uniformlyStable}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-uniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-globallyExponentiallyStable-local}
+
+\inputleannode{lem:continuousSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
+
+\section{Comparison-function characterizations}
+
+The uniform notions are equivalent to comparison-function bounds on the trajectories: uniform
+stability to a class $\mathcal{K}$ bound, uniform asymptotic stability to a class $\mathcal{KL}$
+bound.  The hard direction is the decay in elapsed time.  A uniform convergence time says that for each tolerance $\eta$ there is a delay after which every
+trajectory from a ball is inside the $\eta$-ball.  Read the other way round it bounds how far a
+trajectory can still be after a given elapsed time, but only through a function of $\eta$ that may
+be discontinuous.  The results below regularize it into a decay envelope, a function of elapsed
+time alone that is continuous, positive and vanishing at $+\infty$: the time-decay half of a class
+$\mathcal{KL}$ bound, whose other half is a uniform class $\mathcal{K}$ bound.
+
+\inputleannode{def:continuousSystem-hasUniformClassKBound}
+
+\inputleannode{def:continuousSystem-hasUniformClassKInftyBound}
+
+\inputleannode{lem:continuousSystem-exists-classLSingular-decayBound}
+
+\inputleannode{lem:continuousSystem-exists-decayBound-family}
+
+\inputleannode{lem:continuousSystem-hasUniformConvergenceTime-of-classKL}
+
+\inputleannode{lem:continuousSystem-stable-iff-classK}
+
+\inputleannode{lem:continuousSystem-uniformlyStable-iff-classK}
+
+\inputleannode{lem:continuousSystem-uniformlyAsymptoticallyStable-iff-classKL}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL}
+
+The same characterizations hold with the bounds on solutions over $[t_0, \infty)$.  A bound on
+every segment restricts to those solutions, so that direction needs nothing more.  The converse
+needs every segment from the ball to extend to such a solution: forward completeness from some
+ball about $x_{\mathrm{eq}}$ locally, and from every state globally.
+
+\inputleannode{lem:continuousSystem-uniformlyStable-iff-classK-of-isForwardCompleteOn}
+
+\inputleannode{lem:continuousSystem-uniformlyAsymptoticallyStable-iff-classKL-of-isForwardCompleteOn}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL-of-isForwardComplete}
+
+\section{Lyapunov functions}
+
+A Lyapunov function is a certificate: its existence implies a stability notion. The certificates
+are time-varying, $V(t, x)$, and named by what they certify. What separates them is which bounds
+hold, not whether time appears: a positive definite (\cref{def:isPositiveDefiniteOn}) lower bound gives stability, and a
+positive definite upper bound as well (decrescence) is what makes the conclusion uniform. A
+time-invariant $V(x)$ is its own lower and upper bound, so it is a uniform certificate as soon as
+it decreases along the system.
+
+\inputleannode{def:continuousSystem-isLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isUniformLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isStrictUniformLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isExponentialLyapunovFunction}
+
+\inputleannode{lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant-of-neg}
+
+\section{Lyapunov's direct method}
+
+For a time-varying $V$ the derivative along the system acquires an explicit time term, and
+positive definiteness of $V(t, \cdot)$ on its own buys nothing uniform in $t_0$: $V$ could
+flatten as $t \to \infty$. Sandwiching $V$ between two positive-definite functions of the state
+alone is what restores uniformity. Only trajectories on segments $[t_0, t_1]$ are used, so no
+solution is assumed to exist for all time.
+
+\inputleannode{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}
+
+\inputleannode{thm:continuousSystem-isStrictUniformLyapunovFunction-uniformlyAsymptoticallyStable}
+
+In the global theorem compact sublevel sets of $V$ are the hypothesis; for a continuous $V$
+they follow from radial unboundedness.
+
+\inputleannode{lem:isCompact-sublevel-set}
+
+\inputleannode{thm:continuousSystem-globallyUniformlyAsymptoticallyStable-of-lyapunov}
+
+\inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable}
+
+\inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable}
+
+\section{LaSalle's invariance principle}
+
+When $\nabla V \cdot f \le 0$ only, $V$ may stall, and Lyapunov's theorems give stability but not
+convergence.  LaSalle's principle recovers convergence for a time-invariant system: a trajectory
+confined to a compact set converges to its $\omega$-limit set, on which $V$ is constant, and
+forward invariance of that set turns constancy of $V$ into $\nabla V \cdot f = 0$.
+
+\inputleannode{lem:continuousSystem-isForwardInvariant-omegaLimitSet}
+
+\inputleannode{lem:continuousSystem-fderiv-apply-eq-zero-of-mem-omegaLimitSet}
+
+\inputleannode{thm:continuousSystem-lasalle-invariance-principle}
+
+\inputleannode{thm:continuousSystem-locallyAsymptoticallyStable-of-lasalle}
+
+\inputleannode{thm:continuousSystem-globallyAsymptoticallyStable-of-lasalle}
+
+\section{Instability}
+
+Instability is the failure of stability, and the simplest witness is a trajectory that leaves a
+fixed neighbourhood from arbitrarily close initial states
+(\cref{lem:continuousSystem-unstable-of-escape}).  Chetaev's theorem produces such trajectories
+from a function that grows along the system near the equilibrium.
+
+\inputleannode{thm:exponential-chetaev-unstable}
+
+\chapter{Stability of linear systems}
+
+The stability notions of a linear system are those of
+\cref{def:continuousSystem-stable} and the definitions after it, applied to the unforced
+system (\cref{def:continuousSystem-zeroInput}): there is no separate notion of stability for
+linear systems.  What linearity adds is that each notion becomes a condition on the state
+transition matrix, and for constant $A$ a condition on its eigenvalues.
+
+\section{Linear time-varying systems}
+
+Hespanha states Lyapunov stability for the continuous-time linear time-varying system
+$\dot x = A(t)x$ as four conditions on its homogeneous state response
+$x(t) = \Phi(t, t_0)x_0$. None of them is taken as a definition here: each is proved
+\emph{equivalent} to the corresponding stability predicate of the unforced system, so the
+linear track and the nonlinear track share one notion of stability rather than two.
+
+Two things stand between the textbook conditions and the predicates, and both are settled in
+this section. The predicates quantify over trajectories where the textbook quantifies over
+initial conditions, which the trajectory characterization below closes in both directions; and
+the predicates bound the response from a \emph{ball} where the textbook bounds it from every
+initial state, which homogeneity closes. The second is why a linear system has no nontrivial
+region of attraction, recorded as
+\cref{cor:continuousLTV-locallyExponentiallyStable-iff-globallyExponentiallyStable}.
+
+\subsection{Hespanha's Definition 8.1}
+
+\inputleannode{lem:continuousLTV-stable-iff-boundedStateTransition}
+
+\inputleannode{thm:continuousLTV-stable-iff-boundedHomogeneousResponse}
+
+\inputleannode{thm:continuousLTV-uniformlyStable-iff-uniformlyBoundedStateTransition}
+
+\inputleannode{thm:continuousLTV-locallyAsymptoticallyStable-iff-decayingHomogeneousResponse}
+
+\inputleannode{thm:continuousLTV-globallyExponentiallyStable-iff-decayingStateTransition}
+
+\inputleannode{thm:continuousLTV-locallyExponentiallyStable-iff-decayingStateTransition}
+
+\inputleannode{cor:continuousLTV-locallyExponentiallyStable-iff-globallyExponentiallyStable}
+
+\inputleannode{thm:continuousLTV-unstable-iff-unboundedHomogeneousResponse}
+
+\section{Linear time-invariant systems}
+
+For constant $A$ the state transition matrix is $e^{A(t-t_0)}$
+(\cref{thm:stateTransitionMatrix-const}), and the stability conditions of the previous section
+collapse to a condition on the eigenvalues of $A$ alone. This is Hespanha's Theorem 8.1.
+
+Clauses (1) and (4) of that theorem --- marginal stability and instability --- ask that the
+Jordan blocks at imaginary-axis eigenvalues be $1 \times 1$. They are not recorded here: they
+need a Jordan normal form, which is a project rather than a lemma.
+
+\subsection{The Hurwitz condition and its rate-indexed refinement}
+
+For a real square matrix $A$, Hurwitz stability is expressed through the complex eigenpairs
+of its entrywise complexification, over an abstract index type. The rate-indexed predicate
+records a strict spectral margin. Ordinary Hurwitz stability is the zero-rate case, but is
+stated separately rather than derived, so that it unfolds directly to
+$\operatorname{Re}(\mu) < 0$.
+
+\inputleannode{def:stability-isHurwitz}
+
+\inputleannode{def:stability-isHurwitzWithRate}
+
+\inputleannode{thm:isHurwitzWithRate-iff-spectral-shift}
+
+\inputleannode{thm:isHurwitz-exists-pos-rate}
+
+The exponential decay estimates rest on a general Banach-algebra fact, stated with no matrices in
+it: an element of spectral radius below one has a contractive power.
+
+\inputleannode{lem:exists-pow-norm-lt-one}
+
+The two predicates are related by a spectral shift
+(\cref{thm:isHurwitzWithRate-iff-spectral-shift}), and they agree at rate zero.
+
+\inputleannode{lem:isHurwitz-iff-isHurwitzWithRate-zero}
+
+\inputleannode{lem:isHurwitzWithRate-mono}
+
+\inputleannode{lem:isHurwitzWithRate-of-isEmpty}
+
+\inputleannode{lem:isHurwitzWithRate-neg-one-by-one}
+
+The Hurwitz condition bounds each eigenvalue away from the imaginary axis one at a time;
+because the spectrum is compact, that upgrades to a uniform margin
+(\cref{thm:isHurwitz-exists-pos-rate}). This is what turns a qualitative hypothesis into a
+quantitative rate, and it is used twice below.
+
+\subsection{Equivalent analytic conditions}
+
+Nothing in this subsection mentions a system: the Hurwitz condition, decay of $e^{At}$, and an
+explicit exponential envelope for $\|e^{At}\|$ are shown to be the same condition on the
+matrix. Two generic facts about exponential envelopes are recorded first.
+
+\inputleannode{lem:tendsto-const-mul-exp-neg}
+
+\inputleannode{lem:tendsto-zero-of-norm-le-envelope}
+
+\inputleannode{thm:isHurwitz-exists-norm-exp-le}
+
+\inputleannode{thm:isHurwitz-exists-norm-exp-mulVec-le}
+
+\inputleannode{thm:isHurwitz-of-tendsto-exp}
+
+\inputleannode{thm:isHurwitz-of-tendsto-exp-mulVec}
+
+\inputleannode{thm:isHurwitz-iff-tendsto-exp}
+
+\inputleannode{thm:isHurwitz-iff-exists-norm-exp-le}
+
+\subsection{Hespanha's Theorem 8.1}
+
+\inputleannode{thm:continuousLTI-locallyAsymptoticallyStable-iff-isHurwitz}
+
+\inputleannode{thm:continuousLTI-locallyExponentiallyStable-iff-isHurwitz}
+
+\subsection{The Lyapunov equation}
+
+\inputleannode{def:continuousLyapunovEquation}
+
+\inputleannode{def:quadraticForm}
+
+Hespanha's Theorem 8.2 ties the spectral condition to solvability of $PA + A^{\mathsf T}P = -Q$.
+The direction a Lyapunov certificate is \emph{used} in comes first: exhibiting a single
+positive-definite $P$ proves the spectrum lies in the open left half-plane.
+
+\inputleannode{thm:isHurwitz-of-continuousLyapunovEquation}
+
+\inputleannode{thm:isHurwitz-of-posDef-neg-lyapunovResidual}
+
+The converse is a construction. One finite block of the integral
+$\int_{0}^{m} e^{tA^{\mathsf T}}Qe^{tA}\,\mathrm{d}t$ is summed into a convergent discrete
+Lyapunov series, with convergence and uniqueness both coming from the contraction
+$\|e^{Am}\| < 1$. A Hurwitz matrix supplies that contraction, which is
+\cref{thm:hurwitz-lyapunov-equation}.
+
+\inputleannode{thm:exists-posDef-unique-lyapunov-solution-of-contraction}
+
+\inputleannode{thm:hurwitz-lyapunov-equation}
+
+\inputleannode{lem:exists-posDef-neg-lyapunovResidual-of-forall-posDef}
+
+\subsection{The rate form}
+
+The Lyapunov inequality $PA + A^{\mathsf T}P \preceq -2cP$ carries an explicit decay rate:
+along a trajectory it gives $\dot V \le -2cV$ for $V = x^{\mathsf T}Px$. It is not one of
+Hespanha's clauses, but it is the shape every contraction and guaranteed-decay-rate condition
+is written in, so it is recorded as a sixth equivalent.
+
+\inputleannode{thm:isHurwitz-of-posDef-lyapunovRate}
+
+\inputleannode{thm:exists-posDef-lyapunovRate-of-isHurwitz}
+
+\subsection{Theorem 8.2}
+
+\inputleannode{thm:isHurwitz-iff-forall-posDef-exists-solution}
+
+\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovResidual}
+
+\inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovRate}
+
+\inputleannode{thm:lyapunovStability-tfae}
+
+\subsection{Quadratic forms along a linear vector field}
+
+What makes a solution of the Lyapunov equation a Lyapunov \emph{function}: the forcing matrix
+is exactly the dissipation rate of the associated quadratic form.
+
+\inputleannode{thm:fderiv-centeredQuadraticForm-linear-general}
+
+\inputleannode{lem:fderiv-centeredQuadraticForm-linear}
+
+\subsection{A quadratic certificate for an unstable eigenmode}
+
+The instability counterpart (\cref{thm:positive-real-eigenvalue-quadratic-certificate}): an
+eigenvalue with positive real part yields a real quadratic Chetaev certificate. The
+construction solves a shifted Lyapunov--Sylvester equation, whose injectivity rests on a
+nonresonance condition on the spectrum --- which is what the lemmas below supply.
+
+\inputleannode{lem:bilinear-eq-zero-on-genEigenspaces}
+
+\inputleannode{lem:hasEigenvalue-of-mem-maxGenEigenspace-ne-zero}
+
+\inputleannode{lem:bilinear-eq-zero-of-no-resonance}
+
+\inputleannode{lem:toBilin-right-mul}
+
+\inputleannode{lem:toBilin-left-transpose-mul}
+
+\inputleannode{lem:toBilin-symm-real}
+
+\inputleannode{thm:positive-real-eigenvalue-quadratic-certificate}
+
+\chapter{Lyapunov's indirect method}
+
+Near an equilibrium a nonlinear system behaves like its linearization: if the Jacobian is Hurwitz
+the equilibrium is locally exponentially stable, and if the Jacobian has an eigenvalue with
+positive real part it is unstable.  Both branches run the same way.  A quadratic certificate for
+the linear system (\cref{thm:hurwitz-lyapunov-equation},
+\cref{thm:positive-real-eigenvalue-quadratic-certificate}) is a certificate for the nonlinear one
+as well, once the linearization error is absorbed near the equilibrium.
+
+\section{The linearization error}
+
+\inputleannode{thm:frechet-linearization-error-bound}
+
+\inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
+
+\section{The stable branch}
+
+The stable-branch theorem gives uniform local exponential decay on every finite
+forward solution segment, without silently excluding solutions that are not
+globally defined.
+
+\inputleannode{thm:hurwitz-linearization-locally-exponentially-stable}
+
+\section{The unstable branch}
+
+The quadratic certificate is fed to Chetaev's theorem (\cref{thm:exponential-chetaev-unstable}).
+
+\inputleannode{thm:positive-real-eigenvalue-unstable}
+
+\inputleannode{thm:unstable-linear-of-eigenvalue-re-pos}
+
+\chapter{Controllability and observability}
+
+\section{Observability and controllability matrices}
+
+For a finite-dimensional linear system
+\[
+  \dot{x} = A x + B u, \qquad y = C x,
+\]
+with state matrix $A$, input matrix $B$, and output matrix $C$, this section
+collects the (finite-horizon) controllability and observability matrices and
+the bridge theorem connecting the textbook observability predicate to the
+kernel of the observability matrix.
+
+\subsection{Observability matrix}
+
+\inputleannode{def:observabilityMatrix}
+
+\inputleannode{def:isObservable}
+
+\inputleannode{lem:observabilityMatrix-apply}
+
+\inputleannode{lem:observabilityMatrix-mulVec-apply}
+
+\subsection{Controllability matrix}
+
+\inputleannode{def:controllabilityMatrix}
+
+\inputleannode{lem:controllabilityMatrix-apply}
+
+\inputleannode{def:isControllable}
+
+\subsection{Milestone: observability iff trivial kernel of \texorpdfstring{$\mathcal{O}$}{O}}
+
+\inputleannode{thm:isObservable-iff-ker-trivial}
+
+\subsection{Rank characterizations}
+
+\inputleannode{thm:isObservable-iff-rank}
+
+\inputleannode{thm:isControllable-iff-rank}
+
+\subsection{Hautus observability}
+
+\inputleannode{def:unobservableSubspace}
+
+\inputleannode{thm:unobservable-eq-bot-iff-observable}
+
+\inputleannode{lem:unobservableSubspace-invariant}
+
+\inputleannode{def:hautusObservabilityMatrix}
+
+\inputleannode{lem:hautus-mulVec-eq-zero-iff}
+
+\inputleannode{thm:not-isObservable-implies-hautus-failure}
+
+\inputleannode{thm:hautus-failure-implies-not-isObservable}
+
+\inputleannode{thm:isObservable-iff-hautus}
+
+\subsection{Hautus controllability}
+
+\inputleannode{def:hautusControllabilityMatrix}
+
+\inputleannode{thm:isControllable-iff-hautus}
+
+\section{Reachable subspace and Kalman decomposition}
+
+\inputleannode{def:reachableSubspace}
+
+\inputleannode{lem:mem-reachableSubspace-iff}
+
+\inputleannode{thm:reachableSubspace-eq-top-iff-controllable}
+
+\inputleannode{lem:reachableSubspace-invariant}
+
+\inputleannode{def:kalman-decomposition}
+
+\inputleannode{thm:kalman-subspaces-exist}
+
+\inputleannode{def:kalman-adapted-equivalence}
+
+\inputleannode{thm:kalman-block-matrix-zero-pattern}

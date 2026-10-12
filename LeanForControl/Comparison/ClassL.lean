@@ -41,7 +41,7 @@ structure ClassL where
 A *singular class L* function is like class L but defined only on `(0, ∞)`:
 it is continuous, positive, antitone, tends to `0` at `+∞`, and blows up near `0`.
 This arises naturally as the inverse of a sliding-window average in the KL
-characterization of asymptotic stability (`exists_classLSingular_decayBound`). -/
+characterization of asymptotic stability (`ContinuousSystem.exists_classLSingular_decayBound`). -/
 
 /-- A *singular class L* function is continuous, positive, and antitone on `(0, ∞)`,
 tends to `0` at `+∞`, and is allowed to blow up near `0`. Arises as the inverse of
