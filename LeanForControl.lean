@@ -1,9 +1,9 @@
 import LeanForControl.Analysis.Continuity
-import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.Analysis.IntegralCurves
 import LeanForControl.Analysis.Integrals
+import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.OmegaLimit
@@ -17,11 +17,11 @@ import LeanForControl.Comparison.ClassL
 import LeanForControl.Comparison.ComparisonFunctions
 import LeanForControl.Comparison.DecaySystem
 import LeanForControl.Comparison.PositiveDefiniteBounds
+import LeanForControl.LinearSystems.Continuous
 import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Controllability.Defs
 import LeanForControl.LinearSystems.Controllability.Hautus
 import LeanForControl.LinearSystems.Controllability.Reachability
-import LeanForControl.LinearSystems.Continuous
 import LeanForControl.LinearSystems.Discrete
 import LeanForControl.LinearSystems.KalmanDecomposition.Decomposition
 import LeanForControl.LinearSystems.KalmanDecomposition.DecompositionExamples
@@ -49,12 +49,12 @@ import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
+import LeanForControl.Stability.Continuous.Chetaev
 import LeanForControl.Stability.Continuous.Defs
 import LeanForControl.Stability.Continuous.KLCharacterization
 import LeanForControl.Stability.Continuous.LaSalle
 import LeanForControl.Stability.Continuous.Linearization
 import LeanForControl.Stability.Continuous.LyapunovFunctions
 import LeanForControl.Stability.Continuous.LyapunovTheorems
-import LeanForControl.Stability.Continuous.Chetaev
 import LeanForControl.Systems.Continuous
 import LeanForControl.Systems.Discrete
