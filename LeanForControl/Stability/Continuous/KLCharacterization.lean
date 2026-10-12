@@ -1149,7 +1149,7 @@ stable if and only if the solutions over `[t₀, ∞)` from some ball have a cla
 forward direction needs no completeness (`UniformlyAsymptoticallyStable.exists_classKL_Ici`). -/
 @[blueprint
   "lem:continuousSystem-uniformlyAsymptoticallyStable-iff-classKL-of-isForwardCompleteOn"
-  (title := "Class $\\mathcal{KL}$ characterization over half-lines")
+  (title := "Class $\\mathcal{KL}$ characterization for forward-complete systems")
   (latexEnv := "lemma")
   (statement := /-- Let the system be forward complete from some ball $B(x_{\mathrm{eq}}, c)$ at
     every $t_0 \ge 0$ (\cref{def:continuousSystem-isForwardCompleteOn}).  Then $x_{\mathrm{eq}}$
@@ -1185,7 +1185,7 @@ is a global class `KL` bound on every solution over `[t₀, ∞)`.  The forward 
 completeness (`GloballyUniformlyAsymptoticallyStable.exists_classKL_Ici`). -/
 @[blueprint
   "lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL-of-isForwardComplete"
-  (title := "Class $\\mathcal{KL}$ characterization over half-lines, global case")
+  (title := "Class $\\mathcal{KL}$ characterization for forward-complete systems, global case")
   (latexEnv := "lemma")
   (statement := /-- Let the system be forward complete
     (\cref{def:continuousSystem-isForwardComplete}).  Then $x_{\mathrm{eq}}$ is globally
