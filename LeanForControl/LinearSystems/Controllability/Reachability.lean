@@ -102,12 +102,14 @@ theorem range_B_le_reachableSubspace
     LinearMap.range B.mulVecLin ≤ reachableSubspace A B := by
   rintro x ⟨u, rfl⟩
   by_cases hn : n = 0
-  · subst n
-    have : B *ᵥ u = 0 := Subsingleton.elim _ _
+  · -- Empty state space: `B u` lives in the zero space, so it is `0`.
+    subst n
+    have hBu_zero : B *ᵥ u = 0 := Subsingleton.elim _ _
     change B *ᵥ u ∈ reachableSubspace A B
-    rw [this]
+    rw [hBu_zero]
     exact Submodule.zero_mem _
-  · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
+  · -- Nonempty state space: `B u` is the horizon-`0` response to `u`.
+    have hnpos : 0 < n := Nat.pos_of_ne_zero hn
     simpa using
       finiteHorizonResponse_mem_reachableSubspace A B (⟨0, hnpos⟩ : Fin n) u
 
@@ -138,32 +140,20 @@ private lemma cayleyHamilton_boundary_mem_reachableSubspace
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (u : Fin m → 𝕜) :
     (A ^ n * B) *ᵥ u ∈ reachableSubspace A B := by
-  have hCH := Matrix.aeval_self_charpoly A
-  have h_apply : (Polynomial.aeval A A.charpoly * B) *ᵥ u = 0 := by
-    rw [hCH, Matrix.zero_mul, Matrix.zero_mulVec]
-  have hdeg : A.charpoly.natDegree = n := by
-    rw [Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
-  rw [Polynomial.aeval_eq_sum_range, hdeg, Finset.sum_range_succ] at h_apply
-  have hmonic : A.charpoly.coeff n = 1 := by
-    have hL := A.charpoly_monic
-    rw [Polynomial.Monic, Polynomial.leadingCoeff, hdeg] at hL
-    exact hL
-  rw [hmonic, one_smul, Matrix.add_mul, Matrix.add_mulVec] at h_apply
-  have hsum :
-      ((∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i) * B) *ᵥ u ∈
-        reachableSubspace A B := by
-    rw [Matrix.sum_mul, Matrix.sum_mulVec]
-    refine Submodule.sum_mem _ fun i hi => ?_
+  -- By Cayley--Hamilton `Aⁿ` is a combination of the lower powers `A⁰, …, Aⁿ⁻¹`, and each
+  -- `(Aⁱ B) u` with `i < n` is a finite-horizon response, hence reachable.
+  have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
+    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    rwa [Fintype.card_fin] at h
+  have hlower : ∀ i ∈ Finset.range n,
+      (A.charpoly.coeff i • A ^ i * B) *ᵥ u ∈ reachableSubspace A B := by
+    intro i hi
     rw [Finset.mem_range] at hi
     rw [Matrix.smul_mul, Matrix.smul_mulVec]
     exact Submodule.smul_mem _ _
       (finiteHorizonResponse_mem_reachableSubspace A B ⟨i, hi⟩ u)
-  have htarget :
-      (A ^ n * B) *ᵥ u =
-        -(((∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i) * B) *ᵥ u) := by
-    exact eq_neg_of_add_eq_zero_right h_apply
-  rw [htarget]
-  exact Submodule.neg_mem _ hsum
+  rw [hCH, Matrix.neg_mul, Matrix.neg_mulVec, Matrix.sum_mul, Matrix.sum_mulVec]
+  exact Submodule.neg_mem _ (Submodule.sum_mem _ hlower)
 
 /-- The finite-horizon reachable subspace is invariant under the state
 matrix.  The highest-power case is discharged by Cayley--Hamilton.

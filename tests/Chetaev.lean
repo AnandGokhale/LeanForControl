@@ -1,4 +1,4 @@
-import LeanForControl.Stability.LyapunovIndirect.Chetaev
+import LeanForControl.Stability.Continuous.Chetaev
 import Mathlib.Analysis.Normed.Operator.Banach
 
 /-!
@@ -25,6 +25,10 @@ private def positiveRegion : Set State := coordinate ⁻¹' Ioi 0
 /-- The unit vector giving constant rightward velocity. -/
 private def velocity : State := PiLp.single 2 0 1
 
+/-- The input-free time-invariant system with constant rightward velocity and unit output. -/
+private def rightwardSystem : ContinuousSystem State Unit Unit :=
+  ContinuousSystem.timeInvariant (fun _ _ ↦ velocity) (fun _ _ ↦ ())
+
 /-- The coordinate projection is surjective. -/
 private theorem coordinate_surjective : Function.Surjective coordinate := by
   intro r
@@ -39,7 +43,7 @@ private theorem zero_mem_boundary : (0 : State) ∈ frontier positiveRegion := b
 
 /-- The coordinate is a Chetaev certificate for constant rightward flow in the unit ball. -/
 private theorem rightward_certificate :
-    IsChetaevFunction (fun _ : State ↦ velocity) coordinate 0 positiveRegion 1 := by
+    rightwardSystem.IsChetaevFunction coordinate 0 positiveRegion 1 := by
   refine {
     hradius := by norm_num
     hD_open := isOpen_Ioi.preimage coordinate.continuous
@@ -54,21 +58,29 @@ private theorem rightward_certificate :
   · intro x hx _
     have hx_zero := coordinate.continuous.frontier_preimage_subset (Ioi 0) hx
     simpa [frontier_Ioi] using hx_zero
-  · intro x _ _
-    rw [coordinate.fderiv]
-    norm_num [coordinate, velocity]
+  · intro t _ x _ _
+    rw [ContinuousSystem.lieDerivative, lieDerivative_const coordinate.differentiableAt,
+      coordinate.fderiv]
+    norm_num [rightwardSystem, ContinuousSystem.timeInvariant, coordinate, velocity]
 
 /-- The geometric criterion proves instability at a base point that is not an equilibrium. -/
-private theorem rightward_unstable_at_zero : Unstable (fun _ : State ↦ velocity) 0 := by
-  exact NonlinearInstability.unstable_of_geometric_chetaev contDiff_const rightward_certificate
+private theorem rightward_unstable_at_zero : rightwardSystem.Unstable 0 := by
+  exact ContinuousSystem.unstable_of_geometric_chetaev (fun _ _ ↦ rfl)
+    contDiff_const rightward_certificate
+
+/-- The result negates `Stable`, so it also rules out the stronger `UniformlyStable` predicate. -/
+private theorem rightward_not_uniformlyStable : ¬ rightwardSystem.UniformlyStable 0 := by
+  intro h
+  exact rightward_unstable_at_zero h.stable
 
 /-- The velocity at zero is nonzero, so the preceding example cannot use an equilibrium premise. -/
-private theorem rightward_not_equilibrium : ¬ IsEquilibrium (fun _ : State ↦ velocity) 0 := by
+private theorem rightward_not_equilibrium (t : ℝ) : rightwardSystem.F t 0 () ≠ 0 := by
   intro h
   have hcoordinate := congrArg coordinate h
-  norm_num [coordinate, velocity] at hcoordinate
+  norm_num [rightwardSystem, ContinuousSystem.timeInvariant, coordinate, velocity] at hcoordinate
 
 #print axioms rightward_unstable_at_zero
+#print axioms rightward_not_uniformlyStable
 
 end
 

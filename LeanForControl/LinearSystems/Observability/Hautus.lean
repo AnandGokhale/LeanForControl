@@ -11,20 +11,23 @@ import Architect
 
 For a finite-dimensional linear system over `ℂ`,
 
-  `IsObservable A C ↔ ∀ μ ∈ ℂ, the block matrix `[μI - A; C]` has trivial kernel`.
+  `IsObservable A C` iff, for every `μ : ℂ`, the block matrix `[μI - A; C]` has
+  trivial kernel.
 
 This file proves both directions and packages them as the iff
 `isObservable_iff_hautus`. The whole development is over `ℂ` (per the
 project note: eigenvalues live in `ℂ`).
 
-The structure is:
+The unobservable subspace `unobservableSubspace A C` and the block-row matrix
+`hautusObservabilityMatrix A C μ = [μI - A; C]` are defined in
+`LinearSystems.Observability.Defs`. This file develops:
 
-* `unobservableSubspace A C` — the `A`-invariant submodule of vectors that
-  are killed by every `C * A^k`.
+* `mem_unobservableSubspace_iff` and the bridge
+  `unobservableSubspace A C = ⊥ ↔ IsObservable A C`.
 * Cayley-Hamilton helper: vectors in `unobservableSubspace` are killed by
-  `C * A^n` too, not just `C * A^k` for `k < n`.
+  `C * A^n` too, not just `C * A^k` for `k < n`
+  (via `MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff`).
 * `A`-invariance of `unobservableSubspace`.
-* `hautusObservabilityMatrix A C μ` — the block-row matrix `[μI - A; C]`.
 * Failure direction: `¬ IsObservable A C → ∃ μ, witness vector` via
   eigenvector extraction on `unobservableSubspace`.
 * Converse: a Hautus-failure witness violates observability directly.
@@ -76,30 +79,18 @@ private lemma mulVec_aPowN_eq_zero_of_mem_unobservableSubspace
     {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
     {v : Fin n → ℂ} (hv : v ∈ unobservableSubspace A C) :
     (C * A ^ n) *ᵥ v = 0 := by
+  -- By Cayley--Hamilton `Aⁿ` is a combination of the lower powers `A⁰, …, Aⁿ⁻¹`, and each
+  -- `(C Aⁱ) v` with `i < n` vanishes because `v` is unobservable.
   rw [mem_unobservableSubspace_iff] at hv
-  -- Cayley-Hamilton in matrix form, multiplied on the left by `C` and
-  -- evaluated at `v`.
-  have hCH := Matrix.aeval_self_charpoly A
-  have h_apply : (C * Polynomial.aeval A A.charpoly) *ᵥ v = 0 := by
-    rw [hCH, Matrix.mul_zero, Matrix.zero_mulVec]
-  -- Expand `aeval` as a finite sum and use the degree of `charpoly`.
-  have hdeg : A.charpoly.natDegree = n := by
-    rw [Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
-  rw [Polynomial.aeval_eq_sum_range, hdeg, Finset.sum_range_succ] at h_apply
-  -- Isolate the leading `A^n` term using monicity of `charpoly`.
-  have hmonic : A.charpoly.coeff n = 1 := by
-    have hL := A.charpoly_monic
-    rw [Polynomial.Monic, Polynomial.leadingCoeff, hdeg] at hL
-    exact hL
-  rw [hmonic, one_smul, Matrix.mul_add, Matrix.add_mulVec] at h_apply
-  -- The remaining sum vanishes term-by-term because each `(C * A^i) *ᵥ v = 0`.
-  have hsum : (C * ∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
-    rw [Matrix.mul_sum, Matrix.sum_mulVec]
-    refine Finset.sum_eq_zero fun i hi => ?_
+  have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
+    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    rwa [Fintype.card_fin] at h
+  have hlower : ∀ i ∈ Finset.range n, (C * A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
+    intro i hi
     rw [Finset.mem_range] at hi
     rw [Matrix.mul_smul, Matrix.smul_mulVec, hv ⟨i, hi⟩, smul_zero]
-  rw [hsum, zero_add] at h_apply
-  exact h_apply
+  rw [hCH, Matrix.mul_neg, Matrix.neg_mulVec, Matrix.mul_sum, Matrix.sum_mulVec,
+    Finset.sum_eq_zero hlower, neg_zero]
 
 /-- The unobservable subspace is `A`-invariant: applying `A` to any
 unobservable state keeps it unobservable. The proof for the boundary case

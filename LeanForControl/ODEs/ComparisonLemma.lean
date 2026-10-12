@@ -130,7 +130,8 @@ Hypotheses:
 * `u` solves the ODE classically (pointwise derivative).
 * `v` satisfies the Dini subsolution inequality and has bounded difference quotients.
 * For each `λ > 0`, a perturbed solution `z_λ` of `ż = f(t, z) + λ` exists on `[t₀, t₁]`
-  (the existence hypothesis `hz_exists`).
+  (the existence hypothesis `hz_exists`, kept for generality; it is always discharged by
+  `exists_isIntegralSolution_Icc_of_lipschitz`).
 
 The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_dependence_parameters`
 (Khalil, Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all
@@ -152,11 +153,10 @@ his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE
     \end{enumerate}
     Then $v(t) \le u(t)$ for all $t \in [t_0, t_1]$.
 
-    The perturbed solutions in (3) are not constructed here — the caller supplies them.  They do
-    exist under the hypotheses already listed, since $f + \lambda$ is Lipschitz exactly when $f$
-    is, so Picard--Lindel\"of applies on $[t_0,t_1]$; but that existence step is an axiom in this
-    development, and leaving it as a hypothesis is what keeps this theorem, and everything
-    downstream of it, free of any axiom beyond Lean's own. -/)
+    The perturbed solutions in (3) are taken as a hypothesis for generality, so that callers with
+    solutions already in hand need not re-derive them.  Under the hypotheses already listed they
+    always exist: $f + \lambda$ is Lipschitz exactly when $f$ is, so
+    \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz} discharges (3). -/)
   (proof := /-- Fix $\lambda > 0$ and let $z_\lambda$ be as in hypothesis (3).
 
     \emph{Claim: $v \le z_\lambda$ on $[t_0,t_1]$.}  Otherwise $v(t_{\mathrm{bad}}) >

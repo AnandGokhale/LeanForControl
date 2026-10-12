@@ -2,15 +2,15 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
-import LeanForControl.axioms
 import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral
 
 /-!
-# `Stability.ComparisonFunctions`
+# Class K comparison functions
 
-Class K, K∞, and KL comparison functions.
+Class K comparison functions; class K∞ and KL live in `Comparison.ClassKInfty` and
+`Comparison.ClassKL`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.).
 
@@ -231,6 +231,37 @@ noncomputable def ClassK.restrictTo {a b : ℝ} (α : ClassK a b) {c e : ℝ}
 
 -- ─── ClassK Operations ────────────────────────────────────────────────────────
 
+/-- A function that is strictly increasing on an order-connected set `s ⊆ ℝ` and maps `s`
+onto an order-connected set `t` is continuous on `s`.
+
+Such a function restricts to an order isomorphism `s ≃o t`, and an order isomorphism between
+order-connected subsets of `ℝ` (each carrying the order topology) is continuous.  This is the
+continuity half of "the inverse of a class K / K∞ function is class K / K∞", used by
+`ClassK.symm` and `ClassKInfty.symm`. -/
+theorem continuousOn_of_strictMonoOn_of_surjOn {g : ℝ → ℝ} {s t : Set ℝ}
+    [OrdConnected s] [ht : OrdConnected t] (hg_mono : StrictMonoOn g s)
+    (hg_maps : MapsTo g s t) (hg_surj : SurjOn g s t) : ContinuousOn g s := by
+  have h_image : g '' s = t := hg_surj.image_eq_of_mapsTo hg_maps
+  haveI : OrdConnected (g '' s) := h_image ▸ ht
+  -- `g` restricted to `s` is the order isomorphism `s ≃o g '' s`, followed by `Subtype.val`.
+  let e : s ≃o g '' s := hg_mono.orderIso g s
+  rw [continuousOn_iff_continuous_restrict]
+  exact continuous_subtype_val.comp e.continuous
+
+/-- The inverse of a class K function is zero at zero: `α⁻¹ 0 = α⁻¹ (α 0) = 0`. -/
+private lemma ClassK.invFun_zero {a b : ℝ} (α : ClassK a b) : α.invFun 0 = 0 := by
+  have h_left : α.invFun (α.toFun 0) = 0 := α.left_inv ⟨le_refl 0, α.ha⟩
+  rwa [α.map_zero] at h_left
+
+/-- The inverse of a class K function is strictly increasing on `[0, b)`: applying the
+strictly increasing `α` to `α⁻¹ y₁, α⁻¹ y₂` gives back `y₁ < y₂`. -/
+private lemma ClassK.invFun_strictMonoOn {a b : ℝ} (α : ClassK a b) :
+    StrictMonoOn α.invFun (Set.Ico 0 b) := by
+  intro y₁ hy₁ y₂ hy₂ hy_lt
+  rw [← α.strict_mono.lt_iff_lt (α.inv_maps_to hy₁) (α.inv_maps_to hy₂),
+    α.right_inv hy₁, α.right_inv hy₂]
+  exact hy_lt
+
 /-- The inverse of a class K function `[0,a) → [0,b)` is class K on `[0,b) → [0,a)`. 
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.2, first bullet. Khalil's domain
@@ -252,89 +283,11 @@ def ClassK.symm {a b : ℝ} (α : ClassK a b) : ClassK b a where
   inv_maps_to := α.maps_to
   left_inv    := α.right_inv
   right_inv   := α.left_inv
-  map_zero := by
-    have h0 : (0 : ℝ) ∈ Set.Ico 0 a := ⟨le_refl 0, α.ha⟩
-    have h_left := α.left_inv h0
-    rw [α.map_zero] at h_left; exact h_left
-  continuous := by
-    have inv_mono : StrictMonoOn α.invFun (Set.Ico 0 b) := by
-      intro y₁ hy₁ y₂ hy₂ hy_lt
-      apply lt_of_not_ge
-      intro h_ge
-      rcases eq_or_lt_of_le h_ge with h_eq | h_gt
-      · have h_apply : α.toFun (α.invFun y₁) = α.toFun (α.invFun y₂) := by rw [h_eq]
-        rw [α.right_inv hy₁, α.right_inv hy₂] at h_apply; linarith
-      · have h_apply := α.strict_mono (α.inv_maps_to hy₂) (α.inv_maps_to hy₁) h_gt
-        rw [α.right_inv hy₂, α.right_inv hy₁] at h_apply; linarith
-    have inv_zero : α.invFun 0 = 0 := by
-      have h0 : (0 : ℝ) ∈ Set.Ico 0 a := ⟨le_refl 0, α.ha⟩
-      have h_left := α.left_inv h0; rw [α.map_zero] at h_left; exact h_left
-    have inv_surj : ∀ x ∈ Set.Ico 0 a, ∃ w ∈ Set.Ico 0 b, α.invFun w = x :=
-      fun x hx => ⟨α.toFun x, α.maps_to hx, α.left_inv hx⟩
-    have inv_lt_a : ∀ y ∈ Set.Ico 0 b, α.invFun y < a :=
-      fun y hy => (α.inv_maps_to hy).2
-    -- Find a right-witness for the continuity criterion: given invFun y < z,
-    -- produce w ∈ Ico 0 b with invFun w ∈ Ioc (invFun y) z.
-    have find_right : ∀ (y : ℝ), y ∈ Set.Ico 0 b → ∀ z > α.invFun y,
-        ∃ w ∈ Set.Ico 0 b, α.invFun w ∈ Set.Ioc (α.invFun y) z := by
-      intro y hy z hz
-      by_cases hza : z < a
-      · have hz0 : 0 ≤ z := le_of_lt (lt_of_le_of_lt (α.inv_maps_to hy).1 hz)
-        obtain ⟨w, hw, hinv⟩ := inv_surj z ⟨hz0, hza⟩
-        exact ⟨w, hw, by rw [hinv]; exact ⟨hz, le_refl z⟩⟩
-      · have hiy_lt_a : α.invFun y < a := inv_lt_a y hy
-        obtain ⟨x, hxl, hxr⟩ := exists_between hiy_lt_a
-        have hx0 : 0 ≤ x := le_of_lt (lt_of_le_of_lt (α.inv_maps_to hy).1 hxl)
-        obtain ⟨w, hw, hinv⟩ := inv_surj x ⟨hx0, hxr⟩
-        exact ⟨w, hw, by rw [hinv]; exact ⟨hxl, le_of_lt (lt_of_lt_of_le hxr (not_lt.mp hza))⟩⟩
-    intro y hy
-    obtain ⟨hy0, hyb⟩ := hy
-    by_cases h0 : y = 0
-    · -- Left endpoint: use right-continuity within Ici 0
-      subst h0
-      apply ContinuousWithinAt.mono _ Set.Ico_subset_Ici_self
-      apply StrictMonoOn.continuousWithinAt_right_of_exists_between inv_mono
-      · rw [mem_nhdsGE_iff_exists_Ico_subset' α.hb]
-        exact ⟨b, α.hb, Set.Ico_subset_Ico_right le_rfl⟩
-      · rw [inv_zero]
-        intro z hz
-        by_cases hza : z < a
-        · have hz0 : 0 ≤ z := le_of_lt hz
-          obtain ⟨w, hw, hinv⟩ := inv_surj z ⟨hz0, hza⟩
-          exact ⟨w, hw, by rw [hinv]; exact ⟨hz, le_refl z⟩⟩
-        · obtain ⟨x, hx0, hxa⟩ := exists_between α.ha
-          obtain ⟨w, hw, hinv⟩ := inv_surj x ⟨le_of_lt hx0, hxa⟩
-          exact ⟨w, hw, by rw [hinv]; exact ⟨hx0, le_of_lt (lt_of_lt_of_le hxa (not_lt.mp hza))⟩⟩
-    · -- Interior point: ContinuousAt via the between-points criterion
-      have hy0' : 0 < y := lt_of_le_of_ne hy0 (Ne.symm h0)
-      have hico_nhd : Set.Ico 0 b ∈ 𝓝 y := Ico_mem_nhds_iff.mpr ⟨hy0', hyb⟩
-      apply ContinuousAt.continuousWithinAt
-      apply StrictMonoOn.continuousAt_of_exists_between inv_mono hico_nhd
-      · intro z hz
-        have hinvy_pos : 0 < α.invFun y := by
-          have h0b : (0 : ℝ) ∈ Set.Ico 0 b := ⟨le_refl 0, α.hb⟩
-          have := inv_mono h0b ⟨le_of_lt hy0', hyb⟩ hy0'
-          rwa [inv_zero] at this
-        have hinvy_lt_a : α.invFun y < a := inv_lt_a y ⟨le_of_lt hy0', hyb⟩
-        have hmax : max z 0 < α.invFun y := max_lt hz hinvy_pos
-        obtain ⟨x, hxl, hxr⟩ := exists_between hmax
-        have hx0 : 0 ≤ x := le_of_lt (lt_of_le_of_lt (le_max_right z 0) hxl)
-        obtain ⟨w, hw, hinv⟩ := inv_surj x ⟨hx0, lt_trans hxr hinvy_lt_a⟩
-        exact ⟨w, hw, hinv ▸ ⟨le_of_lt (lt_of_le_of_lt (le_max_left z 0) hxl), hxr⟩⟩
-      · exact find_right y ⟨le_of_lt hy0', hyb⟩
-  strict_mono := by
-    intro y₁ hy₁ y₂ hy₂ hy_lt
-    have hx₁ := α.inv_maps_to hy₁
-    have hx₂ := α.inv_maps_to hy₂
-    apply lt_of_not_ge
-    intro h_ge
-    rcases eq_or_lt_of_le h_ge with h_eq | h_gt
-    · -- invFun y₁ = invFun y₂ implies y₁ = y₂ via right_inv: contradiction
-      have h_apply : α.toFun (α.invFun y₁) = α.toFun (α.invFun y₂) := by rw [h_eq]
-      rw [α.right_inv hy₁, α.right_inv hy₂] at h_apply; linarith
-    · -- invFun y₁ > invFun y₂ implies y₁ > y₂ via forward strict_mono: contradiction
-      have h_apply := α.strict_mono hx₂ hx₁ h_gt
-      rw [α.right_inv hy₂, α.right_inv hy₁] at h_apply; linarith
+  map_zero    := α.invFun_zero
+  strict_mono := α.invFun_strictMonoOn
+  -- `α⁻¹` is strictly increasing and maps `[0, b)` onto `[0, a)` (it is a left inverse of `α`).
+  continuous  := continuousOn_of_strictMonoOn_of_surjOn α.invFun_strictMonoOn α.inv_maps_to
+    (α.left_inv.surjOn α.maps_to)
 
 /-- Composition of two class K functions is class K
     (the composed inverse is the reverse composition of inverses). 
@@ -369,3 +322,141 @@ def ClassK.comp {a b c : ℝ} (β : ClassK b c) (α : ClassK a b) : ClassK a c w
     intro y hy
     change β.toFun (α.toFun (α.invFun (β.invFun y))) = y
     rw [α.right_inv (β.inv_maps_to hy)]; exact β.right_inv hy
+
+/-! ### Lipschitz minorants -/
+
+/-- Every class K function `α` on `[0, a)` has a class K minorant `β ≤ α` (onto some `[0, b')`)
+that is Lipschitz on all of `ℝ`, and hence satisfies a linear bound `β(x) ≤ L x`.
+
+The range `b'` cannot in general be taken equal to `b`: `α(x) = 1 - √(1 - x)` on `[0, 1)`
+approaches `1` more slowly than any Lipschitz function can. -/
+@[blueprint "lem:exists-classK-minorant-lipschitz"
+  (title := "Lipschitz class $\\mathcal{K}$ minorant") (latexEnv := "lemma")
+  (statement := /-- Let $\alpha$ be a class $\mathcal{K}$ function on $[0, a)$.  Then there are
+    $b' > 0$, $L > 0$ and a class $\mathcal{K}$ function $\beta : [0, a) \to [0, b')$ with
+    $\beta(x) \le \alpha(x)$ for $x \in [0, a)$, $\beta(x) \le L x$ for $x \ge 0$, and
+    $\beta$ $L$-Lipschitz on all of $\mathbb{R}$.
+
+    The range of $\beta$ cannot in general be the range $[0, b)$ of $\alpha$:
+    $\alpha(x) = 1 - \sqrt{1 - x}$ on $[0, 1)$ approaches $1$ more slowly than any
+    Lipschitz function can. -/)
+  (proof := /-- Extend $\alpha$ to a nondecreasing $g : \mathbb{R} \to [0, b]$ by $0$ on the
+    left and $b$ from $a$ on, and set $\beta(x) = a^{-1} \int_0^x g$, so $b' = \beta(a)$.
+    Since $0 \le g \le b$, $\beta$ is $(b/a)$-Lipschitz, and with $\beta(0) = 0$ this gives
+    $\beta(x) \le (b/a)\,x$.  Since $g > 0$ on $(0, \infty)$, $\beta$ is strictly increasing,
+    hence class $\mathcal{K}$ by \cref{lem:classK-of-strictMono}.  Finally $g$ is
+    nondecreasing, so for $x \in [0, a)$,
+    $\int_0^x g \le x\,\alpha(x) \le a\,\alpha(x)$, i.e.\ $\beta(x) \le \alpha(x)$. -/)]
+theorem exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) :
+    ∃ (b' L : ℝ) (β : ClassK a b') (hL : 0 < L),
+      (∀ x ∈ Ico 0 a, β.toFun x ≤ α.toFun x) ∧
+      (∀ x ≥ 0, β.toFun x ≤ L * x) ∧
+      LipschitzWith ⟨L, hL.le⟩ β.toFun := by
+  /- We take `β x = a⁻¹ ∫₀ˣ g`, where `g` is `α` on `[0, a)`, `0` to the left and `b` to the
+     right.  Since `0 ≤ g ≤ b`, `β` is `(b / a)`-Lipschitz; since `g` is nondecreasing,
+     `∫₀ˣ g ≤ x α(x) ≤ a α(x)`, so `β ≤ α`; and since `g > 0` on `(0, ∞)`, `β` is strictly
+     increasing. -/
+  -- Step 1. Extend `α` to a monotone function `g` on all of `ℝ`, with values in `[0, b]`.
+  set g : ℝ → ℝ := fun t => if t < a then α.toFun (max t 0) else b
+  have hα_mem : ∀ t < a, max t 0 ∈ Ico 0 a := fun t ht =>
+    ⟨le_max_right t 0, max_lt ht α.ha⟩
+  have hg_eq : ∀ x ∈ Ico 0 a, g x = α.toFun x := fun x hx => by
+    simp [g, hx.2, max_eq_left hx.1]
+  have hg_mono : Monotone g := by
+    intro x y hxy
+    simp only [g]
+    split_ifs with hx hy hy
+    · exact α.strict_mono.monotoneOn (hα_mem x hx) (hα_mem y hy) (max_le_max hxy le_rfl)
+    · exact (α.maps_to (hα_mem x hx)).2.le
+    · exact absurd (hxy.trans_lt hy) hx
+    · exact le_rfl
+  have hg_bounds : ∀ t, 0 ≤ g t ∧ g t ≤ b := by
+    intro t
+    simp only [g]
+    split_ifs with ht
+    · exact ⟨(α.maps_to (hα_mem t ht)).1, (α.maps_to (hα_mem t ht)).2.le⟩
+    · exact ⟨α.hb.le, le_rfl⟩
+  have hg_pos : ∀ t > 0, 0 < g t := by
+    intro t ht
+    simp only [g]
+    split_ifs with hta
+    · rw [max_eq_left ht.le, ← α.map_zero]
+      exact α.strict_mono ⟨le_rfl, α.ha⟩ ⟨ht.le, hta⟩ ht
+    · exact α.hb
+  have hg_int : ∀ x y, IntervalIntegrable g volume x y := fun _ _ =>
+    hg_mono.intervalIntegrable
+  -- Step 2. The normalised primitive `f x = a⁻¹ ∫₀ˣ g`.
+  set f : ℝ → ℝ := fun x => a⁻¹ * ∫ t in (0 : ℝ)..x, g t
+  have hf_zero : f 0 = 0 := by simp [f]
+  have hf_sub : ∀ x y, f x - f y = a⁻¹ * ∫ t in y..x, g t := fun x y => by
+    simp only [f]
+    rw [← mul_sub, intervalIntegral.integral_interval_sub_left (hg_int 0 x) (hg_int 0 y)]
+  -- Lipschitz with constant `b / a`, because `0 ≤ g ≤ b`.
+  have hL : 0 < a⁻¹ * b := mul_pos (inv_pos.mpr α.ha) α.hb
+  have hf_lip : LipschitzWith ⟨a⁻¹ * b, hL.le⟩ f := by
+    refine LipschitzWith.of_dist_le_mul fun x y => ?_
+    have h := intervalIntegral.norm_integral_le_of_norm_le_const (a := y) (b := x)
+      fun t _ => (by rw [Real.norm_of_nonneg (hg_bounds t).1]; exact (hg_bounds t).2 :
+        ‖g t‖ ≤ b)
+    rw [Real.dist_eq, Real.dist_eq, hf_sub, abs_mul, abs_of_pos (inv_pos.mpr α.ha)]
+    change a⁻¹ * _ ≤ a⁻¹ * b * _
+    rw [mul_assoc]
+    exact mul_le_mul_of_nonneg_left (by simpa using h) (inv_pos.mpr α.ha).le
+  -- Strictly increasing: `f y - f x = a⁻¹ ∫ₓʸ g`, and `g > 0` on `(x, y)`.
+  have hf_mono : StrictMonoOn f (Icc 0 a) := by
+    intro x hx y _ hxy
+    have h_pos : 0 < ∫ t in x..y, g t :=
+      intervalIntegral.intervalIntegral_pos_of_pos_on (hg_int x y)
+        (fun t ht => hg_pos t (hx.1.trans_lt ht.1)) hxy
+    have := hf_sub y x
+    have : 0 < f y - f x := by rw [this]; exact mul_pos (inv_pos.mpr α.ha) h_pos
+    linarith
+  -- Below `α`: `∫₀ˣ g ≤ ∫₀ˣ g(x) = x α(x) ≤ a α(x)`, because `g` is nondecreasing.
+  have hf_le : ∀ x ∈ Ico 0 a, f x ≤ α.toFun x := fun x hx => by
+    have h_int : ∫ t in (0 : ℝ)..x, g t ≤ x * α.toFun x := by
+      have h := intervalIntegral.integral_mono_on hx.1 (hg_int 0 x)
+        intervalIntegrable_const fun t ht => hg_mono ht.2
+      simpa [hg_eq x hx] using h
+    have h_nonneg : 0 ≤ α.toFun x := (α.maps_to hx).1
+    simp only [f]
+    rw [inv_mul_le_iff₀ α.ha]
+    exact h_int.trans (mul_le_mul_of_nonneg_right hx.2.le h_nonneg)
+  -- Step 3. Package `f` as a class `K` function onto `[0, f a)`.
+  have hb' : 0 < f a :=
+    hf_zero ▸ hf_mono (left_mem_Icc.mpr α.ha.le) (right_mem_Icc.mpr α.ha.le) α.ha
+  refine ⟨f a, a⁻¹ * b, ClassK.of_strictMono α.ha hb' f hf_zero rfl
+    hf_lip.continuous.continuousOn hf_mono, hL, hf_le, fun x hx => ?_, hf_lip⟩
+  -- the linear bound is the Lipschitz bound against `f 0 = 0`
+  have h := hf_lip.dist_le_mul x 0
+  rw [Real.dist_eq, Real.dist_eq, hf_zero, sub_zero, sub_zero, abs_of_nonneg hx] at h
+  exact (le_abs_self _).trans h
+
+
+/-! ### Bookkeeping lemmas -/
+
+/-- `ClassK.restrictTo` does not change the function: the cast along `α(c) = e` only retypes
+the bound on the range. -/
+theorem ClassK.restrictTo_toFun {a b : ℝ} (α : ClassK a b) {c e : ℝ} (hc_pos : 0 < c)
+    (hc_lt : c < a) (h_eq : α.toFun c = e) (x : ℝ) :
+    (α.restrictTo hc_pos hc_lt h_eq).toFun x = α.toFun x := by
+  -- `e` is a variable, so `cases` can substitute it away and remove the cast.
+  cases h_eq
+  rfl
+
+/-- A class `K` function maps `[0, c)` into `[0, α(c))`, written here with `α(c) = d`. -/
+theorem ClassK.toFun_mem_Ico {a b c d : ℝ} (α : ClassK a b) (hc_lt : c < a)
+    (h_eq : α.toFun c = d) {ρ : ℝ} (hρ : ρ ∈ Set.Ico 0 c) :
+    α.toFun ρ ∈ Set.Ico 0 d := by
+  have hρ_in : ρ ∈ Set.Ico 0 a := ⟨hρ.1, hρ.2.trans hc_lt⟩
+  have hc_in : c ∈ Set.Ico 0 a := ⟨hρ.1.trans hρ.2.le, hc_lt⟩
+  exact ⟨(α.maps_to hρ_in).1, h_eq ▸ α.strict_mono hρ_in hc_in hρ.2⟩
+
+/-- If `v ≤ α₂(ρ)` then `α₃(α₂⁻¹(v)) ≤ α₃(ρ)`, since both `α₂⁻¹` and `α₃` are increasing. -/
+theorem ClassK.toFun_invFun_le {r b₂ b₃ : ℝ} (α₂ : ClassK r b₂) (α₃ : ClassK r b₃)
+    {ρ v : ℝ} (hρ : ρ ∈ Set.Ico 0 r) (hv : v ∈ Set.Ico 0 b₂) (hv_le : v ≤ α₂.toFun ρ) :
+    α₃.toFun (α₂.invFun v) ≤ α₃.toFun ρ := by
+  have h_inv_le : α₂.invFun v ≤ ρ :=
+    calc α₂.invFun v
+        ≤ α₂.invFun (α₂.toFun ρ) := (α₂.inv_mono_iff hv (α₂.maps_to hρ)).mpr hv_le
+      _ = ρ                      := α₂.left_inv hρ
+  exact α₃.strict_mono.monotoneOn (α₂.inv_maps_to hv) hρ h_inv_le

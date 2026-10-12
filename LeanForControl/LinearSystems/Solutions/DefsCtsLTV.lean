@@ -5,13 +5,13 @@ import Architect
 /-!
 # Definitions for continuous-time solutions
 
-Every `def` and `noncomputable def` for the `Solutions` directory lives here, apart from the
-theorems proved about them (`CtsLTV.lean`), per the project convention: definitions live
-apart from theorems.
+Every `def` and `noncomputable def` for the `Solutions` directory's continuous-time track
+lives here, apart from the theorems proved about them (`CtsLTV.lean`, `CtsLTI.lean`), per the
+project convention: definitions live apart from theorems. The discrete-time definitions are in
+`DefsDiscLTV.lean`.
 
-Unlike the rest of `LinearSystems/`, this file is about a genuinely *time-varying* state
-matrix `A : ℝ → Matrix X X ℝ`, not the constant `A` fixed by `Basic.lean`'s
-conventions for the LTI-only files.
+The state matrix is a genuinely *time-varying* `A : ℝ → Matrix X X ℝ`; the time-invariant case
+is the constant map, specialized in `CtsLTI.lean` rather than given a separate definition.
 
 `Matrix X X ℝ` carries no default norm instance in Mathlib (there are several
 natural choices). We fix the `L∞`-operator norm, `Matrix.Norms.Operator`, throughout this
@@ -21,6 +21,9 @@ track: it is the one under which matrix multiplication is submultiplicative
 * `peanoBakerTerm` — the `k`-th iterated-integral term of the Peano-Baker series.
 * `stateTransitionMatrix` — the Peano-Baker series itself,
   `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
+* `forcedResponse` — the variation-of-constants formula for `ẋ = A(t)x + B(t)u(t)`.
+* `homogeneousResponse` — the forced response with the input switched off, which is what the
+  stability theory is stated about.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 -/
@@ -97,5 +100,30 @@ noncomputable def forcedResponse (A : ℝ → Matrix X X ℝ) (B : ℝ → Matri
     (u : ℝ → U → ℝ) (t₀ : ℝ) (x₀ : X → ℝ) : ℝ → X → ℝ :=
   fun t => stateTransitionMatrix A t t₀ *ᵥ x₀ +
     ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)
+
+/-- The *homogeneous response* of `ẋ = A(t) x` from the state `x₀` at time `t₀`, namely
+`x(t) = Φ(t, t₀) x₀`.
+
+Hespanha's "homogeneous state response": the forced response (`forcedResponse`) with the input
+switched off. It is named separately because the stability theory is stated about it — the
+input matrix plays no part in Lyapunov stability.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Definition 8.1. -/
+@[blueprint "def:homogeneousResponse"
+  (title := "Homogeneous response")
+  (statement := /-- The \emph{homogeneous response} of $\dot x = A(t)x$ from the state $x_0$ at
+    time $t_0$,
+    \[
+      x(t) = \Phi(t, t_0)\, x_0,
+    \]
+    with $\Phi$ the state transition matrix (\cref{def:stateTransitionMatrix}).  This is the
+    forced response (\cref{def:forcedResponse}) with the input switched off, and the object
+    Lyapunov stability is stated about.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1.
+  -/)]
+noncomputable def homogeneousResponse (A : ℝ → Matrix X X ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
+    ℝ → X → ℝ :=
+  fun t => stateTransitionMatrix A t t₀ *ᵥ x₀
 
 end LinearSystems
