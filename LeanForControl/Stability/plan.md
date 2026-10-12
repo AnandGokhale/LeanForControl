@@ -29,7 +29,7 @@ Files:
 - `Continuous/LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
 - `Continuous/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
   exponential and geometric Chetaev criteria
-- `Continuous/DefsChetaev.lean` — state-only Chetaev certificates on `ContinuousSystem`
+- `Continuous/LyapunovFunctions.lean` — Lyapunov and state-only Chetaev certificates
 - `Continuous/Linearization.lean` — Lyapunov's indirect method, both branches
 
 ## Status: Non-autonomous systems (`ẋ = f(t, x)`)
@@ -177,7 +177,7 @@ ball, a quadratic upper bound
 `2 α V(x) ≤ DV(x) f(x)`, and positive values of `V` arbitrarily close to `x_eq`.
 Those hypotheses are enough for the quadratic certificate above.
 
-`ContinuousSystem.IsChetaevFunction` in `Continuous/DefsChetaev.lean` packages an open
+`ContinuousSystem.IsChetaevFunction` in `Continuous/LyapunovFunctions.lean` packages an open
 region `D` with `x_eq` on its topological boundary, a positive radius, globally `C¹` state-only
 certificate `V`, positivity in `D` inside the closed ball, boundary vanishing there, and
 strictly positive system Lie derivative at every nonnegative time. Boundary means `∂D`,
@@ -193,8 +193,13 @@ to the fixed closed ball, and neither `D` nor `V` is assumed globally bounded.
 
 The proof separates a positive derivative minimum on the seed's compact superlevel,
 solution retention/nondecrease, and the growth-versus-ceiling escape contradiction. It reuses
-the unified API's smooth-cutoff continuation and first-sphere machinery from the existing
-exponential theorem. `tests/Chetaev.lean` exercises the migrated certificate on constant
+the shared Lie-derivative chain rule and monotonicity lemmas. General boundary crossings
+are public in `Analysis/Continuity.lean`; sphere crossing is their open-ball specialization.
+The exponential criterion is now a corollary on the full positive set `{V > 0}`: the
+quadratic bound gives `V(x_eq) = 0`, and positive seeds supply closure membership, together
+placing the base point on the boundary. Its public statement and positional use in
+`Linearization.lean` are preserved; the three exponential-only helpers are removed.
+`tests/Chetaev.lean` exercises the migrated certificate on constant
 rightward flow: zero is not an equilibrium, the criterion negates `Stable`, and the
 regression also rules out `UniformlyStable`.
 

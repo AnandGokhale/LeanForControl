@@ -1,6 +1,6 @@
 import LeanForControl.Analysis.Continuity
 import LeanForControl.Stability.Continuous.Defs
-import LeanForControl.Stability.Continuous.DefsChetaev
+import LeanForControl.Stability.Continuous.LyapunovFunctions
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
@@ -10,11 +10,9 @@ import Architect
 /-!
 # Chetaev instability on finite forward solution segments
 
-This file develops a generic finite-forward version of Chetaev's instability
-method on the unified `ContinuousSystem` API. A smooth cutoff supplies solution
-segments on arbitrary finite horizons. The exponential criterion uses a quantitative
-growth estimate; the geometric criterion retains the curve in a positive region and
-uses a positive derivative minimum on a compact superlevel.
+The geometric criterion retains a cutoff solution in a positive region and uses a positive
+Lie-derivative minimum on a compact superlevel to force escape. The exponential criterion
+is its corollary on the region `{V > 0}`.
 
 Both conclude `s.Unstable`, the negation of `s.Stable`, rather than only failure of
 `s.UniformlyStable`. Escape at initial time zero contradicts even a stability radius
@@ -22,7 +20,7 @@ depending on initial time. Neither theorem assumes an equilibrium or forward com
 The state equation is time-invariant (`s.F t x () = f x`); no condition on output is imposed.
 
 Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
-p. 125. The criteria below document their differences from the textbook statement.
+p. 125, for the positive-superlevel escape method.
 -/
 
 open Filter Function Metric Set Topology
@@ -66,108 +64,10 @@ private theorem exists_cutoff_forward_segment
     simpa [Metric.mem_closedBall, dist_eq_norm] using hball
   simpa [g, hb_one] using hφg t ht
 
-
-/-- For a solution of `ẋ = f(x)` on `[0, T]`, `T ≥ 0`, a globally `C¹` certificate with
-`DV(φ t) f(φ t) ≥ 2 α V(φ t)` satisfies `exp(2 α T) V(φ 0) ≤ V(φ T)`.
-No sign assumption on `α` or `V` is needed. Apply the shared integrating-factor theorem
-`IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` to `-V`. -/
-private theorem exponential_lower_bound_on_forward_segment
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {φ : ℝ → ℝⁿ} {T α : ℝ}
-    (hT : 0 ≤ T) (hV : ContDiff ℝ 1 V)
-    (hφderiv : ∀ t ∈ Icc (0 : ℝ) T,
-      HasDerivWithinAt φ (f (φ t)) (Icc 0 T) t)
-    (hgrowth : ∀ t ∈ Icc (0 : ℝ) T,
-      2 * α * V (φ t) ≤ fderiv ℝ V (φ t) (f (φ t))) :
-    Real.exp (2 * α * T) * V (φ 0) ≤ V (φ T) := by
-  have hγ : IsIntegralCurveOn φ (fun _ x => f x) (Icc 0 T) := hφderiv
-  have hVd := hV.differentiable one_ne_zero
-  -- `-V` satisfies `L(-V) ≤ 2α (-V)`, a linear bound with rate `-2α`.
-  have h := hγ.le_exp_mul_of_lieDerivative_le (V := fun _ y => -V y) (c := -(2 * α))
-    (hVd.neg.comp differentiable_snd) (fun τ hτ => by
-      rw [lieDerivative_const (V := fun y => -V y) (hVd _).neg, fderiv_fun_neg]
-      simp only [ContinuousLinearMap.neg_apply]
-      linarith [hgrowth τ (Ioo_subset_Icc_self hτ)]) T ⟨hT, le_rfl⟩
-  simp only [sub_zero, neg_neg] at h
-  linarith [h, mul_neg (Real.exp (2 * α * T)) (V (φ 0))]
-
-/-- Let `T ≥ 0`, `ρ > 0`, `C ≥ 0`, and let a curve start at `x₀` and solve `ẋ = f(x)`
-whenever it is in the closed `ρ`-ball about `x_eq`. Assume a globally `C¹` certificate with
-`|V(x)| ≤ C ‖x - x_eq‖²` and `DV(x) f(x) ≥ 2 α V(x)` in that ball. If
-`C ρ² + 1 ≤ exp(2 α T) V(x₀)`, it reaches distance at least `ρ` at some time in `[0, T]`.
-Otherwise the exponential lower bound would exceed the certificate ceiling `C ρ²`.
-No sign assumption on `α` is needed. -/
-private theorem exists_radius_escape_on_segment
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ}
-    {φ : ℝ → ℝⁿ} {T ρ α C : ℝ}
-    (hT : 0 ≤ T) (hρ : 0 < ρ) (hC : 0 ≤ C)
-    (hV : ContDiff ℝ 1 V) (hφ0 : φ 0 = x₀)
-    (hφderiv : ∀ t ∈ Icc (0 : ℝ) T, ‖φ t - x_eq‖ ≤ ρ →
-      HasDerivWithinAt φ (f (φ t)) (Icc 0 T) t)
-    (hbound : ∀ x, ‖x - x_eq‖ ≤ ρ → |V x| ≤ C * ‖x - x_eq‖ ^ 2)
-    (hgrowth : ∀ x, ‖x - x_eq‖ ≤ ρ →
-      2 * α * V x ≤ fderiv ℝ V x (f x))
-    (hlarge : C * ρ ^ 2 + 1 ≤ Real.exp (2 * α * T) * V x₀) :
-    ∃ t ∈ Icc (0 : ℝ) T, ρ ≤ ‖φ t - x_eq‖ := by
-  by_contra hnoexit
-  push Not at hnoexit
-  have hinside : ∀ t ∈ Icc (0 : ℝ) T, ‖φ t - x_eq‖ ≤ ρ :=
-    fun t ht ↦ (hnoexit t ht).le
-  have htraj : ∀ t ∈ Icc (0 : ℝ) T,
-      HasDerivWithinAt φ (f (φ t)) (Icc 0 T) t :=
-    fun t ht ↦ hφderiv t ht (hinside t ht)
-  have hscaled := exponential_lower_bound_on_forward_segment hT hV
-    htraj (fun t ht ↦ hgrowth (φ t) (hinside t ht))
-  rw [hφ0] at hscaled
-  have hTmem : T ∈ Icc (0 : ℝ) T := right_mem_Icc.mpr hT
-  have hVT_abs := hbound (φ T) (hinside T hTmem)
-  have hnormsq : ‖φ T - x_eq‖ ^ 2 ≤ ρ ^ 2 := by
-    exact (sq_le_sq₀ (norm_nonneg _) hρ.le).2 (hinside T hTmem)
-  have hVT_upper : V (φ T) ≤ C * ρ ^ 2 := by
-    calc
-      V (φ T) ≤ |V (φ T)| := le_abs_self _
-      _ ≤ C * ‖φ T - x_eq‖ ^ 2 := hVT_abs
-      _ ≤ C * ρ ^ 2 := mul_le_mul_of_nonneg_left hnormsq hC
-  linarith
-
-/-- A seed `x₀` with `V(x₀) > 0` admits a finite continuous cutoff curve reaching distance
-at least `ρ` from `x_eq`, whose derivative agrees with `f` in the closed `ρ`-ball.
-Assume globally `C¹` field and certificate, `ρ > 0`, `α > 0`, `C ≥ 0`, the quadratic ceiling
-`|V(x)| ≤ C ‖x - x_eq‖²`, and growth inequality `DV(x) f(x) ≥ 2 α V(x)` in that ball.
-The seed need not be inside the ball; when it is, exponential growth rules out staying
-there indefinitely. No global existence of the original field is assumed. -/
-private theorem exists_cutoff_segment_reaching_radius
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ}
-    (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
-    {ρ α C : ℝ} (hρ : 0 < ρ) (hα : 0 < α) (hC : 0 ≤ C)
-    (hVx₀ : 0 < V x₀)
-    (hbound : ∀ x, ‖x - x_eq‖ ≤ ρ → |V x| ≤ C * ‖x - x_eq‖ ^ 2)
-    (hgrowth : ∀ x, ‖x - x_eq‖ ≤ ρ →
-      2 * α * V x ≤ fderiv ℝ V x (f x)) :
-    ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
-      φ 0 = x₀ ∧ ContinuousOn φ (Icc (0 : ℝ) T) ∧
-      (∀ s ∈ Icc (0 : ℝ) T, ‖φ s - x_eq‖ ≤ ρ →
-        HasDerivWithinAt φ (f (φ s)) (Icc 0 T) s) ∧
-      t ∈ Icc (0 : ℝ) T ∧ ρ ≤ ‖φ t - x_eq‖ := by
-  have htend : Tendsto (fun t : ℝ ↦ Real.exp (2 * α * t) * V x₀) atTop atTop := by
-    exact (Real.tendsto_exp_atTop.comp
-      (tendsto_id.const_mul_atTop (by positivity))).atTop_mul_const hVx₀
-  have heventually_large : ∀ᶠ t : ℝ in atTop,
-      C * ρ ^ 2 + 1 ≤ Real.exp (2 * α * t) * V x₀ :=
-    tendsto_atTop.1 htend (C * ρ ^ 2 + 1)
-  obtain ⟨T, hlarge, hT⟩ :=
-    (heventually_large.and (eventually_ge_atTop (1 : ℝ))).exists
-  have hT0 : 0 ≤ T := by linarith
-  obtain ⟨φ, hφ0, hφcont, hφderiv⟩ :=
-    exists_cutoff_forward_segment f hf x_eq hρ (T := T) x₀
-  obtain ⟨t, ht, hfar⟩ := exists_radius_escape_on_segment hT0 hρ hC hV
-    hφ0 hφderiv hbound hgrowth hlarge
-  exact ⟨T, φ, t, hφ0, hφcont, hφderiv, ht, hfar⟩
-
 /-- For an input-free system with `s.F t x () = f x`, cutoff curves starting arbitrarily
 close to the base point and reaching a fixed positive radius imply `s.Unstable x_eq`.
 
-The first-exit reduction produces genuine system trajectories on `[0, τ]`. These contradict
-`Stable` at initial time zero, with no equilibrium or forward-completeness premise. -/
+Restrict to the first sphere hit to obtain a system trajectory on `[0, τ]`. -/
 private theorem unstable_of_cutoff_segment_escape {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
     {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x) {x_eq : ℝⁿ} {ρ : ℝ} (hρ : 0 < ρ)
     (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
@@ -190,116 +90,6 @@ private theorem unstable_of_cutoff_segment_escape {Y : Type*} {s : ContinuousSys
     exact (hφderiv t ⟨ht.1, ht.2.trans hτT.2⟩ (hstay t ht)).mono
       (Icc_subset_Icc_right hτT.2)
   exact ⟨τ, φ, τ, hφf, hφ0δ, ⟨hτT.1, le_rfl⟩, hτeq.ge⟩
-
-/-- If `φ` solves `ẋ = f(x)` on `[0, T]`, `T ≥ 0`, `V` is globally `C¹`, and
-`γ ≤ DV(φ t) f(φ t)` throughout the segment, then `V(φ 0) + γ T ≤ V(φ T)`.
-The constant `γ` may have either sign; apply it with `γ = 0` for nondecrease.
-The proof differentiates `V(φ t) - γ t` and uses the mean value theorem. -/
-private theorem certificate_linear_lower_bound_on_solution_segment
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {φ : ℝ → ℝⁿ} {T gamma : ℝ}
-    (hT : 0 ≤ T) (hV : ContDiff ℝ 1 V)
-    (hφ : IsIntegralCurveOn φ (fun _ x ↦ f x) (Icc (0 : ℝ) T))
-    (hLie : ∀ t ∈ Icc (0 : ℝ) T,
-      gamma ≤ fderiv ℝ V (φ t) (f (φ t))) :
-    V (φ 0) + gamma * T ≤ V (φ T) := by
-  let W : ℝ → ℝ := fun t ↦ V (φ t) - gamma * t
-  have hW_cont : ContinuousOn W (Icc (0 : ℝ) T) :=
-    (hV.continuous.comp_continuousOn hφ.continuousOn).sub
-      (continuous_const.mul continuous_id).continuousOn
-  have hW_deriv : ∀ t ∈ Ioo (0 : ℝ) T,
-      HasDerivAt W (fderiv ℝ V (φ t) (f (φ t)) - gamma) t := by
-    intro t ht
-    have hVφ : HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t := by
-      have hwithin := (hV.differentiable one_ne_zero (φ t)).hasFDerivAt
-        |>.comp_hasDerivWithinAt t (hφ t (Ioo_subset_Icc_self ht))
-      exact hwithin.hasDerivAt (Icc_mem_nhds ht.1 ht.2)
-    simpa [W, Function.comp_def] using hVφ.sub ((hasDerivAt_id t).const_mul gamma)
-  have hW_deriv_nonneg : ∀ t ∈ Ioo (0 : ℝ) T,
-      0 ≤ fderiv ℝ V (φ t) (f (φ t)) - gamma := by
-    intro t ht
-    exact sub_nonneg.mpr (hLie t (Ioo_subset_Icc_self ht))
-  have hWmono : MonotoneOn W (Icc (0 : ℝ) T) := by
-    apply monotoneOn_of_hasDerivWithinAt_nonneg (convex_Icc 0 T) hW_cont
-    · intro t ht
-      rw [interior_Icc] at ht
-      exact (hW_deriv t ht).hasDerivWithinAt
-    · intro t ht
-      rw [interior_Icc] at ht
-      exact hW_deriv_nonneg t ht
-  have hterminal := hWmono (left_mem_Icc.mpr hT) (right_mem_Icc.mpr hT) hT
-  dsimp [W] at hterminal
-  linarith
-
-/-- A continuous curve on `[t₀, t₁]`, `t₀ ≤ t₁`, which starts in an open set `D`
-and ends outside `D` meets its topological boundary at some time in that interval.
-Here `frontier D` is Mathlib's name for `∂D = closure D \ interior D`.
-This lemma asserts a boundary hit, without selecting the first one. -/
-private theorem exists_boundary_hit_on_continuous_segment
-    {E : Type*} [TopologicalSpace E]
-    {D : Set E} (hD : IsOpen D) {φ : ℝ → E} {t₀ t₁ : ℝ}
-    (hφ : ContinuousOn φ (Icc t₀ t₁))
-    (hstart : φ t₀ ∈ D) (hend : φ t₁ ∉ D) (ht : t₀ ≤ t₁) :
-    ∃ t ∈ Icc t₀ t₁, φ t ∈ frontier D := by
-  by_contra hno
-  simp only [not_exists, not_and] at hno
-  let curveImage : Set E := φ '' Icc t₀ t₁
-  have hconnected : IsPreconnected curveImage := isPreconnected_Icc.image φ hφ
-  have hmeets_region : (curveImage ∩ D).Nonempty :=
-    ⟨φ t₀, ⟨t₀, left_mem_Icc.mpr ht, rfl⟩, hstart⟩
-  -- Without a boundary hit, every image point in the closure is already in D.
-  have hclosure_inter_image : closure D ∩ curveImage ⊆ D := by
-    intro x hx
-    have hxnot : x ∉ frontier D := by
-      rintro hxf
-      obtain ⟨t, htI, rfl⟩ := hx.2
-      exact hno t htI hxf
-    rw [frontier, mem_diff] at hxnot
-    simp only [not_and, not_not] at hxnot
-    exact interior_subset (hxnot hx.1)
-  have himage_in_region : curveImage ⊆ D :=
-    hconnected.subset_of_closure_inter_subset hD hmeets_region hclosure_inter_image
-  exact hend (himage_in_region ⟨t₁, right_mem_Icc.mpr ht, rfl⟩)
-
-/-- If a continuous curve on `[t₀, T]` starts in an open set `D` and is outside it
-at `t₁ ∈ [t₀, T]`, there is a first exit time `τ ∈ [t₀, t₁]`: the curve lies
-in `D` on `[t₀, τ)` and on its topological boundary `∂D` at `τ`.
-The boundary is represented by Mathlib's `frontier D`. -/
-private theorem exists_first_boundary_hit_of_exit
-    {E : Type*} [TopologicalSpace E]
-    {D : Set E} (hD : IsOpen D) {φ : ℝ → E} {t₀ T t₁ : ℝ}
-    (hφ : ContinuousOn φ (Icc t₀ T))
-    (hstart : φ t₀ ∈ D) (ht₁ : t₁ ∈ Icc t₀ T) (hend : φ t₁ ∉ D) :
-    ∃ τ ∈ Icc t₀ t₁, φ τ ∈ frontier D ∧
-      ∀ s ∈ Ico t₀ τ, φ s ∈ D := by
-  -- The exit times form a nonempty compact set, so there is an earliest exit.
-  let exitTimes : Set ℝ := Icc t₀ t₁ ∩ φ ⁻¹' Dᶜ
-  have hφ_restrict : ContinuousOn φ (Icc t₀ t₁) :=
-    hφ.mono (Icc_subset_Icc_right ht₁.2)
-  have hexit_closed : IsClosed exitTimes :=
-    hφ_restrict.preimage_isClosed_of_isClosed isClosed_Icc hD.isClosed_compl
-  have hexit_compact : IsCompact exitTimes :=
-    isCompact_Icc.of_isClosed_subset hexit_closed inter_subset_left
-  have hexit_nonempty : exitTimes.Nonempty := ⟨t₁, ⟨⟨ht₁.1, le_rfl⟩, hend⟩⟩
-  obtain ⟨τ, hτ_exit, hτ_first⟩ := hexit_compact.exists_isMinOn hexit_nonempty continuousOn_id
-  have hτI : τ ∈ Icc t₀ t₁ := hτ_exit.1
-  have hτout : φ τ ∉ D := hτ_exit.2
-  have hstay : ∀ s ∈ Ico t₀ τ, φ s ∈ D := by
-    intro s hs
-    by_contra hsout
-    have hs_exit : s ∈ exitTimes := ⟨⟨hs.1, hs.2.le.trans hτI.2⟩, hsout⟩
-    exact (not_le_of_gt hs.2) (hτ_first hs_exit)
-  -- A boundary hit occurs by τ; minimality forces it to be exactly τ.
-  obtain ⟨q, hqI, hqfront⟩ :=
-    exists_boundary_hit_on_continuous_segment hD
-      (hφ_restrict.mono (Icc_subset_Icc_right hτI.2)) hstart hτout hτI.1
-  have hqout : φ q ∉ D := by
-    intro hqD
-    have hdj : Disjoint D (frontier D) :=
-      Set.disjoint_iff_inter_eq_empty.mpr hD.inter_frontier_eq
-    exact Set.disjoint_left.1 hdj hqD hqfront
-  have hq_exit : q ∈ exitTimes := ⟨⟨hqI.1, hqI.2.trans hτI.2⟩, hqout⟩
-  have heq : q = τ := le_antisymm hqI.2 (hτ_first hq_exit)
-  exact ⟨τ, hτI, heq ▸ hqfront, hstay⟩
 
 /-- A continuous curve starting in an open region `D` with `V(φ t₀) > 0` stays
 in `D` on `[t₀, T]` if `V ∘ φ` is continuous, vanishes at every boundary point
@@ -342,30 +132,30 @@ private theorem curve_stays_in_open_of_nonneg_certificate_deriv
   rw [hboundary_zero τ ⟨hτI.1, hτI.2.trans htI.2⟩ hτfront] at hle
   linarith
 
-/-- A positive seed `x₀ ∈ D` in the closed `rho`-ball determines a uniform constant
+/-- A positive seed `x₀ ∈ D` in the closed `ρ`-ball determines a uniform constant
 `γ > 0` such that `γ ≤ DV(x) f(x)` for every
-`x ∈ closure D ∩ closedBall x_eq rho` with `V x₀ ≤ V x`.
+`x ∈ closure D ∩ closedBall x_eq ρ` with `V x₀ ≤ V x`.
 Assume global `C¹` regularity of `f` and `V`, boundary vanishing in the ball,
 and strict positivity of the Lie derivative on `D` in the ball. The superlevel
 set is compact and excludes `∂D` because its certificate values are positive. -/
 private theorem exists_pos_lieDerivative_lower_bound_on_superlevel
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ} {D : Set ℝⁿ}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
-    {rho : ℝ} (hx₀D : x₀ ∈ D) (hx₀rho : ‖x₀ - x_eq‖ ≤ rho)
+    {ρ : ℝ} (hx₀D : x₀ ∈ D) (hx₀ρ : ‖x₀ - x_eq‖ ≤ ρ)
     (hVx₀ : 0 < V x₀)
-    (hboundary : ∀ x ∈ frontier D, ‖x - x_eq‖ ≤ rho → V x = 0)
-    (hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ rho →
+    (hboundary : ∀ x ∈ frontier D, ‖x - x_eq‖ ≤ ρ → V x = 0)
+    (hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ ρ →
       0 < fderiv ℝ V x (f x)) :
-    ∃ gamma > 0, ∀ x ∈ closure D, ‖x - x_eq‖ ≤ rho → V x₀ ≤ V x →
-      gamma ≤ fderiv ℝ V x (f x) := by
+    ∃ γ > 0, ∀ x ∈ closure D, ‖x - x_eq‖ ≤ ρ → V x₀ ≤ V x →
+      γ ≤ fderiv ℝ V x (f x) := by
   let lieDerivative : ℝⁿ → ℝ := fun x ↦ fderiv ℝ V x (f x)
-  let superlevel : Set ℝⁿ := closure D ∩ closedBall x_eq rho ∩ {x | V x₀ ≤ V x}
+  let superlevel : Set ℝⁿ := closure D ∩ closedBall x_eq ρ ∩ {x | V x₀ ≤ V x}
   have hsuperlevel_compact : IsCompact superlevel := by
-    exact ((isCompact_closedBall x_eq rho).inter_left isClosed_closure).inter_right
+    exact ((isCompact_closedBall x_eq ρ).inter_left isClosed_closure).inter_right
       (isClosed_le continuous_const hV.continuous)
   have hx₀_superlevel : x₀ ∈ superlevel := by
     refine ⟨⟨subset_closure hx₀D,
-      by simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx₀rho⟩, ?_⟩
+      by simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx₀ρ⟩, ?_⟩
     exact (show V x₀ ≤ V x₀ from le_rfl)
   -- A positive superlevel cannot contain a boundary point, where V would be zero.
   have hsuperlevel_in_region : superlevel ⊆ D := by
@@ -384,11 +174,11 @@ private theorem exists_pos_lieDerivative_lower_bound_on_superlevel
     exact (hV.continuous_fderiv (by norm_num)).clm_apply hf.continuous
   obtain ⟨x_min, hx_min_superlevel, hLie_min⟩ :=
     hsuperlevel_compact.exists_isMinOn ⟨x₀, hx₀_superlevel⟩ hLie_cont.continuousOn
-  let gamma : ℝ := lieDerivative x_min
-  have hgamma : 0 < gamma := by
+  let γ : ℝ := lieDerivative x_min
+  have hγ : 0 < γ := by
     apply hLie_pos x_min (hsuperlevel_in_region hx_min_superlevel)
     simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx_min_superlevel.1.2
-  refine ⟨gamma, hgamma, ?_⟩
+  refine ⟨γ, hγ, ?_⟩
   intro x hx_closure hx_ball hx_value
   apply hLie_min
   exact ⟨⟨hx_closure,
@@ -413,24 +203,30 @@ private theorem solution_stays_in_region_and_above_initial_certificate
     apply curve_stays_in_open_of_nonneg_certificate_deriv hD hφ.continuousOn
       (hV.continuous.comp_continuousOn hφ.continuousOn) hstart hVstart hboundary_zero
     intro t ht htD
-    have hcertificate_deriv :
-        HasDerivAt (V ∘ φ) (fderiv ℝ V (φ t) (f (φ t))) t := by
-      have hwithin := (hV.differentiable one_ne_zero (φ t)).hasFDerivAt
-        |>.comp_hasDerivWithinAt t (hφ t (Ioo_subset_Icc_self ht))
-      exact hwithin.hasDerivAt (Icc_mem_nhds ht.1 ht.2)
+    have hcertificate_deriv := hφ.hasDerivWithinAt_lieDerivative
+      (V := fun _ ↦ V) ((hV.differentiable one_ne_zero).comp differentiable_snd)
+      (Ioo_subset_Icc_self ht)
+    rw [lieDerivative_const (hV.differentiable one_ne_zero (φ t))] at hcertificate_deriv
+    have hcertificate_deriv := hcertificate_deriv.hasDerivAt (Icc_mem_nhds ht.1 ht.2)
     exact ⟨_, hcertificate_deriv, hLie_nonneg t (Ioo_subset_Icc_self ht) htD⟩
   refine ⟨hstay_region, ?_⟩
+  have hanti := hφ.antitoneOn_of_lieDerivative_nonpos (V := fun _ x ↦ -V x)
+    (convex_Icc 0 T) ((hV.differentiable one_ne_zero).neg.comp differentiable_snd) (by
+      intro t ht
+      rw [interior_Icc] at ht
+      rw [lieDerivative_const (V := fun x ↦ -V x)
+        (hV.differentiable one_ne_zero (φ t)).neg, fderiv_fun_neg]
+      simp only [ContinuousLinearMap.neg_apply]
+      exact neg_nonpos.mpr (hLie_nonneg t (Ioo_subset_Icc_self ht)
+        (hstay_region t (Ioo_subset_Icc_self ht))))
   intro t ht
-  have hnondecrease := certificate_linear_lower_bound_on_solution_segment ht.1 hV
-    (hφ.mono (Icc_subset_Icc_right ht.2)) (gamma := 0) (by
-      intro s hs
-      have hs_segment : s ∈ Icc (0 : ℝ) T := ⟨hs.1, hs.2.trans ht.2⟩
-      exact hLie_nonneg s hs_segment (hstay_region s hs_segment))
-  simpa using hnondecrease
+  have hvalue := hanti (left_mem_Icc.mpr (ht.1.trans ht.2)) ht ht.1
+  dsimp only at hvalue
+  linarith
 
-/-- For a positive seed `x₀ ∈ D` strictly inside the `rho`-ball, `rho > 0`,
+/-- For a positive seed `x₀ ∈ D` strictly inside the `ρ`-ball, `ρ > 0`,
 there is a finite continuous cutoff curve starting at `x₀` that reaches distance
-at least `rho` from `x_eq`. Its derivative agrees with `f` whenever it is in the
+at least `ρ` from `x_eq`. Its derivative agrees with `f` whenever it is in the
 closed ball. Assume globally `C¹` field and certificate, open `D`, boundary
 vanishing in the ball, and strictly positive Lie derivative in `D` in the ball.
 
@@ -441,39 +237,39 @@ exceed the ceiling on a sufficiently long finite interval. -/
 private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
     {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ} {D : Set ℝⁿ}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V) (hD : IsOpen D)
-    {rho : ℝ} (hrho : 0 < rho) (hx₀D : x₀ ∈ D) (hx₀rho : ‖x₀ - x_eq‖ < rho)
+    {ρ : ℝ} (hρ : 0 < ρ) (hx₀D : x₀ ∈ D) (hx₀ρ : ‖x₀ - x_eq‖ < ρ)
     (hVx₀ : 0 < V x₀)
-    (hboundary : ∀ x ∈ frontier D, ‖x - x_eq‖ ≤ rho → V x = 0)
-    (hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ rho →
+    (hboundary : ∀ x ∈ frontier D, ‖x - x_eq‖ ≤ ρ → V x = 0)
+    (hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ ρ →
       0 < fderiv ℝ V x (f x)) :
     ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
       φ 0 = x₀ ∧ ContinuousOn φ (Icc (0 : ℝ) T) ∧
-      (∀ s ∈ Icc (0 : ℝ) T, ‖φ s - x_eq‖ ≤ rho →
+      (∀ s ∈ Icc (0 : ℝ) T, ‖φ s - x_eq‖ ≤ ρ →
         HasDerivWithinAt φ (f (φ s)) (Icc 0 T) s) ∧
-      t ∈ Icc (0 : ℝ) T ∧ rho ≤ ‖φ t - x_eq‖ := by
+      t ∈ Icc (0 : ℝ) T ∧ ρ ≤ ‖φ t - x_eq‖ := by
   -- Fix the derivative floor on the seed's superlevel and a ceiling on the ball.
-  obtain ⟨gamma, hgamma, hLie_lower⟩ :=
-    exists_pos_lieDerivative_lower_bound_on_superlevel hf hV hx₀D hx₀rho.le
+  obtain ⟨γ, hγ, hLie_lower⟩ :=
+    exists_pos_lieDerivative_lower_bound_on_superlevel hf hV hx₀D hx₀ρ.le
       hVx₀ hboundary hLie_pos
   obtain ⟨x_max, hx_max_ball, hx_max⟩ :=
-    (isCompact_closedBall x_eq rho).exists_isMaxOn
-      ⟨x_eq, Metric.mem_closedBall_self hrho.le⟩ hV.continuous.continuousOn
+    (isCompact_closedBall x_eq ρ).exists_isMaxOn
+      ⟨x_eq, Metric.mem_closedBall_self hρ.le⟩ hV.continuous.continuousOn
   -- Linear growth exceeds that ceiling by time T.
-  let T : ℝ := (V x_max - V x₀ + 1) / gamma
-  have hx₀_ball : x₀ ∈ closedBall x_eq rho := by
-    simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx₀rho.le
+  let T : ℝ := (V x_max - V x₀ + 1) / γ
+  have hx₀_ball : x₀ ∈ closedBall x_eq ρ := by
+    simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx₀ρ.le
   have hnum : 0 < V x_max - V x₀ + 1 := by
     have := hx_max hx₀_ball
     change V x₀ ≤ V x_max at this
     linarith
-  have hT : 0 ≤ T := (div_pos hnum hgamma).le
+  have hT : 0 ≤ T := (div_pos hnum hγ).le
   obtain ⟨φ, hφ0, hφcont, hφderiv⟩ :=
-    exists_cutoff_forward_segment f hf x_eq hrho (T := T) x₀
-  by_cases hexit : ∃ t ∈ Icc (0 : ℝ) T, rho ≤ ‖φ t - x_eq‖
+    exists_cutoff_forward_segment f hf x_eq hρ (T := T) x₀
+  by_cases hexit : ∃ t ∈ Icc (0 : ℝ) T, ρ ≤ ‖φ t - x_eq‖
   · obtain ⟨t, ht, hfar⟩ := hexit
     exact ⟨T, φ, t, hφ0, hφcont, hφderiv, ht, hfar⟩
   · push Not at hexit
-    have hinside : ∀ t ∈ Icc (0 : ℝ) T, ‖φ t - x_eq‖ ≤ rho :=
+    have hinside : ∀ t ∈ Icc (0 : ℝ) T, ‖φ t - x_eq‖ ≤ ρ :=
       fun t ht ↦ (hexit t ht).le
     have htraj : IsIntegralCurveOn φ (fun _ x ↦ f x) (Icc (0 : ℝ) T) :=
       fun t ht ↦ hφderiv t ht (hinside t ht)
@@ -484,75 +280,66 @@ private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
         (by simpa [hφ0] using hx₀D) (by simpa [hφ0] using hVx₀)
         (fun t ht ht_boundary ↦ hboundary (φ t) ht_boundary (hinside t ht))
         (fun t ht htD ↦ (hLie_pos (φ t) htD (hinside t ht)).le)
-    have hLie_gamma : ∀ t ∈ Icc (0 : ℝ) T,
-        gamma ≤ fderiv ℝ V (φ t) (f (φ t)) := by
+    have hLie_γ : ∀ t ∈ Icc (0 : ℝ) T,
+        γ ≤ fderiv ℝ V (φ t) (f (φ t)) := by
       intro t ht
       apply hLie_lower (φ t) (subset_closure (hstay_region t ht)) (hinside t ht)
       simpa [hφ0] using hV_nondecrease t ht
-    have hlin := certificate_linear_lower_bound_on_solution_segment hT hV htraj hLie_gamma
+    -- Apply the shared monotonicity theorem to W(t,x) = γ t - V(x).
+    have hlinear_growth := htraj.antitoneOn_of_lieDerivative_nonpos
+      (V := fun t x ↦ -V x + γ * t) (convex_Icc 0 T)
+      (((hV.differentiable one_ne_zero).neg.comp differentiable_snd).add
+        (differentiable_fst.const_mul γ)) (by
+          intro t ht
+          rw [interior_Icc] at ht
+          rw [lieDerivative_add_mul (V := fun x ↦ -V x) γ
+              (hV.differentiable one_ne_zero (φ t)).neg,
+            fderiv_fun_neg]
+          simp only [ContinuousLinearMap.neg_apply]
+          linarith [hLie_γ t (Ioo_subset_Icc_self ht)])
+    have hlin := hlinear_growth (left_mem_Icc.mpr hT) (right_mem_Icc.mpr hT) hT
+    dsimp only at hlin
     rw [hφ0] at hlin
-    have hterminal_ball : φ T ∈ closedBall x_eq rho := by
+    have hterminal_ball : φ T ∈ closedBall x_eq ρ := by
       simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using
         hinside T (right_mem_Icc.mpr hT)
     have hVTmax : V (φ T) ≤ V x_max := hx_max hterminal_ball
-    have hgammaT : gamma * T = V x_max - V x₀ + 1 := by
+    have hγT : γ * T = V x_max - V x₀ + 1 := by
       dsimp [T]
       field_simp
     linarith
 
-/-- A Chetaev certificate on a fixed closed ball forces forward instability.
+/-- A Chetaev certificate on a fixed closed ball implies instability for an input-free
+system with globally `C¹`, time-independent state equation `f`.
 
-Membership of the base point in the boundary `∂D` produces positive seeds arbitrarily close to
-it. Mathlib calls this topological boundary `frontier D`. A smooth
-cutoff supplies a solution on a sufficiently long finite interval.  Boundary vanishing prevents
-the solution from leaving the positive region before it reaches the certificate sphere, while
-compactness bounds the strictly positive Lie derivative away from zero on the retained
-superlevel set.
+Reference: Khalil, *Nonlinear Systems*, 3rd ed., Theorem 4.3, p. 125, for the
+positive-superlevel escape argument. -/
+@[blueprint "thm:continuousSystem-geometric-chetaev-unstable"
+  (title := "Geometric Chetaev instability criterion")
+  (statement := /-- For an input-free system $\dot x=f(x)$ with $f$ globally $C^1$,
+    a Chetaev certificate at $x_{\rm eq}$ (\cref{def:continuousSystem-isChetaevFunction})
+    implies instability (\cref{def:continuousSystem-unstable}).
 
-Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
-p. 125 (Chetaev's instability theorem).  This boundary formulation follows the same
-positive-superlevel escape argument, with an independently supplied open region instead of
-the full positive set in a ball.  Here `f` and `V` are globally `C¹`, while sign and boundary
-conditions are local to the closed ball. The unified system has input space `Unit` and state
-equation `s.F t x () = f x`; its output is arbitrary. The conclusion `s.Unstable x_eq` negates
-`s.Stable x_eq`, whose radius may depend on initial time; escape at time zero suffices.
-It therefore also rules out `s.UniformlyStable x_eq`. Only finite system trajectories are
-used, without a forward-completeness premise or equilibrium equation `f x_eq = 0`. -/
-@[blueprint "thm:geometric-chetaev-unstable"
-  (title := "Boundary-form Chetaev instability criterion")
-  (statement := /-- Let $V$ be a Chetaev certificate on a fixed closed ball, with an open
-    positive region whose boundary $\partial D$ contains the base point. The certificate
-    function and vector field are globally $C^1$, but sign and boundary conditions apply
-    only in the ball.
-    Let $s$ be an input-free continuous-time system with $F(t,x,())=f(x)$ and arbitrary
-    output. Then $s.\operatorname{Unstable}(x_{\rm eq})$ holds: even stability with a
-    radius depending on initial time fails, witnessed on finite solution segments at time zero.
-    No equilibrium hypothesis $f(x_{\rm eq})=0$ or forward-completeness hypothesis is assumed.
-
-    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed. (Prentice Hall, 2002),
-    Theorem 4.3, p. 125. This is a boundary formulation of Chetaev's escape argument,
-    not a literal transcription: the textbook uses the full positive set in a ball
-    and states instability of an equilibrium. -/)
-  (proof := /-- Choose a positive seed near the boundary point. Globalize the vector field by
-    a smooth cutoff. Boundary vanishing retains the solution in the certificate region; on the
-    compact retained superlevel set the positive Lie derivative has a positive minimum, forcing
-    linear growth until the solution crosses the fixed certificate sphere. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed., Theorem 4.3, p. 125. -/)
+  (proof := /-- Choose a positive seed near the boundary point and continue a cutoff curve.
+    Boundary vanishing retains it in the region. The Lie derivative has a positive minimum
+    on its compact superlevel, forcing growth beyond the ball's certificate ceiling. -/)]
 theorem unstable_of_geometric_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
     {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x)
-    {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} {rho : ℝ}
-    (hf : ContDiff ℝ 1 f) (hC : s.IsChetaevFunction V x_eq D rho) :
+    {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} {ρ : ℝ}
+    (hf : ContDiff ℝ 1 f) (hC : s.IsChetaevFunction V x_eq D ρ) :
     s.Unstable x_eq := by
   apply unstable_of_cutoff_segment_escape hF hC.hradius
-  intro delta hdelta
-  have hmin : 0 < min delta rho := lt_min hdelta hC.hradius
+  intro δ hδ
+  have hmin : 0 < min δ ρ := lt_min hδ hC.hradius
   obtain ⟨x₀, hx₀D, hdist⟩ :=
     Metric.mem_closure_iff.mp (frontier_subset_closure hC.hmem_boundary)
-      (min delta rho) hmin
-  have hx₀rho : ‖x₀ - x_eq‖ < rho := by
+      (min δ ρ) hmin
+  have hx₀ρ : ‖x₀ - x_eq‖ < ρ := by
     rw [dist_eq_norm] at hdist
     exact (norm_sub_rev x_eq x₀ ▸ hdist).trans_le (min_le_right _ _)
-  have hVx₀ : 0 < V x₀ := hC.hpos x₀ hx₀D hx₀rho.le
-  have hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ rho →
+  have hVx₀ : 0 < V x₀ := hC.hpos x₀ hx₀D hx₀ρ.le
+  have hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ ρ →
       0 < fderiv ℝ V x (f x) := by
     intro x hxD hx_ball
     have hpositive := hC.hLie_pos 0 le_rfl x hxD hx_ball
@@ -560,24 +347,18 @@ theorem unstable_of_geometric_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ U
       lieDerivative_const (hC.hV_c1.differentiable one_ne_zero x), hF] using hpositive
   obtain ⟨T, φ, t, hφ0, hφcont, hφderiv, ht, hfar⟩ :=
     exists_cutoff_segment_reaching_radius_of_geometric_chetaev hf hC.hV_c1
-      hC.hD_open hC.hradius hx₀D hx₀rho hVx₀ hC.hboundary_zero hLie_pos
+      hC.hD_open hC.hradius hx₀D hx₀ρ hVx₀ hC.hboundary_zero hLie_pos
   refine ⟨T, φ, t, ?_, hφcont, hφderiv, ht, hfar⟩
   rw [hφ0]
   rw [dist_eq_norm] at hdist
   simpa [norm_sub_rev] using hdist
 
 
-/-- An exponentially increasing Chetaev function forces forward instability.
+/-- A quadratic certificate bound, positive values arbitrarily near the base point, and
+`DV(x) f(x) ≥ 2 α V(x)` with `α > 0` imply instability. Apply the geometric criterion
+to the open positive set of `V`.
 
-The `hseed` condition says that the positive set of `V` accumulates at the
-base point.  The proof globalizes the vector field with a smooth cutoff,
-follows the resulting solution to its first sphere crossing, and applies the
-differential inequality to rule out remaining inside the sphere forever.
-
-Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
-p. 125, for Chetaev's instability method. This is a quantitative variant rather than
-the textbook statement, with global `C¹` regularity, local ball inequalities,
-finite-segment instability, and no equilibrium premise. -/
+Reference: Khalil, *Nonlinear Systems*, 3rd ed., Theorem 4.3, p. 125. -/
 @[blueprint "thm:exponential-chetaev-unstable"
   (title := "Exponential Chetaev instability criterion")
   (statement := /-- Suppose the vector field $f$ and certificate $V$ are $C^1$,
@@ -591,9 +372,10 @@ finite-segment instability, and no equilibrium premise. -/
     Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed. (Prentice Hall, 2002),
     Theorem 4.3, p. 125, for the method; this quantitative variant is not its statement.
   -/)
-  (proof := /-- Globalize the vector field by a smooth cutoff, integrate the
-    differential inequality on a sufficiently long finite segment, and stop
-    the curve at its first crossing of the certificate ball. -/)]
+  (proof := /-- Take $D=\{V>0\}$. The quadratic bound gives $V(x_{\rm eq})=0$;
+    the nearby positive seeds put $x_{\rm eq}$ in its closure. Continuity makes $V=0$
+    on $\partial D$, and $\dot V\ge 2\alpha V>0$ in $D$ within the ball.
+    Apply \cref{thm:continuousSystem-geometric-chetaev-unstable}. -/)]
 theorem unstable_of_exponential_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
     {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x) {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
@@ -604,12 +386,39 @@ theorem unstable_of_exponential_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ
       2 * α * V x ≤ fderiv ℝ V x (f x))
     (hseed : ∀ δ > 0, ∃ x, ‖x - x_eq‖ < min δ ρ ∧ 0 < V x) :
     s.Unstable x_eq := by
-  apply unstable_of_cutoff_segment_escape hF hρ
-  intro δ hδ
-  obtain ⟨x₀, hx₀, hVx₀⟩ := hseed δ hδ
-  obtain ⟨T, φ, t₁, hφ0, hφcont, hφderiv, ht₁, hfar⟩ :=
-    exists_cutoff_segment_reaching_radius hf hV hρ hα hC hVx₀ hbound hgrowth
-  exact ⟨T, φ, t₁, by simpa [hφ0] using hx₀,
-    hφcont, hφderiv, ht₁, hfar⟩
+  let D : Set ℝⁿ := {x | 0 < V x}
+  have hD_open : IsOpen D := isOpen_lt continuous_const hV.continuous
+  have hVzero : V x_eq = 0 := by
+    apply abs_nonpos_iff.mp
+    calc
+      |V x_eq| ≤ C * ‖x_eq - x_eq‖ ^ 2 := hbound x_eq (by simpa using hρ.le)
+      _ ≤ C * 0 := mul_le_mul_of_nonneg_left (by simp) hC
+      _ = 0 := mul_zero C
+  have hclosure : x_eq ∈ closure D := Metric.mem_closure_iff.mpr (by
+    intro ε hε
+    obtain ⟨x, hx, hVx⟩ := hseed ε hε
+    refine ⟨x, hVx, ?_⟩
+    simpa [dist_eq_norm, norm_sub_rev] using hx.trans_le (min_le_left ε ρ))
+  have hmem_boundary : x_eq ∈ frontier D := by
+    rw [hD_open.frontier_eq]
+    refine ⟨hclosure, ?_⟩
+    change ¬ 0 < V x_eq
+    simp [hVzero]
+  have hboundary_zero : ∀ x ∈ frontier D, V x = 0 := by
+    intro x hx
+    exact (frontier_lt_subset_eq continuous_const hV.continuous hx).symm
+  apply unstable_of_geometric_chetaev hF hf
+  refine {
+    hradius := hρ
+    hD_open := hD_open
+    hmem_boundary := hmem_boundary
+    hV_c1 := hV
+    hpos := fun _ hx _ ↦ hx
+    hboundary_zero := fun x hx _ ↦ hboundary_zero x hx
+    hLie_pos := ?_
+  }
+  intro t _ x hx hball
+  rw [ContinuousSystem.lieDerivative, lieDerivative_const (hV.differentiable one_ne_zero x), hF]
+  exact (mul_pos (mul_pos (by norm_num : (0 : ℝ) < 2) hα) hx).trans_le (hgrowth x hball)
 
 end ContinuousSystem

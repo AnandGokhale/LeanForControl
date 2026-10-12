@@ -51,7 +51,6 @@ import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
 import LeanForControl.Stability.Continuous.Chetaev
 import LeanForControl.Stability.Continuous.Defs
-import LeanForControl.Stability.Continuous.DefsChetaev
 import LeanForControl.Stability.Continuous.KLCharacterization
 import LeanForControl.Stability.Continuous.LaSalle
 import LeanForControl.Stability.Continuous.Linearization
