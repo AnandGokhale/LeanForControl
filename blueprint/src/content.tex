@@ -358,6 +358,20 @@ such as input-to-state stability are stated with; for continuous right-hand side
 
 \inputleannode{lem:discreteSystem-isTrajectory-isTrajectoryOn}
 
+Unlike continuous time, a trajectory needs no hypothesis to exist or to be unique: the recursion
+defines it from any initial time and state for all later times.  So no discrete-time solution
+escapes in finite time, and nothing like forward completeness is ever needed.
+
+\inputleannode{lem:discreteSystem-exists-isTrajectoryOn}
+
+\inputleannode{lem:discreteSystem-isTrajectoryOn-eq}
+
+\inputleannode{lem:discreteSystem-isTrajectoryOn-eq-iterate}
+
+\inputleannode{def:discreteSystem-zeroInput}
+
+\inputleannode{lem:discreteSystem-zeroInput-isTrajectoryOn-iff}
+
 \chapter{Linear systems}
 
 \section{The linear system objects}
@@ -996,6 +1010,68 @@ region and vanishing on its boundary, with these conditions local to a closed ba
 The exponential criterion is its corollary on the full positive set $D=\{V>0\}$.
 
 \inputleannode{thm:exponential-chetaev-unstable}
+
+\chapter{Stability of discrete-time systems}
+
+The notions of the previous chapter for an autonomous discrete-time system $x^{+} = f(k, x)$
+(\cref{def:discreteSystem}), under the same names.  Discrete time is simpler in one respect:
+trajectories always exist and are unique (\cref{lem:discreteSystem-exists-isTrajectoryOn},
+\cref{lem:discreteSystem-isTrajectoryOn-eq}), so every notion quantifies over trajectories on
+$[k_0, \infty)$ and no forward completeness is needed anywhere.  Exponential estimates are
+geometric, $\rho^{k - k_0}$ with $0 \le \rho < 1$, in place of $e^{-\gamma(t - t_0)}$.
+
+\section{Definitions}
+
+\inputleannode{def:discreteSystem-stable}
+
+\inputleannode{def:discreteSystem-unstable}
+
+\inputleannode{def:discreteSystem-uniformlyStable}
+
+\inputleannode{def:discreteSystem-globallyUniformlyStable}
+
+\inputleannode{def:discreteSystem-locallyAsymptoticallyStable}
+
+\inputleannode{def:discreteSystem-globallyAsymptoticallyStable}
+
+\inputleannode{def:discreteSystem-hasUniformConvergenceTime}
+
+\inputleannode{def:discreteSystem-uniformlyAsymptoticallyStable}
+
+\inputleannode{def:discreteSystem-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{def:discreteSystem-locallyExponentiallyStable}
+
+\inputleannode{def:discreteSystem-globallyExponentiallyStable}
+
+Ultimate boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories end up, and stay, within a prescribed distance of it.
+
+\inputleannode{def:discreteSystem-uniformlyUltimatelyBounded}
+
+\inputleannode{def:discreteSystem-globallyUniformlyUltimatelyBounded}
+
+\section{Implications}
+
+\inputleannode{lem:discreteSystem-stable-isFixedPt}
+
+\inputleannode{lem:discreteSystem-unstable-of-escape}
+
+\inputleannode{lem:discreteSystem-uniformlyStable-stable}
+
+\inputleannode{lem:discreteSystem-globallyAsymptoticallyStable-local}
+
+\inputleannode{lem:discreteSystem-uniformlyAsymptoticallyStable-local}
+
+\inputleannode{lem:discreteSystem-globallyUniformlyAsymptoticallyStable-global}
+
+\inputleannode{lem:discreteSystem-locallyExponentiallyStable-uniformlyStable}
+
+\inputleannode{lem:discreteSystem-locallyExponentiallyStable-uniformlyAsymptoticallyStable}
+
+\inputleannode{lem:discreteSystem-globallyExponentiallyStable-local}
+
+\inputleannode{lem:discreteSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
 
 \chapter{Stability of linear systems}
 

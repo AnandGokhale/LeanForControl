@@ -56,5 +56,6 @@ import LeanForControl.Stability.Continuous.LaSalle
 import LeanForControl.Stability.Continuous.Linearization
 import LeanForControl.Stability.Continuous.LyapunovFunctions
 import LeanForControl.Stability.Continuous.LyapunovTheorems
+import LeanForControl.Stability.Discrete.Defs
 import LeanForControl.Systems.Continuous
 import LeanForControl.Systems.Discrete
