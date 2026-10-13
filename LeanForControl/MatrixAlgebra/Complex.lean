@@ -77,6 +77,12 @@ variable {X : Type*}
   ext i j
   simp [Matrix.mul_apply, Complex.ofReal_sum]
 
+@[simp] lemma complexify_pow [Fintype X] [DecidableEq X] (A : Matrix X X ℝ) (k : ℕ) :
+    (A ^ k).complexify = A.complexify ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih => rw [pow_succ, complexify_mul, ih, pow_succ]
+
 end Square
 
 /-! ### Complexification is isometric

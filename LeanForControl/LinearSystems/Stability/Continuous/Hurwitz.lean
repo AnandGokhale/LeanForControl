@@ -171,19 +171,6 @@ is compact and nonempty, that upgrades to a *uniform* margin: some `c > 0` with 
 eigenvalue to the left of `-c`.
 -/
 
-/-- Membership in the spectrum of a complex matrix is exactly having an eigenvector. -/
-private lemma mem_spectrum_iff_exists_eigenpair (M : Matrix X X ℂ) (μ : ℂ) :
-    μ ∈ spectrum ℂ M ↔ ∃ v : X → ℂ, v ≠ 0 ∧ M *ᵥ v = μ • v := by
-  rw [← Matrix.spectrum_toLin', ← Module.End.hasEigenvalue_iff_mem_spectrum]
-  constructor
-  · intro h
-    obtain ⟨v, hv⟩ := h.exists_hasEigenvector
-    exact ⟨v, hv.2, by simpa [Matrix.toLin'_apply'] using hv.apply_eq_smul⟩
-  · rintro ⟨v, hv0, hv⟩
-    refine Module.End.hasEigenvalue_of_hasEigenvector ⟨?_, hv0⟩
-    rw [Module.End.mem_eigenspace_iff]
-    simpa [Matrix.toLin'_apply'] using hv
-
 -- `DecidableEq X` is used by the proof (the spectrum lives on `Matrix X X ℂ`, which needs the
 -- ring structure) but not by the statement.
 set_option linter.unusedDecidableInType false in
@@ -209,11 +196,11 @@ theorem IsHurwitz.exists_pos_isHurwitzWithRate {A : Matrix X X ℝ} (hA : IsHurw
   obtain ⟨μ₀, hμ₀mem, hμ₀max⟩ :=
     (spectrum.isCompact (A.complexify)).exists_isMaxOn
       (spectrum.nonempty (A.complexify)) Complex.continuous_re.continuousOn
-  obtain ⟨v₀, hv₀, hv₀eig⟩ := (mem_spectrum_iff_exists_eigenpair _ _).1 hμ₀mem
+  obtain ⟨v₀, hv₀, hv₀eig⟩ := (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).1 hμ₀mem
   have hneg : μ₀.re < 0 := hA μ₀ v₀ hv₀ hv₀eig
   refine ⟨-μ₀.re / 2, by linarith, fun μ v hv heig => ?_⟩
   have hmem : μ ∈ spectrum ℂ A.complexify :=
-    (mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, heig⟩
+    (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, heig⟩
   have := hμ₀max hmem
   simp only [Set.mem_setOf_eq] at this
   linarith

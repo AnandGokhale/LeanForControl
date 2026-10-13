@@ -82,6 +82,35 @@ Comparison-function library (`LeanForControl/Comparison/`):
 
 ---
 
+## Status: Discrete-time systems (`x⁺ = f(k, x)`)
+
+The notions of `Continuous/Defs.lean` under the same names in namespace `DiscreteSystem`, ported
+from the retired `DiscreteStability` branch (kept as a reference until the port is done).
+Trajectories always exist and are unique, so every notion quantifies over rays `[k₀, ∞)` and no
+forward completeness appears.
+
+| Phase | Content | File | Status |
+|---|---|---|---|
+| 1 | Existence/uniqueness of trajectories, iterates, `zeroInput`; stability definitions, ultimate boundedness, implications | `Systems/Discrete.lean`, `Discrete/Defs.lean` | ✅ done |
+| 2 | Lyapunov theorems for `x⁺ = f(x)`: uniformly stable, LAS, GAS, LES, GES | `Discrete/LyapunovTheorems.lean` | ✅ done |
+| 3 | Linear: responses as trajectories, `Φ = A^(t-t₀)`; Hespanha Def. 8.2 on the unforced system | `LinearSystems/Solutions/DiscLTV.lean`, `LinearSystems/Stability/Discrete/LyapunovLTV.lean` | ✅ done |
+| 4 | `IsSchur` ⇔ `Aᵏ → 0` ⇔ geometric envelope; Hespanha Thm. 8.3(2) | `LinearSystems/Stability/Discrete/Schur.lean`, `.../Discrete/LyapunovLTI.lean` | ✅ done |
+| 5 | Discrete Lyapunov equation `AᵀPA - P = -Q`; Hespanha Thm. 8.4 (TFAE) | `LinearSystems/Stability/Discrete/LyapunovEquation.lean`, `.../Discrete/LyapunovLTI.lean` | ✅ done |
+| — | Thm. 8.3(1), (3): marginal stability, instability | — | blocked: Jordan normal form |
+| — | Difference along the system; time-varying certificates `V(k, x)` and uniform Lyapunov theorems | — | later |
+
+Backlog:
+
+- **References for the definitions.** `Discrete/Defs.lean` cites Khalil (read in discrete time)
+  and Jungers and van de Wouw on some definitions only; the plan is to cite a discrete-time source
+  throughout.  Jungers and van de Wouw, *Discrete-time nonlinear control systems* (Encyclopedia
+  of Systems and Control Engineering, 2026), Definitions 2–3 and Remark 2, covers the
+  time-invariant notions. For
+  the time-varying and uniform ones, candidates are Elaydi, *An Introduction to Difference
+  Equations* (3rd ed., 2005), Chapter 4; Bof, Carli and Schenato, *Lyapunov Theory for Discrete
+  Time Systems* (arXiv:1809.05289); Agarwal, *Difference Equations and Inequalities* (2nd ed.,
+  2000).  Check the exact definition numbers before citing.
+
 ## Finite-segment quantification and Lyapunov's indirect method
 
 Every stability predicate of `Continuous/Defs.lean` quantifies over *finite forward solution

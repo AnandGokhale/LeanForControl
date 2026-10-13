@@ -40,6 +40,10 @@ import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTI
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
 import LeanForControl.LinearSystems.Stability.DefsStability
+import LeanForControl.LinearSystems.Stability.Discrete.LyapunovEquation
+import LeanForControl.LinearSystems.Stability.Discrete.LyapunovLTI
+import LeanForControl.LinearSystems.Stability.Discrete.LyapunovLTV
+import LeanForControl.LinearSystems.Stability.Discrete.Schur
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
@@ -57,5 +61,6 @@ import LeanForControl.Stability.Continuous.Linearization
 import LeanForControl.Stability.Continuous.LyapunovFunctions
 import LeanForControl.Stability.Continuous.LyapunovTheorems
 import LeanForControl.Stability.Discrete.Defs
+import LeanForControl.Stability.Discrete.LyapunovTheorems
 import LeanForControl.Systems.Continuous
 import LeanForControl.Systems.Discrete

@@ -1,4 +1,6 @@
 import Mathlib.Data.Matrix.Mul
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
+import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Architect
 
 /-!
@@ -9,7 +11,8 @@ operations on `A` do to it: shifting by a multiple of the identity shifts the ei
 scaling scales it, taking powers powers it, and the kernel spelling used by the
 Hautus/PBH tests is the same statement rearranged.
 
-All of it holds over an arbitrary commutative ring. None of it is about `ℂ`, about
+All of it holds over an arbitrary commutative ring, except the last lemma, which identifies the
+spectrum of a matrix over a field with its eigenvalues. None of it is about `ℂ`, about
 complexification, or about stability — those uses live downstream.
 
 The file sits below both `Exponential.lean` and `Spectrum.lean` because both need it:
@@ -71,5 +74,24 @@ lemma mulVec_sub_smul_one_eq_zero_iff (A : Matrix X X R) (μ : R) (v : X → R) 
     (μ • (1 : Matrix X X R) - A) *ᵥ v = 0 ↔ A *ᵥ v = μ • v := by
   rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, sub_eq_zero]
   exact eq_comm
+
+/-- Over a field, membership in the spectrum of a matrix is exactly having an eigenvector. -/
+@[blueprint "lem:mem-spectrum-iff-exists-eigenpair"
+  (title := "The spectrum of a matrix is its set of eigenvalues")
+  (latexEnv := "lemma")
+  (statement := /-- For a square matrix $M$ over a field $K$, $\mu \in \sigma(M)$ if and only if
+    $Mv = \mu v$ for some $v \ne 0$. -/)]
+lemma mem_spectrum_iff_exists_eigenpair {K : Type*} [Field K]
+    (M : Matrix X X K) (μ : K) :
+    μ ∈ spectrum K M ↔ ∃ v : X → K, v ≠ 0 ∧ M *ᵥ v = μ • v := by
+  rw [← Matrix.spectrum_toLin', ← Module.End.hasEigenvalue_iff_mem_spectrum]
+  constructor
+  · intro h
+    obtain ⟨v, hv⟩ := h.exists_hasEigenvector
+    exact ⟨v, hv.2, by simpa [Matrix.toLin'_apply'] using hv.apply_eq_smul⟩
+  · rintro ⟨v, hv0, hv⟩
+    refine Module.End.hasEigenvalue_of_hasEigenvector ⟨?_, hv0⟩
+    rw [Module.End.mem_eigenspace_iff]
+    simpa [Matrix.toLin'_apply'] using hv
 
 end MatrixAlgebra

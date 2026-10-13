@@ -10,8 +10,9 @@ The spectral conditions that characterize stability of a linear system, stated o
 abstract index type `X` rather than `Fin n`, matching the convention everything downstream of
 the `ContinuousLTV` object follows.
 
-Only continuous-time conditions are here so far; the discrete-time counterpart (all
-eigenvalues inside the open unit disc) belongs in this file when it is needed.
+The continuous-time conditions (`IsHurwitz`, `IsHurwitzWithRate`, the Lyapunov equation
+`PA + AᵀP = -Q`) and their discrete-time counterparts (`IsSchur`: every eigenvalue in the open
+unit disc; the discrete Lyapunov equation `AᵀPA - P = -Q`).
 
 Both predicates are stated through eigenpairs of the complexification rather than through an
 enumeration of eigenvalues or through `spectrum`: that is the form in which they are produced
@@ -90,5 +91,45 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
   -/)]
 def ContinuousLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
   P * A + Aᵀ * P = -Q
+
+/-- A real square matrix is **Schur** when every complex eigenvalue lies in the open unit disc.
+
+This is the spectral condition that Hespanha's Theorem 8.3 equates with asymptotic, and with
+exponential, stability of `x(t+1) = A x(t)`: the discrete-time counterpart of `IsHurwitz`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.3. -/
+@[blueprint "def:stability-isSchur"
+  (title := "Schur matrix")
+  (statement := /-- A real square matrix $A$ is \emph{Schur} when every eigenpair $(\mu, v)$ of
+    its complexification, with $v \ne 0$, satisfies $|\mu| < 1$.  The discrete-time counterpart
+    of \cref{def:stability-isHurwitz}.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.3.
+  -/)]
+def IsSchur (A : Matrix X X ℝ) : Prop :=
+  ∀ (μ : ℂ) (v : X → ℂ), v ≠ 0 →
+    A.complexify *ᵥ v = μ • v → ‖μ‖ < 1
+
+/-- `P` solves the **discrete-time Lyapunov equation** for `A` with forcing `Q`:
+`Aᵀ P A - P = -Q`.
+
+Along `x(t+1) = A x(t)` the quadratic form `V(x) = xᵀ P x` then changes by
+`V(A x) - V(x) = -xᵀ Q x`, the discrete counterpart of `V̇ = -xᵀ Q x`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.4. -/
+@[blueprint "def:discreteLyapunovEquation"
+  (title := "Discrete Lyapunov equation")
+  (statement := /-- For real square matrices $A$, $P$ and $Q$, the matrix $P$ satisfies the
+    \emph{discrete-time Lyapunov equation} for $A$ with forcing $Q$ when
+    \[
+      A^{\mathsf T} P A - P = -Q.
+    \]
+    Along $x(t+1) = Ax(t)$ the quadratic form $V(x) = x^{\mathsf T}Px$ then changes by
+    $V(Ax) - V(x) = -x^{\mathsf T}Qx$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.4.
+  -/)]
+def DiscreteLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
+  Aᵀ * P * A - P = -Q
 
 end LinearSystems

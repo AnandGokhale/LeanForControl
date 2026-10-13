@@ -615,6 +615,11 @@ vectors, which is what lets a Lyapunov certificate be evaluated against an eigen
 
 \inputleannode{lem:matrix-posDef-complexify}
 
+Over a field the spectrum of a matrix is its set of eigenvalues, which is how a condition on
+eigenpairs meets the spectral radius.
+
+\inputleannode{lem:mem-spectrum-iff-exists-eigenpair}
+
 \subsection{Spectral facts about the exponential}
 
 These say nothing about trajectories, initial times or state transition matrices — they are
@@ -672,6 +677,34 @@ genuinely requires $\tau \le s \le t$ instead of holding in any order.
 \inputleannode{thm:discVariationOfConstants-succ}
 
 \inputleannode{thm:discVariationOfConstants-unique}
+
+\subsection{The discrete responses as trajectories}
+
+The variation-of-constants formula and its unforced part, named, and read on the system object
+(\cref{def:discreteLTV}): they are exactly the trajectories of the system from a given initial
+state, which is the form in which the solution theory reaches the stability theory.
+
+\inputleannode{def:discForcedResponse}
+
+\inputleannode{def:discHomogeneousResponse}
+
+\inputleannode{lem:discForcedResponse-self}
+
+\inputleannode{lem:discForcedResponse-succ}
+
+\inputleannode{lem:discHomogeneousResponse-self}
+
+\inputleannode{lem:discHomogeneousResponse-succ}
+
+\inputleannode{thm:discStateTransitionMatrix-const}
+
+\inputleannode{thm:isTrajectoryOn-discForcedResponse}
+
+\inputleannode{thm:eq-discForcedResponse-of-isTrajectoryOn}
+
+\inputleannode{thm:isTrajectoryOn-discHomogeneousResponse}
+
+\inputleannode{thm:eq-discHomogeneousResponse-of-isTrajectoryOn}
 
 \chapter{Comparison functions}
 
@@ -1073,6 +1106,24 @@ trajectories end up, and stay, within a prescribed distance of it.
 
 \inputleannode{lem:discreteSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
 
+\section{Lyapunov's direct method}
+
+For a time-invariant system $x^{+} = f(x)$ the decrease of a Lyapunov function along the system
+is the difference $\Delta V(x) = V(f(x)) - V(x)$.  Unlike continuous time, the theorems need
+continuity of $f$ for a reason of their own: a trajectory can jump over a sphere in one step, so
+the first-exit argument of continuous time is replaced by keeping one step from a small ball
+inside the region where $V$ is controlled.
+
+\inputleannode{thm:discreteSystem-uniformlyStable-of-lyapunov}
+
+\inputleannode{thm:discreteSystem-locallyAsymptoticallyStable-of-lyapunov}
+
+\inputleannode{thm:discreteSystem-globallyAsymptoticallyStable-of-lyapunov}
+
+\inputleannode{thm:discreteSystem-locallyExponentiallyStable-of-lyapunov}
+
+\inputleannode{thm:discreteSystem-globallyExponentiallyStable-of-lyapunov}
+
 \chapter{Stability of linear systems}
 
 The stability notions of a linear system are those of
@@ -1210,6 +1261,8 @@ Lyapunov series, with convergence and uniqueness both coming from the contractio
 $\|e^{Am}\| < 1$. A Hurwitz matrix supplies that contraction, which is
 \cref{thm:hurwitz-lyapunov-equation}.
 
+\inputleannode{lem:posSemidef-tsum}
+
 \inputleannode{thm:exists-posDef-unique-lyapunov-solution-of-contraction}
 
 \inputleannode{thm:hurwitz-lyapunov-equation}
@@ -1266,6 +1319,88 @@ nonresonance condition on the spectrum --- which is what the lemmas below supply
 \inputleannode{lem:toBilin-symm-real}
 
 \inputleannode{thm:positive-real-eigenvalue-quadratic-certificate}
+
+\section{Discrete-time linear systems}
+
+For $x(t+1) = A(t)x(t)$ Hespanha's conditions are again theorems about the stability predicates
+of the unforced system, now those of \cref{def:discreteSystem-stable} and the definitions after
+it.  The state transition matrix is a finite product, so no regularity of $A$ is needed, and
+trajectories always exist, so no forward completeness enters.  For constant $A$ the spectral
+condition is the \emph{Schur} condition: every eigenvalue in the open unit disc.
+
+\subsection{Hespanha's Definition 8.2}
+
+\inputleannode{lem:discreteLTV-stable-iff-boundedStateTransition}
+
+\inputleannode{thm:discreteLTV-stable-iff-boundedHomogeneousResponse}
+
+\inputleannode{thm:discreteLTV-uniformlyStable-iff-uniformlyBoundedStateTransition}
+
+\inputleannode{thm:discreteLTV-locallyAsymptoticallyStable-iff-decayingHomogeneousResponse}
+
+\inputleannode{thm:discreteLTV-globallyExponentiallyStable-iff-decayingStateTransition}
+
+\inputleannode{thm:discreteLTV-locallyExponentiallyStable-iff-decayingStateTransition}
+
+\inputleannode{cor:discreteLTV-locallyExponentiallyStable-iff-globallyExponentiallyStable}
+
+\inputleannode{thm:discreteLTV-unstable-iff-unboundedHomogeneousResponse}
+
+\subsection{The Schur condition}
+
+Nothing in this subsection mentions a system: the Schur condition, decay of $A^{k}$, and a
+geometric envelope for $\|A^{k}\|$ are the same condition on the matrix.  The proof runs through
+Gelfand's formula, as for the Hurwitz condition, with powers in place of the exponential.
+
+\inputleannode{def:stability-isSchur}
+
+\inputleannode{thm:isSchur-exists-norm-pow-le}
+
+\inputleannode{thm:isSchur-exists-norm-pow-mulVec-le}
+
+\inputleannode{thm:isSchur-of-tendsto-pow}
+
+\inputleannode{thm:isSchur-of-tendsto-pow-mulVec}
+
+\inputleannode{thm:isSchur-iff-tendsto-pow}
+
+\inputleannode{thm:isSchur-iff-exists-norm-pow-le}
+
+\subsection{Hespanha's Theorem 8.3}
+
+Clauses (1) and (3) of the theorem, marginal stability and instability, ask that the Jordan
+blocks at eigenvalues of magnitude one be $1 \times 1$; as in continuous time they need a Jordan
+normal form and are not recorded here.
+
+\inputleannode{thm:discreteLTI-locallyAsymptoticallyStable-iff-isSchur}
+
+\inputleannode{thm:discreteLTI-locallyExponentiallyStable-iff-isSchur}
+
+\subsection{The discrete Lyapunov equation}
+
+The discrete-time counterpart of $PA + A^{\mathsf T}P = -Q$ is $A^{\mathsf T}PA - P = -Q$.
+Unlike continuous time, the solution needs no integral: it is the convergent series
+$\sum_{k} (A^{\mathsf T})^{k}QA^{k}$.
+
+\inputleannode{def:discreteLyapunovEquation}
+
+\inputleannode{lem:discreteLyapunovEquation-dotProduct-mulVec-sub}
+
+\inputleannode{lem:isSchur-transpose}
+
+\inputleannode{thm:isSchur-exists-posDef-unique-discrete-lyapunov}
+
+\inputleannode{thm:isSchur-of-discreteLyapunovEquation}
+
+\inputleannode{thm:isSchur-of-posDef-neg-discreteLyapunovResidual}
+
+\inputleannode{thm:isSchur-iff-forall-posDef-exists-discrete-solution}
+
+\inputleannode{thm:isSchur-iff-exists-posDef-discreteLyapunovResidual}
+
+\subsection{Hespanha's Theorem 8.4}
+
+\inputleannode{thm:discreteLTI-lyapunovStability-tfae}
 
 \chapter{Lyapunov's indirect method}
 

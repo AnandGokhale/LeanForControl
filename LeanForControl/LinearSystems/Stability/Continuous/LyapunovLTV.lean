@@ -102,50 +102,10 @@ homogeneity. -/
 
 /-! ## Homogeneity
 
-The two lemmas that turn a bound on the response from a ball into a bound on the response from
-every state. This is the only place linearity is used beyond the trajectory characterization
-above. -/
-
-/-- A bound `‖Φ(t,t₀) x‖ ≤ K ‖x‖` holding only on a ball holds everywhere.
-
-Scaling: `x` is rescaled into the ball, and both sides are homogeneous of degree one, so the
-factor cancels. This is why a *local* estimate for a linear system is never weaker than the
-global one. -/
-private lemma norm_mulVec_le_of_ball_mul {t₀ t c K : ℝ} (hc : 0 < c)
-    (h : ∀ x : X → ℝ, ‖x‖ < c → ‖stateTransitionMatrix A t t₀ *ᵥ x‖ ≤ K * ‖x‖)
-    (x : X → ℝ) : ‖stateTransitionMatrix A t t₀ *ᵥ x‖ ≤ K * ‖x‖ := by
-  rcases eq_or_ne x 0 with rfl | hx
-  · simp
-  have hx0 : 0 < ‖x‖ := norm_pos_iff.2 hx
-  set r : ℝ := c / (2 * ‖x‖) with hr
-  have hr0 : 0 < r := div_pos hc (by positivity)
-  have hnorm : ‖r • x‖ = c / 2 := by
-    rw [norm_smul, Real.norm_eq_abs, abs_of_pos hr0, hr]; field_simp
-  have hb := h (r • x) (by rw [hnorm]; linarith)
-  rw [Matrix.mulVec_smul, norm_smul, norm_smul, Real.norm_eq_abs, abs_of_pos hr0] at hb
-  exact le_of_mul_le_mul_left (by linarith) hr0
-
-/-- A response confined to the unit ball whenever the initial state is in the ball of radius
-`c` obeys `‖Φ(t,t₀) x‖ ≤ (2/c) ‖x‖` everywhere.
-
-The same scaling as `norm_mulVec_le_of_ball_mul`, for the shape the stability predicates
-produce: an `ε`–`δ` statement bounds the response by a constant, not by a multiple of the
-initial deviation, so the radius reappears in the conclusion. -/
-private lemma norm_mulVec_le_of_ball {t₀ t c : ℝ} (hc : 0 < c)
-    (h : ∀ x : X → ℝ, ‖x‖ < c → ‖stateTransitionMatrix A t t₀ *ᵥ x‖ ≤ 1)
-    (x : X → ℝ) : ‖stateTransitionMatrix A t t₀ *ᵥ x‖ ≤ 2 / c * ‖x‖ := by
-  rcases eq_or_ne x 0 with rfl | hx
-  · simp
-  have hx0 : 0 < ‖x‖ := norm_pos_iff.2 hx
-  set r : ℝ := c / (2 * ‖x‖) with hr
-  have hr0 : 0 < r := div_pos hc (by positivity)
-  have hnorm : ‖r • x‖ = c / 2 := by
-    rw [norm_smul, Real.norm_eq_abs, abs_of_pos hr0, hr]; field_simp
-  have hb := h (r • x) (by rw [hnorm]; linarith)
-  rw [Matrix.mulVec_smul, norm_smul, Real.norm_eq_abs, abs_of_pos hr0] at hb
-  have h1 : ‖stateTransitionMatrix A t t₀ *ᵥ x‖ ≤ 1 / r := by rw [le_div_iff₀ hr0]; linarith
-  have h2 : 1 / r = 2 / c * ‖x‖ := by rw [hr]; field_simp
-  linarith [h1, h2.ge]
+A bound on the response from a ball is a bound from every state, because the response is
+linear in the initial state: Mathlib's `ContinuousLinearMap.opNorm_le_of_ball` and
+`ContinuousLinearMap.opNorm_le_of_shell`, applied to `x ↦ Φ(t, t₀) x`.  This is the only place
+linearity is used beyond the trajectory characterization above. -/
 
 /-! ## Stability at a single initial time
 
@@ -165,12 +125,23 @@ private lemma bound_of_margin (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A
         ‖φ t₀ - 0‖ < δ → ∀ t ∈ Icc t₀ t₁, ‖φ t - 0‖ < 1) :
     ∀ t ≥ t₀, ∀ x : X → ℝ,
       ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ 2 / δ * ‖x‖ := by
-  intro t ht
-  refine norm_mulVec_le_of_ball hδ fun x hx => ?_
-  have htraj := IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x)
-    (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)
-  have hx' : ‖homogeneousResponse s.A t₀ x t₀ - 0‖ < δ := by simpa using hx
-  simpa [homogeneousResponse] using (hstab t _ htraj hx' t ⟨ht, le_rfl⟩).le
+  intro t ht x
+  -- From the `δ`-ball the response stays in the unit ball.
+  have hball : ∀ y : X → ℝ, ‖y‖ < δ → ‖stateTransitionMatrix s.A t t₀ *ᵥ y‖ ≤ 1 := by
+    intro y hy
+    have htraj := IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ y)
+      (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)
+    have hy' : ‖homogeneousResponse s.A t₀ y t₀ - 0‖ < δ := by simpa using hy
+    simpa [homogeneousResponse] using (hstab t _ htraj hy' t ⟨ht, le_rfl⟩).le
+  -- On the shell `δ / 2 ≤ ‖y‖ < δ` that is a bound by `(2 / δ) ‖y‖`, which scales everywhere.
+  have hop := ContinuousLinearMap.opNorm_le_of_shell
+    (f := LinearMap.toContinuousLinearMap (stateTransitionMatrix s.A t t₀).mulVecLin) hδ
+    (by positivity : (0 : ℝ) ≤ 2 / δ) (c := (2 : ℝ)) (by norm_num) fun y hy1 hy2 => by
+      rw [Real.norm_two] at hy1
+      have h2 : 1 ≤ 2 / δ * ‖y‖ := by
+        rw [div_mul_eq_mul_div, le_div_iff₀ hδ]; linarith
+      simpa using (hball y hy2).trans h2
+  simpa using ContinuousLinearMap.le_of_opNorm_le _ hop x
 
 /-- A bound on the state transition matrix at `t₀` gives a stability margin there.
 
@@ -428,8 +399,7 @@ theorem globallyExponentiallyStable_iff_decayingStateTransition
         ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
   constructor
   · rintro ⟨k, hk, γ, hγ, hbd⟩
-    refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht => norm_mulVec_le_of_ball_mul (c := 1) one_pos
-      fun x _ => ?_⟩
+    refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht x => ?_⟩
     have h1 : ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := by
       simpa [homogeneousResponse, stateTransitionMatrix_self] using
         hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x)
@@ -477,17 +447,25 @@ theorem locallyExponentiallyStable_iff_decayingStateTransition (s : ContinuousLT
         ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
   constructor
   · rintro ⟨c, hc, k, hk, γ, hγ, hbd⟩
-    refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht => norm_mulVec_le_of_ball_mul hc fun x hx => ?_⟩
-    have hself : homogeneousResponse s.A t₀ x t₀ = x := by
-      simp [homogeneousResponse, stateTransitionMatrix_self]
-    have hx' : ‖homogeneousResponse s.A t₀ x t₀ - 0‖ < c := by rw [hself]; simpa using hx
-    have hraw := hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono
-      (isTrajectoryOn_homogeneousResponse s hA t₀ x) Icc_subset_Ici_self) hx' t ⟨ht, le_rfl⟩
-    rw [hself] at hraw
-    have h1 : ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := by
-      simpa [homogeneousResponse] using hraw
-    calc ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := h1
-      _ = k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by ring
+    refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht x => ?_⟩
+    -- The estimate holds on the `c`-ball, and scales to every state.
+    have hball : ∀ y ∈ Metric.ball (0 : X → ℝ) c,
+        ‖LinearMap.toContinuousLinearMap (stateTransitionMatrix s.A t t₀).mulVecLin y‖ ≤
+          k * Real.exp (-γ * (t - t₀)) * ‖y‖ := by
+      intro y hy
+      rw [mem_ball_zero_iff] at hy
+      have hself : homogeneousResponse s.A t₀ y t₀ = y := by
+        simp [homogeneousResponse, stateTransitionMatrix_self]
+      have hy' : ‖homogeneousResponse s.A t₀ y t₀ - 0‖ < c := by rw [hself]; simpa using hy
+      have hraw := hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono
+        (isTrajectoryOn_homogeneousResponse s hA t₀ y) Icc_subset_Ici_self) hy' t ⟨ht, le_rfl⟩
+      rw [hself] at hraw
+      have h1 : ‖stateTransitionMatrix s.A t t₀ *ᵥ y‖ ≤
+          k * ‖y‖ * Real.exp (-γ * (t - t₀)) := by
+        simpa [homogeneousResponse] using hraw
+      simpa [mul_right_comm] using h1
+    simpa using ContinuousLinearMap.le_of_opNorm_le _
+      (ContinuousLinearMap.opNorm_le_of_ball hc (by positivity) hball) x
   · rintro ⟨k, hk, γ, hγ, hbd⟩
     refine ⟨1, one_pos, k, hk, γ, hγ, fun t₀ ht₀ t₁ φ hφ _ t ht => ?_⟩
     rw [sub_zero, sub_zero, eq_homogeneousResponse_of_isTrajectoryOn s hA hφ ht]
