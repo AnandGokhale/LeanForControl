@@ -1112,7 +1112,7 @@ there is a class `K` bound on every solution over `[t₀, ∞)` from some ball. 
 direction needs no completeness (`UniformlyStable.exists_classK_Ici`); the converse needs it,
 since otherwise the bound says nothing about solutions that escape in finite time. -/
 @[blueprint "lem:continuousSystem-uniformlyStable-iff-classK-of-isForwardCompleteOn"
-  (title := "Class $\\mathcal{K}$ characterization")
+  (title := "Class $\\mathcal{K}$ characterization for forward-complete systems")
   (latexEnv := "lemma")
   (statement := /-- Let the system be forward complete from some ball $B(x_{\mathrm{eq}}, c)$ at
     every $t_0 \ge 0$ (\cref{def:continuousSystem-isForwardCompleteOn}).  Then $x_{\mathrm{eq}}$

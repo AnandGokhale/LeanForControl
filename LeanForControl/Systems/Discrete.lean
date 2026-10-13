@@ -1,4 +1,6 @@
 import Mathlib.Data.Set.Basic
+import Mathlib.Logic.Function.Iterate
+import Mathlib.Order.Interval.Set.Basic
 import Architect
 
 /-!
@@ -215,5 +217,103 @@ lemma isTrajectoryOn_univ {s : DiscreteSystem E U Y} {u : ℕ → U} {x : ℕ �
 lemma IsTrajectory.isTrajectoryOn {s : DiscreteSystem E U Y} {u : ℕ → U} {x : ℕ → E}
     (h : s.IsTrajectory u x) (I : Set ℕ) : s.IsTrajectoryOn u x I :=
   fun k _ => h k
+
+/-! ### Existence and uniqueness
+
+Unlike continuous time, solutions need no hypothesis to exist or to be unique: the recursion
+defines the trajectory from any initial time and state, for all later times.  In particular no
+discrete-time solution escapes in finite time, so the forward-completeness conditions of
+continuous-time stability have no counterpart here. -/
+
+/-- The trajectory from the state `x₀` at time `k₀`, by recursion: `x₀` up to `k₀`, then
+`x(k+1) = F(k, x(k), u(k))`. -/
+def trajectoryFrom (s : DiscreteSystem E U Y) (u : ℕ → U) (k₀ : ℕ) (x₀ : E) : ℕ → E :=
+  fun k => Nat.rec (motive := fun _ => E) x₀
+    (fun n xn => s.vectorField u (k₀ + n) xn) (k - k₀)
+
+/-- Every initial time and state starts a trajectory on `[k₀, ∞)`. -/
+@[blueprint "lem:discreteSystem-exists-isTrajectoryOn"
+  (title := "Trajectories of a discrete-time system exist")
+  (latexEnv := "lemma")
+  (statement := /-- For every input $u$, initial time $k_0$ and state $x_0$ there is a trajectory
+    (\cref{def:discreteSystem-isTrajectoryOn}) on $[k_0, \infty)$ with $x(k_0) = x_0$. -/)
+  (proof := /-- Define it by the recursion itself. -/)]
+lemma exists_isTrajectoryOn (s : DiscreteSystem E U Y) (u : ℕ → U) (k₀ : ℕ) (x₀ : E) :
+    ∃ x : ℕ → E, s.IsTrajectoryOn u x (Set.Ici k₀) ∧ x k₀ = x₀ := by
+  refine ⟨s.trajectoryFrom u k₀ x₀, fun k hk => ?_, by simp [trajectoryFrom]⟩
+  have hk' : k + 1 - k₀ = (k - k₀) + 1 := by rw [Set.mem_Ici] at hk; omega
+  simp only [trajectoryFrom, hk']
+  congr 1
+  rw [Set.mem_Ici] at hk; omega
+
+/-- Two trajectories on `[k₀, ∞)` that agree at `k₀` agree from then on. -/
+@[blueprint "lem:discreteSystem-isTrajectoryOn-eq"
+  (title := "Trajectories of a discrete-time system are unique")
+  (latexEnv := "lemma")
+  (statement := /-- Two trajectories (\cref{def:discreteSystem-isTrajectoryOn}) on
+    $[k_0, \infty)$ under the same input with $x(k_0) = y(k_0)$ satisfy $x(k) = y(k)$ for every
+    $k \ge k_0$. -/)
+  (proof := /-- Induction on $k$. -/)]
+lemma IsTrajectoryOn.eq {s : DiscreteSystem E U Y} {u : ℕ → U} {x y : ℕ → E} {k₀ : ℕ}
+    (hx : s.IsTrajectoryOn u x (Set.Ici k₀)) (hy : s.IsTrajectoryOn u y (Set.Ici k₀))
+    (h₀ : x k₀ = y k₀) {k : ℕ} (hk : k₀ ≤ k) : x k = y k := by
+  induction k, hk using Nat.le_induction with
+  | base => exact h₀
+  | succ k hk ih => rw [hx k hk, hy k hk, ih]
+
+/-- A trajectory of a time-invariant system is the sequence of iterates of its map. -/
+@[blueprint "lem:discreteSystem-isTrajectoryOn-eq-iterate"
+  (title := "Trajectories of a time-invariant discrete-time system are iterates")
+  (latexEnv := "lemma")
+  (statement := /-- If $F(k, x, u(k)) = f(x)$ for all $k$ and $x$, every trajectory
+    (\cref{def:discreteSystem-isTrajectoryOn}) on $[k_0, \infty)$ satisfies
+    $x(k_0 + n) = f^{n}(x(k_0))$ for every $n \in \mathbb{N}$. -/)
+  (proof := /-- Induction on $n$. -/)]
+lemma IsTrajectoryOn.eq_iterate {s : DiscreteSystem E U Y} {u : ℕ → U} {f : E → E}
+    (hF : ∀ k x, s.vectorField u k x = f x) {x : ℕ → E} {k₀ : ℕ}
+    (hx : s.IsTrajectoryOn u x (Set.Ici k₀)) (n : ℕ) : x (k₀ + n) = f^[n] (x k₀) := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [← Nat.add_assoc, hx _ (Nat.le_add_right k₀ n), hF, ih, Function.iterate_succ_apply']
+
+/-- The iterates of the map of a time-invariant system, started at time `k₀`, are a trajectory. -/
+lemma isTrajectoryOn_iterate {s : DiscreteSystem E U Y} {u : ℕ → U} {f : E → E}
+    (hF : ∀ k x, s.vectorField u k x = f x) (k₀ : ℕ) (x₀ : E) :
+    s.IsTrajectoryOn u (fun k => f^[k - k₀] x₀) (Set.Ici k₀) := fun k hk => by
+  have hk' : k + 1 - k₀ = (k - k₀) + 1 := by rw [Set.mem_Ici] at hk; omega
+  simp only [hk', hF, Function.iterate_succ_apply']
+
+/-! ### The unforced system -/
+
+section ZeroInput
+
+variable [Zero U]
+
+/-- The *unforced* system: the input held at `0`, as an autonomous system `x⁺ = F(k, x, 0)`,
+`y = h(k, x, 0)`.  Stability of a system with input is stability of this system. -/
+@[blueprint "def:discreteSystem-zeroInput"
+  (title := "The unforced discrete-time system")
+  (statement := /-- The autonomous system (\cref{def:discreteSystem-autonomous})
+    $x^{+} = F(k, x, 0)$, $y = h(k, x, 0)$ obtained by holding the input at $0$.  Stability of a
+    system with input means stability of this system. -/)]
+def zeroInput (s : DiscreteSystem E U Y) : DiscreteSystem E Unit Y :=
+  autonomous (fun k x => s.F k x 0) (fun k x => s.h k x 0)
+
+@[simp] lemma zeroInput_F (s : DiscreteSystem E U Y) (k : ℕ) (x : E) (v : Unit) :
+    s.zeroInput.F k x v = s.F k x 0 := rfl
+
+/-- The trajectories of the unforced system are those of the system under the zero input. -/
+@[blueprint "lem:discreteSystem-zeroInput-isTrajectoryOn-iff"
+  (title := "Trajectories of the unforced discrete-time system")
+  (latexEnv := "lemma")
+  (statement := /-- A sequence is a trajectory of the unforced system
+    (\cref{def:discreteSystem-zeroInput}) on $I$ exactly when it is a trajectory of $s$ under the
+    zero input on $I$. -/)]
+lemma zeroInput_isTrajectoryOn_iff (s : DiscreteSystem E U Y) {x : ℕ → E} {I : Set ℕ} :
+    s.zeroInput.IsTrajectoryOn (fun _ => ()) x I ↔ s.IsTrajectoryOn (fun _ => 0) x I :=
+  Iff.rfl
+
+end ZeroInput
 
 end DiscreteSystem

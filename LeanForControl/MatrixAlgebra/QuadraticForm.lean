@@ -344,4 +344,41 @@ theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
 
 end Remainder
 
+/-! ## Convergent sums of positive semidefinite matrices -/
+
+section Series
+
+variable {X : Type*} [Finite X]
+
+/-- **Positive semidefiniteness is preserved by convergent sums.**  Transposition and the quadratic
+form `P ↦ xᵀ P x` are continuous and linear, so they pass through the sum. -/
+@[blueprint "lem:posSemidef-tsum"
+  (title := "A convergent sum of positive semidefinite matrices is positive semidefinite")
+  (latexEnv := "lemma")
+  (statement := /-- If $(M_i)$ is a summable family of real positive semidefinite matrices, then
+    $\sum_i M_i$ is positive semidefinite. -/)
+  (proof := /-- Transposition and the quadratic form $P \mapsto x^{\mathsf T}Px$ are continuous
+    and linear, so they commute with the sum: the sum is symmetric, and its quadratic form is a
+    sum of nonnegative terms. -/)]
+lemma posSemidef_tsum {ι : Type*} {M : ι → Matrix X X ℝ} (hs : Summable M)
+    (h : ∀ i, (M i).PosSemidef) : (∑' i, M i).PosSemidef := by
+  have := Fintype.ofFinite X
+  apply Matrix.PosSemidef.of_dotProduct_mulVec_nonneg
+  · rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_tsum]
+    refine tsum_congr fun i => ?_
+    simpa only [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial] using
+      (h i).isHermitian
+  · intro x
+    -- The quadratic form at `x`, as a continuous linear functional of the matrix.
+    let L : Matrix X X ℝ →L[ℝ] ℝ := LinearMap.toContinuousLinearMap
+      { toFun := fun P => star x ⬝ᵥ (P *ᵥ x)
+        map_add' := fun P R => by simp [Matrix.add_mulVec, dotProduct_add]
+        map_smul' := fun a P => by simp [Matrix.smul_mulVec, dotProduct_smul] }
+    have hsum : star x ⬝ᵥ ((∑' i, M i) *ᵥ x) = ∑' i, star x ⬝ᵥ (M i *ᵥ x) := by
+      simpa [L, Function.comp_def] using (L.map_tsum hs)
+    rw [hsum]
+    exact tsum_nonneg fun i => (h i).dotProduct_mulVec_nonneg x
+
+end Series
+
 end MatrixAlgebra

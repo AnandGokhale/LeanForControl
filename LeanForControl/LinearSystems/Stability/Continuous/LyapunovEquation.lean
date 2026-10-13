@@ -301,8 +301,7 @@ private lemma tsum_conjugationOperator_pow_apply_posDef
     (C R : Matrix X X ℝ) (hCunit : IsUnit C)
     (hCnorm : ‖C‖ < 1) (hR : R.PosDef) :
     (∑' k : ℕ, ((conjugationOperator C) ^ k) R).PosDef := by
-  let term : ℕ → Matrix X X ℝ :=
-    fun k ↦ ((conjugationOperator C) ^ k) R
+  let term : ℕ → Matrix X X ℝ := fun k ↦ ((conjugationOperator C) ^ k) R
   have hs : Summable term := summable_conjugationOperator_pow_apply C R hCnorm
   have htermPos (k : ℕ) : (term k).PosDef := by
     induction k with
@@ -311,34 +310,10 @@ private lemma tsum_conjugationOperator_pow_apply_posDef
         rw [show term (k + 1) = conjugationOperator C (term k) by
           simp only [term, pow_succ', ContinuousLinearMap.mul_apply]]
         exact posDef_conjugationOperator C (term k) hCunit ih
-  have hentry (i j : X) :
-      (∑' k : ℕ, term k) i j = ∑' k : ℕ, term k i j := by
-    have h := (entryCLM i j).map_tsum hs
-    simpa [entryCLM, Function.comp_def] using h
-  apply Matrix.PosDef.of_dotProduct_mulVec_pos
-  · rw [Matrix.IsHermitian]
-    ext i j
-    simp only [Matrix.conjTranspose_apply, star_id_of_comm]
-    rw [hentry, hentry]
-    apply tsum_congr
-    intro k
-    have hk := (htermPos k).isHermitian
-    simpa only [Matrix.IsHermitian, Matrix.conjTranspose_apply, star_id_of_comm] using
-      congrFun (congrFun hk i) j
-  · intro x hx
-    have hqsum :
-        dotProduct (star x) ((∑' k : ℕ, term k) *ᵥ x) =
-          ∑' k : ℕ, dotProduct (star x) (term k *ᵥ x) := by
-      have h := (quadraticEvalCLM x).map_tsum hs
-      simpa [quadraticEvalCLM, Function.comp_def] using h
-    have hqsummable : Summable (fun k ↦ dotProduct (star x) (term k *ᵥ x)) := by
-      simpa [quadraticEvalCLM, Function.comp_def] using
-        hs.map (quadraticEvalCLM x) (quadraticEvalCLM x).continuous
-    rw [hqsum, hqsummable.tsum_eq_zero_add]
-    have hhead : 0 < dotProduct (star x) (term 0 *ᵥ x) :=
-      (htermPos 0).dotProduct_mulVec_pos hx
-    exact add_pos_of_pos_of_nonneg hhead (tsum_nonneg fun k ↦
-      ((htermPos (k + 1)).dotProduct_mulVec_pos hx).le)
+  change (∑' k : ℕ, term k).PosDef
+  rw [hs.tsum_eq_zero_add]
+  exact (htermPos 0).add_posSemidef (posSemidef_tsum ((summable_nat_add_iff 1).mpr hs)
+    fun k ↦ (htermPos (k + 1)).posSemidef)
 
 /-- If one positive integer time step of the matrix exponential is a strict contraction,
 then every positive-definite forcing matrix `Q` has a positive-definite solution of
