@@ -51,6 +51,90 @@ lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀
   have h_contra : a < a := ht_mem.1.trans_le (hr_mem.1.trans (hm_max hr_in_pre))
   linarith
 
+/-- A continuous curve on `[t₀, t₁]`, `t₀ ≤ t₁`, which starts in an open set `D`
+and ends outside `D` meets its topological boundary at some time in that interval.
+Here `frontier D` is Mathlib's name for `∂D = closure D \ interior D`.
+This lemma asserts a boundary hit, without selecting the first one. -/
+@[blueprint "lem:exists-boundary-hit-on-continuous-segment"
+  (title := "Boundary crossing by a continuous curve") (latexEnv := "lemma")
+  (statement := /-- A continuous curve on $[t_0,t_1]$, with $t_0\le t_1$, starting
+    in an open set $D$ and ending outside $D$ meets $\partial D$ on that interval. -/)
+  (proof := /-- The image of the interval is connected. If it avoided the boundary,
+    meeting $D$ would force the whole image to lie in $D$. -/)]
+theorem exists_boundary_hit_on_continuous_segment
+    {E : Type*} [TopologicalSpace E]
+    {D : Set E} (hD : IsOpen D) {φ : ℝ → E} {t₀ t₁ : ℝ}
+    (hφ : ContinuousOn φ (Icc t₀ t₁))
+    (hstart : φ t₀ ∈ D) (hend : φ t₁ ∉ D) (ht : t₀ ≤ t₁) :
+    ∃ t ∈ Icc t₀ t₁, φ t ∈ frontier D := by
+  by_contra hno
+  simp only [not_exists, not_and] at hno
+  let curveImage : Set E := φ '' Icc t₀ t₁
+  have hconnected : IsPreconnected curveImage := isPreconnected_Icc.image φ hφ
+  have hmeets_region : (curveImage ∩ D).Nonempty :=
+    ⟨φ t₀, ⟨t₀, left_mem_Icc.mpr ht, rfl⟩, hstart⟩
+  -- Without a boundary hit, every image point in the closure is already in D.
+  have hclosure_inter_image : closure D ∩ curveImage ⊆ D := by
+    intro x hx
+    have hxnot : x ∉ frontier D := by
+      rintro hxf
+      obtain ⟨t, htI, rfl⟩ := hx.2
+      exact hno t htI hxf
+    rw [frontier, mem_diff] at hxnot
+    simp only [not_and, not_not] at hxnot
+    exact interior_subset (hxnot hx.1)
+  have himage_in_region : curveImage ⊆ D :=
+    hconnected.subset_of_closure_inter_subset hD hmeets_region hclosure_inter_image
+  exact hend (himage_in_region ⟨t₁, right_mem_Icc.mpr ht, rfl⟩)
+
+/-- If a continuous curve on `[t₀, T]` starts in an open set `D` and is outside it
+at `t₁ ∈ [t₀, T]`, there is a first exit time `τ ∈ [t₀, t₁]`: the curve lies
+in `D` on `[t₀, τ)` and on its topological boundary `∂D` at `τ`.
+-/
+@[blueprint "lem:exists-first-boundary-hit-of-exit"
+  (title := "First exit from an open set") (latexEnv := "lemma")
+  (statement := /-- If a continuous curve on $[t_0,T]$ starts in an open set $D$
+    and is outside $D$ at $t_1\in[t_0,T]$, some $\tau\in[t_0,t_1]$ satisfies
+    $\varphi(\tau)\in\partial D$ and $\varphi(t)\in D$ for $t\in[t_0,\tau)$. -/)
+  (proof := /-- The nonempty compact set of exit times has a minimum. A boundary
+    crossing by that time must occur at the minimum itself. -/)]
+theorem exists_first_boundary_hit_of_exit
+    {E : Type*} [TopologicalSpace E]
+    {D : Set E} (hD : IsOpen D) {φ : ℝ → E} {t₀ T t₁ : ℝ}
+    (hφ : ContinuousOn φ (Icc t₀ T))
+    (hstart : φ t₀ ∈ D) (ht₁ : t₁ ∈ Icc t₀ T) (hend : φ t₁ ∉ D) :
+    ∃ τ ∈ Icc t₀ t₁, φ τ ∈ frontier D ∧
+      ∀ s ∈ Ico t₀ τ, φ s ∈ D := by
+  -- The exit times form a nonempty compact set, so there is an earliest exit.
+  let exitTimes : Set ℝ := Icc t₀ t₁ ∩ φ ⁻¹' Dᶜ
+  have hφ_restrict : ContinuousOn φ (Icc t₀ t₁) :=
+    hφ.mono (Icc_subset_Icc_right ht₁.2)
+  have hexit_closed : IsClosed exitTimes :=
+    hφ_restrict.preimage_isClosed_of_isClosed isClosed_Icc hD.isClosed_compl
+  have hexit_compact : IsCompact exitTimes :=
+    isCompact_Icc.of_isClosed_subset hexit_closed inter_subset_left
+  have hexit_nonempty : exitTimes.Nonempty := ⟨t₁, ⟨⟨ht₁.1, le_rfl⟩, hend⟩⟩
+  obtain ⟨τ, hτ_exit, hτ_first⟩ := hexit_compact.exists_isMinOn hexit_nonempty continuousOn_id
+  have hτI : τ ∈ Icc t₀ t₁ := hτ_exit.1
+  have hτout : φ τ ∉ D := hτ_exit.2
+  have hstay : ∀ s ∈ Ico t₀ τ, φ s ∈ D := by
+    intro s hs
+    by_contra hsout
+    have hs_exit : s ∈ exitTimes := ⟨⟨hs.1, hs.2.le.trans hτI.2⟩, hsout⟩
+    exact (not_le_of_gt hs.2) (hτ_first hs_exit)
+  -- A boundary hit occurs by τ; minimality forces it to be exactly τ.
+  obtain ⟨q, hqI, hqfront⟩ :=
+    exists_boundary_hit_on_continuous_segment hD
+      (hφ_restrict.mono (Icc_subset_Icc_right hτI.2)) hstart hτout hτI.1
+  have hqout : φ q ∉ D := by
+    intro hqD
+    have hdj : Disjoint D (frontier D) :=
+      Set.disjoint_iff_inter_eq_empty.mpr hD.inter_frontier_eq
+    exact Set.disjoint_left.1 hdj hqD hqfront
+  have hq_exit : q ∈ exitTimes := ⟨⟨hqI.1, hqI.2.trans hτI.2⟩, hqout⟩
+  have heq : q = τ := le_antisymm hqI.2 (hτ_first hq_exit)
+  exact ⟨τ, hτI, heq ▸ hqfront, hstay⟩
+
 /-- A continuous curve that starts inside the ball of radius `ρ` and later leaves it first meets
 the sphere at some `τ`, staying in the closed ball until then. -/
 @[blueprint "thm:exists-first-sphere-hit"
@@ -62,7 +146,9 @@ the sphere at some `τ`, staying in the closed ball until then. -/
     \[
       \|\varphi(\tau) - x_{\mathrm{eq}}\| = \rho, \qquad
       \|\varphi(s) - x_{\mathrm{eq}}\| \le \rho \quad \forall\, s \in [t_0, \tau].
-    \] -/)]
+    \] -/)
+  (proof := /-- Apply \cref{lem:exists-first-boundary-hit-of-exit} to the open ball.
+    Its boundary lies in the sphere; before the first exit the curve remains in the ball. -/)]
 theorem exists_first_sphere_hit
     {E : Type*} [NormedAddCommGroup E]
     {x_eq : E} {φ : ℝ → E} {ρ t₀ T t₁ : ℝ}
@@ -71,41 +157,19 @@ theorem exists_first_sphere_hit
     (hfar : ρ ≤ ‖φ t₁ - x_eq‖) :
     ∃ τ ∈ Icc t₀ T, ‖φ τ - x_eq‖ = ρ ∧
       ∀ s ∈ Icc t₀ τ, ‖φ s - x_eq‖ ≤ ρ := by
-  /-- Take the minimum of the closed set $[t_0, T] \cap \|\varphi(\cdot) - x_{\mathrm{eq}}\|^{-1}
-  \{\rho\}$, which is nonempty by the intermediate value theorem. Minimality rules out an earlier
-  excursion outside the ball: one would force a second crossing before $\tau$, again by the
-  intermediate value theorem. -/
-  let d : ℝ → ℝ := fun t ↦ ‖φ t - x_eq‖
-  have hd : ContinuousOn d (Icc t₀ T) :=
-    continuous_norm.comp_continuousOn (hφ.sub continuousOn_const)
-  have hd₁ : ContinuousOn d (Icc t₀ t₁) := hd.mono (Icc_subset_Icc_right ht₁.2)
-  have hhit : ∃ s ∈ Icc t₀ T, d s = ρ := by
-    have hρmem : ρ ∈ Icc (d t₀) (d t₁) := ⟨h₀.le, hfar⟩
-    obtain ⟨s, hs, hsρ⟩ := (intermediate_value_Icc ht₁.1 hd₁) hρmem
-    exact ⟨s, ⟨hs.1, hs.2.trans ht₁.2⟩, hsρ⟩
-  let S : Set ℝ := Icc t₀ T ∩ d ⁻¹' {ρ}
-  have hS_closed : IsClosed S :=
-    hd.preimage_isClosed_of_isClosed isClosed_Icc isClosed_singleton
-  have hS_compact : IsCompact S :=
-    isCompact_Icc.of_isClosed_subset hS_closed inter_subset_left
-  have hS_nonempty : S.Nonempty := by
-    obtain ⟨s, hs, hsρ⟩ := hhit
-    exact ⟨s, hs, hsρ⟩
-  obtain ⟨τ, hτS, hτmin⟩ := hS_compact.exists_isMinOn hS_nonempty continuousOn_id
-  have hτIcc : τ ∈ Icc t₀ T := hτS.1
-  have hτeq : d τ = ρ := hτS.2
-  refine ⟨τ, hτIcc, hτeq, ?_⟩
-  intro s hs
-  by_contra hnot
-  have hρs : ρ < d s := lt_of_not_ge hnot
-  have hslt : s < τ :=
-    hs.2.lt_of_ne (fun h ↦ by subst s; exact (ne_of_lt hρs) hτeq.symm)
-  have hds : ContinuousOn d (Icc t₀ s) := by
-    apply hd.mono
-    intro q hq
-    exact ⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩
-  have hρmem : ρ ∈ Icc (d t₀) (d s) := ⟨h₀.le, hρs.le⟩
-  obtain ⟨q, hq, hqρ⟩ := (intermediate_value_Icc hs.1 hds) hρmem
-  have hqS : q ∈ S := ⟨⟨hq.1, hq.2.trans (hs.2.trans hτIcc.2)⟩, hqρ⟩
-  have hτq : τ ≤ q := hτmin hqS
-  exact (not_lt_of_ge (hτq.trans hq.2)) hslt
+  have hstart : φ t₀ ∈ Metric.ball x_eq ρ := by
+    simpa [Metric.mem_ball, dist_eq_norm] using h₀
+  have hend : φ t₁ ∉ Metric.ball x_eq ρ := by
+    simpa [Metric.mem_ball, dist_eq_norm, not_lt] using hfar
+  obtain ⟨τ, hτ, hboundary, hstay⟩ :=
+    exists_first_boundary_hit_of_exit Metric.isOpen_ball hφ hstart ht₁ hend
+  have hτeq : ‖φ τ - x_eq‖ = ρ := by
+    simpa [Metric.mem_sphere, dist_eq_norm] using
+      Metric.frontier_ball_subset_sphere hboundary
+  refine ⟨τ, ⟨hτ.1, hτ.2.trans ht₁.2⟩, hτeq, ?_⟩
+  intro t ht
+  by_cases hhit : t = τ
+  · simpa [hhit] using hτeq.le
+  · have hbefore : t ∈ Ico t₀ τ := ⟨ht.1, ht.2.lt_of_ne hhit⟩
+    exact (show ‖φ t - x_eq‖ < ρ by
+      simpa [Metric.mem_ball, dist_eq_norm] using hstay t hbefore).le

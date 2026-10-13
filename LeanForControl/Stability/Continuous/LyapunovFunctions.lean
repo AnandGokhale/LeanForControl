@@ -7,9 +7,8 @@ import Architect
 /-!
 # `Stability.Continuous.LyapunovFunctions` — Lyapunov certificates
 
-Lyapunov functions for an equilibrium `x_eq` of an autonomous continuous-time system
-`ẋ = f(t, x)`, as a `ContinuousSystem E Unit Y`.  Each is a *certificate*: a function whose
-existence implies one of the stability notions of `Stability.Continuous.Defs`.
+Lyapunov functions for stability and a Chetaev certificate for instability, on input-free
+continuous-time systems `ẋ = f(t, x)` as `ContinuousSystem E Unit Y`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorems 4.8–4.10.
 
@@ -21,9 +20,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorems 4.8–4.10.
 | `IsUniformLyapunovFunction`       | `UniformlyStable`                |
 | `IsStrictUniformLyapunovFunction` | `UniformlyAsymptoticallyStable`  |
 | `IsExponentialLyapunovFunction`   | `LocallyExponentiallyStable`     |
+| `IsChetaevFunction`              | `Unstable` for a time-independent state equation |
 
-The functions are time-varying, `V(t, x)`.  What separates the certificates is not whether time
-appears but which bounds hold: a lower bound `W₁(x) ≤ V(t, x)` gives stability, and adding the
+The Lyapunov functions are time-varying, `V(t, x)`. What separates these certificates is
+which bounds hold: a lower bound `W₁(x) ≤ V(t, x)` gives stability, and adding the
 upper bound `V(t, x) ≤ W₂(x)` — *decrescence* — is what makes it uniform.
 
 A time-invariant `V(x)` is the special case `V(t, x) = V(x)`.  Positive definite, it is its own
@@ -36,10 +36,13 @@ The certificates of LaSalle's invariance principle are not here: they rely on in
 
 ## Conventions
 
-* The certificate holds on a neighbourhood `D` of `x_eq`; `D = univ` gives the global versions.
+* Lyapunov certificates hold on a neighbourhood `D`; the Chetaev region has `x_eq` on its
+  boundary instead. Mathlib's `frontier D` denotes this topological boundary $\partial D$.
 * Conditions are imposed for `t ≥ 0`, the initial times of `Stability.Continuous.Defs`.
 * The derivative of `V` along the system, `∂V/∂t + ∂V/∂x · f`, is
   `ContinuousSystem.lieDerivative` (`Systems.Continuous`), at the input value `()`.
+* The Chetaev theorem uses a state-only certificate and a time-independent state equation,
+  without an equilibrium or forward-completeness premise.
 -/
 
 open Set Filter Topology
@@ -227,5 +230,48 @@ theorem IsStrictUniformLyapunovFunction.of_timeInvariant_of_neg {s : ContinuousS
     ⟨((hV_c1.continuous_fderiv one_ne_zero).clm_apply hf).neg.continuousOn, by simp [hf_eq],
       fun x hx hne => neg_pos.mpr (hV_neg x hx hne)⟩
     fun t _ x _ => by rw [hF, neg_neg]
+
+/-! ## Chetaev certificate -/
+
+section Chetaev
+
+variable {n : ℕ}
+local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+
+/-- A globally `C¹` state-only certificate, positive in an open region within a fixed ball,
+zero on the region's boundary there, and with strictly positive Lie derivative for `t ≥ 0`.
+The base point lies on the boundary. With a time-independent state equation this certifies
+instability; neither the region nor the function is assumed globally bounded.
+
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3, p. 125,
+for the positive-region escape argument. -/
+@[blueprint "def:continuousSystem-isChetaevFunction"
+  (title := "Chetaev function")
+  (statement := /-- Let $s$ be an input-free continuous-time system. A Chetaev certificate
+    consists of an open region $D$, a point $x_{\rm eq}\in\partial D$, a radius $\rho>0$,
+    and a globally $C^1$ function $V$. For $\|x-x_{\rm eq}\|\le\rho$, $V(x)>0$ in $D$
+    and $V(x)=0$ on $\partial D$; in $D$ the derivative $\nabla V(x)\cdot F(t,x,())$
+    is strictly positive for every $t\ge0$.
+
+    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed., Theorem 4.3, p. 125. -/)]
+structure IsChetaevFunction (s : ContinuousSystem ℝⁿ Unit Y) (V : ℝⁿ → ℝ)
+    (x_eq : ℝⁿ) (D : Set ℝⁿ) (ρ : ℝ) : Prop where
+  /-- The certificate radius is positive. -/
+  hradius : 0 < ρ
+  /-- The positive region is open. -/
+  hD_open : IsOpen D
+  /-- The base point belongs to the region's boundary. -/
+  hmem_boundary : x_eq ∈ frontier D
+  /-- The certificate is globally continuously differentiable. -/
+  hV_c1 : ContDiff ℝ 1 V
+  /-- Positivity inside the region and closed certificate ball. -/
+  hpos : ∀ x ∈ D, ‖x - x_eq‖ ≤ ρ → 0 < V x
+  /-- Vanishing on the region's boundary within the closed ball. -/
+  hboundary_zero : ∀ x ∈ frontier D, ‖x - x_eq‖ ≤ ρ → V x = 0
+  /-- Strictly positive system Lie derivative in the region and closed ball. -/
+  hLie_pos : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D, ‖x - x_eq‖ ≤ ρ →
+    0 < s.lieDerivative (fun _ ↦ V) t x ()
+
+end Chetaev
 
 end ContinuousSystem

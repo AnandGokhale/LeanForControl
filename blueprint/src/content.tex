@@ -16,12 +16,13 @@ own.  Each section says which later results consume it.
 
 \section{Continuity toolbox}
 
-Two facts about continuous real functions and curves, with no differential-equation content of
-their own, used throughout the chapters that follow: the comparison lemma needs the last root
-before a sign change, and the Lyapunov stability arguments need the first time a curve reaches a
-sphere.
+Continuity gives the last root before a sign change and the first exit of a curve from an
+open region. First sphere crossing is the open-ball specialization of the general exit lemma.
 
 \inputleannode{lem:exists-greatest-zero-of-nonpos-of-pos}
+
+\inputleannode{lem:exists-boundary-hit-on-continuous-segment}
+\inputleannode{lem:exists-first-boundary-hit-of-exit}
 
 \inputleannode{thm:exists-first-sphere-hit}
 
@@ -985,6 +986,14 @@ Instability is the failure of stability, and the simplest witness is a trajector
 fixed neighbourhood from arbitrarily close initial states
 (\cref{lem:continuousSystem-unstable-of-escape}).  Chetaev's theorem produces such trajectories
 from a function that grows along the system near the equilibrium.
+
+The geometric criterion uses a positive certificate with positive derivative in an open
+region and vanishing on its boundary, with these conditions local to a closed ball.
+
+\inputleannode{def:continuousSystem-isChetaevFunction}
+\inputleannode{thm:continuousSystem-geometric-chetaev-unstable}
+
+The exponential criterion is its corollary on the full positive set $D=\{V>0\}$.
 
 \inputleannode{thm:exponential-chetaev-unstable}
 

@@ -10,7 +10,7 @@
 | Local asymptotic stability via strict local Lyapunov function | `IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
 | Exponential stability via exponential Lyapunov function | `IsExponentialLyapunovFunction.locallyExponentiallyStable`, `.globallyExponentiallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
 | Quantitative exponential Chetaev criterion | `unstable_of_exponential_chetaev` | `Continuous/Chetaev.lean` | ✅ done |
-| Boundary-form/geometric Chetaev theorem | — | — | planned |
+| Boundary-form/geometric Chetaev theorem | `ContinuousSystem.unstable_of_geometric_chetaev` | `Continuous/Chetaev.lean` | ✅ done |
 | ω-limit set of a trajectory | `omegaLimitSet`, `mem_omegaLimitSet_iff` | `Analysis/OmegaLimit.lean` | ✅ done |
 | ω-limit set is forward invariant (Khalil Lemma 4.1) | `isForwardInvariant_omegaLimitSet` | `Continuous/LaSalle.lean` | ✅ done |
 | `V̇ = 0` on the ω-limit set | `fderiv_apply_eq_zero_of_mem_omegaLimitSet` | `Continuous/LaSalle.lean` | ✅ done |
@@ -28,7 +28,8 @@ Files:
   systems alike, and the theorems are in the `Continuous/` files below
 - `Continuous/LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
 - `Continuous/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
-  exponential Chetaev criterion
+  exponential and geometric Chetaev criteria
+- `Continuous/LyapunovFunctions.lean` — Lyapunov and state-only Chetaev certificates
 - `Continuous/Linearization.lean` — Lyapunov's indirect method, both branches
 
 ## Status: Non-autonomous systems (`ẋ = f(t, x)`)
@@ -168,7 +169,7 @@ References for the two branches: Khalil, *Nonlinear Systems*; Hahn,
 
 ---
 
-## Still planned: boundary-form/geometric Chetaev theorem
+## Completed: boundary-form/geometric Chetaev theorem
 
 The completed `unstable_of_exponential_chetaev` is a quantitative criterion tailored to the indirect-method proof. It assumes, on a closed
 ball, a quadratic upper bound
@@ -176,23 +177,35 @@ ball, a quadratic upper bound
 `2 α V(x) ≤ DV(x) f(x)`, and positive values of `V` arbitrarily close to `x_eq`.
 Those hypotheses are enough for the quadratic certificate above.
 
-This is distinct from the more general boundary-form version of Chetaev's theorem, which
-remains planned. Its geometric hypotheses should package an open set `D₁` with `x_eq` on
-its frontier, positivity of `V` and its Lie derivative in `D₁`, and vanishing of `V` on
-the relevant boundary. The target conclusion should use `Unstable`, which already quantifies
-over finite forward segments, so finite-time escape is handled without a global-trajectory
-assumption.
+`ContinuousSystem.IsChetaevFunction` in `Continuous/LyapunovFunctions.lean` packages an open
+region `D` with `x_eq` on its topological boundary, a positive radius, globally `C¹` state-only
+certificate `V`, positivity in `D` inside the closed ball, boundary vanishing there, and
+strictly positive system Lie derivative at every nonnegative time. Boundary means `∂D`,
+represented by Mathlib's `frontier D`; the corresponding field is `hmem_boundary`.
 
-The remaining work for that general theorem is geometric rather than spectral:
+`ContinuousSystem.unstable_of_geometric_chetaev` assumes a globally `C¹` field `f` and
+`s.F t x () = f x`, and concludes `s.Unstable x_eq`. This negates `Stable`, whose radius
+may depend on initial time, rather than merely negating `UniformlyStable`. Escape on finite
+segments at time zero contradicts either reading. The time-independent state equation was
+implicit in the original field-based formulation; there is no output restriction, equilibrium
+premise, or forward-completeness assumption. All sign and boundary conditions remain local
+to the fixed closed ball, and neither `D` nor `V` is assumed globally bounded.
 
-- define a boundary-form Chetaev certificate in a dedicated definitions file;
-- derive positive seed points from the frontier hypothesis;
-- control retention in the positive component and exit through its boundary;
-- replace the quantitative exponential growth estimate by the compact-set argument for a
-  merely positive Lie derivative.
+The proof separates a positive derivative minimum on the seed's compact superlevel,
+solution retention/nondecrease, and the growth-versus-ceiling escape contradiction. It reuses
+the shared Lie-derivative chain rule and monotonicity lemmas. General boundary crossings
+are public in `Analysis/Continuity.lean`; sphere crossing is their open-ball specialization.
+The exponential criterion is now a corollary on the full positive set `{V > 0}`: the
+quadratic bound gives `V(x_eq) = 0`, and positive seeds supply closure membership, together
+placing the base point on the boundary. Its public statement and positional use in
+`Linearization.lean` are preserved; the three exponential-only helpers are removed.
+`tests/Chetaev.lean` exercises the migrated certificate on constant
+rightward flow: zero is not an equilibrium, the criterion negates `Stable`, and the
+regression also rules out `UniformlyStable`.
 
-The smooth-cutoff continuation, finite-segment chain rule, and first-exit machinery already
-proved for the exponential criterion should be reusable.
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
+p. 125. This is a boundary formulation of its positive-superlevel escape argument, with
+an independent open region, stronger global regularity, and finite-segment system predicates.
 
 ---
 
@@ -268,9 +281,9 @@ was deleted: the linear instability theorem is a corollary of the nonlinear one,
 went with it.  The two branches were then merged into `Stability/Continuous/Linearization.lean`,
 and the `LyapunovIndirect/` directory removed.
 
-`Chetaev.lean`'s three `private` `*_forward_segment*` lemmas are **deliberately** left alone by
-the `forward` rename sweep: there `forward` means *forward in time from 0* — a solution on
-`Icc 0 T` — which is accurate and unrelated to the retired `Forward*` stability predicates.
+`Chetaev.lean`'s remaining private `exists_cutoff_forward_segment` lemma keeps `forward`
+in its name: it means *forward in time from 0* — a solution on `Icc 0 T` — which is
+accurate and unrelated to the retired `Forward*` stability predicates.
 
 ## Open questions
 
