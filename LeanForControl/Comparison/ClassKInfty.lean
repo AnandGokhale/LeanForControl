@@ -290,6 +290,16 @@ noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a)
     (α.continuous.mono Set.Icc_subset_Ici_self)
     (α.strict_mono.mono Set.Icc_subset_Ici_self)
 
+/-- `ClassKInfty.toClassK` keeps the inverse: on the range `[0, α(a))` of the restriction, its
+inverse agrees with that of `α`.  The restriction stores its own inverse, so this is a theorem,
+not a definitional equality. -/
+theorem ClassKInfty.toClassK_invFun (α : ClassKInfty) {a : ℝ} (ha : 0 < a) {y : ℝ}
+    (hy : y ∈ Set.Ico 0 (α.toFun a)) : (α.toClassK ha).invFun y = α.invFun y := by
+  have h_mem := (α.toClassK ha).inv_maps_to hy
+  calc (α.toClassK ha).invFun y
+      = α.invFun (α.toFun ((α.toClassK ha).invFun y)) := (α.left_inv h_mem.1).symm
+    _ = α.invFun y := congrArg α.invFun ((α.toClassK ha).right_inv hy)
+
 
 /-- Pointwise sum of two class K∞ functions is class K∞. -/
 @[blueprint "lem:classKInfty-add"

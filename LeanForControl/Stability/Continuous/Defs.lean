@@ -10,7 +10,7 @@ Stability notions for an equilibrium `x_eq` of an autonomous (input-free) contin
 `ContinuousSystem.zeroInput`; input–output notions such as input-to-state stability are separate
 and not defined here.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definitions 4.4 and 4.5.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definitions 4.4–4.6.
 
 ## One definition per notion
 
@@ -40,6 +40,10 @@ differ (`ẋ = -x / (1 + t)` is globally asymptotically but not uniformly asympt
   needs the whole forward time axis.  Those notions also require forward completeness
   (`ContinuousSystem.IsForwardCompleteOn`) from the same initial states: otherwise a solution
   that escapes in finite time has no ray to converge on and would be silently left out.
+* **Ultimate bounds** — `UniformlyUltimatelyBounded` and `GloballyUniformlyUltimatelyBounded` —
+  quantify over rays and require forward completeness too.  They constrain only times after
+  `t₀ + T`, so on segments a solution escaping before then would pass untested.  Khalil leaves
+  this completeness implicit.
 
 Uniqueness of solutions is never required: every notion quantifies over *every* solution, which
 is the stronger reading when solutions are not unique.  Theorems that need uniqueness assume
@@ -47,8 +51,10 @@ is the stronger reading when solutions are not unique.  Theorems that need uniqu
 
 ## Conventions
 
-* Inequalities are strict, as in Khalil.
-* The equilibrium is a general `x_eq`; Khalil places it at the origin.
+* Inequalities are strict, as in Khalil, except in the boundedness notions, which follow
+  Khalil's non-strict Definition 4.6.
+* The equilibrium is a general `x_eq`; Khalil places it at the origin.  The boundedness notions
+  are about a general point `x_c`, which need not be an equilibrium.
 * The output space `Y` plays no role.
 -/
 
@@ -260,6 +266,100 @@ def GloballyExponentiallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Pro
   ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
     s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
       ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ k * ‖x t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))
+
+/-! ## Boundedness -/
+
+/-- Trajectories are **uniformly bounded** around `x_c`: there is `c > 0` such that for every
+`a < c` a bound `β(a)` holds for all trajectories starting within `a` of `x_c`.  A property of the
+system rather than of an equilibrium: `x_c` need not be one.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*uniformly bounded*). -/
+@[blueprint "def:continuousSystem-uniformlyBounded"
+  (title := "Uniform boundedness")
+  (statement := /-- Trajectories are \emph{uniformly bounded} around $x_c$ when there is $c > 0$
+    such that for every $0 < a < c$ there is $\beta = \beta(a) > 0$ with
+    \[
+      \|x(t_0) - x_c\| \le a \;\Rightarrow\;
+      \|x(t) - x_c\| \le \beta \qquad \forall\, t \in [t_0, t_1]
+    \]
+    for every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$.  The point $x_c$ need not be an
+    equilibrium.  The bound applies to every segment a solution exists on, so finite escape
+    violates it.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+def UniformlyBounded (s : ContinuousSystem E Unit Y) (x_c : E) : Prop :=
+  ∃ c > 0, ∀ a, 0 < a → a < c → ∃ β > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+    s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ ≤ a →
+      ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ ≤ β
+
+/-- Trajectories are **globally uniformly bounded** around `x_c`: `UniformlyBounded` for every
+initial radius `a`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*globally uniformly
+bounded*). -/
+@[blueprint "def:continuousSystem-globallyUniformlyBounded"
+  (title := "Global uniform boundedness")
+  (statement := /-- Trajectories are \emph{globally uniformly bounded} around $x_c$ when the bound
+    of \cref{def:continuousSystem-uniformlyBounded} holds for every $a > 0$, with no radius $c$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+def GloballyUniformlyBounded (s : ContinuousSystem E Unit Y) (x_c : E) : Prop :=
+  ∀ a > 0, ∃ β > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+    s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ ≤ a →
+      ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ ≤ β
+
+/-- Trajectories are **uniformly ultimately bounded** with ultimate bound `b` around `x_c`: there
+is `c > 0` such that the system is forward complete from the ball of radius `c` about `x_c`, and
+for every `a < c` a time `T(a, b)` brings every trajectory starting within `a` of `x_c` to within
+`b` of it.
+
+Forward completeness is part of the definition: the bound only constrains times after `t₀ + T`,
+so a solution escaping before then would otherwise pass untested.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*uniformly ultimately
+bounded*). -/
+@[blueprint "def:continuousSystem-uniformlyUltimatelyBounded"
+  (title := "Uniform ultimate boundedness")
+  (statement := /-- Trajectories are \emph{uniformly ultimately bounded} with ultimate bound $b$
+    around $x_c$ when there is $c > 0$ such that for every $t_0 \ge 0$ the system is forward
+    complete from the ball of radius $c$ about $x_c$
+    (\cref{def:continuousSystem-isForwardCompleteOn}), and for every $0 < a < c$ there is
+    $T = T(a, b) \ge 0$ with
+    \[
+      \|x(t_0) - x_c\| \le a \;\Rightarrow\; \|x(t) - x_c\| \le b \qquad \forall\, t \ge t_0 + T
+    \]
+    for every trajectory on $[t_0, \infty)$.  The point $x_c$ need not be an equilibrium.
+    Khalil leaves forward completeness implicit; without it, a solution escaping before
+    $t_0 + T$ would never be tested.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+def UniformlyUltimatelyBounded (s : ContinuousSystem E Unit Y) (x_c : E) (b : ℝ) : Prop :=
+  ∃ c > 0, (∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ (Metric.ball x_c c)) ∧
+    ∀ a, 0 < a → a < c → ∃ T ≥ 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝ → E,
+      s.IsTrajectoryOn (fun _ => ()) x (Ici t₀) → ‖x t₀ - x_c‖ ≤ a →
+        ∀ t ≥ t₀ + T, ‖x t - x_c‖ ≤ b
+
+/-- Trajectories are **globally uniformly ultimately bounded** with ultimate bound `b` around
+`x_c`: the system is forward complete, and `UniformlyUltimatelyBounded` holds for every initial
+radius `a`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*globally uniformly ultimately
+bounded*). -/
+@[blueprint "def:continuousSystem-globallyUniformlyUltimatelyBounded"
+  (title := "Global uniform ultimate boundedness")
+  (statement := /-- Trajectories are \emph{globally uniformly ultimately bounded} with ultimate
+    bound $b$ around $x_c$ when the system is forward complete from every state at every
+    $t_0 \ge 0$ (\cref{def:continuousSystem-isForwardCompleteOn}) and the ultimate bound of
+    \cref{def:continuousSystem-uniformlyUltimatelyBounded} holds for every $a > 0$, with no
+    radius $c$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+def GloballyUniformlyUltimatelyBounded (s : ContinuousSystem E Unit Y) (x_c : E) (b : ℝ) :
+    Prop :=
+  (∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ univ) ∧
+    ∀ a > 0, ∃ T ≥ 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝ → E,
+      s.IsTrajectoryOn (fun _ => ()) x (Ici t₀) → ‖x t₀ - x_c‖ ≤ a →
+        ∀ t ≥ t₀ + T, ‖x t - x_c‖ ≤ b
 
 /-! ## Implications between the notions -/
 

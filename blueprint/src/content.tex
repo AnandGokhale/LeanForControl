@@ -73,6 +73,8 @@ makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as
 
 \inputleannode{lem:le-diniDerivRight-of-upper-bound}
 
+\inputleannode{lem:le-max-of-hasDerivWithinAt-nonpos-above}
+
 \section{Interval integrals}
 
 Estimates and integrability side conditions for the interval integral, used wherever a
@@ -867,6 +869,8 @@ Lyapunov function along a trajectory is a subsolution of it.
 
 \inputleannode{thm:classK-dini-bound}
 
+\inputleannode{thm:classK-bound-above-level}
+
 \chapter{Stability of continuous-time systems}
 
 Stability notions for an equilibrium of an autonomous continuous-time system $\dot x = f(t, x)$
@@ -903,6 +907,17 @@ $[t_0, \infty)$.
 \inputleannode{def:continuousSystem-locallyExponentiallyStable}
 
 \inputleannode{def:continuousSystem-globallyExponentiallyStable}
+
+Boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories stay, or end up and stay, within a prescribed distance of it.
+
+\inputleannode{def:continuousSystem-uniformlyBounded}
+
+\inputleannode{def:continuousSystem-globallyUniformlyBounded}
+
+\inputleannode{def:continuousSystem-uniformlyUltimatelyBounded}
+
+\inputleannode{def:continuousSystem-globallyUniformlyUltimatelyBounded}
 
 \section{Implications}
 
@@ -1010,6 +1025,24 @@ they follow from radial unboundedness.
 
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable}
 
+\section{Ultimate boundedness}
+
+A Lyapunov-like function whose derivative is negative only outside a ball does not certify
+stability, but it does bound the trajectories: they decay like a class $\mathcal{KL}$ function
+until they reach a neighbourhood of the ball, and stay there.
+
+\inputleannode{thm:continuousSystem-exists-classKL-ultimateBound-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-uniformlyBounded-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-uniformlyUltimatelyBounded-of-lyapunov}
+
+\inputleannode{thm:continuousSystem-exists-classKLGlobal-ultimateBound-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-globallyUniformlyBounded-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-globallyUniformlyUltimatelyBounded-of-lyapunov}
+
 \section{LaSalle's invariance principle}
 
 When $\nabla V \cdot f \le 0$ only, $V$ may stall, and Lyapunov's theorems give stability but not
@@ -1077,8 +1110,12 @@ geometric, $\rho^{k - k_0}$ with $0 \le \rho < 1$, in place of $e^{-\gamma(t - t
 
 \inputleannode{def:discreteSystem-globallyExponentiallyStable}
 
-Ultimate boundedness is a property of the system near a point that need not be an equilibrium:
-trajectories end up, and stay, within a prescribed distance of it.
+Boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories stay, or end up and stay, within a prescribed distance of it.
+
+\inputleannode{def:discreteSystem-uniformlyBounded}
+
+\inputleannode{def:discreteSystem-globallyUniformlyBounded}
 
 \inputleannode{def:discreteSystem-uniformlyUltimatelyBounded}
 

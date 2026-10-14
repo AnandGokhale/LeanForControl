@@ -198,14 +198,46 @@ private lemma exists_sandwich_level {r b₁ b₂ : ℝ} (hb₁ : 0 < b₁) (α�
 
 /-! ## Trapping -/
 
+/-- **Trapping by a level set.**  Let `x` be a trajectory on `[t₀, t₁]` starting strictly inside
+the `ρ`-sphere about `x_c`, on which `V ≥ d`.  If `V̇ ≤ 0` wherever the trajectory is inside the
+sphere and above a level `η`, and `V(t₀, x(t₀))` and `η` are both below `d`, the trajectory never
+reaches the sphere.
+
+At the first time it did, `V` would be at least `d`; but up to then `V` can only fall while above
+`η`, so it is at most `max (V(t₀, x(t₀))) η < d`. -/
+lemma norm_lt_of_level_lt {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ}
+    (hV : Differentiable ℝ (Function.uncurry V)) {x_c : ℝⁿ} {ρ d η t₀ t₁ : ℝ} {x : ℝ → ℝⁿ}
+    (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁)) (h_start : ‖x t₀ - x_c‖ < ρ)
+    (h_level : max (V t₀ (x t₀)) η < d)
+    (h_sphere : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ = ρ → d ≤ V τ (x τ))
+    (h_dec : ∀ τ ∈ Ico t₀ t₁, ‖x τ - x_c‖ ≤ ρ → η < V τ (x τ) →
+      s.lieDerivative V τ (x τ) () ≤ 0) :
+    ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ < ρ := by
+  intro t ht
+  by_contra h_out
+  -- The first time `τ ∈ [t₀, t]` at which `x` reaches the `ρ`-sphere.
+  obtain ⟨τ, hτ, hτ_norm, h_before⟩ := exists_first_sphere_hit
+    ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)) h_start
+    ⟨ht.1, le_rfl⟩ (not_lt.mp h_out)
+  have hτ_mem : τ ∈ Icc t₀ t₁ := ⟨hτ.1, hτ.2.trans ht.2⟩
+  -- Up to `τ`, `V` falls whenever it is above `η`, so it stays below `d`.
+  have h_le := le_max_of_hasDerivWithinAt_nonpos_above
+    ((hV.continuous.comp_continuousOn (continuousOn_id.prodMk
+      (IsIntegralCurveOn.continuousOn hx))).mono (Icc_subset_Icc_right hτ_mem.2))
+    (fun u hu => (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV
+      ⟨hu.1, hu.2.le.trans hτ_mem.2⟩).mono_of_mem_nhdsWithin
+        (Icc_mem_nhdsGE_of_mem ⟨hu.1, hu.2.trans_le hτ_mem.2⟩))
+    (fun u hu => h_dec u ⟨hu.1, hu.2.trans_le hτ_mem.2⟩ (h_before u (Ico_subset_Icc_self hu)))
+    τ ⟨hτ.1, le_rfl⟩
+  exact (h_le.trans_lt h_level).not_ge (h_sphere τ hτ_mem hτ_norm)
+
 /-- **Trapping.**  Let `V` be a Lyapunov function on `D`, with `W₁(x) ≤ V(t, x)` on `D` and
 `α₁(‖x - x_eq‖) ≤ W₁(x)` on a closed `r`-ball inside `D`, and pick a level `d` with
 `α₁⁻¹(d) < r`.  A trajectory on `[t₀, t₁]` that starts inside the ball with
 `V(t₀, x(t₀)) < d` stays inside the ball.
 
-To leave the ball, `x` would first have to reach a sphere `‖x - x_eq‖ = ρ` with
-`α₁⁻¹(d) < ρ < r`.  Up to that time it is inside the ball, so `V` has not increased and is still
-below `d`; but on that sphere `V ≥ W₁ ≥ α₁(ρ) > d`. -/
+On a sphere `‖x - x_eq‖ = ρ` with `α₁⁻¹(d) < ρ < r`, `V ≥ W₁ ≥ α₁(ρ) > d`, and `V̇ ≤ 0` inside
+it, so `norm_lt_of_level_lt` keeps the trajectory inside that sphere. -/
 private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ}
     {W₁ : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} (hV : s.IsLyapunovFunction V x_eq D)
     (hV_lb : ∀ t : ℝ, 0 ≤ t → ∀ y ∈ D, W₁ y ≤ V t y)
@@ -215,9 +247,6 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ �
     (ht₀ : 0 ≤ t₀) (h_start : ‖x t₀ - x_eq‖ < r) (hV_start : V t₀ (x t₀) < d) :
     ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ < r := by
   have hD : ∀ y : ℝⁿ, ‖y - x_eq‖ ≤ r → y ∈ D := fun y hy => hrD (mem_closedBall_iff_norm.mpr hy)
-  intro t ht
-  by_contra h_out
-  push Not at h_out
   -- Step 1. An intermediate radius `ρ`, strictly between `α₁⁻¹(d)` and `r`.
   have hd_inv_mem : α₁.invFun d ∈ Ico 0 r := α₁.inv_maps_to hd
   obtain ⟨ρ, hρ_gt, hρ_lt⟩ := exists_between hd_inv_mem.2
@@ -227,28 +256,19 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ �
     exact (hW₁ _ h_start).trans_lt ((hV_lb t₀ ht₀ _ (hD _ h_start.le)).trans_lt hV_start)
   have h_start_ρ : ‖x t₀ - x_eq‖ < ρ :=
     ((α₁.strict_mono_iff ⟨norm_nonneg _, h_start⟩ hd_inv_mem).mp h_α₁_start).trans hρ_gt
-  -- Step 3. The first time `τ ∈ [t₀, t]` at which `x` reaches the `ρ`-sphere.
-  obtain ⟨τ, hτ, hτ_norm, h_before⟩ := exists_first_sphere_hit
-    ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)) h_start_ρ
-    ⟨ht.1, le_rfl⟩ (hρ_lt.le.trans h_out)
-  have hτ_lt_r : ‖x τ - x_eq‖ < r := hτ_norm ▸ hρ_lt
-  -- Step 4. On `[t₀, τ]` the trajectory is inside the `r`-ball, so `V` has not increased.
-  have hV_τ_lt_d : V τ (x τ) < d := by
-    have h_anti := IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos
-      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right (hτ.2.trans ht.2))) (convex_Icc _ _)
-      hV.differentiable fun u hu => by
-        rw [interior_Icc] at hu
-        exact hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
-          (hD _ ((h_before u ⟨hu.1.le, hu.2.le⟩).trans hρ_lt.le))
-    exact (h_anti ⟨le_rfl, hτ.1⟩ ⟨hτ.1, le_rfl⟩ hτ.1).trans_lt hV_start
-  -- Step 5. But on the `ρ`-sphere `V ≥ W₁ ≥ α₁(ρ) > α₁(α₁⁻¹(d)) = d`.
-  have hV_τ_gt_d : d < V τ (x τ) :=
+  -- Step 3. On the `ρ`-sphere `V ≥ W₁ ≥ α₁(ρ) > α₁(α₁⁻¹(d)) = d`, and inside it `V̇ ≤ 0`.
+  have h_sphere : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_eq‖ = ρ → d ≤ V τ (x τ) := fun τ hτ hτ_norm => by
+    have hτ_lt_r : ‖x τ - x_eq‖ < r := hτ_norm ▸ hρ_lt
     calc d = α₁.toFun (α₁.invFun d) := (α₁.right_inv hd).symm
-      _ < α₁.toFun ‖x τ - x_eq‖ :=
-          α₁.strict_mono hd_inv_mem ⟨norm_nonneg _, hτ_lt_r⟩ (hτ_norm ▸ hρ_gt)
+      _ ≤ α₁.toFun ‖x τ - x_eq‖ :=
+          (α₁.strict_mono hd_inv_mem ⟨norm_nonneg _, hτ_lt_r⟩ (hτ_norm ▸ hρ_gt)).le
       _ ≤ W₁ (x τ) := hW₁ _ hτ_lt_r
       _ ≤ V τ (x τ) := hV_lb τ (ht₀.trans hτ.1) _ (hD _ hτ_lt_r.le)
-  exact lt_asymm hV_τ_lt_d hV_τ_gt_d
+  intro t ht
+  exact (norm_lt_of_level_lt (η := V t₀ (x t₀)) hV.differentiable hx h_start_ρ
+    (by rwa [max_self]) h_sphere
+    (fun τ hτ hτ_norm _ => hV.lie_nonpos τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
+    t ht).trans hρ_lt
 
 /-- The bound `V(t, y) < d = α₂(c)` from the `c`-ball: `V ≤ W₂ ≤ α₂(‖y - x_eq‖) < α₂(c)`. -/
 private lemma lt_level_of_norm_lt {V : ℝ → ℝⁿ → ℝ} {W₂ : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ}

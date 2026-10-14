@@ -202,7 +202,40 @@ def GloballyExponentiallyStable (s : DiscreteSystem E Unit Y) (x_eq : E) : Prop 
     s.IsTrajectoryOn (fun _ => ()) x (Ici k₀) →
       ∀ k ≥ k₀, ‖x k - x_eq‖ ≤ C * ‖x k₀ - x_eq‖ * ρ ^ (k - k₀)
 
-/-! ## Ultimate boundedness -/
+/-! ## Boundedness -/
+
+/-- Trajectories are **uniformly bounded** around `x_c`: there is `c > 0` such that for every
+`a < c` a bound `β(a)` holds for all trajectories starting within `a` of `x_c`.  A property of the
+system rather than of an equilibrium: `x_c` need not be one.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6, read in discrete time. -/
+@[blueprint "def:discreteSystem-uniformlyBounded"
+  (title := "Uniform boundedness of a discrete-time system")
+  (statement := /-- Trajectories are \emph{uniformly bounded} around $x_c$ when there is $c > 0$
+    such that for every $0 < a < c$ there is $\beta = \beta(a) > 0$ with
+    \[
+      \|x(k_0) - x_c\| \le a \;\Rightarrow\; \|x(k) - x_c\| \le \beta \qquad \forall\, k \ge k_0
+    \]
+    for every trajectory on $[k_0, \infty)$.  The counterpart of
+    \cref{def:continuousSystem-uniformlyBounded}.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+def UniformlyBounded (s : DiscreteSystem E Unit Y) (x_c : E) : Prop :=
+  ∃ c > 0, ∀ a, 0 < a → a < c → ∃ β > 0, ∀ k₀ : ℕ, ∀ x : ℕ → E,
+    s.IsTrajectoryOn (fun _ => ()) x (Ici k₀) → ‖x k₀ - x_c‖ ≤ a →
+      ∀ k ≥ k₀, ‖x k - x_c‖ ≤ β
+
+/-- Trajectories are **globally uniformly bounded** around `x_c`: `UniformlyBounded` for every
+initial radius `a`. -/
+@[blueprint "def:discreteSystem-globallyUniformlyBounded"
+  (title := "Global uniform boundedness of a discrete-time system")
+  (statement := /-- Trajectories are \emph{globally uniformly bounded} around $x_c$ when the bound
+    of \cref{def:discreteSystem-uniformlyBounded} holds for every $a > 0$, with no radius $c$. -/)]
+def GloballyUniformlyBounded (s : DiscreteSystem E Unit Y) (x_c : E) : Prop :=
+  ∀ a > 0, ∃ β > 0, ∀ k₀ : ℕ, ∀ x : ℕ → E,
+    s.IsTrajectoryOn (fun _ => ()) x (Ici k₀) → ‖x k₀ - x_c‖ ≤ a →
+      ∀ k ≥ k₀, ‖x k - x_c‖ ≤ β
+
 
 /-- Trajectories are **uniformly ultimately bounded** with ultimate bound `b` around `x_c`: there
 is `c > 0` such that for every `a < c` a number of steps `T(a, b)` brings every trajectory
