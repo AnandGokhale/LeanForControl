@@ -1,0 +1,689 @@
+import LeanForControl.Stability.Continuous.LyapunovFunctions
+import LeanForControl.ODEs.Sensitivity
+import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
+import Mathlib.Analysis.InnerProductSpace.Calculus
+import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+import Mathlib.Analysis.Calculus.ContDiff.RCLike
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Architect
+
+/-!
+# `Stability.Continuous.Converse` — converse Lyapunov theorems
+
+Exponential stability has a quadratic Lyapunov function: from the exponential estimate of the
+trajectories, `V(t, x) = ∫_t^{t+δ} ‖φ(τ; t, x) - x_eq‖² dτ` is sandwiched between multiples of
+`‖x - x_eq‖²`, decreases along trajectories at a quadratic rate, and has gradient of size
+`O(‖x - x_eq‖)`.  The gradient bound is what makes `V` robust: it is how a perturbation of the
+vector field, such as an input, enters `V̇`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.7, Theorem 4.14.
+
+## Main results
+
+* `exists_quadraticLyapunov_of_exponentialEstimate` — Khalil's Theorem 4.14 on a ball: an
+  exponential Lyapunov function with exponent `2` (`IsExponentialLyapunovFunction`) and a
+  gradient bound.
+* `exists_quadraticLyapunov_of_globallyExponentiallyStable` — its global case: an exponential
+  Lyapunov function with exponent `2` (`IsExponentialLyapunovFunction`) and a gradient bound.
+
+## Differences from Khalil
+
+* The equilibrium is a general `x_eq`; Khalil places it at the origin.
+* A `ContinuousSystem` is defined for all times, and the hypotheses (equilibrium, `C¹`,
+  Lipschitz) are asked for every `t ∈ ℝ` rather than `t ≥ 0`: differentiability of `V` at
+  `t = 0` involves solutions from slightly negative initial times.
+* Khalil's bounded Jacobian is replaced by the Lipschitz bound it is used for; for `C¹` `f` the
+  two are equivalent.
+* The local theorem cuts the field off outside a ball (a smooth bump `χ`, `f̃ = χ f`) and runs
+  the global construction for `f̃`; solutions from `D₀` never see the cut.
+* The constants are cruder than Khalil's: `c₁ = δe^{-2Lδ}`, `c₂ = δk²`, `c₄ = 2kδe^{Lδ}`.
+* The exponential estimate is assumed, as everywhere in this library, on trajectory segments
+  starting in `D₀`.
+* Khalil's rate `λ` is written `γ`, as in `LocallyExponentiallyStable`.
+* Khalil's last clause, that `V` can be taken independent of `t` for a time-invariant system, is
+  not stated yet.
+-/
+
+open Set Metric Filter
+open scoped Interval NNReal
+
+namespace ContinuousSystem
+
+variable {Y : Type*} {n : ℕ}
+local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+
+/-! ## Ingredients -/
+
+/-- Squared norms differ by at most `(‖a‖ + ‖b‖) ‖a - b‖`. -/
+private lemma abs_norm_sq_sub_norm_sq_le {F : Type*} [SeminormedAddCommGroup F] (a b : F) :
+    |‖a‖ ^ 2 - ‖b‖ ^ 2| ≤ (‖a‖ + ‖b‖) * ‖a - b‖ := by
+  rw [show ‖a‖ ^ 2 - ‖b‖ ^ 2 = (‖a‖ + ‖b‖) * (‖a‖ - ‖b‖) by ring, abs_mul,
+    abs_of_nonneg (by positivity)]
+  exact mul_le_mul_of_nonneg_left (abs_norm_sub_norm_le a b) (by positivity)
+
+/-- Along a solution from time `t`, `σ ↦ ‖y(t + σ) - x_eq‖²` is integrable on `[0, δ]`. -/
+private lemma intervalIntegrable_norm_sq_comp_add {y : ℝ → ℝⁿ} {t : ℝ}
+    (hy : ContinuousOn y (Ici t)) (x_eq : ℝⁿ) {δ : ℝ} (hδ : 0 ≤ δ) :
+    IntervalIntegrable (fun σ => ‖y (t + σ) - x_eq‖ ^ 2) MeasureTheory.volume 0 δ :=
+  ContinuousOn.intervalIntegrable_of_Icc hδ ((((hy.comp (continuousOn_const.add continuousOn_id))
+    fun σ hσ => by simpa using hσ.1).sub continuousOn_const).norm.pow 2)
+
+/-- **Solutions decay no faster than exponentially** (Khalil, Exercise 3.17): if `f(t, x_eq) = 0`
+and `f(t, ·)` is `L`-Lipschitz, a solution from `x` at time `t` satisfies
+`‖x - x_eq‖² e^{-2L(τ - t)} ≤ ‖y(τ) - x_eq‖²` for `τ ≥ t`.
+
+This is the integrating-factor bound `IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` for
+`W = -‖· - x_eq‖²`, whose Lie derivative `-2⟪y - x_eq, f⟫` is at most `2L ‖y - x_eq‖² = -2L W`. -/
+private lemma norm_sq_mul_exp_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0} {x_eq : ℝⁿ}
+    (h_eq : ∀ τ : ℝ, 0 ≤ τ → f τ x_eq = 0) (h_lip : ∀ τ, LipschitzWith L (f τ))
+    {y : ℝ → ℝⁿ} {t : ℝ} (ht : 0 ≤ t) (hy : IsIntegralCurveOn y f (Ici t)) {τ : ℝ}
+    (hτ : t ≤ τ) :
+    ‖y t - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (τ - t)) ≤ ‖y τ - x_eq‖ ^ 2 := by
+  have hW : ∀ z : ℝⁿ, HasFDerivAt (fun z => -‖z - x_eq‖ ^ 2)
+      (-(2 • (innerSL ℝ (z - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ))) z := fun z =>
+    ((hasFDerivAt_id z).sub_const x_eq).norm_sq.neg
+  have h_rate : ∀ σ ∈ Ioo t τ, _root_.lieDerivative (fun _ z => -‖z - x_eq‖ ^ 2) f σ (y σ) ≤
+      -(2 * L) * -‖y σ - x_eq‖ ^ 2 := by
+    intro σ hσ
+    have h_f : ‖f σ (y σ)‖ ≤ L * ‖y σ - x_eq‖ :=
+      calc ‖f σ (y σ)‖
+          = dist (f σ (y σ)) (f σ x_eq) := by rw [h_eq σ (ht.trans hσ.1.le), dist_zero_right]
+        _ ≤ L * dist (y σ) x_eq := (h_lip σ).dist_le_mul _ _
+        _ = L * ‖y σ - x_eq‖ := by rw [dist_eq_norm]
+    rw [lieDerivative_const (hW (y σ)).differentiableAt, (hW (y σ)).fderiv]
+    calc -((2 • (innerSL ℝ (y σ - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ)) (f σ (y σ)))
+        = -(2 * inner ℝ (y σ - x_eq) (f σ (y σ))) := by
+          simp only [ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply,
+            ContinuousLinearMap.id_apply, innerSL_apply_apply, nsmul_eq_mul, Nat.cast_ofNat]
+      _ ≤ 2 * (‖y σ - x_eq‖ * ‖f σ (y σ)‖) := by
+          linarith [neg_le_of_abs_le (abs_real_inner_le_norm (y σ - x_eq) (f σ (y σ)))]
+      _ ≤ 2 * (‖y σ - x_eq‖ * (L * ‖y σ - x_eq‖)) := by gcongr
+      _ = -(2 * L) * -‖y σ - x_eq‖ ^ 2 := by ring
+  have h_diff : ∀ σ ∈ Icc t τ, DifferentiableAt ℝ
+      (Function.uncurry fun (_ : ℝ) (z : ℝⁿ) => -‖z - x_eq‖ ^ 2) (σ, y σ) := fun σ _ =>
+    (hW (y σ)).differentiableAt.comp (g := fun z => -‖z - x_eq‖ ^ 2) (σ, y σ) differentiableAt_snd
+  have h : -‖y τ - x_eq‖ ^ 2 ≤ Real.exp (-(2 * L) * (τ - t)) * -‖y t - x_eq‖ ^ 2 :=
+    IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le (hy.mono Icc_subset_Ici_self) h_diff h_rate
+      τ ⟨hτ, le_rfl⟩
+  linarith [mul_comm (Real.exp (-(2 * L) * (τ - t))) (‖y t - x_eq‖ ^ 2)]
+
+/-- **The integral of the squared distance along solutions is differentiable** in the initial time
+and state.  With `φ (t, x)` the solution of `ẋ = f(t, x)` from `x` at time `t`, the map
+`(t, x) ↦ ∫₀^δ ‖φ (t, x) (t + σ) - x_eq‖² dσ` is differentiable, provided `f` is `C¹`.
+
+Appending time to the state turns the solutions into those of the autonomous `C¹` system
+`ż = (1, f(z))`, differentiable in the initial state (`hasFDerivAt_of_isIntegralCurveOn`) and
+locally Lipschitz in it (`IsIntegralCurveOn.exists_dist_le_of_contDiff`); differentiate under the
+integral sign. -/
+private lemma differentiableAt_integral_norm_sq {f : ℝ → ℝⁿ → ℝⁿ}
+    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => f p.1 p.2)) {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
+    (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1))
+    {δ : ℝ} (hδ : 0 < δ) (x_eq : ℝⁿ) (z₀ : ℝ × ℝⁿ) :
+    DifferentiableAt ℝ (fun z : ℝ × ℝⁿ => ∫ σ in (0 : ℝ)..δ, ‖φ z (z.1 + σ) - x_eq‖ ^ 2) z₀ := by
+  -- Step 1. Time appended to the state: `z = (t, x)` solves `ż = g(z) = (1, f(z))`.
+  set g : ℝ × ℝⁿ → ℝ × ℝⁿ := fun z => (1, f z.1 z.2)
+  have hg : ContDiff ℝ 1 g := contDiff_const.prodMk hf
+  set Ψ : ℝ × ℝⁿ → ℝ → ℝ × ℝⁿ := fun z σ => (z.1 + σ, φ z (z.1 + σ))
+  have hΨ0 : ∀ z, Ψ z 0 = z := fun z => by simp [Ψ, hφ0]
+  have hΨ : ∀ z, IsIntegralCurveOn (Ψ z) (fun _ => g) (Icc 0 δ) := fun z σ hσ => by
+    have hshift : HasDerivWithinAt (fun σ => z.1 + σ) 1 (Icc 0 δ) σ :=
+      (hasDerivWithinAt_id σ _).const_add z.1
+    have hφσ := (hφ z (z.1 + σ) (by simpa using hσ.1)).scomp σ hshift
+      fun u hu => by simpa using hu.1
+    exact hshift.prodMk (by simpa using hφσ)
+  -- Step 2. Each integrand is differentiable at `z₀`, through the variational solution `Φ`.
+  obtain ⟨Φ, hΦ0, hΦ⟩ := (hΨ z₀).exists_variational hg hδ.le
+  set F : ℝ × ℝⁿ → ℝ → ℝ := fun z σ => ‖(Ψ z σ).2 - x_eq‖ ^ 2
+  set F' : ℝ → (ℝ × ℝⁿ) →L[ℝ] ℝ := fun σ =>
+    2 • (innerSL ℝ ((Ψ z₀ σ).2 - x_eq)).comp ((ContinuousLinearMap.snd ℝ ℝ ℝⁿ).comp (Φ σ))
+  have hF' : ∀ σ ∈ Icc 0 δ, HasFDerivAt (fun z => F z σ) (F' σ) z₀ := fun σ hσ => by
+    have h_flow : HasFDerivAt (fun z => Ψ z σ) (Φ σ) z₀ :=
+      hasFDerivAt_of_isIntegralCurveOn hg hΨ hΨ0 hΦ0 hΦ hσ
+    have h_snd : HasFDerivAt (fun z => (Ψ z σ).2 - x_eq)
+        ((ContinuousLinearMap.snd ℝ ℝ ℝⁿ).comp (Φ σ)) z₀ :=
+      (hasFDerivAt_snd.comp z₀ h_flow).sub_const x_eq
+    exact h_snd.norm_sq
+  -- Step 3. A uniform Lipschitz bound in `z` near `z₀`.
+  obtain ⟨K, ρ, hρ, h_sep⟩ := (hΨ z₀).exists_dist_le_of_contDiff hg
+  obtain ⟨B, hB⟩ := isCompact_Icc.exists_bound_of_continuousOn
+    ((continuous_snd.comp_continuousOn (hΨ z₀).continuousOn).sub continuousOn_const)
+  set R := B + ρ * Real.exp (K * δ)
+  set C := 2 * R * Real.exp (K * δ)
+  have h_sep' : ∀ z ∈ ball z₀ ρ, ∀ z' ∈ ball z₀ ρ, ∀ σ ∈ Icc 0 δ,
+      ‖Ψ z σ - Ψ z' σ‖ ≤ dist z z' * Real.exp (K * δ) := fun z hz z' hz' σ hσ => by
+    have h := h_sep (Ψ z) (Ψ z') (hΨ z) (hΨ z') (by rw [hΨ0, hΨ0]; exact hz)
+      (by rw [hΨ0, hΨ0]; exact hz') σ hσ
+    rw [hΨ0, hΨ0, dist_eq_norm] at h
+    exact h.trans (mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hσ.2 K.coe_nonneg)) dist_nonneg)
+  have h_R : ∀ z ∈ ball z₀ ρ, ∀ σ ∈ Icc 0 δ, ‖(Ψ z σ).2 - x_eq‖ ≤ R := fun z hz σ hσ =>
+    calc ‖(Ψ z σ).2 - x_eq‖
+        ≤ ‖(Ψ z σ).2 - (Ψ z₀ σ).2‖ + ‖(Ψ z₀ σ).2 - x_eq‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
+      _ ≤ ‖Ψ z σ - Ψ z₀ σ‖ + B := add_le_add (norm_snd_le (Ψ z σ - Ψ z₀ σ)) (hB σ hσ)
+      _ ≤ dist z z₀ * Real.exp (K * δ) + B :=
+          add_le_add (h_sep' z hz z₀ (mem_ball_self hρ) σ hσ) le_rfl
+      _ ≤ ρ * Real.exp (K * δ) + B :=
+          add_le_add (mul_le_mul_of_nonneg_right (mem_ball.mp hz).le (Real.exp_pos _).le) le_rfl
+      _ = R := add_comm _ _
+  have h_lip : ∀ σ ∈ Icc 0 δ,
+      LipschitzOnWith (Real.nnabs C) (fun z => F z σ) (ball z₀ ρ) := fun σ hσ =>
+    LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => by
+      set a := (Ψ z σ).2 - x_eq
+      set b := (Ψ z' σ).2 - x_eq
+      have hab : ‖a - b‖ ≤ dist z z' * Real.exp (K * δ) :=
+        calc ‖a - b‖ = ‖(Ψ z σ - Ψ z' σ).2‖ := by simp [a, b]
+          _ ≤ ‖Ψ z σ - Ψ z' σ‖ := norm_snd_le _
+          _ ≤ dist z z' * Real.exp (K * δ) := h_sep' z hz z' hz' σ hσ
+      have hR0 : 0 ≤ R := (norm_nonneg a).trans (h_R z hz σ hσ)
+      calc dist (F z σ) (F z' σ)
+          = |‖a‖ ^ 2 - ‖b‖ ^ 2| := Real.dist_eq _ _
+        _ ≤ (‖a‖ + ‖b‖) * ‖a - b‖ := abs_norm_sq_sub_norm_sq_le a b
+        _ ≤ (R + R) * ‖a - b‖ := by
+            gcongr
+            exacts [h_R z hz σ hσ, h_R z' hz' σ hσ]
+        _ ≤ (R + R) * (dist z z' * Real.exp (K * δ)) :=
+            mul_le_mul_of_nonneg_left hab (by linarith)
+        _ = Real.nnabs C * dist z z' := by
+            rw [Real.coe_nnabs, abs_of_nonneg (by positivity)]
+            ring
+  -- Step 4. Differentiate under the integral sign.
+  have hIoc : Ι (0 : ℝ) δ ⊆ Icc 0 δ := by
+    rw [uIoc_of_le hδ.le]
+    exact Ioc_subset_Icc_self
+  have hF_cont : ∀ z, ContinuousOn (F z) (Icc 0 δ) := fun z =>
+    ((continuous_snd.comp_continuousOn (hΨ z).continuousOn).sub continuousOn_const).norm.pow 2
+  have hF'_cont : ContinuousOn F' (Icc 0 δ) :=
+    (((innerSL ℝ).continuous.comp_continuousOn
+      ((continuous_snd.comp_continuousOn (hΨ z₀).continuousOn).sub continuousOn_const)).clm_comp
+        (continuousOn_const.clm_comp hΦ.continuousOn)).const_smul _
+  exact (intervalIntegral.hasFDerivAt_integral_of_dominated_loc_of_lip (μ := MeasureTheory.volume)
+    (bound := fun _ => C) (ball_mem_nhds z₀ hρ)
+    (Eventually.of_forall fun z => (hF_cont z).mono hIoc |>.aestronglyMeasurable measurableSet_uIoc)
+    ((hF_cont z₀).intervalIntegrable_of_Icc hδ.le)
+    ((hF'_cont.mono hIoc).aestronglyMeasurable measurableSet_uIoc)
+    (Eventually.of_forall fun σ hσ => h_lip σ (hIoc hσ)) intervalIntegrable_const
+    (Eventually.of_forall fun σ hσ => hF' σ (hIoc hσ))).2.differentiableAt
+
+/-- **The derivative of `V` along the system** is computed along the solution itself
+(`IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt`): `V̇(t, x)` is the right derivative of
+`τ ↦ V(τ, φ(τ))` at `t`.  By uniqueness, `V(τ, φ(τ))` is
+`∫_{τ-t}^{τ-t+δ} ‖φ(t + σ) - x_eq‖² dσ`, whose derivative is `‖φ(t + δ) - x_eq‖² - ‖x - x_eq‖²`. -/
+private lemma lieDerivative_integral_norm_sq {f : ℝ → ℝⁿ → ℝⁿ}
+    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => f p.1 p.2)) {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
+    (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1))
+    (hφ_uniq : ∀ p (β : ℝ → ℝⁿ), β p.1 = p.2 → IsIntegralCurveOn β f (Ici p.1) →
+      EqOn β (φ p) (Ici p.1))
+    {δ : ℝ} (hδ : 0 < δ) (x_eq : ℝⁿ) (t : ℝ) (x : ℝⁿ) :
+    _root_.lieDerivative (fun t x => ∫ σ in (0 : ℝ)..δ, ‖φ (t, x) (t + σ) - x_eq‖ ^ 2) f t x =
+      ‖φ (t, x) (t + δ) - x_eq‖ ^ 2 - ‖x - x_eq‖ ^ 2 := by
+  set V : ℝ → ℝⁿ → ℝ := fun t x => ∫ σ in (0 : ℝ)..δ, ‖φ (t, x) (t + σ) - x_eq‖ ^ 2
+  have hφ0' : φ (t, x) t = x := hφ0 (t, x)
+  -- Step 1. Along the solution, `V(τ, φ(τ)) = ∫_{τ-t}^{τ-t+δ} w`, with `w(σ) = ‖φ(t + σ) - x_eq‖²`
+  -- extended continuously to `σ < 0`.
+  set w : ℝ → ℝ := fun σ => ‖φ (t, x) (t + max σ 0) - x_eq‖ ^ 2
+  have hw : Continuous w :=
+    (((hφ (t, x)).continuousOn.comp_continuous (continuous_const.add (continuous_id.max
+      continuous_const)) fun σ => by simp).sub continuous_const).norm.pow 2
+  have h_along : ∀ τ ∈ Ici t, V τ (φ (t, x) τ) =
+      (∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) - ∫ σ in (0 : ℝ)..τ - t, w σ := by
+    intro τ hτ
+    have hτ' : t ≤ τ := hτ
+    -- By uniqueness, the solution from `(τ, φ(τ))` is the solution from `(t, x)`.
+    have h_cocycle : EqOn (φ (t, x)) (φ (τ, φ (t, x) τ)) (Ici τ) :=
+      hφ_uniq (τ, φ (t, x) τ) (φ (t, x)) rfl ((hφ (t, x)).mono (Ici_subset_Ici.mpr hτ'))
+    calc V τ (φ (t, x) τ)
+        = ∫ σ in (0 : ℝ)..δ, ‖φ (τ, φ (t, x) τ) (τ + σ) - x_eq‖ ^ 2 := rfl
+      _ = ∫ σ in (0 : ℝ)..δ, w (σ + (τ - t)) := by
+          refine intervalIntegral.integral_congr fun σ hσ => ?_
+          rw [uIcc_of_le hδ.le] at hσ
+          simp only [w, max_eq_left (show 0 ≤ σ + (τ - t) by linarith [hσ.1])]
+          rw [← h_cocycle (show τ + σ ∈ Ici τ by simp [hσ.1])]
+          ring_nf
+      _ = ∫ σ in τ - t..δ + (τ - t), w σ := by
+          rw [intervalIntegral.integral_comp_add_right, zero_add]
+      _ = (∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) - ∫ σ in (0 : ℝ)..τ - t, w σ := by
+          rw [add_comm δ, intervalIntegral.integral_interval_sub_left
+            (hw.intervalIntegrable _ _) (hw.intervalIntegrable _ _)]
+  -- Step 2. By the fundamental theorem of calculus, that has derivative `w(δ) - w(0)` at `t`.
+  have h_W : HasDerivAt (fun τ => (∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) - ∫ σ in (0 : ℝ)..τ - t, w σ)
+      (w δ - w 0) t := by
+    have h₁ : HasDerivAt (fun τ => ∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) (w δ) t := by
+      simpa using (hw.integral_hasStrictDerivAt 0 ((t - t) + δ)).hasDerivAt.comp t
+        (h := fun τ => (τ - t) + δ) (((hasDerivAt_id t).sub_const t).add_const δ)
+    have h₂ : HasDerivAt (fun τ => ∫ σ in (0 : ℝ)..τ - t, w σ) (w 0) t := by
+      simpa using (hw.integral_hasStrictDerivAt 0 (t - t)).hasDerivAt.comp t
+        (h := fun τ => τ - t) ((hasDerivAt_id t).sub_const t)
+    exact h₁.sub h₂
+  have h_W' : HasDerivWithinAt (fun τ => V τ (φ (t, x) τ)) (w δ - w 0) (Ici t) t :=
+    h_W.hasDerivWithinAt.congr (fun τ hτ => h_along τ hτ) (h_along t self_mem_Ici)
+  -- Step 3. That right derivative is the Lie derivative.
+  have h_lie := (hφ (t, x)).lieDerivative_eq_of_hasDerivWithinAt (V := V)
+    (fun τ _ => differentiableAt_integral_norm_sq hf hφ0 hφ hδ x_eq (τ, φ (t, x) τ)) h_W'
+  rw [hφ0'] at h_lie
+  rw [h_lie]
+  simp [w, hφ0', max_eq_left hδ.le]
+
+/-- **The gradient of `V` is `O(‖x - x_eq‖)`.**  Near `x`, `V(t, ·)` is Lipschitz with constant
+`2kδe^{Lδ}(‖x - x_eq‖ + r)`: solutions from `y` and `y'` separate at most like `e^{Lσ}‖y - y'‖`
+and stay within `k‖y - x_eq‖` of `x_eq`.  Letting `r → 0` bounds the derivative. -/
+private lemma norm_fderiv_integral_norm_sq_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0}
+    (h_lip : ∀ τ, LipschitzWith L (f τ)) {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
+    (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1))
+    {δ : ℝ} (hδ : 0 < δ) {x_eq : ℝⁿ} {k : ℝ} (hk : 0 < k) {t : ℝ} {U : Set ℝⁿ} (hU : IsOpen U)
+    (h_upper : ∀ y ∈ U, ∀ τ : ℝ, t ≤ τ → ‖φ (t, y) τ - x_eq‖ ≤ k * ‖y - x_eq‖)
+    {x : ℝⁿ} (hx : x ∈ U) :
+    ‖fderiv ℝ (fun y => ∫ σ in (0 : ℝ)..δ, ‖φ (t, y) (t + σ) - x_eq‖ ^ 2) x‖ ≤
+      2 * (k * δ * Real.exp (L * δ)) * ‖x - x_eq‖ := by
+  set A := k * δ * Real.exp (L * δ)
+  have hA : 0 < A := by positivity
+  obtain ⟨r_U, hr_U, h_ball_U⟩ := Metric.isOpen_iff.mp hU x hx
+  -- Solutions from `y` and `y'` separate at most like `e^{Lσ}`.
+  have h_sep : ∀ y y' : ℝⁿ, ∀ σ ∈ Icc 0 δ,
+      ‖φ (t, y) (t + σ) - φ (t, y') (t + σ)‖ ≤ ‖y - y'‖ * Real.exp (L * δ) := by
+    intro y y' σ hσ
+    have h := dist_le_of_isIntegralCurveOn_Icc h_lip
+      ((hφ (t, y)).mono Icc_subset_Ici_self) ((hφ (t, y')).mono Icc_subset_Ici_self)
+      (t + σ) ⟨by linarith [hσ.1], le_rfl⟩
+    rw [dist_eq_norm, dist_eq_norm, show φ (t, y) t = y from hφ0 (t, y),
+      show φ (t, y') t = y' from hφ0 (t, y'), add_sub_cancel_left] at h
+    exact h.trans (mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hσ.2 L.coe_nonneg)) (norm_nonneg _))
+  -- On a ball of radius `r` inside `U`, `V(t, ·)` is `2A(‖x - x_eq‖ + r)`-Lipschitz.
+  have h_ball : ∀ r > 0, r ≤ r_U →
+      ‖fderiv ℝ (fun y => ∫ σ in (0 : ℝ)..δ, ‖φ (t, y) (t + σ) - x_eq‖ ^ 2) x‖
+        ≤ 2 * A * (‖x - x_eq‖ + r) := by
+    intro r hr hr_le
+    have hU_ball : ∀ z ∈ ball x r, z ∈ U := fun z hz => h_ball_U (ball_subset_ball hr_le hz)
+    have hR : 0 ≤ ‖x - x_eq‖ + r := by positivity
+    refine (norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds x hr)
+      (C := (2 * A * (‖x - x_eq‖ + r)).toNNReal) ?_).trans
+        (by rw [Real.coe_toNNReal _ (by positivity)])
+    refine LipschitzOnWith.of_dist_le_mul fun y hy y' hy' => ?_
+    have h_near : ∀ z ∈ ball x r, ‖z - x_eq‖ ≤ ‖x - x_eq‖ + r := fun z hz =>
+      calc ‖z - x_eq‖ ≤ ‖z - x‖ + ‖x - x_eq‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
+        _ ≤ ‖x - x_eq‖ + r := by linarith [(mem_ball_iff_norm.mp hz).le]
+    -- The integrand changes by at most `2k(‖x - x_eq‖ + r) e^{Lδ} ‖y - y'‖`.
+    have h_pt : ∀ σ ∈ Ι (0 : ℝ) δ,
+        ‖‖φ (t, y) (t + σ) - x_eq‖ ^ 2 - ‖φ (t, y') (t + σ) - x_eq‖ ^ 2‖ ≤
+        2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) := by
+      intro σ hσ
+      rw [uIoc_of_le hδ.le] at hσ
+      set a := φ (t, y) (t + σ) - x_eq
+      set b := φ (t, y') (t + σ) - x_eq
+      have ha : ‖a‖ ≤ k * (‖x - x_eq‖ + r) :=
+        (h_upper y (hU_ball y hy) _ (by linarith [hσ.1])).trans (by gcongr; exact h_near y hy)
+      have hb : ‖b‖ ≤ k * (‖x - x_eq‖ + r) :=
+        (h_upper y' (hU_ball y' hy') _ (by linarith [hσ.1])).trans
+          (by gcongr; exact h_near y' hy')
+      have hab : ‖a - b‖ ≤ ‖y - y'‖ * Real.exp (L * δ) := by
+        simpa [a, b] using h_sep y y' σ (Ioc_subset_Icc_self hσ)
+      calc ‖‖a‖ ^ 2 - ‖b‖ ^ 2‖
+          ≤ (‖a‖ + ‖b‖) * ‖a - b‖ := abs_norm_sq_sub_norm_sq_le a b
+        _ ≤ (k * (‖x - x_eq‖ + r) + k * (‖x - x_eq‖ + r)) * ‖a - b‖ := by gcongr
+        _ ≤ (k * (‖x - x_eq‖ + r) + k * (‖x - x_eq‖ + r)) *
+              (‖y - y'‖ * Real.exp (L * δ)) := by gcongr
+        _ = 2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) := by ring
+    have h_int : ∀ z : ℝⁿ, IntervalIntegrable (fun σ => ‖φ (t, z) (t + σ) - x_eq‖ ^ 2)
+        MeasureTheory.volume 0 δ := fun z =>
+      intervalIntegrable_norm_sq_comp_add (hφ (t, z)).continuousOn x_eq hδ.le
+    calc dist (∫ σ in (0 : ℝ)..δ, ‖φ (t, y) (t + σ) - x_eq‖ ^ 2)
+          (∫ σ in (0 : ℝ)..δ, ‖φ (t, y') (t + σ) - x_eq‖ ^ 2)
+        = ‖∫ σ in (0 : ℝ)..δ,
+            (‖φ (t, y) (t + σ) - x_eq‖ ^ 2 - ‖φ (t, y') (t + σ) - x_eq‖ ^ 2)‖ := by
+          rw [dist_eq_norm, intervalIntegral.integral_sub (h_int y) (h_int y')]
+      _ ≤ 2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) * |δ - 0| :=
+          intervalIntegral.norm_integral_le_of_norm_le_const h_pt
+      _ = (2 * A * (‖x - x_eq‖ + r)).toNNReal * dist y y' := by
+          rw [Real.coe_toNNReal _ (by positivity), dist_eq_norm, sub_zero,
+            abs_of_pos hδ]
+          ring
+  -- Let `r → 0`.
+  refine le_of_forall_pos_le_add fun ε hε => ?_
+  calc ‖fderiv ℝ (fun y => ∫ σ in (0 : ℝ)..δ, ‖φ (t, y) (t + σ) - x_eq‖ ^ 2) x‖
+      ≤ 2 * A * (‖x - x_eq‖ + min (ε / (2 * A)) r_U) :=
+        h_ball _ (lt_min (by positivity) hr_U) (min_le_right _ _)
+    _ ≤ 2 * A * (‖x - x_eq‖ + ε / (2 * A)) := by gcongr; exact min_le_left _ _
+    _ = 2 * A * ‖x - x_eq‖ + ε := by field_simp
+
+/-- **The construction**, for a globally Lipschitz `C¹` field: if solutions starting in an open
+set `U` at times `t ≥ 0` obey the exponential estimate, then
+`V(t, x) = ∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ`, with `δ = ln(2k² + 1)/(2γ)`, is differentiable
+everywhere and is a quadratic Lyapunov function on `U` with gradient `O(‖x - x_eq‖)`.  Both
+converse theorems are this lemma: the global one with `U = ℝⁿ`, the local one for a cut-off
+field. -/
+private lemma exists_quadraticLyapunov_of_estimateOn {f : ℝ → ℝⁿ → ℝⁿ}
+    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => f p.1 p.2)) {L : ℝ≥0}
+    (hf_lip : ∀ t, LipschitzWith L (f t)) {x_eq : ℝⁿ} (h_eq : ∀ t, f t x_eq = 0)
+    {U : Set ℝⁿ} (hU : IsOpen U) {k γ : ℝ} (hk : 0 < k) (hγ : 0 < γ)
+    (h_exp : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ U, ∀ y : ℝ → ℝⁿ, y t = x → IsIntegralCurveOn y f (Ici t) →
+      ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ k * ‖x - x_eq‖ * Real.exp (-γ * (τ - t))) :
+    ∃ V : ℝ → ℝⁿ → ℝ, (∀ t x, DifferentiableAt ℝ (Function.uncurry V) (t, x)) ∧
+      ∃ c₁ > 0, ∃ c₂ > 0, ∃ c₄ > 0, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ U,
+        c₁ * ‖x - x_eq‖ ^ 2 ≤ V t x ∧ V t x ≤ c₂ * ‖x - x_eq‖ ^ 2 ∧
+        _root_.lieDerivative V f t x ≤ -(1 / 2 * ‖x - x_eq‖ ^ 2) ∧
+        ‖fderiv ℝ (V t) x‖ ≤ c₄ * ‖x - x_eq‖ := by
+  -- Step 1. Solutions from every initial time and state.
+  choose φ hφ0 hφ hφ_uniq using fun p : ℝ × ℝⁿ =>
+    exists_isIntegralCurveOn_Ici hf.continuous hf_lip p.1 p.2
+  -- Step 2. The exponential estimate along the solutions from `U`.
+  have h_upper : ∀ t, 0 ≤ t → ∀ x ∈ U, ∀ τ, t ≤ τ →
+      ‖φ (t, x) τ - x_eq‖ ≤ k * ‖x - x_eq‖ * Real.exp (-γ * (τ - t)) := fun t ht x hx =>
+    h_exp t ht x hx (φ (t, x)) (hφ0 (t, x)) (hφ (t, x))
+  have h_upper' : ∀ t, 0 ≤ t → ∀ x ∈ U, ∀ τ, t ≤ τ → ‖φ (t, x) τ - x_eq‖ ≤ k * ‖x - x_eq‖ :=
+    fun t ht x hx τ hτ => (h_upper t ht x hx τ hτ).trans (mul_le_of_le_one_right (by positivity)
+      (Real.exp_le_one_iff.mpr (by nlinarith)))
+  -- Step 3. The horizon `δ`, chosen so that `k² e^{-2γδ} ≤ 1/2`.
+  set δ := Real.log (2 * k ^ 2 + 1) / (2 * γ)
+  have hδ : 0 < δ := div_pos (Real.log_pos (by nlinarith)) (by positivity)
+  have h_decay : k ^ 2 * Real.exp (-(2 * γ) * δ) ≤ 1 / 2 := by
+    have h_exp_δ : Real.exp (-(2 * γ) * δ) = (2 * k ^ 2 + 1)⁻¹ := by
+      rw [show -(2 * γ) * δ = -Real.log (2 * k ^ 2 + 1) by simp only [δ]; field_simp,
+        Real.exp_neg, Real.exp_log (by positivity)]
+    rw [h_exp_δ, ← div_eq_mul_inv, div_le_iff₀ (by positivity)]
+    linarith
+  -- Step 4. `V(t, x) = ∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ`.
+  set V : ℝ → ℝⁿ → ℝ := fun t x => ∫ σ in (0 : ℝ)..δ, ‖φ (t, x) (t + σ) - x_eq‖ ^ 2
+  have h_int : ∀ (t : ℝ) (x : ℝⁿ), IntervalIntegrable (fun σ => ‖φ (t, x) (t + σ) - x_eq‖ ^ 2)
+      MeasureTheory.volume 0 δ := fun t x =>
+    intervalIntegrable_norm_sq_comp_add (hφ (t, x)).continuousOn x_eq hδ.le
+  refine ⟨V, fun t x => differentiableAt_integral_norm_sq hf hφ0 hφ hδ x_eq (t, x),
+    δ * Real.exp (-(2 * L) * δ), by positivity, δ * k ^ 2, by positivity,
+    2 * (k * δ * Real.exp (L * δ)), by positivity, fun t ht x hx => ⟨?_, ?_, ?_, ?_⟩⟩
+  · -- The lower bound: solutions decay no faster than `e^{-Lσ}`.
+    calc δ * Real.exp (-(2 * L) * δ) * ‖x - x_eq‖ ^ 2
+        = ∫ σ in (0 : ℝ)..δ, ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * δ) := by
+          rw [intervalIntegral.integral_const, smul_eq_mul]
+          ring
+      _ ≤ V t x := intervalIntegral.integral_mono_on hδ.le intervalIntegrable_const (h_int t x)
+          fun σ hσ =>
+          calc ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * δ)
+              ≤ ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (t + σ - t)) :=
+                mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (by
+                  rw [show t + σ - t = σ by ring]
+                  nlinarith [mul_nonneg L.coe_nonneg (sub_nonneg.mpr hσ.2)])) (by positivity)
+            _ ≤ ‖φ (t, x) (t + σ) - x_eq‖ ^ 2 := by
+                have h := norm_sq_mul_exp_le (fun τ _ => h_eq τ) hf_lip ht (hφ (t, x))
+                  (τ := t + σ) (by linarith [hσ.1])
+                rwa [show φ (t, x) t = x from hφ0 (t, x)] at h
+  · -- The upper bound: solutions stay within `k‖x - x_eq‖` of `x_eq`.
+    calc V t x
+        ≤ ∫ σ in (0 : ℝ)..δ, k ^ 2 * ‖x - x_eq‖ ^ 2 :=
+          intervalIntegral.integral_mono_on hδ.le (h_int t x) intervalIntegrable_const
+          fun σ hσ =>
+          calc ‖φ (t, x) (t + σ) - x_eq‖ ^ 2
+              ≤ (k * ‖x - x_eq‖) ^ 2 := by
+                gcongr
+                exact h_upper' t ht x hx _ (by linarith [hσ.1])
+            _ = k ^ 2 * ‖x - x_eq‖ ^ 2 := by ring
+      _ = δ * k ^ 2 * ‖x - x_eq‖ ^ 2 := by
+          rw [intervalIntegral.integral_const, smul_eq_mul]
+          ring
+  · -- The decrease: `V̇ = ‖φ(t + δ) - x_eq‖² - ‖x - x_eq‖² ≤ (k² e^{-2γδ} - 1) ‖x - x_eq‖²`.
+    rw [lieDerivative_integral_norm_sq hf hφ0 hφ hφ_uniq hδ x_eq t x]
+    calc ‖φ (t, x) (t + δ) - x_eq‖ ^ 2 - ‖x - x_eq‖ ^ 2
+        ≤ (k * ‖x - x_eq‖ * Real.exp (-γ * (t + δ - t))) ^ 2 - ‖x - x_eq‖ ^ 2 := by
+          gcongr
+          exact h_upper t ht x hx _ (by linarith)
+      _ = k ^ 2 * Real.exp (-(2 * γ) * δ) * ‖x - x_eq‖ ^ 2 - ‖x - x_eq‖ ^ 2 := by
+          rw [mul_pow, mul_pow, ← Real.exp_nat_mul]
+          ring_nf
+      _ ≤ 1 / 2 * ‖x - x_eq‖ ^ 2 - ‖x - x_eq‖ ^ 2 := by gcongr
+      _ = -(1 / 2 * ‖x - x_eq‖ ^ 2) := by ring
+  · -- The gradient bound.
+    exact norm_fderiv_integral_norm_sq_le hf_lip hφ0 hφ hδ hk hU (h_upper' t ht) hx
+
+/-- **Cutting off a field that is Lipschitz on a set.**  If `g` is `L`-Lipschitz and bounded by `B`
+on `S`, and `χ` is `M`-Lipschitz with `|χ| ≤ 1` and vanishes off `S`, then `χ • g` is
+`(L + M B)`-Lipschitz everywhere. -/
+private lemma lipschitzWith_smul_of_lipschitzOnWith {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] {χ : ℝⁿ → ℝ} {g : ℝⁿ → F} {S : Set ℝⁿ} {M L B : ℝ≥0}
+    (hχ : LipschitzWith M χ) (hχ_le : ∀ y, |χ y| ≤ 1) (hχ_zero : ∀ y ∉ S, χ y = 0)
+    (hg : LipschitzOnWith L g S) (hg_le : ∀ y ∈ S, ‖g y‖ ≤ B) :
+    LipschitzWith (L + M * B) fun y => χ y • g y := by
+  -- Away from `S`, `χ • g` is `0`, and next to a point of `S` it moves only through `χ`.
+  have h_one : ∀ y z, y ∈ S → z ∉ S → ‖χ y • g y‖ ≤ (L + M * B) * dist y z := fun y z hy hz =>
+    calc ‖χ y • g y‖
+        = |χ y - χ z| * ‖g y‖ := by rw [hχ_zero z hz, sub_zero, norm_smul, Real.norm_eq_abs]
+      _ ≤ (M * dist y z) * B := by
+          gcongr
+          · exact (Real.dist_eq _ _).symm.le.trans (hχ.dist_le_mul y z)
+          · exact hg_le y hy
+      _ ≤ (L + M * B) * dist y z := by nlinarith [dist_nonneg (x := y) (y := z), L.coe_nonneg]
+  refine LipschitzWith.of_dist_le_mul fun y z => ?_
+  rw [dist_eq_norm]
+  by_cases hy : y ∈ S <;> by_cases hz : z ∈ S
+  · calc ‖χ y • g y - χ z • g z‖
+        = ‖χ y • (g y - g z) + (χ y - χ z) • g z‖ := by rw [smul_sub, sub_smul]; abel_nf
+      _ ≤ |χ y| * ‖g y - g z‖ + |χ y - χ z| * ‖g z‖ := by
+          refine (norm_add_le _ _).trans ?_
+          rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs]
+      _ ≤ 1 * (L * dist y z) + (M * dist y z) * B := by
+          gcongr
+          · exact hχ_le y
+          · rw [← dist_eq_norm]; exact hg.dist_le_mul y hy z hz
+          · exact (Real.dist_eq _ _).symm.le.trans (hχ.dist_le_mul y z)
+          · exact hg_le z hz
+      _ = (L + M * B) * dist y z := by ring
+  · rw [hχ_zero z hz, zero_smul, sub_zero]
+    exact h_one y z hy hz
+  · rw [hχ_zero y hy, zero_smul, zero_sub, norm_neg, dist_comm]
+    exact h_one z y hz hy
+  · simp only [hχ_zero y hy, hχ_zero z hz, zero_smul, sub_zero, norm_zero]
+    positivity
+
+/-- **Converse Lyapunov theorem for exponential stability.**  Let `x_eq` be an equilibrium of
+`ẋ = f(t, x)`, with `f` continuously differentiable and `f(t, ·)` Lipschitz on the ball `D` of
+radius `r`, uniformly in `t`.  If trajectories starting in the ball `D₀` of radius `r₀ < r / k`
+obey `‖x(t) - x_eq‖ ≤ k ‖x(t₀) - x_eq‖ e^{-γ(t - t₀)}`, there is an exponential Lyapunov
+function with exponent `2` on `D₀` whose gradient is `O(‖x - x_eq‖)` there.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14. -/
+@[blueprint "thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate"
+  (title := "Converse Lyapunov theorem for exponential stability")
+  (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = f(t, x)$ on
+    $\mathbb{R}^n$, $f(t, x_{\mathrm{eq}}) = 0$ for all $t$, with $f$ continuously
+    differentiable on $\mathbb{R} \times D$, $D = \{x : \|x - x_{\mathrm{eq}}\| < r\}$, and
+    $f(t, \cdot)$ $L$-Lipschitz on $D$ for all $t$ (for $C^1$ $f$, equivalently
+    $\|\partial f / \partial x\| \le L$ there).  Let
+    $k, \gamma, r_0 > 0$ with $r_0 < r / k$, $D_0 = \{x : \|x - x_{\mathrm{eq}}\| < r_0\}$, and
+    suppose every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, with
+    $x(t_0) \in D_0$ satisfies
+    \[
+      \|x(t) - x_{\mathrm{eq}}\| \le k\,\|x(t_0) - x_{\mathrm{eq}}\|\,e^{-\gamma (t - t_0)}
+      \qquad \forall\, t \in [t_0, t_1].
+    \]
+    Then there is an exponential Lyapunov function $V$ with exponent $2$ on $D_0$
+    (\cref{def:continuousSystem-isExponentialLyapunovFunction}), that is, with
+    \[
+      c_1 \|x - x_{\mathrm{eq}}\|^2 \le V(t, x) \le c_2 \|x - x_{\mathrm{eq}}\|^2, \qquad
+      \frac{\partial V}{\partial t} + \frac{\partial V}{\partial x} f(t, x)
+        \le -c_3 \|x - x_{\mathrm{eq}}\|^2
+    \]
+    for $t \ge 0$ and $x \in D_0$, and $c_4 > 0$ with
+    $\|\partial V / \partial x\| \le c_4 \|x - x_{\mathrm{eq}}\|$ there.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.14.  Differences:
+    \begin{itemize} \item $f$ is $C^1$ and Lipschitz for all $t \in \mathbb{R}$, not only
+    $t \ge 0$: differentiability of $V$ at $t = 0$ involves solutions from negative initial
+    times. \item The Lipschitz bound replaces Khalil's equivalent Jacobian bound. \item The
+    estimate is assumed on trajectory segments. \end{itemize} -/)
+  (proof := /-- Cut the field off outside the ball: with $\chi$ a smooth bump equal to $1$ on the
+    ball of radius $\rho_1$, $k r_0 < \rho_1 < r$, and vanishing near the sphere of radius $r$,
+    $\tilde f = \chi f$ is $C^1$ and globally Lipschitz in $x$, uniformly in $t$, and agrees
+    with $f$ on the $\rho_1$-ball.  A solution of $\tilde f$ from $D_0$ never reaches the
+    $\rho_1$-sphere: up to the first time it would, it is a solution of $f$, so Khalil's
+    estimate keeps it within $k r_0 < \rho_1$.  It is therefore a solution of $f$, and obeys the
+    estimate for all time.  The construction of
+    \cref{thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable}, run for
+    $\tilde f$ from $D_0$, gives $V$; on $D_0$, where $\tilde f = f$, its derivative along
+    $\tilde f$ is its derivative along $f$. -/)]
+theorem exists_quadraticLyapunov_of_exponentialEstimate {s : ContinuousSystem ℝⁿ Unit Y}
+    {x_eq : ℝⁿ} {r k γ r₀ : ℝ}
+    (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
+    (hf : ContDiffOn ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 ()) (univ ×ˢ ball x_eq r))
+    (h_lip : ∃ L : ℝ≥0, ∀ t : ℝ, LipschitzOnWith L (fun x => s.F t x ()) (ball x_eq r))
+    (hk : 0 < k) (hγ : 0 < γ) (hr₀ : 0 < r₀) (hr₀r : r₀ < r / k)
+    (h_exp : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+      s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_eq‖ < r₀ →
+        ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ k * ‖x t₀ - x_eq‖ * Real.exp (-γ * (t - t₀))) :
+    ∃ V : ℝ → ℝⁿ → ℝ, s.IsExponentialLyapunovFunction V x_eq (ball x_eq r₀) 2 ∧
+      ∃ c₄ > 0, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ‖fderiv ℝ (V t) x‖ ≤ c₄ * ‖x - x_eq‖ := by
+  obtain ⟨L, hL⟩ := h_lip
+  have hkr₀ : k * r₀ < r := by rw [lt_div_iff₀ hk] at hr₀r; linarith
+  have hr : 0 < r := (by positivity : 0 < k * r₀).trans hkr₀
+  -- Step 1. A smooth cutoff `χ`, equal to `1` on the ball of radius `ρ₁ > k r₀` and `0` outside
+  -- the ball of radius `ρ₂ < r`.
+  set ρ₁ := (2 * (k * r₀) + r) / 3
+  set ρ₂ := (k * r₀ + 2 * r) / 3
+  have hρ₁ : k * r₀ < ρ₁ := by simp only [ρ₁]; linarith
+  have hρ₂ : ρ₂ < r := by simp only [ρ₂]; linarith
+  let χ : ContDiffBump x_eq := ⟨ρ₁, ρ₂, by positivity, by simp only [ρ₁, ρ₂]; linarith⟩
+  obtain ⟨M, hM⟩ := ContDiff.lipschitzWith_of_hasCompactSupport χ.hasCompactSupport
+    (χ.contDiff (n := 1)) one_ne_zero
+  have hχ_zero : ∀ y ∉ ball x_eq r, χ y = 0 := fun y hy =>
+    χ.zero_of_le_dist (hρ₂.le.trans (not_lt.mp (by rwa [mem_ball] at hy)))
+  -- Step 2. The cut-off field `fχ = χ f`: `C¹`, globally Lipschitz, and equal to `f` near `x_eq`.
+  set fχ : ℝ → ℝⁿ → ℝⁿ := fun t y => χ y • s.F t y ()
+  have h_agree : ∀ t, ∀ y ∈ closedBall x_eq ρ₁, fχ t y = s.F t y () := fun t y hy => by
+    simp [fχ, χ.one_of_mem_closedBall hy]
+  have hfχ : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => fχ p.1 p.2) := by
+    refine contDiff_iff_contDiffAt.mpr fun p => ?_
+    by_cases hp : p.2 ∈ ball x_eq r
+    · exact ((χ.contDiff.comp contDiff_snd).contDiffAt).smul
+        (hf.contDiffAt (prod_mem_nhds univ_mem (isOpen_ball.mem_nhds hp)))
+    · -- Outside the `ρ₂`-ball the cut-off field vanishes identically.
+      refine contDiffAt_const (c := (0 : ℝⁿ)).congr_of_eventuallyEq ?_
+      have h_far : ρ₂ < dist p.2 x_eq := hρ₂.trans_le (not_lt.mp (by rwa [mem_ball] at hp))
+      filter_upwards [(isOpen_lt continuous_const
+        ((continuous_snd.dist continuous_const))).mem_nhds h_far] with q hq
+      simp [fχ, χ.zero_of_le_dist hq.le]
+  have hfχ_lip : ∀ t, LipschitzWith (L + M * (L * r.toNNReal)) (fχ t) := fun t =>
+    lipschitzWith_smul_of_lipschitzOnWith hM
+      (fun y => by rw [abs_of_nonneg χ.nonneg]; exact χ.le_one) hχ_zero (hL t)
+      fun y hy => by
+        calc ‖s.F t y ()‖
+            = dist (s.F t y ()) (s.F t x_eq ()) := by rw [h_eq t, dist_zero_right]
+          _ ≤ L * dist y x_eq := (hL t).dist_le_mul y hy x_eq (mem_ball_self hr)
+          _ ≤ L * r := by gcongr; exact (mem_ball.mp hy).le
+          _ = ↑(L * r.toNNReal) := by rw [NNReal.coe_mul, Real.coe_toNNReal _ hr.le]
+  have hfχ_eq : ∀ t, fχ t x_eq = 0 := fun t => by simp [fχ, h_eq t]
+  -- Step 3. Starting in `D₀`, `‖x - x_eq‖ ≤ k ‖x - x_eq‖` (the estimate on a one-point segment),
+  -- so `D₀` lies inside the `ρ₁`-ball.
+  have h_small : ∀ x ∈ ball x_eq r₀, ‖x - x_eq‖ < ρ₁ := fun x hx => by
+    have h := h_exp 0 le_rfl 0 (fun _ => x)
+      (fun σ _ => HasFDerivWithinAt.of_subsingleton (subsingleton_Icc_of_ge le_rfl))
+      (mem_ball_iff_norm.mp hx) 0 ⟨le_rfl, le_rfl⟩
+    simp only [sub_self, mul_zero, Real.exp_zero, mul_one] at h
+    calc ‖x - x_eq‖ ≤ k * ‖x - x_eq‖ := h
+      _ < k * r₀ := mul_lt_mul_of_pos_left (mem_ball_iff_norm.mp hx) hk
+      _ < ρ₁ := hρ₁
+  -- Step 4. A solution of the cut-off field from `D₀` never reaches the `ρ₁`-sphere, so it is a
+  -- solution of the original field and obeys Khalil's estimate.
+  have h_traj : ∀ (y : ℝ → ℝⁿ) (t τ : ℝ), IsIntegralCurveOn y fχ (Ici t) →
+      (∀ σ ∈ Icc t τ, ‖y σ - x_eq‖ ≤ ρ₁) → s.IsTrajectoryOn (fun _ => ()) y (Icc t τ) :=
+    fun y t τ hy h_in σ hσ => ((hy σ hσ.1).mono Icc_subset_Ici_self).congr_deriv
+      (h_agree σ (y σ) (mem_closedBall_iff_norm.mpr (h_in σ hσ)))
+  have h_exp' : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → ℝⁿ, y t = x →
+      IsIntegralCurveOn y fχ (Ici t) → ∀ τ, t ≤ τ →
+        ‖y τ - x_eq‖ ≤ k * ‖x - x_eq‖ * Real.exp (-γ * (τ - t)) := by
+    intro t ht x hx y hy0 hy τ hτ
+    have h_bound : ∀ σ, (∀ u ∈ Icc t σ, ‖y u - x_eq‖ ≤ ρ₁) → t ≤ σ →
+        ‖y σ - x_eq‖ ≤ k * ‖x - x_eq‖ * Real.exp (-γ * (σ - t)) := fun σ h_in hσ => by
+      have h := h_exp t ht σ y (h_traj y t σ hy h_in) (by rw [hy0]; exact mem_ball_iff_norm.mp hx)
+        σ ⟨hσ, le_rfl⟩
+      rwa [hy0] at h
+    have h_inside : ∀ σ ∈ Icc t τ, ‖y σ - x_eq‖ < ρ₁ := by
+      intro σ hσ
+      by_contra h_out
+      obtain ⟨σ', hσ', hσ'_eq, h_before⟩ := exists_first_sphere_hit
+        ((hy.mono Icc_subset_Ici_self).continuousOn) (by rw [hy0]; exact h_small x hx) hσ
+        (not_lt.mp h_out)
+      have h_lt : ‖y σ' - x_eq‖ < ρ₁ :=
+        calc ‖y σ' - x_eq‖
+            ≤ k * ‖x - x_eq‖ * Real.exp (-γ * (σ' - t)) := h_bound σ' h_before hσ'.1
+          _ ≤ k * ‖x - x_eq‖ := mul_le_of_le_one_right (by positivity)
+              (Real.exp_le_one_iff.mpr (by nlinarith [hσ'.1]))
+          _ < k * r₀ := mul_lt_mul_of_pos_left (mem_ball_iff_norm.mp hx) hk
+          _ < ρ₁ := hρ₁
+      exact h_lt.ne hσ'_eq
+    exact h_bound τ (fun u hu => (h_inside u hu).le) hτ
+  -- Step 5. The construction for the cut-off field; on `D₀` its `V̇` is that of `f`.
+  obtain ⟨V, hV_diff, c₁, hc₁, c₂, hc₂, c₄, hc₄, hV⟩ :=
+    exists_quadraticLyapunov_of_estimateOn hfχ hfχ_lip hfχ_eq isOpen_ball hk hγ h_exp'
+  refine ⟨V, ⟨ball_mem_nhds x_eq hr₀, fun t _ x _ => hV_diff t x, two_pos, c₁, hc₁, c₂, hc₂,
+    1 / 2, by norm_num, fun t ht x hx => ?_⟩, c₄, hc₄, fun t ht x hx => (hV t ht x hx).2.2.2⟩
+  obtain ⟨h_lower, h_upper, h_lie, -⟩ := hV t ht x hx
+  rw [Real.rpow_two]
+  refine ⟨h_lower, h_upper, ?_⟩
+  change fderiv ℝ (Function.uncurry V) (t, x) (1, s.F t x ()) ≤ _
+  rw [← h_agree t x (mem_closedBall_iff_norm.mpr (h_small x hx).le)]
+  exact h_lie
+
+/-- **Converse Lyapunov theorem for global exponential stability**: if `f` is continuously
+differentiable and `f(t, ·)` is `L`-Lipschitz on `ℝⁿ` for every `t`, and `x_eq` is globally
+exponentially stable, there is an exponential Lyapunov function with exponent `2` on all of `ℝⁿ`
+whose gradient is `O(‖x - x_eq‖)`.
+
+The function is Khalil's `V(t, x) = ∫_t^{t+δ} ‖φ(τ; t, x) - x_eq‖² dτ`, written as
+`∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ` so that the limits do not move.  Khalil asks for a bounded
+Jacobian; the proof only uses `L` as a Lipschitz constant, so that is the hypothesis here (for `C¹`
+`f` the two are equivalent).  It is asked for every `t ∈ ℝ`, not only `t ≥ 0`: differentiability of
+`V` at `t = 0` involves solutions from slightly negative initial times.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14, global case. -/
+@[blueprint "thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable"
+  (title := "Converse Lyapunov theorem for global exponential stability")
+  (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = f(t, x)$ on
+    $\mathbb{R}^n$, with $f$ continuously differentiable on $\mathbb{R} \times \mathbb{R}^n$ and
+    $f(t, \cdot)$ $L$-Lipschitz for every $t \in \mathbb{R}$ (for $C^1$ $f$, equivalently
+    $\|\partial f / \partial x\| \le L$).  If
+    $x_{\mathrm{eq}}$ is globally exponentially stable
+    (\cref{def:continuousSystem-globallyExponentiallyStable}), there is an exponential Lyapunov
+    function $V$ with exponent $2$ on $\mathbb{R}^n$
+    (\cref{def:continuousSystem-isExponentialLyapunovFunction}) and $c_4 > 0$ with
+    $\|\partial V / \partial x\| \le c_4 \|x - x_{\mathrm{eq}}\|$ for all $t \ge 0$ and
+    $x \in \mathbb{R}^n$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.14, global case.
+    Differences: \begin{itemize} \item The Lipschitz bound replaces Khalil's equivalent Jacobian
+    bound, and is asked for all $t \in \mathbb{R}$: differentiability of $V$ at $t = 0$ involves
+    solutions from negative initial times.
+    \item The constants are $c_1 = \delta e^{-2L\delta}$, $c_2 = \delta k^2$ and
+    $c_4 = 2k\delta e^{L\delta}$, cruder than Khalil's. \end{itemize} -/)
+  (proof := /-- Solutions $\phi(\tau; t, x)$ exist from every $(t, x)$, since $f$ is globally
+    Lipschitz in $x$.  Let $V(t, x) = \int_0^\delta \|\phi(t + \sigma; t, x) -
+    x_{\mathrm{eq}}\|^2\,d\sigma$ with $\delta = \ln(2k^2 + 1)/(2\gamma)$.  The exponential
+    estimate and the lower bound $\|\phi(\tau) - x_{\mathrm{eq}}\|^2 \ge e^{-2L(\tau - t)}
+    \|x - x_{\mathrm{eq}}\|^2$ sandwich $V$.  $V$ is differentiable: appending time to the state,
+    solutions are differentiable in their initial data
+    (\cref{thm:hasFDerivAt-of-isIntegralCurveOn}) and locally Lipschitz in it
+    (\cref{lem:isIntegralCurveOn-exists-dist-le-of-contDiff}), so the integral can be
+    differentiated under the integral sign.  Along a solution, uniqueness gives
+    $V = \int_h^{h+\delta}\|\phi(t + \sigma) - x_{\mathrm{eq}}\|^2 d\sigma$, so
+    $\dot V = \|\phi(t + \delta) - x_{\mathrm{eq}}\|^2 - \|x - x_{\mathrm{eq}}\|^2 \le
+    (k^2 e^{-2\gamma\delta} - 1)\|x - x_{\mathrm{eq}}\|^2 \le -\tfrac12\|x - x_{\mathrm{eq}}\|^2$.
+    Finally, solutions from nearby states separate at most like $e^{L\sigma}$, which makes
+    $V(t, \cdot)$ locally Lipschitz with constant $\approx 2k\delta e^{L\delta}
+    \|x - x_{\mathrm{eq}}\|$. -/)]
+theorem exists_quadraticLyapunov_of_globallyExponentiallyStable
+    {s : ContinuousSystem ℝⁿ Unit Y} {x_eq : ℝⁿ}
+    (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
+    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 ()))
+    (h_lip : ∃ L : ℝ≥0, ∀ t : ℝ, LipschitzWith L (fun x => s.F t x ()))
+    (h_ges : s.GloballyExponentiallyStable x_eq) :
+    ∃ V : ℝ → ℝⁿ → ℝ, s.IsExponentialLyapunovFunction V x_eq univ 2 ∧
+      ∃ c₄ > 0, ∀ t : ℝ, 0 ≤ t → ∀ x : ℝⁿ, ‖fderiv ℝ (V t) x‖ ≤ c₄ * ‖x - x_eq‖ := by
+  obtain ⟨L, hf_lip⟩ := h_lip
+  obtain ⟨k, hk, γ, hγ, h_exp⟩ := h_ges
+  obtain ⟨V, hV_diff, c₁, hc₁, c₂, hc₂, c₄, hc₄, hV⟩ :=
+    exists_quadraticLyapunov_of_estimateOn hf hf_lip h_eq isOpen_univ hk hγ
+      fun t ht x _ y hy0 hy τ hτ => by
+        have h := h_exp t ht τ y (hy.mono Icc_subset_Ici_self) τ ⟨hτ, le_rfl⟩
+        rwa [hy0] at h
+  refine ⟨V, ⟨univ_mem, fun t _ x _ => hV_diff t x, two_pos, c₁, hc₁, c₂, hc₂, 1 / 2,
+    by norm_num, fun t ht x hx => ?_⟩, c₄, hc₄, fun t ht x => (hV t ht x (mem_univ x)).2.2.2⟩
+  obtain ⟨h_lower, h_upper, h_lie, -⟩ := hV t ht x hx
+  rw [Real.rpow_two]
+  exact ⟨h_lower, h_upper, h_lie⟩
+
+end ContinuousSystem

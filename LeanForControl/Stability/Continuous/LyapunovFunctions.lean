@@ -53,16 +53,16 @@ variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ## Certificates -/
 
-/-- A **Lyapunov function** on the neighbourhood `D` of `x_eq`: differentiable, zero at `x_eq`,
-bounded below by a positive definite `W₁`, and nonincreasing along the system.  It certifies
-stability.
+/-- A **Lyapunov function** on the neighbourhood `D` of `x_eq`: differentiable on `D`, zero at
+`x_eq`, bounded below by a positive definite `W₁`, and nonincreasing along the system.  It
+certifies stability.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8, with the lower bound only. -/
 @[blueprint "def:continuousSystem-isLyapunovFunction"
   (title := "Lyapunov function")
-  (statement := /-- A differentiable $V : \mathbb{R} \times E \to \mathbb{R}$ is a
+  (statement := /-- A function $V : \mathbb{R} \times E \to \mathbb{R}$ is a
     \emph{Lyapunov function} on a neighbourhood $D$ of $x_{\mathrm{eq}}$ when, for all $t \ge 0$
-    and $x \in D$,
+    and $x \in D$, $V$ is differentiable at $(t, x)$ and
     \[
       V(t, x_{\mathrm{eq}}) = 0, \qquad W_1(x) \le V(t, x), \qquad \dot V(t, x) \le 0,
     \]
@@ -75,8 +75,8 @@ structure IsLyapunovFunction (s : ContinuousSystem E Unit Y) (V : ℝ → E → 
     (D : Set E) : Prop where
   /-- The region is a neighbourhood of the equilibrium. -/
   nhds : D ∈ 𝓝 x_eq
-  /-- `V` is differentiable in `(t, x)`. -/
-  differentiable : Differentiable ℝ (Function.uncurry V)
+  /-- `V` is differentiable in `(t, x)` at every `t ≥ 0` and `x ∈ D`. -/
+  differentiableAt : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D, DifferentiableAt ℝ (Function.uncurry V) (t, x)
   /-- `V` vanishes at the equilibrium. -/
   zero : ∀ t : ℝ, 0 ≤ t → V t x_eq = 0
   /-- `V` is bounded below by a positive definite function. -/
@@ -122,16 +122,21 @@ structure IsStrictUniformLyapunovFunction (s : ContinuousSystem E Unit Y) (V : �
   strict : ∃ W₃ : E → ℝ, IsPositiveDefiniteOn W₃ x_eq D ∧
     ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D, s.lieDerivative V t x () ≤ -W₃ x
 
-/-- An **exponential Lyapunov function**: sandwiched between multiples of `‖x - x_eq‖ᵃ`, and
-decreasing along the system at least as fast as a multiple of it.  It certifies local exponential
-stability.
+/-- An **exponential Lyapunov function** with exponent `a > 0`: sandwiched between multiples of
+`‖x - x_eq‖ᵃ`, and decreasing along the system at least as fast as a multiple of it.  It
+certifies local exponential stability.
+
+The exponent is a parameter rather than an existential: concrete Lyapunov functions come with a
+known one (`a = 2` for quadratic forms and for the converse Lyapunov theorem), and results that
+combine `V` with other estimates need it.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10. -/
 @[blueprint "def:continuousSystem-isExponentialLyapunovFunction"
   (title := "Exponential Lyapunov function")
-  (statement := /-- A differentiable $V : \mathbb{R} \times E \to \mathbb{R}$ is an
-    \emph{exponential Lyapunov function} on a neighbourhood $D$ of $x_{\mathrm{eq}}$ when there
-    are $k_1, k_2, k_3, a > 0$ with, for all $t \ge 0$ and $x \in D$,
+  (statement := /-- A function $V : \mathbb{R} \times E \to \mathbb{R}$ is an
+    \emph{exponential Lyapunov function} with exponent $a > 0$ on a neighbourhood $D$ of
+    $x_{\mathrm{eq}}$ when there are $k_1, k_2, k_3 > 0$ with, for all $t \ge 0$ and $x \in D$,
+    $V$ differentiable at $(t, x)$ and
     \[
       k_1 \|x - x_{\mathrm{eq}}\|^{a} \le V(t, x) \le k_2 \|x - x_{\mathrm{eq}}\|^{a},
       \qquad \dot V(t, x) \le -k_3 \|x - x_{\mathrm{eq}}\|^{a}.
@@ -141,41 +146,43 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10. -/
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.10. -/)]
 structure IsExponentialLyapunovFunction (s : ContinuousSystem E Unit Y) (V : ℝ → E → ℝ)
-    (x_eq : E) (D : Set E) : Prop where
+    (x_eq : E) (D : Set E) (a : ℝ) : Prop where
   /-- The region is a neighbourhood of the equilibrium. -/
   nhds : D ∈ 𝓝 x_eq
-  /-- `V` is differentiable in `(t, x)`. -/
-  differentiable : Differentiable ℝ (Function.uncurry V)
+  /-- `V` is differentiable in `(t, x)` at every `t ≥ 0` and `x ∈ D`. -/
+  differentiableAt : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D, DifferentiableAt ℝ (Function.uncurry V) (t, x)
+  /-- The exponent is positive. -/
+  exponent_pos : 0 < a
   /-- The power-law sandwich and decay rate. -/
-  bounds : ∃ k₁ > 0, ∃ k₂ > 0, ∃ k₃ > 0, ∃ a > (0 : ℝ), ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D,
+  bounds : ∃ k₁ > 0, ∃ k₂ > 0, ∃ k₃ > 0, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D,
     k₁ * ‖x - x_eq‖ ^ a ≤ V t x ∧ V t x ≤ k₂ * ‖x - x_eq‖ ^ a ∧
       s.lieDerivative V t x () ≤ -(k₃ * ‖x - x_eq‖ ^ a)
 
 /-! ## Time-invariant Lyapunov functions -/
 
-/-- **A time-invariant Lyapunov function is a uniform one.**  If `V(x)` is differentiable,
+/-- **A time-invariant Lyapunov function is a uniform one.**  If `V(x)` is differentiable on `D`,
 positive definite on `D`, and does not increase along the system, then `V(t, x) = V(x)` is a
 uniform Lyapunov function: `V` is its own lower and upper bound. -/
 @[blueprint "lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant"
   (title := "Time-invariant Lyapunov functions are uniform")
   (latexEnv := "lemma")
-  (statement := /-- Let $V : E \to \mathbb{R}$ be differentiable and positive definite on a
-    neighbourhood $D$ of $x_{\mathrm{eq}}$ (\cref{def:isPositiveDefiniteOn}), with
+  (statement := /-- Let $V : E \to \mathbb{R}$ be positive definite on a neighbourhood $D$ of
+    $x_{\mathrm{eq}}$ (\cref{def:isPositiveDefiniteOn}) and differentiable at its points, with
     $\nabla V(x) \cdot f(t, x) \le 0$ for all $t \ge 0$, $x \in D$.  Then $(t, x) \mapsto V(x)$
     is a uniform Lyapunov function (\cref{def:continuousSystem-isUniformLyapunovFunction}). -/)
   (proof := /-- Take $W_1 = W_2 = V$.  The derivative along the system of a function of $x$ alone
     is its directional derivative along the vector field. -/)]
 theorem IsUniformLyapunovFunction.of_timeInvariant {s : ContinuousSystem E Unit Y} {V : E → ℝ}
-    {x_eq : E} {D : Set E} (hD : D ∈ 𝓝 x_eq) (hV_diff : Differentiable ℝ V)
+    {x_eq : E} {D : Set E} (hD : D ∈ 𝓝 x_eq) (hV_diff : ∀ x ∈ D, DifferentiableAt ℝ V x)
     (hV_pos : IsPositiveDefiniteOn V x_eq D)
     (hV_dec : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D, fderiv ℝ V x (s.F t x ()) ≤ 0) :
     s.IsUniformLyapunovFunction (fun _ => V) x_eq D where
   nhds := hD
-  differentiable := hV_diff.comp differentiable_snd
+  differentiableAt := fun _ _ x hx => (hV_diff x hx).comp _ differentiableAt_snd
   zero := fun _ _ => hV_pos.2.1
   lower := ⟨V, hV_pos, fun _ _ _ _ => le_rfl⟩
   lie_nonpos := fun t ht x hx =>
-    (lieDerivative_const (v := fun t x => s.F t x ()) (hV_diff x)).trans_le (hV_dec t ht x hx)
+    (lieDerivative_const (v := fun t x => s.F t x ()) (hV_diff x hx)).trans_le (hV_dec t ht x hx)
   upper := ⟨V, hV_pos, fun _ _ _ _ => le_rfl⟩
 
 /-- **A strictly decreasing time-invariant Lyapunov function is a strict uniform one.**  If in
@@ -184,15 +191,16 @@ Lyapunov function. -/
 @[blueprint "lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant"
   (title := "Strict time-invariant Lyapunov functions are strict uniform")
   (latexEnv := "lemma")
-  (statement := /-- Let $V : E \to \mathbb{R}$ be differentiable and positive definite on a
-    neighbourhood $D$ of $x_{\mathrm{eq}}$, with $\nabla V(x) \cdot f(t, x) \le -W_3(x)$ for all
+  (statement := /-- Let $V : E \to \mathbb{R}$ be positive definite on a neighbourhood $D$ of
+    $x_{\mathrm{eq}}$ and differentiable at its points, with
+    $\nabla V(x) \cdot f(t, x) \le -W_3(x)$ for all
     $t \ge 0$, $x \in D$, for some $W_3$ positive definite on $D$.  Then $(t, x) \mapsto V(x)$ is
     a strict uniform Lyapunov function
     (\cref{def:continuousSystem-isStrictUniformLyapunovFunction}). -/)
   (proof := /-- As for \cref{lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant};
     $-W_3 \le 0$ gives the non-strict decrease. -/)]
 theorem IsStrictUniformLyapunovFunction.of_timeInvariant {s : ContinuousSystem E Unit Y}
-    {V : E → ℝ} {x_eq : E} {D : Set E} (hD : D ∈ 𝓝 x_eq) (hV_diff : Differentiable ℝ V)
+    {V : E → ℝ} {x_eq : E} {D : Set E} (hD : D ∈ 𝓝 x_eq) (hV_diff : ∀ x ∈ D, DifferentiableAt ℝ V x)
     (hV_pos : IsPositiveDefiniteOn V x_eq D) {W₃ : E → ℝ} (hW₃ : IsPositiveDefiniteOn W₃ x_eq D)
     (hV_dec : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ D, fderiv ℝ V x (s.F t x ()) ≤ -W₃ x) :
     s.IsStrictUniformLyapunovFunction (fun _ => V) x_eq D where
@@ -200,7 +208,7 @@ theorem IsStrictUniformLyapunovFunction.of_timeInvariant {s : ContinuousSystem E
     IsUniformLyapunovFunction.of_timeInvariant hD hV_diff hV_pos fun t ht x hx => by
       linarith [hV_dec t ht x hx, hW₃.nonneg hx]
   strict := ⟨W₃, hW₃, fun t ht x hx =>
-    (lieDerivative_const (v := fun t x => s.F t x ()) (hV_diff x)).trans_le (hV_dec t ht x hx)⟩
+    (lieDerivative_const (v := fun t x => s.F t x ()) (hV_diff x hx)).trans_le (hV_dec t ht x hx)⟩
 
 /-- **For a time-invariant system, strict decrease is enough.**  If the state equation is a
 continuous time-invariant field `f` with `f(x_eq) = 0`, and `V(x)` is `C¹`, positive definite on
@@ -225,7 +233,7 @@ theorem IsStrictUniformLyapunovFunction.of_timeInvariant_of_neg {s : ContinuousS
     (hV_pos : IsPositiveDefiniteOn V x_eq D) (hf_eq : f x_eq = 0)
     (hV_neg : ∀ x ∈ D, x ≠ x_eq → fderiv ℝ V x (f x) < 0) :
     s.IsStrictUniformLyapunovFunction (fun _ => V) x_eq D :=
-  of_timeInvariant hD (hV_c1.differentiable one_ne_zero) hV_pos
+  of_timeInvariant hD (fun x _ => hV_c1.differentiable one_ne_zero x) hV_pos
     (W₃ := fun x => -fderiv ℝ V x (f x))
     ⟨((hV_c1.continuous_fderiv one_ne_zero).clm_apply hf).neg.continuousOn, by simp [hf_eq],
       fun x hx hne => neg_pos.mpr (hV_neg x hx hne)⟩

@@ -204,14 +204,17 @@ private theorem solution_stays_in_region_and_above_initial_certificate
       (hV.continuous.comp_continuousOn hφ.continuousOn) hstart hVstart hboundary_zero
     intro t ht htD
     have hcertificate_deriv := hφ.hasDerivWithinAt_lieDerivative
-      (V := fun _ ↦ V) ((hV.differentiable one_ne_zero).comp differentiable_snd)
+      (V := fun _ ↦ V)
+      (fun τ _ => (hV.differentiable one_ne_zero (φ τ)).comp (τ, φ τ) differentiableAt_snd)
       (Ioo_subset_Icc_self ht)
     rw [lieDerivative_const (hV.differentiable one_ne_zero (φ t))] at hcertificate_deriv
     have hcertificate_deriv := hcertificate_deriv.hasDerivAt (Icc_mem_nhds ht.1 ht.2)
     exact ⟨_, hcertificate_deriv, hLie_nonneg t (Ioo_subset_Icc_self ht) htD⟩
   refine ⟨hstay_region, ?_⟩
   have hanti := hφ.antitoneOn_of_lieDerivative_nonpos (V := fun _ x ↦ -V x)
-    (convex_Icc 0 T) ((hV.differentiable one_ne_zero).neg.comp differentiable_snd) (by
+    (convex_Icc 0 T)
+    (fun τ _ => ((hV.differentiable one_ne_zero (φ τ)).comp (τ, φ τ) differentiableAt_snd).neg)
+    (by
       intro t ht
       rw [interior_Icc] at ht
       rw [lieDerivative_const (V := fun x ↦ -V x)
@@ -288,8 +291,8 @@ private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
     -- Apply the shared monotonicity theorem to W(t,x) = γ t - V(x).
     have hlinear_growth := htraj.antitoneOn_of_lieDerivative_nonpos
       (V := fun t x ↦ -V x + γ * t) (convex_Icc 0 T)
-      (((hV.differentiable one_ne_zero).neg.comp differentiable_snd).add
-        (differentiable_fst.const_mul γ)) (by
+      (fun τ _ => ((hV.differentiable one_ne_zero (φ τ)).comp (τ, φ τ)
+        differentiableAt_snd).neg.add (differentiableAt_fst.const_mul γ)) (by
           intro t ht
           rw [interior_Icc] at ht
           rw [lieDerivative_add_mul (V := fun x ↦ -V x) γ

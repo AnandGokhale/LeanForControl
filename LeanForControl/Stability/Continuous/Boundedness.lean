@@ -57,7 +57,9 @@ open Set Filter Topology Metric
 
 namespace ContinuousSystem
 
-variable {Y : Type*} {n : ℕ}
+universe u
+
+variable {Y : Type u} {n : ℕ}
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-- **Khalil's ultimate boundedness theorem.**  Let `α₁(‖x - x_c‖) ≤ V(t, x) ≤ α₂(‖x - x_c‖)` on
@@ -68,17 +70,18 @@ the `c`-ball, for any `c` with `μ < c < r` and `α₂(c) < b₁`, the trajector
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
 @[blueprint "thm:continuousSystem-exists-classKL-ultimateBound-of-lyapunov"
   (title := "Ultimate boundedness theorem")
-  (statement := /-- Let the state space be $\mathbb{R}^n$, $V : \mathbb{R} \times \mathbb{R}^n
-    \to \mathbb{R}$ differentiable, and $\alpha_1 : [0, r) \to [0, b_1)$,
-    $\alpha_2 : [0, r) \to [0, b_2)$ class $\mathcal{K}$, with
+  (statement := /-- Let the state space be $\mathbb{R}^n$, $\alpha_1 : [0, r) \to [0, b_1)$ and
+    $\alpha_2 : [0, r) \to [0, b_2)$ class $\mathcal{K}$, and $V : \mathbb{R} \times \mathbb{R}^n
+    \to \mathbb{R}$ differentiable at $(t, x)$ and
     \[
       \alpha_1(\|x - x_c\|) \le V(t, x) \le \alpha_2(\|x - x_c\|), \qquad
       \dot V(t, x) \le -W_3(x) \quad \text{for } \mu \le \|x - x_c\|
     \]
     whenever $t \ge 0$ and $\|x - x_c\| < r$, where $W_3$ is positive definite about $x_c$ on
-    the closed $r$-ball (\cref{def:isPositiveDefiniteOn}) and $\mu \ge 0$.  Let $\mu < c < r$
-    with $\alpha_2(c) < b_1$.  Then there is a class $\mathcal{KL}$ function $\beta$ on
-    $[0, c)$ such that every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, with
+    the closed $r$-ball (\cref{def:isPositiveDefiniteOn}) and $0 \le \mu < c$, where $c < r$
+    and $\alpha_2(c) < b_1$.  Then there is a class $\mathcal{KL}$ function $\beta$ on
+    $[0, c)$, depending only on $\alpha_1, \alpha_2, W_3$ and $c$ --- not on the system, $V$
+    or $\mu$ --- such that every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, with
     $\|x(t_0) - x_c\| < c$ satisfies
     \[
       \|x(t) - x_c\| \le \max\bigl\{\beta(\|x(t_0) - x_c\|, t - t_0),\;
@@ -104,44 +107,60 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
     \cref{thm:classK-bound-above-level} gives
     $v(t) \le \max\{\sigma(\alpha_2(\|x(t_0) - x_c\|), t - t_0), \eta\}$.  Apply the increasing
     $\alpha_1^{-1}$ and set $\beta(\rho, s) = \alpha_1^{-1}(\sigma(\alpha_2(\rho), s))$. -/)]
-theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
-    {W₃ : ℝⁿ → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
-      α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
+theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ} {r b₁ b₂ c : ℝ}
+    (α₁ : ClassK r b₁) (α₂ : ClassK r b₂) {W₃ : ℝⁿ → ℝ}
     (hW₃ : IsPositiveDefiniteOn W₃ x_c (closedBall x_c r))
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
-      s.lieDerivative V t y () ≤ -W₃ y)
-    (hμ : 0 ≤ μ) (hμc : μ < c) (hcr : c < r) (hc : α₂.toFun c < b₁) :
+    (hc_pos : 0 < c) (hcr : c < r) (hc : α₂.toFun c < b₁) :
     ∃ β : ClassKL c, (∀ ρ ∈ Ico 0 c, ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ)) ∧
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
-        s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
-          ∀ t ∈ Icc t₀ t₁,
-            ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
-  -- Step 1. The levels `η = α₂(μ) < d = α₂(c) < b₁`, and `α₃ ≤ W₃` on the ball.
-  have hc_pos : 0 < c := hμ.trans_lt hμc
+      ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+          DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+          α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
+          s.lieDerivative V t y () ≤ -W₃ y) →
+        0 ≤ μ → μ < c →
+        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+          s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
+            ∀ t ∈ Icc t₀ t₁,
+              ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
+  -- Step 1. The level `d = α₂(c) < b₁`, and `α₃ ≤ W₃` on the ball.
   have hr : 0 < r := hc_pos.trans hcr
   have hc_mem : c ∈ Ico 0 r := ⟨hc_pos.le, hcr⟩
-  have hμ_mem : μ ∈ Ico 0 r := ⟨hμ, hμc.trans hcr⟩
   set d := α₂.toFun c
-  set η := α₂.toFun μ
-  have hη_lt_d : η < d := α₂.strict_mono hμ_mem hc_mem hμc
-  have hη_nonneg : 0 ≤ η := (α₂.maps_to hμ_mem).1
+  have hd_pos : 0 < d := (α₂.pos_iff hc_mem).mpr hc_pos
   have hd_lt_b₂ : d < b₂ := (α₂.maps_to hc_mem).2
-  have hd_mem₁ : d ∈ Ico 0 b₁ := ⟨hη_nonneg.trans hη_lt_d.le, hc⟩
+  have hd_mem₁ : d ∈ Ico 0 b₁ := ⟨hd_pos.le, hc⟩
   obtain ⟨_, _, α₃, _, hW₃_bd⟩ := hW₃.exists_classK_bounds hr subset_rfl
   -- Step 2. The comparison function `α = α₃ ∘ α₂⁻¹` on `[0, d)`, its class KL bound `σ`, and
   -- `β(ρ, s) = α₁⁻¹(σ(α₂(ρ), s))`.  `ClassK.comp` needs the domain of `α₃`'s restriction to be
   -- literally the range of `α₂⁻¹` on `[0, d)`, which is `α₂⁻¹(d)`; that this is `c` is a
-  -- theorem, used only to check the restriction is legal.
+  -- theorem, used only to check the restriction is legal.  None of this involves the system,
+  -- `V` or `μ`, so neither does `β`.
   have h_inv_d : α₂.invFun d = c := α₂.left_inv hc_mem
   let α : ClassK d _ := ClassK.comp (α₃.restrict (c := α₂.symm.toFun d)
     (show 0 < α₂.invFun d by rw [h_inv_d]; exact hc_pos)
     (show α₂.invFun d < r by rw [h_inv_d]; exact hcr))
-    (α₂.symm.restrict (hη_nonneg.trans_lt hη_lt_d) hd_lt_b₂)
+    (α₂.symm.restrict hd_pos hd_lt_b₂)
   have hα_eq : ∀ y, α.toFun y = α₃.toFun (α₂.invFun y) := fun _ => rfl
   obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_above_level
   obtain ⟨β, hβ_eq⟩ := ClassKL.exists_comp_sandwich α₁ α₂ hσ_zero hc_pos hcr rfl hc
+  -- `β` never exceeds its value at elapsed time `0`, which is at most `α₁⁻¹(α₂(ρ))`, since
+  -- `σ(y, θ) ≤ σ(y, 0) ≤ y`.
+  have hβ_le : ∀ ρ ∈ Ico 0 c, ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ) :=
+    fun ρ hρ θ hθ => by
+    have hy := α₂.toFun_mem_Ico hcr rfl hρ
+    have hσ_mem := σ.toFun_mem_Ico hσ_zero hy hθ
+    have hσ_le : σ.toFun (α₂.toFun ρ) θ ≤ α₂.toFun ρ :=
+      (σ.anti_s_mono hy (mem_Ici.mpr le_rfl) (mem_Ici.mpr hθ) hθ).trans (hσ_zero _ hy)
+    rw [hβ_eq]
+    exact (α₁.inv_mono_iff ⟨hσ_mem.1, hσ_mem.2.trans hc⟩ ⟨hy.1, hy.2.trans hc⟩).mpr hσ_le
+  refine ⟨β, hβ_le, fun {Y s V μ} hV hV_bd hlie hμ hμc t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
+  -- The ultimate level `η = α₂(μ) < d`.
+  have hμ_mem : μ ∈ Ico 0 r := ⟨hμ, hμc.trans hcr⟩
+  set η := α₂.toFun μ
+  have hη_lt_d : η < d := α₂.strict_mono hμ_mem hc_mem hμc
+  have hη_nonneg : 0 ≤ η := (α₂.maps_to hμ_mem).1
   -- Above `η` in the ball, `α₂(‖y - x_c‖) ≥ V > α₂(μ)`, so `y` is outside the `μ`-ball ...
   have h_far : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ‖y - x_c‖ < r → η < V τ y → μ < ‖y - x_c‖ :=
     fun τ hτ y hy hηV =>
@@ -162,24 +181,7 @@ theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {s : ContinuousSyste
       rw [hα_eq]
       exact α₂.toFun_invFun_le α₃ hy_mem hV_mem hV_up
     linarith [hlie τ hτ y (h_far τ hτ y hy hηV).le hy, (hW₃_bd y hy).1]
-  -- `β` never exceeds its value at elapsed time `0`, which is at most `α₁⁻¹(α₂(ρ))`, since
-  -- `σ(y, θ) ≤ σ(y, 0) ≤ y`.
-  have hβ_le : ∀ ρ ∈ Ico 0 c, ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ) :=
-    fun ρ hρ θ hθ => by
-    have hy := α₂.toFun_mem_Ico hcr rfl hρ
-    have hσ_mem := σ.toFun_mem_Ico hσ_zero hy hθ
-    have hσ_le : σ.toFun (α₂.toFun ρ) θ ≤ α₂.toFun ρ :=
-      (σ.anti_s_mono hy (mem_Ici.mpr le_rfl) (mem_Ici.mpr hθ) hθ).trans (hσ_zero _ hy)
-    rw [hβ_eq]
-    exact (α₁.inv_mono_iff ⟨hσ_mem.1, hσ_mem.2.trans hc⟩ ⟨hy.1, hy.2.trans hc⟩).mpr hσ_le
-  refine ⟨β, hβ_le, fun t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
-  -- Step 3. `v(τ) = V(τ, x(τ))` is continuous, with right derivative `V̇`, and starts below `d`.
-  have hv_cont : ContinuousOn (fun τ => V τ (x τ)) (Icc t₀ t₁) :=
-    hV.continuous.comp_continuousOn (continuousOn_id.prodMk (IsIntegralCurveOn.continuousOn hx))
-  have hv_deriv : ∀ τ ∈ Ico t₀ t₁, HasDerivWithinAt (fun u => V u (x u))
-      (s.lieDerivative V τ (x τ) ()) (Ici τ) τ := fun τ hτ =>
-    (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV
-      (Ico_subset_Icc_self hτ)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hτ)
+  -- Step 3. `v(τ) = V(τ, x(τ))` starts below `d`.
   have hx₀_mem : ‖x t₀ - x_c‖ ∈ Ico 0 r := ⟨norm_nonneg _, h_init.trans hcr⟩
   have hv₀_up : V t₀ (x t₀) ≤ α₂.toFun ‖x t₀ - x_c‖ := (hV_bd t₀ ht₀ _ hx₀_mem.2).2
   have h_α₂₀_mem : α₂.toFun ‖x t₀ - x_c‖ ∈ Ico 0 d :=
@@ -189,7 +191,8 @@ theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {s : ContinuousSyste
   -- `V ≥ α₁(r') = d`.
   have hr'_mem : α₁.invFun d ∈ Ico 0 r := α₁.inv_maps_to hd_mem₁
   have h_trap : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ < r := fun τ hτ =>
-    (norm_lt_of_level_lt hV hx
+    (norm_lt_of_level_lt hx
+      (fun u hu hu_norm => hV u (ht₀.trans hu.1) _ (hu_norm.trans_lt hr'_mem.2))
       ((α₁.strict_mono_iff hx₀_mem hr'_mem).mp (by
         rw [α₁.right_inv hd_mem₁]
         exact (hV_bd t₀ ht₀ _ hx₀_mem.2).1.trans_lt (lt_of_le_of_lt (le_max_left _ _) h_max_lt_d)))
@@ -199,6 +202,15 @@ theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {s : ContinuousSyste
         exact (hV_bd u (ht₀.trans hu.1) _ (hu_norm ▸ hr'_mem.2)).1)
       (fun u hu hu_norm => h_nonpos u (ht₀.trans hu.1) _ (hu_norm.trans_lt hr'_mem.2))
       τ hτ).trans hr'_mem.2
+  -- Inside the ball `V` is differentiable, so `v` is continuous with right derivative `V̇`.
+  have hV_traj : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, x τ) :=
+    fun τ hτ => hV τ (ht₀.trans hτ.1) _ (h_trap τ hτ)
+  have hv_cont : ContinuousOn (fun τ => V τ (x τ)) (Icc t₀ t₁) :=
+    IsIntegralCurveOn.continuousOn_comp hx hV_traj
+  have hv_deriv : ∀ τ ∈ Ico t₀ t₁, HasDerivWithinAt (fun u => V u (x u))
+      (s.lieDerivative V τ (x τ) ()) (Ici τ) τ := fun τ hτ =>
+    (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV_traj
+      (Ico_subset_Icc_self hτ)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hτ)
   -- Step 5. Inside the ball `v` falls while above `η`, so it stays in `[0, d)`, and decays to `η`:
   -- `v(t) ≤ max (σ(v(t₀), t - t₀)) η`.
   have hv_max : ∀ τ ∈ Icc t₀ t₁, V τ (x τ) ≤ max (V t₀ (x t₀)) η :=
@@ -248,7 +260,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
     increasing in its first argument and decreasing in its second. -/)]
 theorem uniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
     {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
-    {W₃ : ℝⁿ → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
+    {W₃ : ℝⁿ → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+      DifferentiableAt ℝ (Function.uncurry V) (t, y))
     (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c (closedBall x_c r))
@@ -256,9 +270,9 @@ theorem uniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Uni
       s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 ≤ μ) (hμc : μ < c) (hcr : c < r) (hc : α₂.toFun c < b₁) :
     s.UniformlyBounded x_c := by
-  obtain ⟨β, -, hβ⟩ :=
-    exists_classKL_ultimateBound_of_lyapunov α₁ α₂ hV hV_bd hW₃ hlie hμ hμc hcr hc
   have hc_pos : 0 < c := hμ.trans_lt hμc
+  obtain ⟨β, -, hβ'⟩ := exists_classKL_ultimateBound_of_lyapunov α₁ α₂ hW₃ hc_pos hcr hc
+  have hβ := hβ' hV hV_bd hlie hμ hμc
   refine ⟨c, hc_pos, fun a ha hac => ⟨max (β.toFun a 0) (α₁.invFun (α₂.toFun μ)), ?_, ?_⟩⟩
   · refine lt_max_of_lt_left ?_
     have h : β.toFun 0 0 < β.toFun a 0 := β.strict_mono_r 0 le_rfl ⟨le_rfl, hc_pos⟩ ⟨ha.le, hac⟩ ha
@@ -293,7 +307,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
     $[t_0, \infty)$ to $[t_0, t]$ and apply the estimate. -/)]
 theorem uniformlyUltimatelyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
     {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
-    {W₃ : ℝⁿ → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
+    {W₃ : ℝⁿ → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+      DifferentiableAt ℝ (Function.uncurry V) (t, y))
     (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c (closedBall x_c r))
@@ -302,9 +318,9 @@ theorem uniformlyUltimatelyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem 
     (hμ : 0 < μ) (hμc : μ < c) (hcr : c < r) (hc : α₂.toFun c < b₁)
     (h_complete : ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ (ball x_c c)) :
     s.UniformlyUltimatelyBounded x_c (α₁.invFun (α₂.toFun μ)) := by
-  obtain ⟨β, -, hβ⟩ :=
-    exists_classKL_ultimateBound_of_lyapunov α₁ α₂ hV hV_bd hW₃ hlie hμ.le hμc hcr hc
   have hc_pos : 0 < c := hμ.trans hμc
+  obtain ⟨β, -, hβ'⟩ := exists_classKL_ultimateBound_of_lyapunov α₁ α₂ hW₃ hc_pos hcr hc
+  have hβ := hβ' hV hV_bd hlie hμ.le hμc
   have hμ_mem : μ ∈ Ico 0 r := ⟨hμ.le, hμc.trans hcr⟩
   -- The ultimate bound is positive.
   have hη_mem : α₂.toFun μ ∈ Ico 0 b₁ :=
@@ -336,7 +352,7 @@ function `β`.
 `W₃` need not be bounded below away from the origin: a positive definite `W₃` may tend to `0` at
 infinity, so no class `K` function of `‖x - x_c‖` lies below it on all of `ℝⁿ`, and the class
 `KL` bound of each ball cannot simply be reused for every ball.  Instead the local bounds of the
-balls of radius `k + μ + 1`, `k ∈ ℕ`, are summed into a family of decay envelopes monotone in the
+balls of radius `k + 1`, `k ∈ ℕ`, are summed into a family of decay envelopes monotone in the
 radius, which `ClassKLGlobal.of_KInfty_LSingular_family` assembles into one global class `KL`
 function.
 
@@ -351,7 +367,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
       \dot V(t, x) \le -W_3(x) \quad \text{for } \mu \le \|x - x_c\|
     \]
     for all $t \ge 0$ and $x \in \mathbb{R}^n$.  Then there is a global class $\mathcal{KL}$
-    function $\beta$ (\cref{def:isClassKLGlobal}) such that every trajectory on a segment
+    function $\beta$ (\cref{def:isClassKLGlobal}), depending only on $\alpha_1, \alpha_2$ and
+    $W_3$ --- not on the system, $V$ or $\mu$ --- such that every trajectory on a segment
     $[t_0, t_1]$, $t_0 \ge 0$, satisfies
     \[
       \|x(t) - x_c\| \le \max\bigl\{\beta(\|x(t_0) - x_c\|, t - t_0),\;
@@ -363,7 +380,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     $\mathbb{R}^n$, which need not exist: $W_3$ may tend to $0$ at infinity. -/)
   (proof := /-- For each $k \in \mathbb{N}$, apply
     \cref{thm:continuousSystem-exists-classKL-ultimateBound-of-lyapunov} with initial radius
-    $c_k = k + \mu + 1$, on a ball large enough that $\alpha_2(c_k) < \alpha_1(R_k)$.  It gives a
+    $c_k = k + 1$, on a ball large enough that $\alpha_2(c_k) < \alpha_1(R_k)$.  If
+    $\mu \ge \|x(t_0) - x_c\|$, the bound of $\beta_k$ at an index with $c_k > \mu$ is at most
+    $\alpha_1^{-1}(\alpha_2(\mu))$, so the trajectory never leaves the ultimate bound.  It gives a
     class $\mathcal{KL}$ $\beta_k$ with $\beta_k(\rho, s) \le \alpha_1^{-1}(\alpha_2(\rho))$.  The
     sums $U(r, s) = \sum_{k \le \lceil r \rceil} \beta_k(k, s)$ are positive, decreasing to $0$
     in $s$, and increasing in $r$, and a trajectory from the $r$-ball that is outside the
@@ -372,30 +391,36 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     \cref{lem:classKLGlobal-of-KInfty-LSingular-family} turns the class $\mathcal{K}_{\infty}$
     bound $\alpha$ and the family $U$ into a global class $\mathcal{KL}$ $\beta$ above
     $\min\{\alpha(r), \sqrt{\alpha(r)\,U(r + 1, s)}\}$. -/)]
-theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n]
-    {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {μ : ℝ}
-    (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
-      α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
-    (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
-    (hμ : 0 ≤ μ) :
-    ∃ β : ClassKLGlobal, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
-      s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
-        ∀ t ∈ Icc t₀ t₁,
-          ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
-  -- Step 1. The local theorem from the ball of radius `c = k + μ + 1`, for each `k : ℕ`.
-  have h_local : ∀ k : ℕ, ∃ β : ClassKL (k + μ + 1),
-      (∀ ρ ∈ Ico 0 ((k : ℝ) + μ + 1), ∀ θ : ℝ, 0 ≤ θ →
-        β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ)) ∧
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
-        s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < k + μ + 1 →
-          ∀ t ∈ Icc t₀ t₁,
-            ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
+theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
+    (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} (hW₃ : IsPositiveDefiniteOn W₃ x_c univ) :
+    ∃ β : ClassKLGlobal,
+      ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
+        Differentiable ℝ (Function.uncurry V) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+          α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
+        0 ≤ μ →
+        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+          s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
+            ∀ t ∈ Icc t₀ t₁,
+              ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
+  -- Step 1. The local theorem from the ball of radius `k + 1`, for each `k : ℕ`, read through the
+  -- class `K∞` functions.
+  have h_local : ∀ k : ℕ, ∃ β : ClassKL (k + 1),
+      (∀ ρ ∈ Ico 0 ((k : ℝ) + 1), ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ)) ∧
+      ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
+        Differentiable ℝ (Function.uncurry V) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+          α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
+        0 ≤ μ → μ < k + 1 →
+        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+          s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < k + 1 →
+            ∀ t ∈ Icc t₀ t₁,
+              ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
     intro k
-    set c : ℝ := k + μ + 1
+    set c : ℝ := k + 1
     have hc_pos : 0 < c := by positivity
-    have hμc : μ < c := by linarith [show c = k + μ + 1 from rfl, (k.cast_nonneg : (0 : ℝ) ≤ k)]
     -- A radius `R > c` large enough that `α₂(c) < α₁(R)`.
     set R := max (c + 1) (α₁.invFun (α₂.toFun c) + 1)
     have hcR : c < R := (lt_add_one c).trans_le (le_max_left _ _)
@@ -407,24 +432,27 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n]
         _ < α₁.toFun R := α₁.strict_mono (α₁.inv_maps_to hα₂c_mem) hR_pos.le
             ((lt_add_one _).trans_le (le_max_right _ _))
     obtain ⟨β, hβ_le, hβ⟩ := exists_classKL_ultimateBound_of_lyapunov
-      (α₁.toClassK hR_pos) (α₂.toClassK hR_pos) hV (fun t ht y _ => hV_bd t ht y)
-      (hW₃.mono (subset_univ _)) (fun t ht y hy _ => hlie t ht y hy) hμ hμc hcR h_α₂c
+      (α₁.toClassK hR_pos) (α₂.toClassK hR_pos) (hW₃.mono (subset_univ _)) hc_pos hcR h_α₂c
     -- The restrictions keep the inverse of `α₁` on the values `α₂` takes below `c`.
     have h_inv : ∀ ρ ∈ Icc 0 c,
         (α₁.toClassK hR_pos).invFun (α₂.toFun ρ) = α₁.invFun (α₂.toFun ρ) := fun ρ hρ =>
       α₁.toClassK_invFun hR_pos
         ⟨α₂.maps_to hρ.1, (α₂.strict_mono.monotoneOn hρ.1 hc_pos.le hρ.2).trans_lt h_α₂c⟩
-    refine ⟨β, fun ρ hρ θ hθ => ?_, fun t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
+    refine ⟨β, fun ρ hρ θ hθ => ?_,
+      fun {Y s V μ} hV hV_bd hlie hμ hμc t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
     · have h : β.toFun ρ θ ≤ (α₁.toClassK hR_pos).invFun (α₂.toFun ρ) := hβ_le ρ hρ θ hθ
       rwa [h_inv ρ (Ico_subset_Icc_self hρ)] at h
     · have h : ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀))
-          ((α₁.toClassK hR_pos).invFun (α₂.toFun μ)) := hβ t₀ ht₀ t₁ x hx h_init t ht
+          ((α₁.toClassK hR_pos).invFun (α₂.toFun μ)) :=
+        hβ (fun t _ y _ => hV _) (fun t ht y _ => hV_bd t ht y)
+          (fun t ht y hy _ => hlie t ht y hy) hμ hμc
+          t₀ ht₀ t₁ x hx h_init t ht
       rwa [h_inv μ ⟨hμ, hμc.le⟩] at h
   choose β hβ_le hβ using h_local
   -- Step 2. The decay envelopes `U(r, θ) = ∑_{k ≤ ⌈r⌉} βₖ(k, θ)`: more terms for a larger radius.
   let U : ℝ → ℝ → ℝ := fun r θ => ∑ k ∈ Finset.range (⌈r⌉₊ + 1), (β k).toFun k θ
-  have hk_mem : ∀ k : ℕ, (k : ℝ) ∈ Ico 0 ((k : ℝ) + μ + 1) := fun k =>
-    ⟨k.cast_nonneg, by linarith⟩
+  have hk_mem : ∀ k : ℕ, (k : ℝ) ∈ Ico 0 ((k : ℝ) + 1) := fun k =>
+    ⟨k.cast_nonneg, lt_add_one _⟩
   have h_term_nonneg : ∀ k : ℕ, ∀ θ : ℝ, 0 ≤ θ → 0 ≤ (β k).toFun k θ := fun k θ hθ =>
     (β k).nonneg _ (hk_mem k) θ hθ
   have hU_pos : ∀ r > 0, ∀ θ > 0, 0 < U r θ := by
@@ -449,21 +477,31 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n]
   let α : ClassKInfty := α₁.symm.comp α₂
   obtain ⟨B, -, hB_zero, hB_pos⟩ :=
     ClassKLGlobal.of_KInfty_LSingular_family α U hU_pos hU_anti hU_tendsto hU_mono
-  refine ⟨B, fun t₀ ht₀ t₁ x hx t ht => ?_⟩
-  -- Step 4. A trajectory from `r₀ = ‖x(t₀) - x_c‖ ≤ k = ⌈r₀⌉` obeys the local bound of `βₖ`.
+  refine ⟨B, fun {Y s V μ} hV hV_bd hlie hμ t₀ ht₀ t₁ x hx t ht => ?_⟩
   set r₀ := ‖x t₀ - x_c‖
-  set k := ⌈r₀⌉₊
-  have hr₀_le : r₀ ≤ k := Nat.le_ceil r₀
-  have hr₀_mem : r₀ ∈ Ico 0 ((k : ℝ) + μ + 1) := ⟨norm_nonneg _, by linarith⟩
-  rcases le_or_gt ‖x t - x_c‖ (α₁.invFun (α₂.toFun μ)) with h_in | h_out
+  set b := α₁.invFun (α₂.toFun μ)
+  rcases le_or_gt ‖x t - x_c‖ b with h_in | h_out
   · exact le_max_of_le_right h_in
   refine le_max_of_le_left ?_
-  -- Outside the ultimate bound, `‖x(t) - x_c‖ ≤ βₖ(r₀, θ)`, which is at most both `α(r₀)` and
-  -- `U(r₀ + 1, θ)`, with `θ = t - t₀`.
   have hθ : 0 ≤ t - t₀ := sub_nonneg.mpr ht.1
-  have h_β : ‖x t - x_c‖ ≤ (β k).toFun r₀ (t - t₀) :=
-    (le_max_iff.mp (hβ k t₀ ht₀ t₁ x hx hr₀_mem.2 t ht)).resolve_right h_out.not_ge
-  have h_α : ‖x t - x_c‖ ≤ α.toFun r₀ := h_β.trans (hβ_le k r₀ hr₀_mem _ hθ)
+  -- Step 4. From the ball of radius `j + 1 > max r₀ μ`, `‖x(t) - x_c‖ ≤ βⱼ(r₀, θ) ≤ α(r₀)`, as
+  -- the trajectory is outside the ultimate bound.
+  have h_bound : ∀ j : ℕ, r₀ < j + 1 → μ < j + 1 → ‖x t - x_c‖ ≤ (β j).toFun r₀ (t - t₀) ∧
+      ‖x t - x_c‖ ≤ α.toFun r₀ := fun j hr₀j hμj => by
+    have h := (le_max_iff.mp (hβ j hV hV_bd hlie hμ hμj t₀ ht₀ t₁ x hx hr₀j t ht)).resolve_right
+      h_out.not_ge
+    exact ⟨h, h.trans (hβ_le j r₀ ⟨norm_nonneg _, hr₀j⟩ _ hθ)⟩
+  -- If `μ ≥ r₀`, that bound is itself at most `α(μ) = b`: the trajectory never left `b`.
+  rcases le_or_gt μ r₀ with hμr₀ | hr₀μ
+  swap
+  · have h := (h_bound ⌈μ⌉₊ (hr₀μ.trans_le (Nat.le_ceil μ) |>.trans (lt_add_one _))
+      ((Nat.le_ceil μ).trans_lt (lt_add_one _))).2
+    exact absurd (h.trans (α.strict_mono.monotoneOn (norm_nonneg _) hμ hr₀μ.le)) h_out.not_ge
+  -- Otherwise use `k = ⌈r₀⌉`: `βₖ(r₀, θ) ≤ βₖ(k, θ) ≤ U(r₀ + 1, θ)`.
+  set k := ⌈r₀⌉₊
+  have hr₀_le : r₀ ≤ k := Nat.le_ceil r₀
+  have hr₀_mem : r₀ ∈ Ico 0 ((k : ℝ) + 1) := ⟨norm_nonneg _, hr₀_le.trans_lt (lt_add_one _)⟩
+  obtain ⟨h_β, h_α⟩ := h_bound k hr₀_mem.2 (hμr₀.trans_lt hr₀_mem.2)
   have h_U : ‖x t - x_c‖ ≤ U (r₀ + 1) (t - t₀) :=
     h_β.trans (((β k).mono_r hr₀_mem (hk_mem k) hθ hr₀_le).trans
       (Finset.single_le_sum (fun j _ => h_term_nonneg j _ hθ)
@@ -500,7 +538,8 @@ theorem globallyUniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem �
     (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 ≤ μ) :
     s.GloballyUniformlyBounded x_c := by
-  obtain ⟨β, hβ⟩ := exists_classKLGlobal_ultimateBound_of_lyapunov α₁ α₂ hV hV_bd hW₃ hlie hμ
+  obtain ⟨β, hβ'⟩ := exists_classKLGlobal_ultimateBound_of_lyapunov α₁ α₂ hW₃
+  have hβ := hβ' hV hV_bd hlie hμ
   refine fun a ha => ⟨max (β.toFun a 0) (α₁.invFun (α₂.toFun μ)), ?_, ?_⟩
   · refine lt_max_of_lt_left ?_
     have h : β.toFun 0 0 < β.toFun a 0 := β.strict_mono_r 0 le_rfl (mem_Ici.mpr le_rfl) ha.le ha
@@ -537,7 +576,8 @@ theorem globallyUniformlyUltimatelyBounded_of_lyapunov [NeZero n]
     (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 < μ) (h_complete : ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ univ) :
     s.GloballyUniformlyUltimatelyBounded x_c (α₁.invFun (α₂.toFun μ)) := by
-  obtain ⟨β, hβ⟩ := exists_classKLGlobal_ultimateBound_of_lyapunov α₁ α₂ hV hV_bd hW₃ hlie hμ.le
+  obtain ⟨β, hβ'⟩ := exists_classKLGlobal_ultimateBound_of_lyapunov α₁ α₂ hW₃
+  have hβ := hβ' hV hV_bd hlie hμ.le
   have hb_pos : 0 < α₁.invFun (α₂.toFun μ) :=
     (α₁.symm.pos_iff (α₂.maps_to hμ.le)).mpr ((α₂.pos_iff hμ.le).mpr hμ)
   refine ⟨h_complete, fun a ha => ?_⟩

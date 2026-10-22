@@ -190,6 +190,23 @@ solutions to agree initially and the perturbation to vanish, which collapses the
 
 \inputleannode{thm:continuous-dependence-parameters}
 
+\section{Differentiability in the initial state}
+
+For a $C^1$ vector field the solution at a fixed time depends differentiably on its initial state,
+with derivative the solution of the variational equation along it.  Appending time to the state
+turns a time-varying system into an autonomous one, so this also gives differentiability in the
+initial time.
+
+\inputleannode{lem:contDiff-exists-norm-sub-sub-fderiv-le}
+
+\inputleannode{lem:isIntegralCurveOn-exists-dist-le-of-contDiff}
+
+\inputleannode{lem:isIntegralCurveOn-exists-variational}
+
+\inputleannode{thm:isIntegralCurveOn-exists-norm-sub-sub-variational-le}
+
+\inputleannode{thm:hasFDerivAt-of-isIntegralCurveOn}
+
 \section{Comparison lemma}
 
 The comparison lemma bounds a function satisfying a differential \emph{inequality} by the
@@ -214,6 +231,8 @@ and invariance argument differentiates.
 \inputleannode{lem:lieDerivative-add-mul}
 
 \inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
+
+\inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-hasDerivWithinAt}
 
 \inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
 
@@ -527,6 +546,19 @@ value problem must agree, and each identity below is an instance of that.
 \inputleannode{lem:stateTransitionMatrix-comp-base}
 
 \inputleannode{lem:continuousOn-stateTransitionMatrix-snd}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd}
+
+\inputleannode{lem:norm-stateTransitionMatrix-le}
+
+When $A$ is bounded on all of $\mathbb{R}$, the transition matrix is defined and differentiable
+everywhere, and the composition law and both derivatives hold with no ordering of the times.
+
+\inputleannode{thm:stateTransitionMatrix-mul}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-of-bound}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd-of-bound}
 
 \subsection{Variation of constants}
 
@@ -871,6 +903,14 @@ Lyapunov function along a trajectory is a subsolution of it.
 
 \inputleannode{thm:classK-bound-above-level}
 
+\section{Massera's lemma}
+
+A class $\mathcal{K}$ function with class $\mathcal{K}$ derivative can flatten any decay rate
+enough to make a Lyapunov integral along the solutions converge, together with its derivative
+in the initial state.
+
+\inputleannode{lem:classKInfty-massera}
+
 \chapter{Stability of continuous-time systems}
 
 Stability notions for an equilibrium of an autonomous continuous-time system $\dot x = f(t, x)$
@@ -938,6 +978,8 @@ trajectories stay, or end up and stay, within a prescribed distance of it.
 \inputleannode{lem:continuousSystem-globallyExponentiallyStable-local}
 
 \inputleannode{lem:continuousSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-of-semiconj}
 
 \section{Comparison-function characterizations}
 
@@ -1025,6 +1067,16 @@ they follow from radial unboundedness.
 
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable}
 
+\section{Converse Lyapunov theorems}
+
+Exponential stability has a quadratic Lyapunov function, built by integrating the squared distance
+along solutions over a fixed horizon.  Its gradient is of the order of the distance to the
+equilibrium, which is what lets it absorb perturbations of the vector field.
+
+\inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable}
+
+\inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate}
+
 \section{Ultimate boundedness}
 
 A Lyapunov-like function whose derivative is negative only outside a ball does not certify
@@ -1042,6 +1094,21 @@ until they reach a neighbourhood of the ball, and stay there.
 \inputleannode{cor:continuousSystem-globallyUniformlyBounded-of-lyapunov}
 
 \inputleannode{cor:continuousSystem-globallyUniformlyUltimatelyBounded-of-lyapunov}
+
+\section{Input-to-state stability}
+
+Input-to-state stability bounds the state by a decaying function of the initial condition plus a
+gain of the size of the input.  An ISS-Lyapunov function certifies it through the global
+ultimate boundedness theorem, applied once per input: its class $\mathcal{KL}$ function does not
+depend on the input.
+
+\inputleannode{def:continuousSystem-inputToStateStable}
+
+\inputleannode{thm:continuousSystem-inputToStateStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{thm:continuousSystem-norm-le-of-isISSLyapunov}
+
+\inputleannode{thm:continuousSystem-inputToStateStable-of-isISSLyapunov}
 
 \section{LaSalle's invariance principle}
 
@@ -1200,6 +1267,22 @@ region of attraction, recorded as
 \inputleannode{thm:continuousLTV-locallyExponentiallyStable-iff-decayingStateTransition}
 
 \inputleannode{cor:continuousLTV-locallyExponentiallyStable-iff-globallyExponentiallyStable}
+
+For a linear system, uniform asymptotic stability already forces exponential decay of the state
+transition matrix: splitting time into windows of a uniform convergence time, each window
+contracts by a fixed factor.
+
+\inputleannode{thm:continuousLTV-uniformlyAsymptoticallyStable-iff-decayingStateTransition}
+
+\inputleannode{cor:continuousLTV-globallyUniformlyAsymptoticallyStable-iff-decayingStateTransition}
+
+The time-varying form of the Lyapunov equation.
+
+\inputleannode{def:differentialLyapunovEquation}
+
+\inputleannode{lem:differentialLyapunovEquation-const-iff}
+
+\inputleannode{thm:continuousLTV-exists-differentialLyapunovEquation}
 
 \inputleannode{thm:continuousLTV-unstable-iff-unboundedHomogeneousResponse}
 
@@ -1452,6 +1535,8 @@ as well, once the linearization error is absorbed near the equilibrium.
 
 \inputleannode{thm:frechet-linearization-error-bound}
 
+\inputleannode{thm:norm-sub-sub-fderiv-le-of-lipschitzOnWith}
+
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 
 \section{The stable branch}
@@ -1461,6 +1546,19 @@ forward solution segment, without silently excluding solutions that are not
 globally defined.
 
 \inputleannode{thm:hurwitz-linearization-locally-exponentially-stable}
+
+\section{Time-varying systems}
+
+For a time-varying system the linearization is itself time-varying, and exponential stability
+transfers between the two in both directions.  The converse Lyapunov function of the nonlinear
+system serves for its linearization; conversely, the solution of the differential Lyapunov
+equation of the linearization serves for the nonlinear system.
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-linearization}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-of-linearization}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-iff-linearization}
 
 \section{The unstable branch}
 

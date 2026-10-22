@@ -890,6 +890,177 @@ theorem continuousOn_stateTransitionMatrix_snd (hA : Continuous A) {t t₁ M : �
   exact (stateTransitionMatrix_inv hA
     (fun r hr => hA_le r (Set.uIcc_subset_uIcc_left hτ' hr))).2.symm
 
+/-- **The derivative in the initial time**: `∂Φ(τ, t)/∂t = -Φ(τ, t) A(t)`.
+
+Proof: `Φ(τ, t) = Φ(t, τ)⁻¹` (`stateTransitionMatrix_inv`), and `t ↦ Φ(t, τ)` has derivative
+`A(t) Φ(t, τ)` (`hasDerivAt_stateTransitionMatrix`); the derivative of the inverse is
+`-Φ(t, τ)⁻¹ (A(t) Φ(t, τ)) Φ(t, τ)⁻¹ = -Φ(τ, t) A(t)` (`hasFDerivAt_ringInverse`).
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "thm:hasDerivAt-stateTransitionMatrix-snd"
+  (title := "Derivative in the initial time")
+  (statement := /-- With the first argument held fixed, the state transition matrix is
+    differentiable in its second argument, with
+    \[
+      \frac{\partial}{\partial t}\Phi(\tau, t) = -\Phi(\tau, t)\,A(t)
+    \]
+    for $t$ strictly between $\tau$ and $t_1$ — the mirror of
+    \cref{thm:hasDerivAt-stateTransitionMatrix}, which differentiates in the first argument.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)
+  (proof := /-- By \cref{thm:stateTransitionMatrix-inv}, $\Phi(\tau, t) = \Phi(t, \tau)^{-1}$.
+    Differentiate $t \mapsto \Phi(t, \tau)$ by \cref{thm:hasDerivAt-stateTransitionMatrix} and
+    the inverse by $d(M^{-1}) = -M^{-1}\,dM\,M^{-1}$:
+    $-\Phi(\tau, t)\,A(t)\,\Phi(t, \tau)\,\Phi(\tau, t) = -\Phi(\tau, t)\,A(t)$. -/)]
+theorem hasDerivAt_stateTransitionMatrix_snd (hA : Continuous A) {τ t₁ M : ℝ}
+    (hA_le : ∀ r ∈ Set.uIcc τ t₁, ‖A r‖ ≤ M) {t : ℝ} (ht : t ∈ Set.uIoo τ t₁) :
+    HasDerivAt (fun σ => stateTransitionMatrix A τ σ) (-(stateTransitionMatrix A τ t * A t)) t := by
+  have ht' : t ∈ Set.uIcc τ t₁ := Set.uIoo_subset_uIcc_self ht
+  obtain ⟨hunit, hinv⟩ := stateTransitionMatrix_inv hA (t := t) (τ := τ)
+    fun r hr => hA_le r (Set.uIcc_subset_uIcc_left ht' hr)
+  obtain ⟨u, hu⟩ := hunit
+  -- `Φ(t, τ) Φ(τ, t) = I`.
+  have h_cancel : stateTransitionMatrix A t τ * stateTransitionMatrix A τ t = 1 := by
+    rw [← hinv]
+    exact Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp ⟨u, hu⟩)
+  -- Near `t`, `Φ(τ, σ) = Φ(σ, τ)⁻¹`.
+  have h_eventually : (fun σ => stateTransitionMatrix A τ σ) =ᶠ[nhds t]
+      fun σ => Ring.inverse (stateTransitionMatrix A σ τ) := by
+    filter_upwards [isOpen_Ioo.mem_nhds ht] with σ hσ
+    rw [← Matrix.nonsing_inv_eq_ringInverse, (stateTransitionMatrix_inv hA
+      fun r hr => hA_le r (Set.uIcc_subset_uIcc_left (Set.uIoo_subset_uIcc_self hσ) hr)).2]
+  -- The derivative of `σ ↦ Φ(σ, τ)⁻¹` at `t`.
+  have h_inverse : HasFDerivAt Ring.inverse
+      (-ContinuousLinearMap.mulLeftRight ℝ _ ↑u⁻¹ ↑u⁻¹) (stateTransitionMatrix A t τ) :=
+    hu ▸ hasFDerivAt_ringInverse u
+  have h_deriv := h_inverse.comp_hasDerivAt t (hasDerivAt_stateTransitionMatrix hA hA_le ht)
+  have hu_inv : (↑u⁻¹ : Matrix X X ℝ) = stateTransitionMatrix A τ t := by
+    rw [← Ring.inverse_unit, hu, ← Matrix.nonsing_inv_eq_ringInverse, hinv]
+  refine (h_deriv.congr_deriv ?_).congr_of_eventuallyEq h_eventually
+  simp only [ContinuousLinearMap.neg_apply, ContinuousLinearMap.mulLeftRight_apply, hu_inv]
+  rw [Matrix.mul_assoc, Matrix.mul_assoc, h_cancel, Matrix.mul_one]
+
+/-- **Exponential growth of the state transition matrix**: if `‖A‖ ≤ M` between `t₀` and `t`,
+then `‖Φ(t, t₀)‖ ≤ ‖I‖ e^{M |t - t₀|}`, by summing the term bounds of the Peano–Baker series.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
+@[blueprint "lem:norm-stateTransitionMatrix-le"
+  (title := "Exponential growth bound")
+  (latexEnv := "lemma")
+  (statement := /-- If $\|A(s)\| \le M$ on the segment between $t_0$ and $t$, then
+    \[
+      \|\Phi(t, t_0)\| \le \|I\|\, e^{M |t - t_0|}.
+    \] -/)
+  (proof := /-- Sum the term bounds of \cref{lem:norm-peanoBakerTerm-le}: they are $\|I\|$ times
+    the terms of the exponential series. -/)]
+theorem norm_stateTransitionMatrix_le {t₀ t M : ℝ}
+    (hA_le : ∀ s ∈ Set.uIcc t₀ t, ‖A s‖ ≤ M) :
+    ‖stateTransitionMatrix A t t₀‖ ≤ ‖(1 : Matrix X X ℝ)‖ * Real.exp (M * |t - t₀|) := by
+  have h_term : ∀ k, ‖peanoBakerTerm A k t t₀‖ ≤
+      ‖(1 : Matrix X X ℝ)‖ * ((M * |t - t₀|) ^ k / (k)!) := fun k => by
+    rw [← mul_div_assoc]
+    exact norm_peanoBakerTerm_le hA_le k t Set.right_mem_uIcc
+  have h_exp : Summable fun k : ℕ => ‖(1 : Matrix X X ℝ)‖ * ((M * |t - t₀|) ^ k / (k)!) :=
+    (Real.summable_pow_div_factorial _).mul_left _
+  have h_norm : Summable fun k => ‖peanoBakerTerm A k t t₀‖ :=
+    Summable.of_nonneg_of_le (fun _ => norm_nonneg _) h_term h_exp
+  calc ‖stateTransitionMatrix A t t₀‖
+      ≤ ∑' k, ‖peanoBakerTerm A k t t₀‖ := norm_tsum_le_tsum_norm h_norm
+    _ ≤ ∑' k : ℕ, ‖(1 : Matrix X X ℝ)‖ * ((M * |t - t₀|) ^ k / (k)!) :=
+        Summable.tsum_le_tsum h_term h_norm h_exp
+    _ = ‖(1 : Matrix X X ℝ)‖ * Real.exp (M * |t - t₀|) := by
+        rw [tsum_mul_left, Real.exp_eq_exp_ℝ, NormedSpace.exp_eq_tsum_div]
+
+/-! ### A bounded on all of ℝ
+
+When `A` is bounded on the whole line, the segment hypotheses of the results above hold
+everywhere, and the composition law and the derivatives hold with no ordering of the times. -/
+
+section GloballyBounded
+
+variable {L : ℝ}
+
+/-- Of three times, one lies between the other two. -/
+private lemma mem_uIcc_or_mem_uIcc_or_mem_uIcc (t s τ : ℝ) :
+    s ∈ Set.uIcc τ t ∨ τ ∈ Set.uIcc s t ∨ t ∈ Set.uIcc τ s := by
+  simp only [Set.mem_uIcc]
+  rcases le_total τ t with hτt | htτ
+  · rcases le_total s τ with hsτ | hτs
+    · exact Or.inr (Or.inl (Or.inl ⟨hsτ, hτt⟩))
+    · rcases le_total s t with hst | hts
+      · exact Or.inl (Or.inl ⟨hτs, hst⟩)
+      · exact Or.inr (Or.inr (Or.inl ⟨hτt, hts⟩))
+  · rcases le_total s t with hst | hts
+    · exact Or.inr (Or.inr (Or.inr ⟨hst, htτ⟩))
+    · rcases le_total s τ with hsτ | hτs
+      · exact Or.inl (Or.inr ⟨hts, hsτ⟩)
+      · exact Or.inr (Or.inl (Or.inr ⟨htτ, hτs⟩))
+
+/-- `Φ(τ, s) Φ(s, τ) = I`, for `A` bounded on ℝ. -/
+private lemma stateTransitionMatrix_mul_swap (hA : Continuous A) (hA_bdd : ∀ r, ‖A r‖ ≤ L)
+    (τ s : ℝ) : stateTransitionMatrix A τ s * stateTransitionMatrix A s τ = 1 := by
+  obtain ⟨h_unit, h_inv⟩ := stateTransitionMatrix_inv hA (t := s) (τ := τ) fun r _ => hA_bdd r
+  rw [← h_inv]
+  exact Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).mp h_unit)
+
+/-- **The composition law with no ordering**: for `A` bounded on ℝ,
+`Φ(t, s) Φ(s, τ) = Φ(t, τ)` for all `t`, `s`, `τ`. -/
+@[blueprint "thm:stateTransitionMatrix-mul"
+  (title := "Semigroup property for a globally bounded system")
+  (statement := /-- If $A$ is continuous and bounded on $\mathbb{R}$, then
+    $\Phi(t, s)\,\Phi(s, \tau) = \Phi(t, \tau)$ for all $t, s, \tau$. -/)
+  (proof := /-- One of the three times lies between the other two.  If it is $s$, this is
+    \cref{thm:stateTransitionMatrix-comp}.  Otherwise compose through the middle time and cancel
+    $\Phi(\tau, s)\Phi(s, \tau) = I$ (\cref{thm:stateTransitionMatrix-inv}). -/)]
+theorem stateTransitionMatrix_mul (hA : Continuous A) (hA_bdd : ∀ r, ‖A r‖ ≤ L) (t s τ : ℝ) :
+    stateTransitionMatrix A t s * stateTransitionMatrix A s τ = stateTransitionMatrix A t τ := by
+  have h_comp := fun {a b c : ℝ} (hb : b ∈ Set.uIcc a c) =>
+    stateTransitionMatrix_comp hA (τ := a) (t := c) (fun r _ => hA_bdd r) hb
+  rcases mem_uIcc_or_mem_uIcc_or_mem_uIcc t s τ with hs | hτ | ht
+  · exact h_comp hs
+  · rw [← h_comp hτ, Matrix.mul_assoc, stateTransitionMatrix_mul_swap hA hA_bdd, Matrix.mul_one]
+  · rw [← h_comp ht, ← Matrix.mul_assoc, stateTransitionMatrix_mul_swap hA hA_bdd, Matrix.one_mul]
+
+/-- **The derivative in the current time, at every time**: for `A` bounded on ℝ,
+`∂Φ(t, τ)/∂t = A(t) Φ(t, τ)`, including at `t = τ`. -/
+@[blueprint "thm:hasDerivAt-stateTransitionMatrix-of-bound"
+  (title := "Derivative in the current time, globally bounded system")
+  (statement := /-- If $A$ is continuous and bounded on $\mathbb{R}$, then for all $\tau$ and $t$,
+    $\frac{\partial}{\partial t}\Phi(t, \tau) = A(t)\,\Phi(t, \tau)$. -/)
+  (proof := /-- Write $\Phi(\sigma, \tau) = \Phi(\sigma, t - 1)\,\Phi(t - 1, \tau)$
+    (\cref{thm:stateTransitionMatrix-mul}); $t$ is strictly inside a segment from $t - 1$, where
+    \cref{thm:hasDerivAt-stateTransitionMatrix} applies. -/)]
+theorem hasDerivAt_stateTransitionMatrix_of_bound (hA : Continuous A) (hA_bdd : ∀ r, ‖A r‖ ≤ L)
+    (τ t : ℝ) :
+    HasDerivAt (fun σ => stateTransitionMatrix A σ τ) (A t * stateTransitionMatrix A t τ) t := by
+  have h_base := (hasDerivAt_stateTransitionMatrix hA (t₀ := t - 1) (t₁ := t + 1)
+    (fun r _ => hA_bdd r)
+      (by rw [Set.uIoo_of_le (by linarith)]; exact ⟨by linarith, by linarith⟩)).mul_const
+      (stateTransitionMatrix A (t - 1) τ)
+  simp only [Matrix.mul_assoc, stateTransitionMatrix_mul hA hA_bdd] at h_base
+  exact h_base
+
+/-- **The derivative in the initial time, at every time**: for `A` bounded on ℝ,
+`∂Φ(τ, t)/∂t = -Φ(τ, t) A(t)`, including at `t = τ`. -/
+@[blueprint "thm:hasDerivAt-stateTransitionMatrix-snd-of-bound"
+  (title := "Derivative in the initial time, globally bounded system")
+  (statement := /-- If $A$ is continuous and bounded on $\mathbb{R}$, then for all $\tau$ and $t$,
+    $\frac{\partial}{\partial t}\Phi(\tau, t) = -\Phi(\tau, t)\,A(t)$. -/)
+  (proof := /-- Write $\Phi(\tau, \sigma) = \Phi(\tau, t - 1)\,\Phi(t - 1, \sigma)$
+    (\cref{thm:stateTransitionMatrix-mul}) and apply \cref{thm:hasDerivAt-stateTransitionMatrix-snd}
+    to the second factor. -/)]
+theorem hasDerivAt_stateTransitionMatrix_snd_of_bound (hA : Continuous A)
+    (hA_bdd : ∀ r, ‖A r‖ ≤ L) (τ t : ℝ) :
+    HasDerivAt (fun σ => stateTransitionMatrix A τ σ) (-(stateTransitionMatrix A τ t * A t)) t := by
+  have h_base := (hasDerivAt_stateTransitionMatrix_snd hA (τ := t - 1) (t₁ := t + 1)
+    (fun r _ => hA_bdd r)
+      (by rw [Set.uIoo_of_le (by linarith)]; exact ⟨by linarith, by linarith⟩)).const_mul
+      (stateTransitionMatrix A τ (t - 1))
+  simp only [mul_neg, ← Matrix.mul_assoc, stateTransitionMatrix_mul hA hA_bdd] at h_base
+  exact h_base
+
+end GloballyBounded
+
 variable {U Y : Type*} [Fintype U] [Fintype Y] {B : ℝ → Matrix X U ℝ} {u : ℝ → U → ℝ}
 variable {C : ℝ → Matrix Y X ℝ} {D : ℝ → Matrix Y U ℝ}
 

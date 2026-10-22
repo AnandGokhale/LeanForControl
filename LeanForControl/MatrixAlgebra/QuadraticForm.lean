@@ -76,6 +76,13 @@ lemma quadraticForm_eq_toQuadraticMap' (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝ
   simp only [Matrix.ofLp_toEuclideanCLM, PiLp.inner_apply, dotProduct]
   exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
 
+/-- A matrix quadratic form is the dot product `yᵀ (P y)` of the underlying `Fin n → ℝ` data. -/
+lemma quadraticForm_eq_dotProduct (P : Matrix (Fin n) (Fin n) ℝ) (y : ℝⁿ) :
+    quadraticForm P y = WithLp.ofLp y ⬝ᵥ (P *ᵥ WithLp.ofLp y) := by
+  rw [quadraticForm]
+  simp only [Matrix.ofLp_toEuclideanCLM, PiLp.inner_apply, dotProduct]
+  exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+
 /-- A positive-definite matrix has a positive quadratic form away from zero.
 
 Reference: the defining property of a positive-definite matrix. -/

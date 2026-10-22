@@ -606,4 +606,51 @@ lemma GloballyExponentiallyStable.globallyUniformlyAsymptoticallyStable
     exact hasUniformConvergenceTime_of_exp_estimate hk hγ fun t₀ ht₀ t₁ x hx _ =>
       h_est t₀ ht₀ t₁ x hx
 
+/-- **Exponential stability pulls back along a semiconjugacy.**  Let a linear map `e : E → E'`
+carry the field of `s`, centred at `x_eq`, into the field of `s'`, centred at `x_eq'`:
+`F'(t, x_eq' + e(x - x_eq)) = e(F(t, x))`.  If `e` distorts norms by bounded factors, local
+exponential stability of `x_eq'` for `s'` gives it for `x_eq` and `s`: trajectories of `s` are
+carried to trajectories of `s'`. -/
+@[blueprint "lem:continuousSystem-locallyExponentiallyStable-of-semiconj"
+  (title := "Exponential stability under a change of coordinates")
+  (latexEnv := "lemma")
+  (statement := /-- Let $e : E \to E'$ be continuous linear with $\|x\| \le a\|e x\|$ and
+    $\|e x\| \le b\|x\|$, $a, b > 0$, and let
+    $F'(t, x_{\mathrm{eq}}' + e(x - x_{\mathrm{eq}})) = e(F(t, x))$.  If $x_{\mathrm{eq}}'$ is
+    locally exponentially stable for $s'$
+    (\cref{def:continuousSystem-locallyExponentiallyStable}), so is $x_{\mathrm{eq}}$ for $s$. -/)
+  (proof := /-- If $x$ is a trajectory of $s$, then $x_{\mathrm{eq}}' + e(x - x_{\mathrm{eq}})$
+    is one of $s'$.  Its estimate, with radius $c / b$ and constant $abk$, is one for $x$. -/)]
+lemma LocallyExponentiallyStable.of_semiconj {E' Y' : Type*} [NormedAddCommGroup E']
+    [NormedSpace ℝ E'] {s' : ContinuousSystem E' Unit Y'} {x_eq' : E'} (e : E →L[ℝ] E')
+    {a b : ℝ} (ha : 0 < a) (hb : 0 < b) (h_lo : ∀ x, ‖x‖ ≤ a * ‖e x‖)
+    (h_up : ∀ x, ‖e x‖ ≤ b * ‖x‖)
+    (h_conj : ∀ t x, s'.F t (x_eq' + e (x - x_eq)) () = e (s.F t x ()))
+    (h : s'.LocallyExponentiallyStable x_eq') : s.LocallyExponentiallyStable x_eq := by
+  obtain ⟨c, hc, k, hk, γ, hγ, h_est⟩ := h
+  refine ⟨c / b, div_pos hc hb, a * b * k, by positivity, γ, hγ,
+    fun t₀ ht₀ t₁ x hx hx₀ t ht => ?_⟩
+  -- The image `y = x_eq' + e(x - x_eq)` is a trajectory of `s'`.
+  set y : ℝ → E' := fun τ => x_eq' + e (x τ - x_eq)
+  have hy : s'.IsTrajectoryOn (fun _ => ()) y (Icc t₀ t₁) := fun τ hτ => by
+    have h_deriv := (e.hasFDerivAt.comp_hasDerivWithinAt τ ((hx τ hτ).sub_const x_eq)).const_add
+      x_eq'
+    simp only [vectorField, y, h_conj]
+    exact h_deriv
+  have hy_sub : ∀ τ, y τ - x_eq' = e (x τ - x_eq) := fun τ => add_sub_cancel_left _ _
+  have hy₀ : ‖y t₀ - x_eq'‖ < c :=
+    calc ‖y t₀ - x_eq'‖
+        ≤ b * ‖x t₀ - x_eq‖ := by rw [hy_sub]; exact h_up _
+      _ < b * (c / b) := by gcongr
+      _ = c := by field_simp
+  calc ‖x t - x_eq‖
+      ≤ a * ‖y t - x_eq'‖ := by rw [hy_sub]; exact h_lo _
+    _ ≤ a * (k * ‖y t₀ - x_eq'‖ * Real.exp (-γ * (t - t₀))) :=
+        mul_le_mul_of_nonneg_left (h_est t₀ ht₀ t₁ y hy hy₀ t ht) ha.le
+    _ ≤ a * (k * (b * ‖x t₀ - x_eq‖) * Real.exp (-γ * (t - t₀))) := by
+        rw [hy_sub]
+        gcongr
+        exact h_up _
+    _ = a * b * k * ‖x t₀ - x_eq‖ * Real.exp (-γ * (t - t₀)) := by ring
+
 end ContinuousSystem
