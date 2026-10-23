@@ -24,6 +24,8 @@ variable {n m : ℕ}
 controllability matrix is the `(i, j)` entry of `Aᵏ · B`. Holds
 definitionally. -/
 @[simp, blueprint "lem:controllabilityMatrix-apply"
+  (title := "Entries of the controllability matrix")
+  (latexEnv := "lemma")
   (statement := /-- Block-column entry shape: at row $i$ and column $(k, j)$,
     the controllability matrix coincides with the $(i, j)$ entry of $A^{k}\, B$:
     \[
@@ -91,6 +93,7 @@ private lemma isControllable_iff_controllabilityMatrix_mulVec_surjective
 /-- Rank-form characterization: controllability is equivalent to the
 controllability matrix having full row rank. -/
 @[blueprint "thm:isControllable-iff-rank"
+  (title := "Controllability rank test")
   (statement := /-- A linear system $(A, B)$ is controllable if and only
     if the controllability matrix has full row rank,
     \[

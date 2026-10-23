@@ -65,7 +65,7 @@ LeanForControl/
       Discrete.lean             Σ Aᵏ B Bᵀ (Aᵀ)ᵏ
 
   Stability/                    nonlinear ẋ = f(x) — existing track, unchanged
-    LyapunovIndirect/           the only bridge from LinearSystems to nonlinear stability
+    Continuous/Linearization    the only bridge from LinearSystems to nonlinear stability
 ```
 
 Note that `LinearSystems/Stability/` and the top-level `Stability/` are different subjects,
@@ -99,8 +99,8 @@ PR is opened rather than during review.
    several files, as a single `Continuous.lean` / `Discrete.lean` where it does not.
 
 **Tie-breaker, for the Lyapunov-equation cluster.** Rule 1 read literally would send
-`SolvesContinuousLyapunovEquation` to `MatrixAlgebra/` — it quantifies only over matrices. It does
-not go there: a statement mentioning `IsHurwitz` or `SolvesContinuousLyapunovEquation` goes to
+`ContinuousLyapunovEquation` to `MatrixAlgebra/` — it quantifies only over matrices. It does
+not go there: a statement mentioning `IsHurwitz` or `ContinuousLyapunovEquation` goes to
 `LinearSystems/Stability/Continuous/`; one mentioning neither, and no `f`, goes to
 `MatrixAlgebra/`. The topic table below places the Lyapunov equation explicitly, and explicit
 wins over the mechanical rule.
@@ -225,14 +225,22 @@ Hautus consumers is deferred.
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Hurwitz Jacobian ⟹ local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `Stability/LyapunovIndirect/Linearization.lean` | ✅ done |
-| Unstable eigenvalue ⟹ instability (affine-linear) | `unstable_affineLinear_of_eigenvalue_re_pos` | `Stability/LyapunovIndirect/LinearizationInstability.lean` | ✅ done |
-| Unstable eigenvalue ⟹ instability (`C¹` field) | `unstable_of_exists_complex_eigenvalue_re_pos` | `Stability/LyapunovIndirect/NonlinearInstability.lean` | ✅ done |
-| Chetaev's instability theorem (exponential form) | `unstable_of_exponential_chetaev` | `Stability/LyapunovIndirect/Chetaev.lean` | ✅ done (closes issue #8) |
+| Hurwitz Jacobian ⟹ local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `Stability/Continuous/Linearization.lean` | ✅ done |
+| Unstable eigenvalue ⟹ instability (`ẋ = A x` at the origin) | `unstable_linear_of_eigenvalue_re_pos` | `Stability/Continuous/Linearization.lean` | ✅ done |
+| Unstable eigenvalue ⟹ instability (`C¹` field) | `unstable_of_exists_complex_eigenvalue_re_pos` | `Stability/Continuous/Linearization.lean` | ✅ done |
+| Chetaev's instability theorem (exponential form) | `unstable_of_exponential_chetaev` | `Stability/Continuous/Chetaev.lean` | ✅ done (closes issue #8) |
 | Chetaev's instability theorem (boundary form) | — | — | planned — see `Stability/plan.md` |
+| Hespanha Def. 8.1 for `ẋ = A(t)x` ⟺ the `ContinuousSystem` stability predicates of the unforced system | `stable_iff_boundedHomogeneousResponse`, `locallyAsymptoticallyStable_iff_decayingHomogeneousResponse`, `locallyExponentiallyStable_iff_decayingStateTransition`, `unstable_iff_unboundedHomogeneousResponse` | `LinearSystems/Stability/Continuous/LyapunovLTV.lean` | ✅ done |
 
 Rule 2 keeps this list short by construction: a theorem whose hypothesis is about `A` and whose
-conclusion is about `f` is a bridge, and these five are all of them.
+conclusion is about `f` is a bridge, and these six are all of them.
+
+The last row is a bridge of a different kind from the five above it: those transfer a spectral
+condition on `A` to a nonlinear conclusion, whereas this one says that the *definition* of
+stability used in `LinearSystems/` — Hespanha's Definition 8.1, stated on `Φ(t, t₀)` — is the
+definition already in `Stability/Continuous/Defs.lean`, applied to the unforced system
+`s.toContinuousSystem.zeroInput`, not a second one.  That is why `LinearSystems/Stability/` needs
+no stability predicate of its own.
 
 ## Status: blueprint coverage
 
@@ -393,10 +401,9 @@ Mathlib's `Matrix.entryLinearMap` or existing CLM combinators already cover thes
   with `ℂ` specializations, or whether the current per-file choice is the right trade.
 - **Does `Defs.lean` carry a `D` matrix?** Nothing currently needs feedthrough, but adding
   it later is a breaking change to every consumer. Decide before the first system object
-  lands. Settle alongside it whether `affineLinearVectorField`
-  (`Stability/LyapunovIndirect/DefsDynamics.lean`, the whole file) moves into `Defs.lean`: by
-  Rule 2 a definition mentioning a vector field `f : E → E` belongs on the nonlinear side, which
-  is why the third migration pass left it where it is.
+  lands.  (`affineLinearVectorField` is gone: the linear instability theorem is stated for
+  `ẋ = A x` at the origin, with the field written as `Matrix.toEuclideanCLM A`; it becomes a
+  statement about `ContinuousLTI` once the state-space norm is settled.)
 - **How much does the discrete-time half share?** Some results (the Lyapunov equation
   existence argument, the Gramian positive-definiteness argument) have near-identical
   proofs in both settings. Decide whether to abstract over the two or to accept the

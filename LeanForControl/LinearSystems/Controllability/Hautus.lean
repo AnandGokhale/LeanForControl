@@ -59,6 +59,7 @@ lemma hautusControllabilityMatrix_transpose
 `(A, B)` over `ℂ` is controllable if and only if for every `μ ∈ ℂ`, the
 Hautus block `[μI - A | B]` has full row rank. -/
 @[blueprint "thm:isControllable-iff-hautus"
+  (title := "Hautus (PBH) test for controllability")
   (statement := /-- A finite-dimensional system $(A, B)$ over $\mathbb{C}$
     is controllable if and only if for every $\mu \in \mathbb{C}$ the Hautus
     matrix $H^{\mathrm{ctrl}}_{A, B}(\mu)$ has full row rank:

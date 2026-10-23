@@ -1,4 +1,4 @@
-import LeanForControl.Dini.DiniDeriv
+import LeanForControl.Analysis.DiniDeriv
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Mathlib.Order.Filter.Basic
@@ -48,6 +48,8 @@ If `u` has derivative `f(t, u(t))` at every interior point of `[t₀, t₁]`, is
 `[t₀, t₁]`, and satisfies `u(t₀) = u₀`, then `u` is an integral solution in the sense of
 `IsIntegralSolution`. -/
 @[blueprint "lem:isIntegralSolution-of-hasDerivAt"
+  (title := "Integral form from a pointwise derivative")
+  (latexEnv := "lemma")
   (statement := /-- Let $u$ be continuous on $[t_0, t_1]$ with $u(t_0) = u_0$ and
     $\dot u(t) = f(t, u(t))$ at every interior point, and let $f$ be jointly continuous.  Then
     $u$ is an integral solution:
@@ -128,7 +130,8 @@ Hypotheses:
 * `u` solves the ODE classically (pointwise derivative).
 * `v` satisfies the Dini subsolution inequality and has bounded difference quotients.
 * For each `λ > 0`, a perturbed solution `z_λ` of `ż = f(t, z) + λ` exists on `[t₀, t₁]`
-  (the existence hypothesis `hz_exists`).
+  (the existence hypothesis `hz_exists`, kept for generality; it is always discharged by
+  `exists_isIntegralSolution_Icc_of_lipschitz`).
 
 The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_dependence_parameters`
 (Khalil, Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all
@@ -137,7 +140,8 @@ The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_depend
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 3.4. Note this is Khalil's *Lemma* 3.4;
 his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE`. -/
 @[blueprint "thm:comparison-lemma"
-  (statement := /-- \textbf{Comparison lemma} (Khalil, Lemma 3.4).  Let $f$ be jointly
+  (title := "Comparison lemma")
+  (statement := /-- Khalil, Lemma 3.4.  Let $f$ be jointly
     continuous and $L$-Lipschitz in its state argument on $[t_0, t_1]$, and suppose
     \begin{enumerate}
       \item $u$ is continuous on $[t_0,t_1]$ and solves $\dot u = f(t,u)$ with $u(t_0) = u_0$;
@@ -149,11 +153,10 @@ his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE
     \end{enumerate}
     Then $v(t) \le u(t)$ for all $t \in [t_0, t_1]$.
 
-    The perturbed solutions in (3) are not constructed here — the caller supplies them.  They do
-    exist under the hypotheses already listed, since $f + \lambda$ is Lipschitz exactly when $f$
-    is, so Picard--Lindel\"of applies on $[t_0,t_1]$; but that existence step is an axiom in this
-    development, and leaving it as a hypothesis is what keeps this theorem, and everything
-    downstream of it, free of any axiom beyond Lean's own. -/)
+    The perturbed solutions in (3) are taken as a hypothesis for generality, so that callers with
+    solutions already in hand need not re-derive them.  Under the hypotheses already listed they
+    always exist: $f + \lambda$ is Lipschitz exactly when $f$ is, so
+    \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz} discharges (3). -/)
   (proof := /-- Fix $\lambda > 0$ and let $z_\lambda$ be as in hypothesis (3).
 
     \emph{Claim: $v \le z_\lambda$ on $[t_0,t_1]$.}  Otherwise $v(t_{\mathrm{bad}}) >

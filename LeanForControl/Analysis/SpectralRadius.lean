@@ -20,9 +20,14 @@ strictly below one.
 
 Reference: Rudin, *Functional Analysis* (Gelfand's spectral-radius formula). -/
 @[blueprint "lem:exists-pow-norm-lt-one"
+  (title := "A contractive power from a spectral radius below one")
+  (latexEnv := "lemma")
   (statement := /-- Let $\mathbb{A}$ be a nontrivial complete normed algebra over $\mathbb{C}$
     and let $a \in \mathbb{A}$ have spectral radius $r(a) < 1$.  Then there is an $m > 0$ with
-    $\|a^m\| < 1$. -/)
+    $\|a^m\| < 1$.
+
+    Reference: Rudin, \emph{Functional Analysis} (Gelfand's spectral-radius formula).
+  -/)
   (proof := /-- Gelfand's formula gives $\|a^m\|^{1/m} \to r(a)$, so $\|a^m\|^{1/m} < 1$ for all
     large $m$; pick any such $m$ with $m \neq 0$.  Were $\|a^m\| \ge 1$, raising to the positive
     power $1/m$ would give $\|a^m\|^{1/m} \ge 1$, a contradiction. -/)]

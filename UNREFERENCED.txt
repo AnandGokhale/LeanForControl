@@ -1,0 +1,210 @@
+Blueprint nodes with no source reference
+Generated 2026-09-28.
+
+A node counts as referenced if its @[blueprint] attribute or the docstring directly
+above it names one of: Khalil, Hespanha, Hahn, Sontag, Kellett, Massera, Bullo, Rugh,
+Antsaklis, Chen, Brockett, Vidyasagar, Isidori, Slotine, Callier, Kailath, Rudin,
+Coddington, Hartman, Teschl, Walter, Perko -- or contains the literal word "Reference".
+
+SCOPE: LeanForControl/Analysis/ is exempt by decision -- those files are self-contained
+general analysis, candidates for upstreaming to Mathlib, and are not expected to cite a
+control text. That exempts 42 of the 43 nodes there; they are listed at the end for
+the record but are not work items.
+
+IN SCOPE: 84 of 218 nodes carry no reference, across 28 files.
+
+========================================================================
+SUMMARY
+========================================================================
+
+file                                                      none / total
+-------------------------------------------------------   ------------
+Stability/Autonomous.lean                                    9 / 15  
+Comparison/ClassKInfty.lean                                  7 / 10  
+LinearSystems/Observability/Hautus.lean                      6 / 6   
+Comparison/ClassKL.lean                                      5 / 13  
+LinearSystems/Stability/Continuous/LyapunovLTV.lean          5 / 12  
+Stability/DefsAutonomous.lean                                5 / 14  
+LinearSystems/Observability/Defs.lean                        4 / 4   
+LinearSystems/Observability/Observability.lean               4 / 4   
+LinearSystems/Solutions/CtsLTV.lean                          4 / 24  
+Stability/DefsNonAutonomous.lean                             4 / 18  
+Comparison/ClassK.lean                                       3 / 6   
+LinearSystems/Controllability/Defs.lean                      3 / 4   
+LinearSystems/Solutions/DiscLTV.lean                         3 / 9   
+axioms.lean                                                  3 / 3   
+Comparison/Axioms.lean                                       2 / 3   
+Comparison/ClassL.lean                                       2 / 2   
+Comparison/ComparisonFunctions.lean                          2 / 2   
+LinearSystems/Controllability/Controllability.lean           2 / 2   
+LinearSystems/Stability/Continuous/DefsLyapunovLTV.lean      2 / 2   
+LinearSystems/Controllability/Hautus.lean                    1 / 1   
+LinearSystems/Controllability/Reachability.lean              1 / 3   
+LinearSystems/KalmanDecomposition/Defs.lean                  1 / 2   
+MatrixAlgebra/Exponential.lean                               1 / 3   
+ODEs/ComparisonLemma.lean                                    1 / 2   
+ODEs/PicardLindelof.lean                                     1 / 6   
+Stability/ClassKDecay.lean                                   1 / 2   
+Stability/LyapunovIndirect/DefsDynamics.lean                 1 / 1   
+Stability/NonAutonomous.lean                                 1 / 3   
+-------------------------------------------------------   ------------
+TOTAL                                                       84 / 218 
+
+By directory: LinearSystems 36 · Comparison 21 · Stability 21 · (root) 3 · ODEs 2 · MatrixAlgebra 1
+
+========================================================================
+DETAIL   (declaration -- blueprint label)
+========================================================================
+
+Stability/Autonomous.lean   [9]
+    hasDerivAt_V_comp_traj              lem:hasDerivAt-V-comp-traj
+    antitoneOn_V_add_linear             lem:antitoneOn-V-add-linear
+    antitoneOn_V_comp_traj              lem:antitoneOn-V-comp-traj
+    V_nonincreasing_on                  lem:V-nonincreasing-on
+    strict_implies_semidefinite         lem:strict-implies-semidefinite
+    asymptotic_implies_strict           lem:asymptotic-implies-strict
+    strict_local_implies_semidefinite   lem:strict-local-implies-semidefinite
+    sublevel_set_invariant              lem:sublevel-set-invariant
+    time_outside_ball_le                lem:time-outside-ball-le
+
+Comparison/ClassKInfty.lean   [7]
+    ClassKInfty.of_strictMono        lem:classKInfty-of-strictMono
+    ClassKInfty.power                lem:classKInfty-power
+    ClassKInfty.toClassK             lem:classKInfty-toClassK
+    ClassKInfty.add                  lem:classKInfty-add
+    ClassKInfty.smul                 lem:classKInfty-smul
+    ClassKInfty.min_fn               lem:classKInfty-min-fn
+    exists_classKInfty_upper_bound   lem:exists-classKInfty-upper-bound
+
+LinearSystems/Observability/Hautus.lean   [6]
+    unobservableSubspace_eq_bot_iff_isObservable   thm:unobservable-eq-bot-iff-observable
+    A_mulVec_mem_unobservableSubspace_of_mem       lem:unobservableSubspace-invariant
+    hautusObservabilityMatrix_mulVec_eq_zero_iff   lem:hautus-mulVec-eq-zero-iff
+    not_isObservable_implies_hautus_failure        thm:not-isObservable-implies-hautus-failure
+    hautus_failure_implies_not_isObservable        thm:hautus-failure-implies-not-isObservable
+    isObservable_iff_hautus                        thm:isObservable-iff-hautus
+
+Comparison/ClassKL.lean   [5]
+    ClassKL.mk_mul              lem:classKL-mk-mul
+    ClassKL.min_classK          lem:classKL-min-classK
+    tendsto_min_sqrt_mul_zero   lem:tendstoMinSqrtMulZero
+    ClassKLGlobal.mk_mul        lem:classKLGlobal-mk-mul
+    ClassKLGlobal.min_KInfty    lem:classKLGlobal-min-KInfty
+
+LinearSystems/Stability/Continuous/LyapunovLTV.lean   [5]
+    isTrajectoryNA_stateTransitionCLM                         thm:isTrajectoryNA-stateTransitionCLM
+    IsTrajectoryNA.eq_stateTransitionCLM                      thm:isTrajectoryNA-eq-stateTransitionCLM
+    stateTransitionCLM_self                                   lem:stateTransitionCLM-self
+    isEquilibriumNA_linearVectorField                         lem:isEquilibriumNA-linearVectorField
+    exponentiallyStableNA_iff_globallyExponentiallyStableNA   cor:exponentiallyStableNA-iff-globallyExponentiallyStableNA
+
+Stability/DefsAutonomous.lean   [5]
+    IsTrajectoryOn           def:isTrajectoryOn
+    IsEquilibrium            def:isEquilibrium
+    SublevelSet              def:sublevelSet
+    IsPositivelyInvariant    def:isPositivelyInvariant
+    isCompact_sublevel_set   lem:isCompact-sublevel-set
+
+LinearSystems/Observability/Defs.lean   [4]
+    observabilityMatrix         def:observabilityMatrix
+    IsObservable                def:isObservable
+    unobservableSubspace        def:unobservableSubspace
+    hautusObservabilityMatrix   def:hautusObservabilityMatrix
+
+LinearSystems/Observability/Observability.lean   [4]
+    observabilityMatrix_apply                          lem:observabilityMatrix-apply
+    observabilityMatrix_mulVec_apply                   lem:observabilityMatrix-mulVec-apply
+    isObservable_iff_observabilityMatrix_ker_trivial   thm:isObservable-iff-ker-trivial
+    isObservable_iff_observabilityMatrix_rank_eq       thm:isObservable-iff-rank
+
+LinearSystems/Solutions/CtsLTV.lean   [4]
+    stateTransitionMatrix_comp_of_mem        lem:stateTransitionMatrix-comp-of-mem
+    stateTransitionMatrix_comp_base          lem:stateTransitionMatrix-comp-base
+    continuousOn_stateTransitionMatrix_snd   lem:continuousOn-stateTransitionMatrix-snd
+    variationOfConstants_self                lem:variationOfConstants-self
+
+Stability/DefsNonAutonomous.lean   [4]
+    IsEquilibriumNA                      def:isEquilibriumNA
+    GloballyUniformlyStableNA.stableNA   lem:globallyUniformlyStableNA-stableNA
+    UniformlyStableNA.stableNA           lem:uniformlyStableNA-stableNA
+    IsTrajectoryNA.eq_of_stableNA        lem:isTrajectoryNA-eq-of-stableNA
+
+Comparison/ClassK.lean   [3]
+    ClassK.of_strictMono   lem:classK-of-strictMono
+    ClassK.restrict        lem:classK-restrict
+    ClassK.restrictTo      lem:classK-restrictTo
+
+LinearSystems/Controllability/Defs.lean   [3]
+    controllabilityMatrix         def:controllabilityMatrix
+    IsControllable                def:isControllable
+    hautusControllabilityMatrix   def:hautusControllabilityMatrix
+
+LinearSystems/Solutions/DiscLTV.lean   [3]
+    discStateTransitionMatrix_mulVec_unique   thm:discStateTransitionMatrix-mulVec-unique
+    discVariationOfConstants_succ             thm:discVariationOfConstants-succ
+    discVariationOfConstants_unique           thm:discVariationOfConstants-unique
+
+axioms.lean   [3]
+    exists_strictMono_lower_bound          lem:exists-strictMono-lower-bound
+    exists_strictMono_upper_bound_global   lem:exists-strictMono-upper-bound-global
+    exists_strictMono_upper_bound          lem:exists-strictMono-upper-bound
+
+Comparison/Axioms.lean   [2]
+    exists_classK_minorant_lipschitz   lem:exists-classK-minorant-lipschitz
+    ClassK.exists_global_extension     lem:classK-exists-global-extension
+
+Comparison/ClassL.lean   [2]
+    ClassL           def:isClassL
+    ClassLSingular   def:isClassLSingular
+
+Comparison/ComparisonFunctions.lean   [2]
+    exists_classKL_upper_bound                 lem:exists-classKL-upper-bound
+    ClassKLGlobal.of_KInfty_LSingular_family   lem:classKLGlobal-of-KInfty-LSingular-family
+
+LinearSystems/Controllability/Controllability.lean   [2]
+    controllabilityMatrix_apply                        lem:controllabilityMatrix-apply
+    isControllable_iff_controllabilityMatrix_rank_eq   thm:isControllable-iff-rank
+
+LinearSystems/Stability/Continuous/DefsLyapunovLTV.lean   [2]
+    linearVectorField    def:linearVectorField
+    stateTransitionCLM   def:stateTransitionCLM
+
+LinearSystems/Controllability/Hautus.lean   [1]
+    isControllable_iff_hautus   thm:isControllable-iff-hautus
+
+LinearSystems/Controllability/Reachability.lean   [1]
+    mem_reachableSubspace_iff   lem:mem-reachableSubspace-iff
+
+LinearSystems/KalmanDecomposition/Defs.lean   [1]
+    linearEquiv   def:kalman-adapted-equivalence
+
+MatrixAlgebra/Exponential.lean   [1]
+    complexification_exp   lem:complexification-exp
+
+ODEs/ComparisonLemma.lean   [1]
+    isIntegralSolution_of_hasDerivAt   lem:isIntegralSolution-of-hasDerivAt
+
+ODEs/PicardLindelof.lean   [1]
+    hasDerivWithinAt_Ici_of_isIntegralCurveOn   lem:hasDerivWithinAt-Ici-of-isIntegralCurveOn
+
+Stability/ClassKDecay.lean   [1]
+    classK_dini_bound   thm:classK-dini-bound
+
+Stability/LyapunovIndirect/DefsDynamics.lean   [1]
+    affineLinearVectorField   def:affineLinearVectorField
+
+Stability/NonAutonomous.lean   [1]
+    hasDerivAt_V_comp_traj_NA   lem:hasDerivAt-V-comp-traj-NA
+
+========================================================================
+EXEMPT -- LeanForControl/Analysis/ (no citation expected)
+========================================================================
+
+Analysis/DiniDeriv.lean             11 / 11  
+Analysis/IntegralCurves.lean        10 / 10  
+Analysis/Integrals.lean             10 / 10  
+Analysis/MonotoneFunctions.lean      7 / 7   
+Analysis/Continuity.lean             2 / 2   
+Analysis/FrechetDerivative.lean      1 / 1   
+Analysis/Limsup.lean                 1 / 1   
+EXEMPT TOTAL                        42 / 43  

@@ -29,6 +29,8 @@ variable {n p : ℕ}
 /-- Block-row shape lemma: row `(k, i)` of the observability matrix at
 column `j` is the `(i, j)` entry of `C · Aᵏ`. Holds definitionally. -/
 @[simp, blueprint "lem:observabilityMatrix-apply"
+  (title := "Entries of the observability matrix")
+  (latexEnv := "lemma")
   (statement := /-- Block-row entry shape: at row $(k, i)$ and column $j$,
     the observability matrix coincides with the $(i, j)$ entry of $C\, A^{k}$:
     \[
@@ -46,6 +48,8 @@ lemma observabilityMatrix_apply
 coordinate of `(C · Aᵏ) *ᵥ x`. Holds definitionally and is the workhorse
 behind the milestone theorem. -/
 @[blueprint "lem:observabilityMatrix-mulVec-apply"
+  (title := "Action of the observability matrix")
+  (latexEnv := "lemma")
   (statement := /-- For every state $x \in \mathbb{F}^{n}$ and every
     $(k, i) \in \mathrm{Fin}\, n \times \mathrm{Fin}\, p$,
     \[
@@ -68,6 +72,7 @@ A finite-dimensional linear system `(A, C)` is observable in the textbook
 sense (`IsObservable`) iff the observability matrix has trivial kernel under
 `*ᵥ`. -/
 @[blueprint "thm:isObservable-iff-ker-trivial"
+  (title := "Observability via a trivial kernel")
   (statement := /-- A finite-dimensional linear system $(A, C)$ is observable
     in the sense of \cref{def:isObservable} if and only if the observability
     matrix $\mathcal{O}(A, C)$ has trivial kernel under matrix-vector
@@ -108,28 +113,6 @@ theorem isObservable_iff_observabilityMatrix_ker_trivial
     have := congrFun hk i
     simpa using this
 
-/-!
-## Follow-ups for the Hautus track
-
-The following helpers were not needed to prove
-`isObservable_iff_observabilityMatrix_ker_trivial`, but will be needed before
-attacking either Hautus or the rank-based reformulations:
-
-* a rank-vs-trivial-kernel bridge for matrices of shape `Matrix (m × p) n 𝕜`,
-  most naturally phrased through `Matrix.toLin'` and `LinearMap.ker`;
-* block-matrix rank lemmas for stacked rows
-  `[A₁ ; A₂ ; … ; Aₖ]`, lifting per-block kernels to the stack and back;
-* a transition from `(C · Aᵏ) *ᵥ x = 0 ∀ k < n` to invariance of the
-  unobservable subspace under `A` (Cayley–Hamilton style argument), needed
-  to extract eigenvectors for the Hautus direction;
-* coercion lemmas between `(C * A^k) *ᵥ x` and `C *ᵥ (A^k *ᵥ x)`, which
-  are useful when restating observability in terms of trajectories rather
-  than matrix powers.
-
-These belong in `MatrixAlgebra.Rank` (matrix-level facts) and a future
-`LinearSystems.Observability.Hautus` (control-level facts) once needed.
--/
-
 end LinearSystems
 
 /-!
@@ -153,6 +136,7 @@ variable {𝕜 : Type*} [Field 𝕜] {n p : ℕ}
 observability matrix having full column rank. Chains the kernel-form
 milestone with the matrix bridge from `MatrixAlgebra.Rank`. -/
 @[blueprint "thm:isObservable-iff-rank"
+  (title := "Observability rank test")
   (statement := /-- A finite-dimensional system $(A, C)$ is observable if
     and only if the observability matrix $\mathcal{O}(A, C)$ has full column
     rank, i.e.
@@ -194,6 +178,7 @@ in the textbook sense `IsObservable`.
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
 the algebraic characterization here is a derived consequence. -/
 @[blueprint "thm:unobservable-eq-bot-iff-observable"
+  (title := "Observability via the unobservable subspace")
   (statement := /-- A finite-dimensional system $(A, C)$ is observable in the
     sense of \cref{def:isObservable} if and only if its unobservable subspace
     is trivial:
@@ -219,29 +204,15 @@ private lemma mulVec_aPowN_eq_zero_of_mem_unobservableSubspace
     {v : Fin n → ℂ} (hv : v ∈ unobservableSubspace A C) :
     (C * A ^ n) *ᵥ v = 0 := by
   rw [mem_unobservableSubspace_iff] at hv
-  -- Cayley-Hamilton in matrix form, multiplied on the left by `C` and
-  -- evaluated at `v`.
-  have hCH := Matrix.aeval_self_charpoly A
-  have h_apply : (C * Polynomial.aeval A A.charpoly) *ᵥ v = 0 := by
-    rw [hCH, Matrix.mul_zero, Matrix.zero_mulVec]
-  -- Expand `aeval` as a finite sum and use the degree of `charpoly`.
-  have hdeg : A.charpoly.natDegree = n := by
-    rw [Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
-  rw [Polynomial.aeval_eq_sum_range, hdeg, Finset.sum_range_succ] at h_apply
-  -- Isolate the leading `A^n` term using monicity of `charpoly`.
-  have hmonic : A.charpoly.coeff n = 1 := by
-    have hL := A.charpoly_monic
-    rw [Polynomial.Monic, Polynomial.leadingCoeff, hdeg] at hL
-    exact hL
-  rw [hmonic, one_smul, Matrix.mul_add, Matrix.add_mulVec] at h_apply
-  -- The remaining sum vanishes term-by-term because each `(C * A^i) *ᵥ v = 0`.
-  have hsum : (C * ∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
-    rw [Matrix.mul_sum, Matrix.sum_mulVec]
-    refine Finset.sum_eq_zero fun i hi => ?_
+  have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
+    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    rwa [Fintype.card_fin] at h
+  have hlower : ∀ i ∈ Finset.range n, (C * A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
+    intro i hi
     rw [Finset.mem_range] at hi
     rw [Matrix.mul_smul, Matrix.smul_mulVec, hv ⟨i, hi⟩, smul_zero]
-  rw [hsum, zero_add] at h_apply
-  exact h_apply
+  rw [hCH, Matrix.mul_neg, Matrix.neg_mulVec, Matrix.mul_sum, Matrix.sum_mulVec,
+    Finset.sum_eq_zero hlower, neg_zero]
 
 /-- The unobservable subspace is `A`-invariant: applying `A` to any
 unobservable state keeps it unobservable. The proof for the boundary case
@@ -251,6 +222,8 @@ unobservable state keeps it unobservable. The proof for the boundary case
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
 the algebraic characterization here is a derived consequence. -/
 @[blueprint "lem:unobservableSubspace-invariant"
+  (title := "$A$-invariance of the unobservable subspace")
+  (latexEnv := "lemma")
   (statement := /-- The unobservable subspace is closed under the action of
     $A$: for every $v \in \mathcal{N}(A, C)$, also $A\, v \in \mathcal{N}(A, C)$. -/)
   (proof := /-- For $k = 0, \dots, n-2$ this is direct from the definition.

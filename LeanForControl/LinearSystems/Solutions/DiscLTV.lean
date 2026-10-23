@@ -1,3 +1,4 @@
+import LeanForControl.LinearSystems.Discrete
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Tactic.Abel
@@ -18,7 +19,7 @@ namespace LinearSystems
 
 open Matrix
 
-variable {n : ℕ}
+variable {X : Type*} [Fintype X] [DecidableEq X]
 
 /-- `Φ(t₀,t₀) = I`: the discrete-time state transition matrix is the identity when evaluated at
 equal times, matching the initial condition of P5.5. The product defining `Φ(t₀,t₀)` is over the
@@ -26,9 +27,14 @@ empty range `[t₀,t₀)`, hence trivially `I`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5. -/
 @[blueprint "lem:discStateTransitionMatrix-self"
-  (statement := /-- $\Phi(t_0,t_0) = I$. -/)
+  (title := "The discrete state transition matrix at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- $\Phi(t_0,t_0) = I$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Property P5.5.
+  -/)
   (proof := /-- The defining product is over the empty range $[t_0, t_0)$. -/)]
-theorem discStateTransitionMatrix_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ) :
+theorem discStateTransitionMatrix_self (A : ℕ → Matrix X X ℝ) (t₀ : ℕ) :
     discStateTransitionMatrix A t₀ t₀ = 1 := by
   simp [discStateTransitionMatrix]
 
@@ -41,11 +47,13 @@ Proof: unfold the definition and peel the leading factor `A(t)` off the product,
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5. -/
 @[blueprint "lem:discStateTransitionMatrix-succ"
+  (title := "One-step recursion")
+  (latexEnv := "lemma")
   (statement := /-- For $t \ge t_0$, $\Phi(t+1, t_0) = A(t)\,\Phi(t, t_0)$.  With
     \cref{lem:discStateTransitionMatrix-self} this is the existence half of Hespanha's P5.5: the
     discrete state transition matrix solves the matrix recursion. -/)
   (proof := /-- Peel the leading factor $A(t)$ off the defining product. -/)]
-theorem discStateTransitionMatrix_succ (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t t₀ : ℕ}
+theorem discStateTransitionMatrix_succ (A : ℕ → Matrix X X ℝ) {t t₀ : ℕ}
     (ht : t₀ ≤ t) :
     discStateTransitionMatrix A (t + 1) t₀ = A t * discStateTransitionMatrix A t t₀ := by
   unfold discStateTransitionMatrix
@@ -70,15 +78,15 @@ sketch describes — the base case is `discStateTransitionMatrix_self`, the indu
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.5. -/
 @[blueprint "thm:discStateTransitionMatrix-unique"
-  (statement := /-- \textbf{Discrete state transition matrix: uniqueness} (Hespanha, P5.5).
-    If $Z(t_0) = I$ and
+  (title := "Discrete state transition matrix: uniqueness")
+  (statement := /-- Hespanha, P5.5.  If $Z(t_0) = I$ and
     $Z(t+1) = A(t)Z(t)$ for all $t \ge t_0$, then $Z(t) = \Phi(t,t_0)$ for all $t \ge t_0$. -/)
   (proof := /-- Induction on $t$ from $t_0$: the base case is
     \cref{lem:discStateTransitionMatrix-self} and the step chains the recursion against
     \cref{lem:discStateTransitionMatrix-succ}.  No analytic content at all, unlike the
     continuous-time counterpart — the recursion pins each value outright. -/)]
-theorem discStateTransitionMatrix_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    {Z : ℕ → Matrix (Fin n) (Fin n) ℝ} (hZ₀ : Z t₀ = 1)
+theorem discStateTransitionMatrix_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    {Z : ℕ → Matrix X X ℝ} (hZ₀ : Z t₀ = 1)
     (hZ : ∀ t ≥ t₀, Z (t + 1) = A t * Z t) :
     ∀ t ≥ t₀, Z t = discStateTransitionMatrix A t t₀ := by
   intro t ht
@@ -93,11 +101,12 @@ to columns (`x₀ := e_i`) for P5.6.
 Proof: the same induction as `discStateTransitionMatrix_unique`, pushed through `*ᵥ x₀` via
 `discStateTransitionMatrix_succ` and `Matrix.mulVec_mulVec`. -/
 @[blueprint "thm:discStateTransitionMatrix-mulVec-unique"
+  (title := "Uniqueness of the discrete state response")
   (statement := /-- If $z(t_0) = x_0$ and $z(t+1) = A(t)z(t)$ for all $t \ge t_0$, then
     $z(t) = \Phi(t,t_0)x_0$ for all $t \ge t_0$: the vector form of
     \cref{thm:discStateTransitionMatrix-unique}. -/)]
-theorem discStateTransitionMatrix_mulVec_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    (x₀ : Fin n → ℝ) {z : ℕ → Fin n → ℝ} (hz₀ : z t₀ = x₀)
+theorem discStateTransitionMatrix_mulVec_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    (x₀ : X → ℝ) {z : ℕ → X → ℝ} (hz₀ : z t₀ = x₀)
     (hz : ∀ t ≥ t₀, z (t + 1) = A t *ᵥ z t) :
     ∀ t ≥ t₀, z t = discStateTransitionMatrix A t t₀ *ᵥ x₀ := by
   intro t ht
@@ -116,13 +125,13 @@ Proof: restatement of `discStateTransitionMatrix_mulVec_unique` at `x₀ := e_i`
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.6. -/
 @[blueprint "thm:discStateTransitionMatrix-col-unique"
-  (statement := /-- \textbf{Columns of the discrete state transition matrix} (Hespanha, P5.6).
-    For each $i$, the $i$-th column of $\Phi(t,t_0)$ is the
+  (title := "Columns of the discrete state transition matrix")
+  (statement := /-- Hespanha, P5.6.  For each $i$, the $i$-th column of $\Phi(t,t_0)$ is the
     unique solution of $z(t+1) = A(t)z(t)$ with $z(t_0) = e_i$, for $t \ge t_0$. -/)
   (proof := /-- \cref{thm:discStateTransitionMatrix-mulVec-unique} at $x_0 = e_i$, using
     $\Phi(t,t_0)e_i = (\Phi(t,t_0))_{\cdot,i}$. -/)]
-theorem discStateTransitionMatrix_col_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    (i : Fin n) {z : ℕ → Fin n → ℝ} (hz₀ : z t₀ = Pi.single i 1)
+theorem discStateTransitionMatrix_col_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    (i : X) {z : ℕ → X → ℝ} (hz₀ : z t₀ = Pi.single i 1)
     (hz : ∀ t ≥ t₀, z (t + 1) = A t *ᵥ z t) :
     ∀ t ≥ t₀, z t = (discStateTransitionMatrix A t t₀).col i := by
   intro t ht
@@ -138,7 +147,8 @@ Proof: induction on `t` starting at `t = s` (`Nat.le_induction`) — the base ca
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.7. -/
 @[blueprint "thm:discStateTransitionMatrix-semigroup"
-  (statement := /-- \textbf{Semigroup property, discrete} (Hespanha, P5.7).  For $\tau \le s \le t$,
+  (title := "Semigroup property, discrete")
+  (statement := /-- Hespanha, P5.7.  For $\tau \le s \le t$,
     \[
       \Phi(t,s)\,\Phi(s,\tau) = \Phi(t,\tau).
     \]
@@ -147,7 +157,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.7
     rather than an artifact. -/)
   (proof := /-- Induction on $t$ from $s$, chaining
     \cref{lem:discStateTransitionMatrix-succ} at both $s$ and $\tau$. -/)]
-theorem discStateTransitionMatrix_semigroup (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {s τ : ℕ}
+theorem discStateTransitionMatrix_semigroup (A : ℕ → Matrix X X ℝ) {s τ : ℕ}
     (hτs : τ ≤ s) :
     ∀ t ≥ s, discStateTransitionMatrix A t s * discStateTransitionMatrix A s τ =
       discStateTransitionMatrix A t τ := by
@@ -158,7 +168,7 @@ theorem discStateTransitionMatrix_semigroup (A : ℕ → Matrix (Fin n) (Fin n) 
     rw [discStateTransitionMatrix_succ A ht, mul_assoc, ih,
       discStateTransitionMatrix_succ A (hτs.trans ht)]
 
-variable {m : ℕ} {B : ℕ → Matrix (Fin n) (Fin m) ℝ} {u : ℕ → Fin m → ℝ}
+variable {U : Type*} [Fintype U] {B : ℕ → Matrix X U ℝ} {u : ℕ → U → ℝ}
 
 /-- **Discrete variation of constants, initial value.** The discrete-time variation-of-constants
 formula `x(t) := Φ(t,t₀) *ᵥ x₀ + Σ_{τ=t₀}^{t-1} Φ(t,τ+1) *ᵥ (B(τ) *ᵥ u(τ))` matches the initial
@@ -167,14 +177,20 @@ value `x₀` at `t = t₀`: the forcing sum is over the empty range `[t₀,t₀)
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3 (discrete
 variation of constants). -/
 @[blueprint "lem:discVariationOfConstants-self"
+  (title := "Discrete variation of constants at the initial time")
+  (latexEnv := "lemma")
   (statement := /-- The discrete variation-of-constants formula
     \[
       x(t) := \Phi(t,t_0)x_0 + \sum_{\tau=t_0}^{t-1} \Phi(t,\tau+1)B(\tau)u(\tau)
     \]
     takes the value $x_0$ at $t = t_0$: the forcing sum is over the empty range and
-    $\Phi(t_0,t_0) = I$. -/)]
-theorem discVariationOfConstants_self (A : ℕ → Matrix (Fin n) (Fin n) ℝ) (t₀ : ℕ)
-    (x₀ : Fin n → ℝ) :
+    $\Phi(t_0,t_0) = I$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Section 5.3 (discrete
+    variation of constants).
+  -/)]
+theorem discVariationOfConstants_self (A : ℕ → Matrix X X ℝ) (t₀ : ℕ)
+    (x₀ : X → ℝ) :
     discStateTransitionMatrix A t₀ t₀ *ᵥ x₀ +
         ∑ τ ∈ Finset.Ico t₀ t₀, discStateTransitionMatrix A t₀ (τ + 1) *ᵥ (B τ *ᵥ u τ) = x₀ := by
   simp [discStateTransitionMatrix_self]
@@ -188,7 +204,8 @@ Proof: peel the top term off `x(t+1)`'s sum (`Finset.sum_Ico_succ_top`), and fol
 (also applied once more to the leading `Φ(t,t₀)` term); the two sides then match up to
 reassociating the sum. -/
 @[blueprint "thm:discVariationOfConstants-succ"
-  (statement := /-- \textbf{Discrete variation of constants, existence.}  For $t \ge t_0$, the
+  (title := "Discrete variation of constants: existence")
+  (statement := /-- For $t \ge t_0$, the
     formula of \cref{lem:discVariationOfConstants-self} satisfies the forced recursion
     \[
       x(t+1) = A(t)\,x(t) + B(t)\,u(t).
@@ -198,8 +215,8 @@ reassociating the sum. -/
     \cref{lem:discStateTransitionMatrix-succ}, applied once more to the leading
     $\Phi(t,t_0)$ term.  The peeled term is exactly $B(t)u(t)$, since
     $\Phi(t+1,t+1) = I$. -/)]
-theorem discVariationOfConstants_succ (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ t : ℕ}
-    (ht : t₀ ≤ t) (x₀ : Fin n → ℝ) :
+theorem discVariationOfConstants_succ (A : ℕ → Matrix X X ℝ) {t₀ t : ℕ}
+    (ht : t₀ ≤ t) (x₀ : X → ℝ) :
     discStateTransitionMatrix A (t + 1) t₀ *ᵥ x₀ +
         ∑ τ ∈ Finset.Ico t₀ (t + 1), discStateTransitionMatrix A (t + 1) (τ + 1) *ᵥ (B τ *ᵥ u τ) =
       A t *ᵥ (discStateTransitionMatrix A t t₀ *ᵥ x₀ +
@@ -215,6 +232,7 @@ theorem discVariationOfConstants_succ (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {
     discStateTransitionMatrix_self, Matrix.one_mulVec]
   abel
 
+omit [DecidableEq X] in
 /-- **Discrete variation of constants, uniqueness.** Any two solutions of the forced recursion
 `z(t+1) = A(t) *ᵥ z(t) + B(t) *ᵥ u(t)` sharing the same initial value `x₀` coincide for all
 `t ≥ t₀`.
@@ -223,14 +241,15 @@ Proof: induction on `t` starting at `t = t₀`. Unlike the continuous case
 (`variationOfConstants_unique`), this needs no Lipschitz/Gronwall machinery — the recursion pins
 each successive value directly. -/
 @[blueprint "thm:discVariationOfConstants-unique"
-  (statement := /-- \textbf{Discrete variation of constants, uniqueness.}  Any two solutions of
+  (title := "Discrete variation of constants: uniqueness")
+  (statement := /-- Any two solutions of
     $z(t+1) = A(t)z(t) + B(t)u(t)$ with the same value at $t_0$ agree for all $t \ge t_0$. -/)
   (proof := /-- Induction on $t$ from $t_0$.  Unlike
     \cref{thm:variationOfConstants-unique}, no Lipschitz condition or Gronwall estimate is
     needed: the recursion determines each successive value outright, so uniqueness is
     immediate. -/)]
-theorem discVariationOfConstants_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ) {t₀ : ℕ}
-    (x₀ : Fin n → ℝ) {z₁ z₂ : ℕ → Fin n → ℝ} (hz₁₀ : z₁ t₀ = x₀) (hz₂₀ : z₂ t₀ = x₀)
+theorem discVariationOfConstants_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}
+    (x₀ : X → ℝ) {z₁ z₂ : ℕ → X → ℝ} (hz₁₀ : z₁ t₀ = x₀) (hz₂₀ : z₂ t₀ = x₀)
     (hz₁ : ∀ t ≥ t₀, z₁ (t + 1) = A t *ᵥ z₁ t + B t *ᵥ u t)
     (hz₂ : ∀ t ≥ t₀, z₂ (t + 1) = A t *ᵥ z₂ t + B t *ᵥ u t) :
     ∀ t ≥ t₀, z₁ t = z₂ t := by
@@ -238,5 +257,138 @@ theorem discVariationOfConstants_unique (A : ℕ → Matrix (Fin n) (Fin n) ℝ)
   induction t, ht using Nat.le_induction with
   | base => rw [hz₁₀, hz₂₀]
   | succ t ht ih => rw [hz₁ t ht, hz₂ t ht, ih]
+
+/-! ## The named responses -/
+
+/-- The forced response starts at `x₀`. -/
+@[blueprint "lem:discForcedResponse-self"
+  (title := "The discrete forced response at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- The forced response (\cref{def:discForcedResponse}) takes the value $x_0$ at
+    $t = t_0$. -/)
+  (proof := /-- \cref{lem:discVariationOfConstants-self}. -/)]
+theorem discForcedResponse_self (A : ℕ → Matrix X X ℝ) (B : ℕ → Matrix X U ℝ)
+    (u : ℕ → U → ℝ) (t₀ : ℕ) (x₀ : X → ℝ) : discForcedResponse A B u t₀ x₀ t₀ = x₀ :=
+  discVariationOfConstants_self (B := B) (u := u) A t₀ x₀
+
+/-- The forced response satisfies the forced recursion forward from `t₀`. -/
+@[blueprint "lem:discForcedResponse-succ"
+  (title := "The discrete forced response solves the recursion")
+  (latexEnv := "lemma")
+  (statement := /-- For $t \ge t_0$ the forced response (\cref{def:discForcedResponse})
+    satisfies $x(t+1) = A(t)x(t) + B(t)u(t)$. -/)
+  (proof := /-- \cref{thm:discVariationOfConstants-succ}. -/)]
+theorem discForcedResponse_succ (A : ℕ → Matrix X X ℝ) (B : ℕ → Matrix X U ℝ)
+    (u : ℕ → U → ℝ) (x₀ : X → ℝ) {t₀ t : ℕ} (ht : t₀ ≤ t) :
+    discForcedResponse A B u t₀ x₀ (t + 1) =
+      A t *ᵥ discForcedResponse A B u t₀ x₀ t + B t *ᵥ u t :=
+  discVariationOfConstants_succ A ht x₀
+
+/-- The homogeneous response starts at `x₀`. -/
+@[blueprint "lem:discHomogeneousResponse-self"
+  (title := "The discrete homogeneous response at the initial time")
+  (latexEnv := "lemma")
+  (statement := /-- The homogeneous response (\cref{def:discHomogeneousResponse}) takes the value
+    $x_0$ at $t = t_0$. -/)
+  (proof := /-- $\Phi(t_0, t_0) = I$ (\cref{lem:discStateTransitionMatrix-self}). -/)]
+theorem discHomogeneousResponse_self (A : ℕ → Matrix X X ℝ) (t₀ : ℕ) (x₀ : X → ℝ) :
+    discHomogeneousResponse A t₀ x₀ t₀ = x₀ := by
+  simp [discHomogeneousResponse, discStateTransitionMatrix_self]
+
+/-- The homogeneous response satisfies the unforced recursion forward from `t₀`. -/
+@[blueprint "lem:discHomogeneousResponse-succ"
+  (title := "The discrete homogeneous response solves the unforced recursion")
+  (latexEnv := "lemma")
+  (statement := /-- For $t \ge t_0$ the homogeneous response
+    (\cref{def:discHomogeneousResponse}) satisfies $x(t+1) = A(t)x(t)$. -/)
+  (proof := /-- $\Phi(t+1, t_0) = A(t)\Phi(t, t_0)$
+    (\cref{lem:discStateTransitionMatrix-succ}). -/)]
+theorem discHomogeneousResponse_succ (A : ℕ → Matrix X X ℝ) (x₀ : X → ℝ) {t₀ t : ℕ}
+    (ht : t₀ ≤ t) :
+    discHomogeneousResponse A t₀ x₀ (t + 1) = A t *ᵥ discHomogeneousResponse A t₀ x₀ t := by
+  simp only [discHomogeneousResponse, discStateTransitionMatrix_succ A ht, Matrix.mulVec_mulVec]
+
+/-- For a constant state matrix the discrete state transition matrix is a matrix power,
+`Φ(t, t₀) = A^(t - t₀)`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Section 5.3. -/
+@[blueprint "thm:discStateTransitionMatrix-const"
+  (title := "The discrete state transition matrix of an LTI system")
+  (statement := /-- For a constant state matrix $A$, the discrete state transition matrix
+    (\cref{def:discStateTransitionMatrix}) is $\Phi(t, t_0) = A^{t - t_0}$.
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Section 5.3. -/)
+  (proof := /-- $\Phi(t, t_0)$ is the ordered product of $t - t_0$ factors, all equal to
+    $A$. -/)]
+theorem discStateTransitionMatrix_const (A : Matrix X X ℝ) (t t₀ : ℕ) :
+    discStateTransitionMatrix (fun _ => A) t t₀ = A ^ (t - t₀) := by
+  simp [discStateTransitionMatrix, List.map_const', List.prod_replicate]
+
+/-! ## The solution theory on the system object
+
+The theorems above are about matrix sequences.  Read on a `DiscreteLTV`, they say that the named
+responses are exactly the trajectories of the system from a given initial state, which is the
+form in which the solution theory reaches the stability theory. -/
+
+namespace DiscreteLTV
+
+variable {Y : Type*}
+
+/-- The forced response is a trajectory of the system on the forward ray. -/
+@[blueprint "thm:isTrajectoryOn-discForcedResponse"
+  (title := "The discrete forced response is a trajectory")
+  (statement := /-- For a discrete-time LTV system $s$ and input $u$, the forced response
+    (\cref{def:discForcedResponse}) from $x_0$ at $t_0$ is a trajectory of $s$ under $u$ on
+    $[t_0, \infty)$ (\cref{def:discreteLTV-isTrajectoryOn}). -/)
+  (proof := /-- \cref{lem:discForcedResponse-succ}, which is the trajectory condition on the
+    nose. -/)]
+theorem isTrajectoryOn_discForcedResponse (s : DiscreteLTV X U Y ℝ) (u : ℕ → U → ℝ)
+    (t₀ : ℕ) (x₀ : X → ℝ) :
+    s.IsTrajectoryOn u (discForcedResponse s.A s.B u t₀ x₀) (Set.Ici t₀) :=
+  fun _ ht => discForcedResponse_succ s.A s.B u x₀ ht
+
+/-- Every trajectory of the system on the forward ray is its own forced response. -/
+@[blueprint "thm:eq-discForcedResponse-of-isTrajectoryOn"
+  (title := "Discrete trajectories are forced responses")
+  (statement := /-- If $x$ is a trajectory of $s$ under $u$ on $[t_0, \infty)$
+    (\cref{def:discreteLTV-isTrajectoryOn}), then $x(t)$ is the forced response
+    (\cref{def:discForcedResponse}) from $x(t_0)$ at $t_0$, for every $t \ge t_0$. -/)
+  (proof := /-- Both satisfy the forced recursion from the same initial value, so they agree by
+    \cref{thm:discVariationOfConstants-unique}. -/)]
+theorem eq_discForcedResponse_of_isTrajectoryOn (s : DiscreteLTV X U Y ℝ)
+    {u : ℕ → U → ℝ} {x : ℕ → X → ℝ} {t₀ : ℕ} (hx : s.IsTrajectoryOn u x (Set.Ici t₀))
+    {t : ℕ} (ht : t₀ ≤ t) :
+    x t = discForcedResponse s.A s.B u t₀ (x t₀) t :=
+  discVariationOfConstants_unique s.A (x t₀) rfl (discForcedResponse_self s.A s.B u t₀ (x t₀))
+    (fun t ht => hx t ht) (fun _ ht => discForcedResponse_succ s.A s.B u (x t₀) ht) t ht
+
+/-- The homogeneous response is a trajectory of the unforced system on the forward ray. -/
+@[blueprint "thm:isTrajectoryOn-discHomogeneousResponse"
+  (title := "The discrete homogeneous response is a trajectory")
+  (statement := /-- The homogeneous response (\cref{def:discHomogeneousResponse}) from $x_0$ at
+    $t_0$ is a trajectory of the unforced system on $[t_0, \infty)$
+    (\cref{def:discreteLTV-isTrajectoryOn}). -/)
+  (proof := /-- \cref{lem:discHomogeneousResponse-succ}, after reducing the unforced state
+    equation by \cref{lem:discreteLTV-vectorField-zero-input}. -/)]
+theorem isTrajectoryOn_discHomogeneousResponse (s : DiscreteLTV X U Y ℝ) (t₀ : ℕ)
+    (x₀ : X → ℝ) :
+    s.IsTrajectoryOn 0 (discHomogeneousResponse s.A t₀ x₀) (Set.Ici t₀) := fun _ ht => by
+  simpa using discHomogeneousResponse_succ s.A x₀ ht
+
+/-- Every trajectory of the unforced system on the forward ray is its own homogeneous
+response. -/
+@[blueprint "thm:eq-discHomogeneousResponse-of-isTrajectoryOn"
+  (title := "Discrete unforced trajectories are homogeneous responses")
+  (statement := /-- If $x$ is a trajectory of the unforced system on $[t_0, \infty)$
+    (\cref{def:discreteLTV-isTrajectoryOn}), then $x(t) = \Phi(t, t_0)\,x(t_0)$ for every
+    $t \ge t_0$. -/)
+  (proof := /-- \cref{thm:discStateTransitionMatrix-mulVec-unique}, after reducing the unforced
+    state equation by \cref{lem:discreteLTV-vectorField-zero-input}. -/)]
+theorem eq_discHomogeneousResponse_of_isTrajectoryOn (s : DiscreteLTV X U Y ℝ)
+    {x : ℕ → X → ℝ} {t₀ : ℕ} (hx : s.IsTrajectoryOn 0 x (Set.Ici t₀)) {t : ℕ} (ht : t₀ ≤ t) :
+    x t = discHomogeneousResponse s.A t₀ (x t₀) t :=
+  discStateTransitionMatrix_mulVec_unique s.A (x t₀) rfl (fun k hk => by simpa using hx k hk) t ht
+
+end DiscreteLTV
 
 end LinearSystems

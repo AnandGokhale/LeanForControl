@@ -11,11 +11,9 @@ lake exe cache get          # download mathlib's prebuilt artifacts
 lake build                  # builds the project (~minutes the first time)
 ```
 
-`lake build` green is the source of truth. No `sorry` or `admit`. Five custom `axiom`s remain,
-all comparison-function constructions that are standard but not yet in Mathlib: two smoothing
-results in `LeanForControl/axioms.lean` and three in `LeanForControl/Comparison/Axioms.lean`.
-Each carries a blueprint node marked *assumed without proof*; `#print axioms` on any result
-shows which it inherits. ODE existence and uniqueness are **proved**, not assumed — see
+`lake build` green is the source of truth. No `sorry` or `admit`. No custom `axiom`s
+remain: `#print axioms` on any result shows only Lean's standard `propext`,
+`Classical.choice` and `Quot.sound`. ODE existence and uniqueness are **proved**, not assumed — see
 `LeanForControl/ODEs/PicardLindelof.lean`.
 
 ## Three ways to look at the project
@@ -68,12 +66,10 @@ keep it tight and faithful; trust the Lean source if they ever drift.
 
 ```
 LeanForControl/                          ← Lean source
-├── axioms.lean                          ← top-level custom axioms (real-analysis smoothing)
 ├── Stability/                           ← Lyapunov, LaSalle, and indirect-method theory
 ├── Comparison/                          ← class K / K∞ / KL / L comparison-function library
 ├── ODEs/                                ← comparison lemma, Gronwall–Bellman, ODE existence
-├── Dini/                                ← Dini derivatives (used by the comparison lemma)
-├── Analysis/                            ← supporting analysis and derivative-remainder lemmas
+├── Analysis/                            ← supporting analysis: Dini derivatives, limsup, integrals, derivative remainders
 ├── MatrixAlgebra/                       ← matrix facts with no system semantics (rank, spectrum, exp, quadratic forms)
 └── LinearSystems/                       ← solutions, controllability/observability, Hurwitz theory, Lyapunov equations
 blueprint/src/                           ← .tex sources (run leanblueprint web to render)
@@ -86,9 +82,10 @@ home_page/                               ← Jekyll scaffold for the project's h
 
 `LeanForControl/Stability/plan.md` is the maintained roadmap for the stability corner of
 the library. It records the autonomous and non-autonomous Lyapunov theory, LaSalle, and both
-branches of Lyapunov's indirect method (in `Stability/LyapunovIndirect/`). The quantitative
-exponential Chetaev criterion used by the nonlinear instability proof is complete; the more
-general boundary-form/geometric Chetaev theorem remains planned.
+branches of Lyapunov's indirect method (in `Stability/Continuous/Linearization.lean`). The quantitative
+exponential Chetaev criterion used by the nonlinear instability proof and a Chetaev
+instability theorem with certificate conditions on a fixed closed ball are complete,
+on the unified `ContinuousSystem` and finite-segment stability API.
 `LeanForControl/LinearSystems/plan.md` tracks the linear track — solutions, the structural
 theory, and the Hurwitz foundation — along with its directory-placement rules. The other
 directories don't have a written roadmap yet; check

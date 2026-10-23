@@ -31,8 +31,8 @@ See `README.md` for how to build the project and the three ways to browse it
      lemma. Don't axiomatize the thing you're actually trying to prove.
    - Write a doc comment on the axiom stating what standard result it captures and why
      it's reasonable to take as given (a citation is good; "obviously true" is not).
-   - Put it in `LeanForControl/axioms.lean` or `LeanForControl/Comparison/Axioms.lean`
-     (or an equally-named central file for a new subject area) — not inline in a proof
+   - Put it in a central `Axioms.lean` file for its subject area (e.g.
+     `LeanForControl/Comparison/Axioms.lean`) — not inline in a proof
      file, so the full list of assumptions stays auditable in one place.
    - Say so explicitly in the PR description: which axiom, why it's needed, why it's
      standard.

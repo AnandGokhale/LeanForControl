@@ -4,106 +4,141 @@
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Lyapunov stability | `lyapunov_stable` | `Autonomous.lean` | ✅ done |
-| Global asymptotic stability via strict Lyapunov function | `lyapunov_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| Global asymptotic stability via radially unbounded V | `lyapunov_global_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| Local asymptotic stability via strict local Lyapunov function | `lyapunov_local_asymptotic_stable` | `Autonomous.lean` | ✅ done |
-| Quantitative exponential Chetaev criterion | `unstable_of_exponential_chetaev` | `LyapunovIndirect/Chetaev.lean` | ✅ done |
-| Boundary-form/geometric Chetaev theorem | — | — | planned |
-| ω-limit set of a trajectory | `omegaLimitTraj`, `mem_omegaLimitTraj_iff` | `LaSalle.lean` | ✅ done |
-| ω-limit set is positively invariant (Khalil Lemma 4.1) | `isPositivelyInvariant_omegaLimitTraj` | `LaSalle.lean` | ✅ done |
-| `V̇ = 0` on the ω-limit set | `lieDeriv_eq_zero_on_omegaLimitTraj` | `LaSalle.lean` | ✅ done |
-| LaSalle's invariance principle | `lasalle_invariance_principle` | `LaSalle.lean` | ✅ done |
-| Barbashin's theorem (local asymptotic stability via LaSalle) | `lasalle_local_asymptotic_stable` | `LaSalle.lean` | ✅ done |
-| Krasovskii's theorem (global asymptotic stability via LaSalle) | `lasalle_global_asymptotic_stable` | `LaSalle.lean` | ✅ done |
-| Stable branch of Lyapunov's indirect method | `hurwitz_linearization_locally_exponentially_stable` | `LyapunovIndirect/Linearization.lean` | ✅ done |
-| Unstable branch of Lyapunov's indirect method | `unstable_of_exists_complex_eigenvalue_re_pos` | `LyapunovIndirect/NonlinearInstability.lean` | ✅ done |
+| Lyapunov stability | `IsUniformLyapunovFunction.uniformlyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Global asymptotic stability via strict Lyapunov function with compact sublevel sets | `globallyUniformlyAsymptoticallyStable_of_lyapunov` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Radially unbounded V has compact sublevel sets | `isCompact_sublevel_set` | `Analysis/SublevelSet.lean` | ✅ done |
+| Local asymptotic stability via strict local Lyapunov function | `IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Exponential stability via exponential Lyapunov function | `IsExponentialLyapunovFunction.locallyExponentiallyStable`, `.globallyExponentiallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Quantitative exponential Chetaev criterion | `unstable_of_exponential_chetaev` | `Continuous/Chetaev.lean` | ✅ done |
+| Boundary-form/geometric Chetaev theorem | `ContinuousSystem.unstable_of_geometric_chetaev` | `Continuous/Chetaev.lean` | ✅ done |
+| ω-limit set of a trajectory | `omegaLimitSet`, `mem_omegaLimitSet_iff` | `Analysis/OmegaLimit.lean` | ✅ done |
+| ω-limit set is forward invariant (Khalil Lemma 4.1) | `isForwardInvariant_omegaLimitSet` | `Continuous/LaSalle.lean` | ✅ done |
+| `V̇ = 0` on the ω-limit set | `fderiv_apply_eq_zero_of_mem_omegaLimitSet` | `Continuous/LaSalle.lean` | ✅ done |
+| LaSalle's invariance principle | `lasalle_invariance_principle` | `Continuous/LaSalle.lean` | ✅ done |
+| Barbashin's theorem (local asymptotic stability via LaSalle) | `locallyAsymptoticallyStable_of_lasalle` | `Continuous/LaSalle.lean` | ✅ done |
+| Krasovskii's theorem (global asymptotic stability via LaSalle) | `globallyAsymptoticallyStable_of_lasalle` | `Continuous/LaSalle.lean` | ✅ done |
+| Stable branch of Lyapunov's indirect method | `hurwitz_linearization_locally_exponentially_stable` | `Continuous/Linearization.lean` | ✅ done |
+| Unstable branch of Lyapunov's indirect method | `unstable_of_exists_complex_eigenvalue_re_pos` | `Continuous/Linearization.lean` | ✅ done |
 
 Files:
 
-- `DefsAutonomous.lean` — autonomous trajectory, stability, and Lyapunov-function definitions
-- `Autonomous.lean` — Lyapunov stability / GAS / LAS
-- `LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
-- `LyapunovIndirect/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
-  exponential Chetaev criterion
-- `LyapunovIndirect/Linearization.lean` — stable branch of Lyapunov's indirect method
-- `LyapunovIndirect/LinearizationInstability.lean` — exact affine-linear positive-mode instability
-- `LyapunovIndirect/NonlinearInstability.lean` — quadratic-certificate application and nonlinear unstable branch
-- `LyapunovIndirect/DefsDynamics.lean` — affine-linear vector fields on the Euclidean state convention
-- `LyapunovIndirect/Lyapunov.lean` — the remainder-absorption step shared by both branches
+- `DefsAutonomous.lean`, `DefsNonAutonomous.lean`, `Autonomous.lean`, `NonAutonomous.lean`,
+  `LaSalle.lean`, `Continuous/Bridges.lean` — retired: the predicates are those of
+  `Continuous/Defs.lean`, stated once on `ContinuousSystem` for time-varying and time-invariant
+  systems alike, and the theorems are in the `Continuous/` files below
+- `Continuous/LaSalle.lean` — invariance principle and Barbashin/Krasovskii corollaries
+- `Continuous/Chetaev.lean` — smooth-cutoff continuation, first-exit machinery, and the
+  exponential and geometric Chetaev criteria
+- `Continuous/LyapunovFunctions.lean` — Lyapunov and state-only Chetaev certificates
+- `Continuous/Linearization.lean` — Lyapunov's indirect method, both branches
 
 ## Status: Non-autonomous systems (`ẋ = f(t, x)`)
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Trajectories, equilibria, stability predicates | — | `DefsNonAutonomous.lean` | ✅ done |
+| Trajectories, stability predicates | `ContinuousSystem.IsTrajectoryOn`, `Stable`, `UniformlyStable`, … | `Systems/Continuous.lean`, `Continuous/Defs.lean` | ✅ done |
 | Picard–Lindelöf existence on `[t₀, ∞)` | `exists_isIntegralCurveOn_Ici` | `ODEs/PicardLindelof.lean` | ✅ done, axiom-free |
-| Class-K sandwich bounds for positive-definite functions | `LyapunovClassKBounds` | `LyapunovBounds.lean` | ✅ done |
-| Class-KL solution of the scalar decay ODE `ẏ = −α(y)` | `ClassK.exists_classKL_decaySolution` | `ClassKDecay.lean` | ✅ done |
-| Comparison bound `D⁺v ≤ −α(v)` ⟹ class-KL decay | `classK_dini_bound` | `ClassKDecay.lean` | ✅ done |
-| Class-K characterization of uniform stability | `uniformlyStableNA_iff_classK` | `KLCharacterization.lean` | ✅ done |
-| Class-KL characterization of uniform asymptotic stability | `uniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
-| Class-KL characterization of global uniform asymptotic stability | `globallyUniformlyAsymptoticStableNA_iff_classKL` | `KLCharacterization.lean` | ✅ done |
-| Lyapunov's uniform stability theorem | `lyapunov_uniformly_stable_NA` | `NonAutonomous.lean` | ✅ done |
-| Lyapunov's uniform asymptotic stability theorem | `lyapunov_uniformly_asymptotic_stable_NA` | `NonAutonomous.lean` | ✅ done |
+| Class-K sandwich bounds for positive-definite functions | `IsPositiveDefiniteOn.exists_classK_bounds` | `Comparison/PositiveDefiniteBounds.lean` | ✅ done |
+| Class-KL solutions of the decay system `ẏ = −α(y)` | `ClassK.exists_classKL_trajectory_decaySystem` | `Comparison/DecaySystem.lean` | ✅ done |
+| Subsolutions `D⁺v ≤ −α(v)` of the decay system ⟹ class-KL decay | `ClassK.exists_classKL_bound_of_subsolution` | `Comparison/DecaySystem.lean` | ✅ done |
+| Class-K characterization of (uniform) stability | `stable_iff_classK`, `uniformlyStable_iff_classK` | `Continuous/KLCharacterization.lean` | ✅ done |
+| Class-KL characterization of uniform asymptotic stability | `uniformlyAsymptoticallyStable_iff_classKL` | `Continuous/KLCharacterization.lean` | ✅ done |
+| Class-KL characterization of global uniform asymptotic stability | `globallyUniformlyAsymptoticallyStable_iff_classKL` | `Continuous/KLCharacterization.lean` | ✅ done |
+| Lyapunov's uniform stability theorem | `IsUniformLyapunovFunction.uniformlyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Lyapunov's uniform asymptotic stability theorem | `IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Exponential stability from a power-law Lyapunov sandwich (Khalil Theorem 4.10) | `IsExponentialLyapunovFunction.locallyExponentiallyStable`, `.globallyExponentiallyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Hespanha's Definition 8.1 for `ẋ = A(t)x` ⟺ the predicates of the unforced system | `stable_iff_boundedHomogeneousResponse` and friends | `LinearSystems/Stability/Continuous/LyapunovLTV.lean` | ✅ done |
 
 Files:
 
-- `DefsNonAutonomous.lean` — trajectories, equilibria, and the stability predicates
-  (stable, uniformly stable, unstable, asymptotically stable, uniformly asymptotically
-  stable, globally uniformly asymptotically stable, exponentially stable, globally
-  exponentially stable)
-- `LyapunovBounds.lean` — class-K sandwich bounds for continuous positive-definite
-  functions (annulus-infimum / ball-supremum construction plus smoothing); only
-  `LyapunovClassKBounds` is public
-- `ClassKDecay.lean` — class-KL bound from the scalar decay ODE `ẏ = -α(y)`, plus the
-  comparison-based decay bound `classK_dini_bound`
-- `KLCharacterizationTools.lean` — uniform decay envelopes (`exists_classLSingular_decayBound`,
-  `exists_decayBound_family`); everything else in the file is private construction
-- `KLCharacterization.lean` — class-K / class-KL characterizations of the stability
-  predicates in `DefsNonAutonomous.lean`
-- `NonAutonomous.lean` — the two main Lyapunov theorems for non-autonomous systems
+- `Continuous/Defs.lean` — the stability predicates (stable, uniformly stable, unstable,
+  locally/globally asymptotically stable, uniformly asymptotically stable, globally uniformly
+  asymptotically stable, locally/globally exponentially stable), on trajectory segments
+- `Comparison/PositiveDefiniteBounds.lean` (moved out of `Stability/`) — class-K sandwich
+  bounds for continuous positive-definite functions (annulus-infimum / ball-supremum
+  construction plus smoothing); only `IsPositiveDefiniteOn.exists_classK_bounds` is public
+- `Comparison/DecaySystem.lean` (formerly `ClassKDecay.lean`) — the decay system `ẏ = -α(y)` as
+  a `ContinuousSystem`, its class-KL solutions, and the class-KL bound on its subsolutions
+- `Continuous/KLCharacterization.lean` — class-K / class-KL characterizations of the stability
+  notions on `ContinuousSystem`, with the uniform decay envelopes they are built from; the old
+  `KLCharacterization.lean` and `KLCharacterizationTools.lean`, stated on the ray-based
+  predicates, are retired
+- `Continuous/LyapunovTheorems.lean` — the two main Lyapunov theorems, stated on
+  `ContinuousSystem` with the certificates of `Continuous/LyapunovFunctions.lean`
+
+The predicates of `Continuous/Defs.lean` are also the ones the linear track uses, applied to the
+unforced system `s.toContinuousSystem.zeroInput`: Hespanha's Definition 8.1, stated on the state
+transition matrix of `ẋ = A(t)x`, is proved equivalent to them in `LinearSystems/Stability/Continuous/LyapunovLTV.lean` rather than re-defined there. That
+file lives on the linear side because its subject is the linear system; see
+`LeanForControl/LinearSystems/plan.md`.
 
 Comparison-function library (`LeanForControl/Comparison/`):
 
 - `ClassK.lean`, `ClassKInfty.lean`, `ClassKL.lean`, `ClassL.lean` — the class K, K∞, KL,
   and L function structures and their algebra (composition, inverse, restriction)
-- `Axioms.lean` — assumed comparison-function results (three axioms)
-- `../axioms.lean` — the two monotone-to-strictly-monotone smoothing axioms, plus the
-  bounded-interval majorant proved from them
+- `../Analysis/MonotoneFunctions.lean` — the monotone-to-strictly-monotone smoothing lemmas
+  (minorant, global majorant, and the bounded-interval majorant derived from it)
 - `ComparisonFunctions.lean` — shared comparison-function infrastructure
 
 ---
 
+## Status: Discrete-time systems (`x⁺ = f(k, x)`)
+
+The notions of `Continuous/Defs.lean` under the same names in namespace `DiscreteSystem`, ported
+from the retired `DiscreteStability` branch (kept as a reference until the port is done).
+Trajectories always exist and are unique, so every notion quantifies over rays `[k₀, ∞)` and no
+forward completeness appears.
+
+| Phase | Content | File | Status |
+|---|---|---|---|
+| 1 | Existence/uniqueness of trajectories, iterates, `zeroInput`; stability definitions, ultimate boundedness, implications | `Systems/Discrete.lean`, `Discrete/Defs.lean` | ✅ done |
+| 2 | Lyapunov theorems for `x⁺ = f(x)`: uniformly stable, LAS, GAS, LES, GES | `Discrete/LyapunovTheorems.lean` | ✅ done |
+| 3 | Linear: responses as trajectories, `Φ = A^(t-t₀)`; Hespanha Def. 8.2 on the unforced system | `LinearSystems/Solutions/DiscLTV.lean`, `LinearSystems/Stability/Discrete/LyapunovLTV.lean` | ✅ done |
+| 4 | `IsSchur` ⇔ `Aᵏ → 0` ⇔ geometric envelope; Hespanha Thm. 8.3(2) | `LinearSystems/Stability/Discrete/Schur.lean`, `.../Discrete/LyapunovLTI.lean` | ✅ done |
+| 5 | Discrete Lyapunov equation `AᵀPA - P = -Q`; Hespanha Thm. 8.4 (TFAE) | `LinearSystems/Stability/Discrete/LyapunovEquation.lean`, `.../Discrete/LyapunovLTI.lean` | ✅ done |
+| — | Thm. 8.3(1), (3): marginal stability, instability | — | blocked: Jordan normal form |
+| — | Difference along the system; time-varying certificates `V(k, x)` and uniform Lyapunov theorems | — | later |
+
+Backlog:
+
+- **References for the definitions.** `Discrete/Defs.lean` cites Khalil (read in discrete time)
+  and Jungers and van de Wouw on some definitions only; the plan is to cite a discrete-time source
+  throughout.  Jungers and van de Wouw, *Discrete-time nonlinear control systems* (Encyclopedia
+  of Systems and Control Engineering, 2026), Definitions 2–3 and Remark 2, covers the
+  time-invariant notions. For
+  the time-varying and uniform ones, candidates are Elaydi, *An Introduction to Difference
+  Equations* (3rd ed., 2005), Chapter 4; Bof, Carli and Schenato, *Lyapunov Theory for Discrete
+  Time Systems* (arXiv:1809.05289); Agarwal, *Difference Equations and Inequalities* (2nd ed.,
+  2000).  Check the exact definition numbers before citing.
+
 ## Finite-segment quantification and Lyapunov's indirect method
 
-Every autonomous stability predicate quantifies over *finite forward solution segments*
-(`IsTrajectoryOn φ f t₀ t₁`, an abbreviation for `IsIntegralCurveOn φ (fun _ x => f x)
-(Icc t₀ t₁)`) rather than over solutions defined on all of `ℝ`. This prevents a system whose
+Every stability predicate of `Continuous/Defs.lean` quantifies over *finite forward solution
+segments* (`s.IsTrajectoryOn u x (Icc t₀ t₁)`, an integral curve of the system's vector field on
+the segment) rather than over solutions defined on all of `ℝ`. This prevents a system whose
 solution escapes in finite time from satisfying a stability predicate merely because no global
 trajectory exists.
 
-There is no longer a separate "forward" API: the `Forward*` predicates and their compatibility
-theorems were folded into the ordinary ones, so `LyapunovStable`, `LocallyExponentiallyStable`
-and `Unstable` in `DefsAutonomous.lean` *are* the finite-segment notions.
+There is no separate "forward" API: `Stable`, `LocallyExponentiallyStable` and `Unstable` in
+`Continuous/Defs.lean` *are* the finite-segment notions.
 
 | Infrastructure or result | Lean name | File | Status |
 |---|---|---|---|
-| Finite forward solution segment | `IsTrajectoryOn` (abbrev for Mathlib's `IsIntegralCurveOn`) | `DefsAutonomous.lean` | ✅ done |
-| Lyapunov stability, local exponential stability, instability | `LyapunovStable`, `LocallyExponentiallyStable`, `Unstable` | `DefsAutonomous.lean` | ✅ done |
+| Finite forward solution segment | `ContinuousSystem.IsTrajectoryOn` (Mathlib's `IsIntegralCurveOn`) | `Systems/Continuous.lean` | ✅ done |
+| Stability, local exponential stability, instability | `Stable`, `LocallyExponentiallyStable`, `Unstable` | `Continuous/Defs.lean` | ✅ done |
 | Local finite segment for a `C¹` field | `ContDiffAt.exists_isIntegralCurveOn_Icc` | `ODEs/ODE_properties.lean` | ✅ done |
-| Lyapunov first-exit theorem | `lyapunov_stable` | `Autonomous.lean` | ✅ done |
-| Exponential stability implies Lyapunov stability | `LocallyExponentiallyStable.lyapunovStable` | `Autonomous.lean` | ✅ done |
-| Escape witness gives instability | `unstable_of_fixed_escape` | `Autonomous.lean` | ✅ done |
+| Lyapunov first-exit theorem | `IsUniformLyapunovFunction.uniformlyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
+| Exponential stability implies stability | `LocallyExponentiallyStable.uniformlyStable` | `Continuous/Defs.lean` | ✅ done |
+| Escape witness gives instability | `unstable_of_escape` | `Continuous/Defs.lean` | ✅ done |
 | Hurwitz exponential contractivity block | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | ✅ done |
 | Arbitrary-`Q` continuous Lyapunov equation | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `LinearSystems/Stability/Continuous/LyapunovEquation.lean` | ✅ done, axiom-free |
 | Linearization-error bound, `ε`–`δ` form | `HasFDerivAt.exists_linearization_error_bound` | `Analysis/FrechetDerivative.lean` | ✅ done |
-| Remainder absorption shared by both branches | `exists_abs_fderiv_centeredQuadraticForm_remainder_le` | `LyapunovIndirect/Lyapunov.lean` | ✅ done |
-| Hurwitz Jacobian gives local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `LyapunovIndirect/Linearization.lean` | ✅ done |
+| Remainder absorption shared by both branches | `exists_abs_fderiv_centeredQuadraticForm_remainder_le` | `MatrixAlgebra/QuadraticForm.lean` | ✅ done |
+| Hurwitz Jacobian gives local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `Continuous/Linearization.lean` | ✅ done |
 | Positive-real eigenpair gives a quadratic Chetaev certificate | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `LinearSystems/Stability/Continuous/InstabilityCertificate.lean` | ✅ done, axiom-free |
-| Positive-real mode destabilizes the exact affine-linear system | `unstable_affineLinear_of_eigenvalue_re_pos` | `LyapunovIndirect/LinearizationInstability.lean` | ✅ done |
-| Exponential Chetaev criterion on finite segments | `unstable_of_exponential_chetaev` | `LyapunovIndirect/Chetaev.lean` | ✅ done |
-| Positive-real Jacobian eigenpair destabilizes a `C¹` equilibrium | `unstable_of_exists_complex_eigenvalue_re_pos` | `LyapunovIndirect/NonlinearInstability.lean` | ✅ done |
+| Positive-real mode destabilizes `ẋ = A x` at the origin | `unstable_linear_of_eigenvalue_re_pos` | `Continuous/Linearization.lean` (corollary of the nonlinear theorem) | ✅ done |
+| Exponential Chetaev criterion on finite segments | `unstable_of_exponential_chetaev` | `Continuous/Chetaev.lean` | ✅ done |
+| Positive-real Jacobian eigenpair destabilizes a `C¹` equilibrium | `unstable_of_exists_complex_eigenvalue_re_pos` | `Continuous/Linearization.lean` | ✅ done |
 
 Supporting files outside `Stability/`:
 
@@ -163,7 +198,7 @@ References for the two branches: Khalil, *Nonlinear Systems*; Hahn,
 
 ---
 
-## Still planned: boundary-form/geometric Chetaev theorem
+## Completed: boundary-form/geometric Chetaev theorem
 
 The completed `unstable_of_exponential_chetaev` is a quantitative criterion tailored to the indirect-method proof. It assumes, on a closed
 ball, a quadratic upper bound
@@ -171,41 +206,51 @@ ball, a quadratic upper bound
 `2 α V(x) ≤ DV(x) f(x)`, and positive values of `V` arbitrarily close to `x_eq`.
 Those hypotheses are enough for the quadratic certificate above.
 
-This is distinct from the more general boundary-form version of Chetaev's theorem, which
-remains planned. Its geometric hypotheses should package an open set `D₁` with `x_eq` on
-its frontier, positivity of `V` and its Lie derivative in `D₁`, and vanishing of `V` on
-the relevant boundary. The target conclusion should use `Unstable`, which already quantifies
-over finite forward segments, so finite-time escape is handled without a global-trajectory
-assumption.
+`ContinuousSystem.IsChetaevFunction` in `Continuous/LyapunovFunctions.lean` packages an open
+region `D` with `x_eq` on its topological boundary, a positive radius, globally `C¹` state-only
+certificate `V`, positivity in `D` inside the closed ball, boundary vanishing there, and
+strictly positive system Lie derivative at every nonnegative time. Boundary means `∂D`,
+represented by Mathlib's `frontier D`; the corresponding field is `hmem_boundary`.
 
-The remaining work for that general theorem is geometric rather than spectral:
+`ContinuousSystem.unstable_of_geometric_chetaev` assumes a globally `C¹` field `f` and
+`s.F t x () = f x`, and concludes `s.Unstable x_eq`. This negates `Stable`, whose radius
+may depend on initial time, rather than merely negating `UniformlyStable`. Escape on finite
+segments at time zero contradicts either reading. The time-independent state equation was
+implicit in the original field-based formulation; there is no output restriction, equilibrium
+premise, or forward-completeness assumption. All sign and boundary conditions remain local
+to the fixed closed ball, and neither `D` nor `V` is assumed globally bounded.
 
-- define a boundary-form Chetaev certificate in a dedicated definitions file;
-- derive positive seed points from the frontier hypothesis;
-- control retention in the positive component and exit through its boundary;
-- replace the quantitative exponential growth estimate by the compact-set argument for a
-  merely positive Lie derivative.
+The proof separates a positive derivative minimum on the seed's compact superlevel,
+solution retention/nondecrease, and the growth-versus-ceiling escape contradiction. It reuses
+the shared Lie-derivative chain rule and monotonicity lemmas. General boundary crossings
+are public in `Analysis/Continuity.lean`; sphere crossing is their open-ball specialization.
+The exponential criterion is now a corollary on the full positive set `{V > 0}`: the
+quadratic bound gives `V(x_eq) = 0`, and positive seeds supply closure membership, together
+placing the base point on the boundary. Its public statement and positional use in
+`Linearization.lean` are preserved; the three exponential-only helpers are removed.
+`tests/Chetaev.lean` exercises the migrated certificate on constant
+rightward flow: zero is not an equilibrium, the criterion negates `Stable`, and the
+regression also rules out `UniformlyStable`.
 
-The smooth-cutoff continuation, finite-segment chain rule, and first-exit machinery already
-proved for the exponential criterion should be reusable.
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
+p. 125. This is a boundary formulation of its positive-superlevel escape argument, with
+an independent open region, stronger global regularity, and finite-segment system predicates.
 
 ---
 
 ## Infrastructure already in place (autonomous side)
 
-Public, in `Autonomous.lean` unless noted:
-
-- `hasDerivAt_V_comp_traj`, `hasDerivAt_V_comp_integralCurveOn` (chain rule along solutions)
-- `antitoneOn_V_comp_traj`, `V_nonincreasing_on`
-- `isCompact_sublevel_set`, `sublevel_set_invariant` (the latter in `DefsAutonomous.lean`)
-- `strict_implies_semidefinite`, `asymptotic_implies_strict`, `strict_local_implies_semidefinite`
-- `omegaLimitTraj`, `mem_omegaLimitTraj_iff` (`LaSalle.lean`) — Mathlib's `omegaLimit`
+- Differentiating along solutions: `Analysis/LieDerivative.lean` (`lieDerivative`,
+  `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos`,
+  `IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le`)
+- `isCompact_sublevel_set` (`Analysis/SublevelSet.lean`)
+- `omegaLimitSet`, `mem_omegaLimitSet_iff` (`Analysis/OmegaLimit.lean`) — Mathlib's `omegaLimit`
   specialized to a single trajectory, and its membership criterion
-- `isPositivelyInvariant_omegaLimitTraj`, `lieDeriv_eq_zero_on_omegaLimitTraj`,
-  `LieDerivZeroSet` (`LaSalle.lean`)
+- `isForwardInvariant_omegaLimitSet`, `fderiv_apply_eq_zero_of_mem_omegaLimitSet`
+  (`Continuous/LaSalle.lean`)
 
 The four classical LaSalle steps — `V ∘ φ` antitone, `V(φ t) → L`, `V ≡ L` on `ω(φ)`, and
-`ω(φ) ⊆ Ω` — are `private` in `LaSalle.lean`: they are steps of one proof, not results.
+`ω(φ) ⊆ Ω` — are `private` in `Continuous/LaSalle.lean`: they are steps of one proof, not results.
 
 ## Known tech debt
 
@@ -256,37 +301,29 @@ make the global version look like the bounded one. Its one caller in `KLCharacte
 passes an `Ico` membership, so tightening the type means touching that site too.
 (`ClassKL.continuous_r` is fine — there the `a` is the structure's own.)
 
-### Files that should move
+### Files that should move — done
 
-| Declaration / file | Destination | Why |
-|---|---|---|
-| `LyapunovIndirect/Chetaev.lean` | `Stability/Chetaev.lean` | general instability tool; mentions `f`, never `A`; imports only `Autonomous` |
-| `exists_abs_fderiv_centeredQuadraticForm_remainder_le` (`LyapunovIndirect/Lyapunov.lean`) | `Stability/QuadraticRemainder.lean` *(new, small)* | both branches call it, so leaving it in `Linearization.lean` would make the unstable branch import the stable branch and invert the dependency |
-| `realMulVec` (`LyapunovIndirect/LinearizationInstability.lean`) | inline it | one-line private wrapper for `Matrix.toEuclideanCLM`, 2 call sites in its own file |
+`Chetaev.lean` now lives in `Stability/Continuous/`.  The remainder-absorption lemma
+`exists_abs_fderiv_centeredQuadraticForm_remainder_le` moved to `MatrixAlgebra/QuadraticForm.lean`
+(namespace `MatrixAlgebra`), and `Lyapunov.lean` was deleted.  `LinearizationInstability.lean`
+was deleted: the linear instability theorem is a corollary of the nonlinear one, so `realMulVec`
+went with it.  The two branches were then merged into `Stability/Continuous/Linearization.lean`,
+and the `LyapunovIndirect/` directory removed.
 
-`Lyapunov.lean` holds that one declaration and nothing else, so it is deleted by the same move.
-What remains in `LyapunovIndirect/` is then `Linearization.lean`, `LinearizationInstability.lean`,
-`NonlinearInstability.lean` and `DefsDynamics.lean` — all genuinely linearization, so the
-directory name stays accurate.
-
-`Chetaev.lean`'s three `private` `*_forward_segment*` lemmas are **deliberately** left alone by
-the `forward` rename sweep: there `forward` means *forward in time from 0* — a solution on
-`Icc 0 T` — which is accurate and unrelated to the retired `Forward*` stability predicates.
+`Chetaev.lean`'s remaining private `exists_cutoff_forward_segment` lemma keeps `forward`
+in its name: it means *forward in time from 0* — a solution on `Icc 0 T` — which is
+accurate and unrelated to the retired `Forward*` stability predicates.
 
 ## Open questions
 
 - **Flat vs subdirectory for the bridges.** `LinearSystems/plan.md` Rule 2 says bridges from the
-  linear track to nonlinear stability should be few. `LyapunovIndirect/` now holds six files, so
-  a growing bridge directory is a signal worth keeping visible rather than tidying away.
+  linear track to nonlinear stability should be few. They are now one file,
+  `Continuous/Linearization.lean`.
 
-- **Do the two trajectory abbreviations earn their keep?** `IsTrajectoryOn` (autonomous,
-  `Icc t₀ t₁`) and `IsTrajectoryNA` (non-autonomous, `Ici t₀`) sit on a genuinely separate
-  generalization axis, and **no file in the library mentions both**. `LaSalle.lean` needs both
-  shapes at once — `isPositivelyInvariant_omegaLimitTraj` takes an `Ici 0`-shaped curve and
-  concludes `IsPositivelyInvariant`, which quantifies over `Icc t₀ t₁`-shaped ones — and handles
-  it by writing `IsIntegralCurveOn` directly and calling `.mono`. So a bridge, if wanted, is a
-  one-line restriction lemma rather than a design problem; the real question is whether either
-  abbreviation is pulling its weight.
+- **Do the two trajectory abbreviations earn their keep?** Resolved for the autonomous one: the
+  old `IsTrajectoryOn` went with `DefsAutonomous.lean`, replaced by
+  `ContinuousSystem.IsTrajectoryOn`, which takes the interval as an argument; `IsTrajectoryNA`
+  went with `DefsNonAutonomous.lean`.
 
 ## Lessons from the Lyapunov stability proofs
 
@@ -335,4 +372,5 @@ the `forward` rename sweep: there `forward` means *forward in time from 0* — a
 - **Non-autonomous work reuses the comparison-function library** (`Comparison/ClassK.lean`
   and related files) rather than the autonomous Lyapunov-function structures directly.
   Stability notions are characterized via class-K / class-KL bounds, and the main theorems
-  in `NonAutonomous.lean` combine those bounds with the Dini-derivative comparison lemma.
+  in `Continuous/LyapunovTheorems.lean` combine those bounds with the Dini-derivative
+  comparison lemma.

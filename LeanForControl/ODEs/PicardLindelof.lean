@@ -14,7 +14,9 @@ radius `a` about the initial point. For a `K`-Lipschitz field the best available
 `L ≈ M + K·a`, so that clause reduces to `K · Δt < 1`: a single application never covers a long
 interval, however nice `f` is. Continuation is therefore unavoidable, and is what this file adds.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.1 (Theorem 3.2 in the text).
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2 (Global Existence and
+Uniqueness), proved in his Appendix C.1. His Theorem 3.1 is the local version: a locally
+Lipschitz `f` on a ball gives a solution on some `[t₀, t₀ + δ]` only.
 
 ## Main results
 
@@ -165,15 +167,23 @@ private lemma exists_isIntegralCurveOn_Icc_succ
 time-dependent vector field admits an integral curve through any initial condition, defined on
 all of `[t₀, t₁]`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2 (Global Existence and
+Uniqueness), proved in his Appendix C.1. Difference: Khalil assumes `f` piecewise continuous
+in `t`; here it is jointly continuous. -/
 @[blueprint "thm:exists-isIntegralCurveOn-Icc"
+  (title := "Picard--Lindel\\\"of on a compact interval")
   (statement := /-- Let $f : \mathbb{R} \to E \to E$ be jointly continuous and $K$-Lipschitz in
     the state variable, uniformly in time, on a Banach space $E$.  Then for every $t_0 \le t_1$
     and every $x_0 \in E$ there is an $\alpha$ with $\alpha(t_0) = x_0$ solving
     $\dot\alpha = f(t, \alpha)$ on all of $[t_0, t_1]$.
 
     Global — rather than merely local — Lipschitz continuity is what makes the solution reach
-    $t_1$: it forces linear growth in the state, ruling out finite-time blowup. -/)
+    $t_1$: it forces linear growth in the state, ruling out finite-time blowup.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.2 (Global Existence and
+    Uniqueness), proved in his Appendix C.1.  Difference: Khalil assumes $f$ piecewise continuous
+    in $t$; here it is jointly continuous.
+  -/)
   (proof := /-- Mathlib's Picard--Lindel\"of theorem supplies a solution on a time interval of
     length $\Delta t$ only when $\|f\| \le L$ on a ball of radius $a$ about $x_0$ with
     $L\,\Delta t \le a$.  For a $K$-Lipschitz field the sharpest available bound on that ball is
@@ -214,6 +224,8 @@ omit [CompleteSpace E] in
 on the right ray `Ici s` — from the one an integral curve on a segment supplies. Inside the
 segment the two agree, because `[s, t₁)` is a neighbourhood of `s` within `Ici s`. -/
 @[blueprint "lem:hasDerivWithinAt-Ici-of-isIntegralCurveOn"
+  (title := "Right derivatives of an integral curve")
+  (latexEnv := "lemma")
   (statement := /-- If $\alpha$ is an integral curve of $f$ on $[t_0, t_1]$, then for every
     $s \in [t_0, t_1)$ it has right derivative $f(s, \alpha(s))$ at $s$, i.e.
     $\alpha$ has derivative $f(s,\alpha(s))$ within $[s,\infty)$ at $s$. -/)]
@@ -226,8 +238,13 @@ lemma hasDerivWithinAt_Ici_of_isIntegralCurveOn
 
 omit [CompleteSpace E] in
 /-- **Grönwall separation.** Two integral curves of a Lipschitz field separate at most
-exponentially in the elapsed time. -/
+exponentially in the elapsed time. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.4, in the unperturbed case: two
+solutions of the *same* field, so the perturbation bound is zero. -/
 @[blueprint "lem:dist-le-of-isIntegralCurveOn-Icc"
+  (title := "Gronwall separation of two solutions")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be $K$-Lipschitz in the state variable, uniformly in time, and let
     $\alpha, \beta$ be integral curves of $f$ on $[t_0, t_1]$.  Then
     \[
@@ -236,7 +253,11 @@ exponentially in the elapsed time. -/
     \]
     Uniqueness (\cref{lem:eqOn-of-isIntegralCurveOn-Icc}) is the case where the initial
     distance is zero; continuous dependence on the initial state is the statement read as a
-    bound on the whole interval. -/)]
+    bound on the whole interval.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.4, in the unperturbed case: two
+    solutions of the \emph{same} field, so the perturbation bound is zero.
+  -/)]
 lemma dist_le_of_isIntegralCurveOn_Icc
     {f : ℝ → E → E} {K : NNReal} (hf_lip : ∀ t, LipschitzWith K (f t))
     {α β : ℝ → E} {t₀ t₁ : ℝ}
@@ -248,11 +269,18 @@ lemma dist_le_of_isIntegralCurveOn_Icc
 
 omit [CompleteSpace E] in
 /-- **Uniqueness.** Two integral curves of a Lipschitz field agreeing at the left endpoint agree
-throughout the interval. -/
+throughout the interval. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the uniqueness half of Theorem 3.2. -/
 @[blueprint "lem:eqOn-of-isIntegralCurveOn-Icc"
+  (title := "Uniqueness of solutions")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be $K$-Lipschitz in the state variable, uniformly in time, and let
     $\alpha, \beta$ be integral curves of $f$ on $[t_0, t_1]$ with
-    $\alpha(t_0) = \beta(t_0)$.  Then $\alpha = \beta$ on $[t_0, t_1]$. -/)
+    $\alpha(t_0) = \beta(t_0)$.  Then $\alpha = \beta$ on $[t_0, t_1]$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the uniqueness half of Theorem 3.2.
+  -/)
   (proof := /-- The initial distance in \cref{lem:dist-le-of-isIntegralCurveOn-Icc} is zero, so
     the bound forces the distance to vanish throughout. -/)]
 lemma eqOn_of_isIntegralCurveOn_Icc
@@ -269,17 +297,22 @@ lemma eqOn_of_isIntegralCurveOn_Icc
 /-- **Picard–Lindelöf for scalar ODEs on compact intervals.**
 
 The form the comparison lemma consumes: a solution in the integral sense, continuous on the
-closed interval, with right derivatives matching `g` on the half-open one. -/
+closed interval, with right derivatives matching `g` on the half-open one. 
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2, scalar case. -/
 @[blueprint "thm:exists-isIntegralSolution-Icc-of-lipschitz"
+  (title := "Picard--Lindel\\\"of, scalar integral form")
   (statement := /-- Let $g : \mathbb{R} \to \mathbb{R} \to \mathbb{R}$ be jointly continuous and
     $L$-Lipschitz in its state argument, uniformly in time, and let $t_0 \le t_1$.  Then for
     every $x_0$ there is a $z$, continuous on $[t_0, t_1]$, that is an integral solution of
     $\dot z = g(t, z)$ with $z(t_0) = x_0$ and has right derivative $g(s, z(s))$ at each
     $s \in [t_0, t_1)$.
 
-    This is the scalar specialization of \cref{thm:exists-isIntegralCurveOn-Icc}; it is the
-    existence hypothesis that \cref{thm:comparison-lemma} takes as an assumption rather than
-    discharging. -/)
+    This is the scalar specialization of \cref{thm:exists-isIntegralCurveOn-Icc}; it discharges
+    the perturbed-solution hypothesis that \cref{thm:comparison-lemma} takes for generality.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.2, scalar case.
+  -/)
   (proof := /-- Apply \cref{thm:exists-isIntegralCurveOn-Icc} with $E = \mathbb{R}$.  Continuity
     on $[t_0,t_1]$ is automatic for an integral curve, which converts the differential form into
     the integral one (\cref{lem:isIntegralSolution-iff-isIntegralCurveOn-Icc}); the right
@@ -308,15 +341,23 @@ complete integral curve through any initial condition, unique on the ray.
 
 Uniqueness is stated as agreement *on `Ici t₀`* rather than as `∃!`. That is not a weakening: a
 predicate built from `HasDerivWithinAt _ _ (Ici t₀)` constrains a function only on `Ici t₀`, so
-two solutions may differ freely below `t₀` and `∃!` over `ℝ → E` would be false. -/
+two solutions may differ freely below `t₀` and `∃!` over `ℝ → E` would be false.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.2, whose $t_1$ is arbitrary, extended
+to the forward ray. -/
 @[blueprint "thm:exists-isIntegralCurveOn-Ici"
+  (title := "Picard--Lindel\\\"of on the forward ray")
   (statement := /-- Let $f$ be jointly continuous and $K$-Lipschitz in the state variable,
     uniformly in time.  Then for every $t_0$ and $x_0$ there is an $\alpha$ with
     $\alpha(t_0) = x_0$ solving $\dot\alpha = f(t,\alpha)$ on all of $[t_0,\infty)$, and any
     other such solution agrees with it on $[t_0,\infty)$.
 
     Uniqueness is agreement on $[t_0,\infty)$, not equality of functions: the defining condition
-    says nothing about $t < t_0$, so solutions may differ there. -/)
+    says nothing about $t < t_0$, so solutions may differ there.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.2, whose $t_1$ is arbitrary,
+    extended to the forward ray.
+  -/)
   (proof := /-- For each $n$ take a solution $\alpha_n$ on $[t_0, t_0+n]$
     (\cref{thm:exists-isIntegralCurveOn-Icc}).  By uniqueness
     (\cref{lem:eqOn-of-isIntegralCurveOn-Icc}) these agree wherever two of them are both defined,

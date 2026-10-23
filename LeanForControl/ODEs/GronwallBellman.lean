@@ -45,8 +45,10 @@ statements with no Gronwall content, and live in `Analysis/Integrals.lean`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma A.1. -/
 @[blueprint "thm:gronwall-bellman"
-  (statement := /-- \textbf{Gronwall--Bellman inequality} (Khalil, Lemma A.1).
-    Let $\Lambda, \mu : [a,b] \to \mathbb{R}$ be continuous with $\mu \ge 0$, and let
+  (title := "Gronwall--Bellman inequality")
+  (statement := /-- Khalil, Lemma A.1.  Let $\Lambda, \mu : [a,b] \to \mathbb{R}$ be continuous
+    with $\mu \ge 0$,
+    and let
     $y : [a,b] \to \mathbb{R}$ be continuous satisfying
     \[
       y(t) \;\le\; \Lambda(t) + \int_{a}^{t} \mu(s)\,y(s)\,\mathrm{d}s
@@ -140,7 +142,10 @@ theorem gronwall_bellman_inequality {a b : ℝ} {Λ μ y : ℝ → ℝ}
 /-- **Gronwall, constant `Λ`.** If `y t ≤ C + ∫ s in a..t, μ s * y s`, then
 `y t ≤ C * exp (∫ τ in a..t, μ τ)` — the familiar exponential-growth bound. -/
 @[blueprint "lem:gronwall-const-lambda"
-  (statement := /-- Let $\mu$ be continuous and nonnegative on $[a,b]$, and let $y$ be
+  (title := "Gronwall--Bellman with a constant rate")
+  (latexEnv := "lemma")
+  (statement := /-- Khalil, Lemma A.1 (the case $\Lambda(t) \equiv \Lambda$ constant).
+    Let $\mu$ be continuous and nonnegative on $[a,b]$, and let $y$ be
     continuous with
     \[
       y(t) \;\le\; C + \int_{a}^{t} \mu(s)\,y(s)\,\mathrm{d}s
@@ -196,7 +201,10 @@ theorem gronwall_const_lambda
 /-- **Gronwall, constant `Λ` and `μ`.** If `y t ≤ C + ∫ s in a..t, μ * y s` for a constant
 `μ ≥ 0`, then `y t ≤ C * exp (μ * (t - a))`. This is the form the ODE estimates use. -/
 @[blueprint "lem:gronwall-const"
-  (statement := /-- Let $\mu \ge 0$ be constant and let $y$ be continuous with
+  (title := "Gronwall--Bellman with constant data")
+  (latexEnv := "lemma")
+  (statement := /-- Khalil, Lemma A.1 (the case $\Lambda$ and $\mu \ge 0$ both constant).
+    Let $\mu \ge 0$ be constant and let $y$ be continuous with
     \[
       y(t) \;\le\; C + \int_{a}^{t} \mu\,y(s)\,\mathrm{d}s
       \qquad \forall\, t \in [a,b].

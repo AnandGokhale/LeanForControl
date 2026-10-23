@@ -8,6 +8,8 @@ open MeasureTheory intervalIntegral Set Filter Topology
 /-- Additivity of the interval integral in subtraction form: continuity on `[a, t]` supplies the
 integrability side conditions, so the caller only has to supply `s ∈ [a, t]`. -/
 @[blueprint "lem:integral-sub-adjacent-intervals"
+  (title := "Difference of integrals over adjacent intervals")
+  (latexEnv := "lemma")
   (statement := /-- For $\mu$ continuous on $[a, t]$ and $s \in [a, t]$,
     \[
       \int_a^t \mu - \int_a^s \mu = \int_s^t \mu .
@@ -25,6 +27,8 @@ lemma ContinuousOn.integral_sub_adjacent_intervals {a t : ℝ} {μ : ℝ → ℝ
 `‖∫ u‖ ≤ L * ∫ v`. The comparison form used whenever a vector-valued estimate is transferred to
 a scalar one, as in Grönwall arguments. -/
 @[blueprint "lem:norm-integral-le-of-norm-le-mul"
+  (title := "Integral bound from a pointwise multiplicative bound")
+  (latexEnv := "lemma")
   (statement := /-- Let $u$ take values in a normed space and $v$ be real, both integrable on
     $[a,b]$ with $a \le b$. If $\|u(s)\| \le L\, v(s)$ for all $s \in [a,b]$, then
     \[
@@ -47,6 +51,8 @@ lemma intervalIntegral.norm_integral_le_of_norm_le_mul {E : Type*}
 Hides the `uIoc`-to-`Icc` membership conversion required by Mathlib's
 `norm_integral_le_of_norm_le_const`. -/
 @[blueprint "lem:norm-integral-le-const-mul"
+  (title := "Integral bound from a constant pointwise bound")
+  (latexEnv := "lemma")
   (statement := /-- If $\|u(s)\| \le C$ for all $s \in [a,b]$ with $a \le b$, then
     \[
       \Bigl\| \int_a^b u \Bigr\| \le C\,(b-a).
@@ -67,6 +73,8 @@ lemma intervalIntegral.norm_integral_le_const_mul {E : Type*}
 /-- The interval integral of a real constant equals `(b - a) * C`.
 Convenience form of `intervalIntegral.integral_const` for `ℝ`, avoiding `•` notation. -/
 @[blueprint "lem:integral-const-eq"
+  (title := "Integral of a constant")
+  (latexEnv := "lemma")
   (statement := /-- $\int_a^b C \,\mathrm{d}s = (b-a)\,C$ for a real constant $C$. -/)]
 lemma intervalIntegral.integral_const_eq {a b C : ℝ} :
     ∫ _ in a..b, C = (b - a) * C := by
@@ -79,6 +87,8 @@ lemma intervalIntegral.integral_const_eq {a b C : ℝ} :
 No ordering of `t₀` and `t₁` is required: `uIcc` is the segment either way, which is also the
 interval the integral itself is taken over. -/
 @[blueprint "lem:intervalIntegrable-comp"
+  (title := "Interval integrability of a continuous composition")
+  (latexEnv := "lemma")
   (statement := /-- If $f$ is jointly continuous and $z$ is continuous on the segment between
     $t_0$ and $t_1$, then $s \mapsto f(s, z(s))$ is interval-integrable between them.  This is
     the integrability side condition every integral-form solution argument needs. -/)]
@@ -99,6 +109,8 @@ lemma Continuous.intervalIntegrable_comp {t₀ t₁ : ℝ}
     interior point of `[a, b]`. A packaging of the fundamental theorem of calculus that supplies
     the three side conditions from a single `ContinuousOn` hypothesis. -/
 @[blueprint "lem:hasDerivAt-integral"
+  (title := "Differentiating an integral in its upper limit")
+  (latexEnv := "lemma")
   (statement := /-- For $\mu$ continuous on $[a,b]$ and $t \in (a,b)$,
     \[
       \frac{\mathrm{d}}{\mathrm{d}x}\Big|_{x=t} \int_{a}^{x} \mu(\tau)\,\mathrm{d}\tau
@@ -117,6 +129,8 @@ lemma hasDerivAt_integral {a b : ℝ} {μ : ℝ → ℝ}
 Mathlib's `continuousOn_primitive_interval` is stated on the unordered `uIcc`; requiring `a ≤ t`
 explicitly lets callers stay in `Icc` throughout. -/
 @[blueprint "lem:continuousOn-integral-Icc"
+  (title := "Continuity of an integral in its upper limit")
+  (latexEnv := "lemma")
   (statement := /-- If $f$ is integrable on $[a,t]$ with $a \le t$, then
     $s \mapsto \int_{a}^{s} f(\tau)\,\mathrm{d}\tau$ is continuous on $[a,t]$. -/)]
 lemma continuousOn_integral_Icc {a t : ℝ} {f : ℝ → ℝ} (h : a ≤ t)
@@ -132,6 +146,8 @@ lemma continuousOn_integral_Icc {a t : ℝ} {f : ℝ → ℝ} (h : a ≤ t)
 /-- The integral of a locally integrable `f` between two continuously varying positive endpoints
 is continuous. -/
 @[blueprint "lem:continuousOn-integral-endpoints"
+  (title := "Continuity of an integral in both endpoints")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be locally integrable on $(0,\infty)$, and let $a, b$ be continuous on
     a set $S$ with $a(\eta), b(\eta) > 0$ in $S$. Then
     \[
@@ -236,6 +252,8 @@ private lemma average_antitone_left {f : ℝ → ℝ} {a₁ a₂ b : ℝ}
 antitone. Both endpoints must be monotone: `a η < b η` alone is not enough, since a window that
 jumps leftwards into a steeper region raises the mean. -/
 @[blueprint "lem:antitoneOn-integral-average"
+  (title := "The sliding average of an antitone function is antitone")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be antitone and locally integrable on $(0,\infty)$, and let
     $a, b$ be monotone on a set $S$ with $0 < a(\eta) < b(\eta)$. Then the mean value
     \[
@@ -260,6 +278,8 @@ lemma antitoneOn_integral_average {f : ℝ → ℝ} {S : Set ℝ} {a b : ℝ →
 /-- The mean value of a nonneg antitone `f` that decays to `0` tends to `0`, provided the *left*
 endpoint tends to `+∞`. -/
 @[blueprint "lem:tendsto-integral-average-atTop-zero"
+  (title := "Sliding average of an eventually vanishing function")
+  (latexEnv := "lemma")
   (statement := /-- Let $f$ be nonneg, antitone and locally integrable on $(0,\infty)$ with
     $f(s) \to 0$ as $s \to +\infty$, and let $a(\eta) < b(\eta)$ with
     $a(\eta) \to +\infty$ as $\eta \to +\infty$. Then
