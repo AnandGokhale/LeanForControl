@@ -368,7 +368,7 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
     ((((hψ_cont t x).integral_hasStrictDerivAt t t).hasDerivAt).const_sub
       (∫ σ in Ioi t, ψ t x σ)).hasDerivWithinAt.congr (fun τ hτ => h_along τ hτ)
         (h_along t self_mem_Ici)
-  have h_eq := hφ.lieDerivative_eq_of_hasDerivWithinAt (fun τ _ => hV_diff τ (φ τ)) h_W
+  have h_eq := hφ.lieDerivative_eq_of_hasDerivWithinAt (hV_diff t (φ t)) h_W
   rw [hφ_t] at h_eq
   calc s.toContinuousSystem.zeroInput.lieDerivative V t x ()
       = -ψ t x t := h_eq

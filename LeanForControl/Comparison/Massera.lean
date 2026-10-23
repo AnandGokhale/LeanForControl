@@ -96,7 +96,7 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
     (hg_anti : StrictAntiOn g (Ici 0)) (hg_lim : Tendsto g atTop (𝓝 0))
     (hh_pos : ∀ t, 0 ≤ t → 0 < h t) (hh_cont : ContinuousOn h (Ici 0))
     (hh_mono : MonotoneOn h (Ici 0)) :
-    ∃ G G' : ClassKInfty, (∀ r, 0 ≤ r → HasDerivWithinAt G (G' r) (Ici 0) r) ∧
+    ∃ G G' : ClassKInfty, (∀ r, 0 ≤ r → HasDerivAt G (G' r) r) ∧
       ∃ k₁ > 0, ∃ k₂ > 0, ∀ u : ℝ → ℝ, ContinuousOn u (Ici 0) →
         (∀ t, 0 ≤ t → 0 ≤ u t ∧ u t ≤ g t) →
         IntegrableOn (fun t => G (u t)) (Ioi 0) ∧ ∫ t in Ioi 0, G (u t) ≤ k₁ ∧
@@ -226,7 +226,7 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
     exact h_lin r hr
   refine ⟨ClassKInfty.of_strictMono G hG_zero hG_cont.continuousOn hG_mono hG_top,
     ClassKInfty.of_strictMono H hH_zero hH_cont.continuousOn hH_mono hH_top,
-    fun r _ => (hG_deriv r).hasDerivWithinAt, g 0 / h 0, div_pos hg0 hh0, 1, one_pos,
+    fun r _ => hG_deriv r, g 0 / h 0, div_pos hg0 hh0, 1, one_pos,
     fun u hu_cont hu => ?_⟩
   -- Step 4. Along `u ≤ g`, both integrands are dominated by multiples of `e^{-t}`.
   have hu' : ContinuousOn u (Ioi 0) := hu_cont.mono Ioi_subset_Ici_self

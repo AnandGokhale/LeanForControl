@@ -110,17 +110,20 @@ Useful when `V` along the solution has a closed form, such as an integral of the
   (title := "The Lie derivative along a solution")
   (latexEnv := "lemma")
   (statement := /-- Let $\gamma$ be an integral curve of $v$ on $[t, \infty)$, $V$ differentiable
-    at $(\tau, \gamma(\tau))$ for $\tau \ge t$, and let $\tau \mapsto V(\tau, \gamma(\tau))$ have
-    right derivative $w$ at $t$.  Then $L_v V(t, \gamma(t)) = w$. -/)
+    at $(t, \gamma(t))$, and let $\tau \mapsto V(\tau, \gamma(\tau))$ have right derivative $w$
+    at $t$.  Then $L_v V(t, \gamma(t)) = w$. -/)
   (proof := /-- By \cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative} the right
     derivative is also $L_v V(t, \gamma(t))$, and right derivatives are unique. -/)]
 lemma IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt {V : ℝ → E → ℝ} {v : ℝ → E → E}
     {γ : ℝ → E} {t w : ℝ} (hγ : IsIntegralCurveOn γ v (Ici t))
-    (hV : ∀ τ ∈ Ici t, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ))
+    (hV : DifferentiableAt ℝ (Function.uncurry V) (t, γ t))
     (hW : HasDerivWithinAt (fun τ => V τ (γ τ)) w (Ici t) t) :
-    lieDerivative V v t (γ t) = w :=
-  UniqueDiffWithinAt.eq_deriv _ (uniqueDiffWithinAt_Ici t)
-    (hγ.hasDerivWithinAt_lieDerivative hV self_mem_Ici) hW
+    lieDerivative V v t (γ t) = w := by
+  have h_pair : HasDerivWithinAt (fun τ => (τ, γ τ)) (1, v t (γ t)) (Ici t) t :=
+    (hasDerivWithinAt_id t _).prodMk (hγ t self_mem_Ici)
+  have h_chain : HasDerivWithinAt (fun τ => V τ (γ τ)) (lieDerivative V v t (γ t)) (Ici t) t :=
+    HasFDerivAt.comp_hasDerivWithinAt (f := fun τ => (τ, γ τ)) t hV.hasFDerivAt h_pair
+  exact UniqueDiffWithinAt.eq_deriv _ (uniqueDiffWithinAt_Ici t) h_chain hW
 
 /-- `V` is continuous along an integral curve at whose points it is differentiable. -/
 lemma IsIntegralCurveOn.continuousOn_comp {V : ℝ → E → ℝ} {v : ℝ → E → E}
