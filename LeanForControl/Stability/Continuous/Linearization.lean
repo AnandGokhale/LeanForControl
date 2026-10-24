@@ -454,26 +454,10 @@ theorem ContinuousSystem.locallyExponentiallyStable_linearization {Y : Type*}
   rw [Real.rpow_two] at h_lie ⊢
   have hx_r₀ := mem_ball_iff_norm.mp (h_in x hx)
   have hx_ρ := mem_ball_iff_norm.mp hx
-  set D := fderiv ℝ (Function.uncurry V) (t, x)
-  set e := fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq) - s.F t x ()
-  have h_partial : fderiv ℝ (V t) x e = D (0, e) := by
-    rw [fderiv_eq_fderiv_uncurry_comp_inr (hV.differentiableAt t ht x (h_in x hx))]
-    rfl
-  have h_split : D (1, fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq)) =
-      D (1, s.F t x ()) + D (0, e) := by
-    rw [← map_add]
-    congr 1
-    ext <;> simp [e]
-  have h_cubic : D (0, e) ≤ c₄ * L₁ * ‖x - x_eq‖ ^ 3 :=
-    calc D (0, e)
-        = fderiv ℝ (V t) x e := h_partial.symm
-      _ ≤ ‖fderiv ℝ (V t) x‖ * ‖e‖ := (le_abs_self _).trans
-          (by rw [← Real.norm_eq_abs]; exact ContinuousLinearMap.le_opNorm _ _)
-      _ ≤ (c₄ * ‖x - x_eq‖) * (L₁ * ‖x - x_eq‖ ^ 2) := by
-          gcongr
-          · exact h_grad t ht x (h_in x hx)
-          · exact norm_linearization_remainder_le hr h_eq hf hL₁ t (ball_subset_ball hρr hx)
-      _ = c₄ * L₁ * ‖x - x_eq‖ ^ 3 := by ring
+  -- The linearization differs from `f` by the quadratic remainder; `∂V/∂x = O(‖x - x_eq‖)`.
+  have h_pert := lieDerivative_le_add_norm_fderiv_mul (V := V) (v := fun t y => s.F t y ())
+    (w := fun t y => fderiv ℝ (fun y => s.F t y ()) x_eq (y - x_eq))
+    (hV.differentiableAt t ht x (h_in x hx))
   have h_small : c₄ * L₁ * ‖x - x_eq‖ ≤ k₃ / 2 :=
     calc c₄ * L₁ * ‖x - x_eq‖
         ≤ c₄ * (L₁ + 1) * (k₃ / (2 * c₄ * (L₁ + 1))) := by
@@ -481,10 +465,13 @@ theorem ContinuousSystem.locallyExponentiallyStable_linearization {Y : Type*}
           · linarith
           · exact hx_ρ.le.trans (min_le_right _ _)
       _ = k₃ / 2 := by field_simp
-  change D (1, fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq)) ≤ -(k₃ / 2 * ‖x - x_eq‖ ^ 2)
-  rw [h_split]
-  calc D (1, s.F t x ()) + D (0, e)
-      ≤ -(k₃ * ‖x - x_eq‖ ^ 2) + c₄ * L₁ * ‖x - x_eq‖ ^ 3 := add_le_add h_lie h_cubic
+  calc _root_.lieDerivative V (fun t y => fderiv ℝ (fun y => s.F t y ()) x_eq (y - x_eq)) t x
+      ≤ s.lieDerivative V t x () + ‖fderiv ℝ (V t) x‖ *
+          ‖fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq) - s.F t x ()‖ := h_pert
+    _ ≤ -(k₃ * ‖x - x_eq‖ ^ 2) + (c₄ * ‖x - x_eq‖) * (L₁ * ‖x - x_eq‖ ^ 2) :=
+        add_le_add h_lie (mul_le_mul (h_grad t ht x (h_in x hx))
+          (norm_linearization_remainder_le hr h_eq hf hL₁ t (ball_subset_ball hρr hx))
+          (norm_nonneg _) (mul_nonneg hc₄.le (norm_nonneg _)))
     _ = -(k₃ * ‖x - x_eq‖ ^ 2) + (c₄ * L₁ * ‖x - x_eq‖) * ‖x - x_eq‖ ^ 2 := by ring
     _ ≤ -(k₃ * ‖x - x_eq‖ ^ 2) + k₃ / 2 * ‖x - x_eq‖ ^ 2 := by gcongr
     _ = -(k₃ / 2 * ‖x - x_eq‖ ^ 2) := by ring
@@ -641,7 +628,6 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
       _ ≤ c₂ * ‖y‖ ^ 2 := by gcongr; exact norm_ofLp_le y
   -- The decrease: along the linearization it is the LTV one, and `f` differs by `ε = O(‖y‖²)`.
   set D := fderiv ℝ (Function.uncurry V) (t, x)
-  set ε := J t y - s.F t x ()
   have h_lin_eq : D (1, J t y) = sl.toContinuousSystem.zeroInput.lieDerivative W t v () := by
     have hD : D = (fderiv ℝ (Function.uncurry W) (t, v)).comp M := (hV_fderiv t ht x).fderiv
     rw [hD]
@@ -649,23 +635,18 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
       fderiv ℝ (Function.uncurry W) (t, v) (1, A t *ᵥ v + (0 : Matrix (Fin n) (Fin 0) ℝ) *ᵥ 0)
     rw [← hJA t, Matrix.mulVec_zero, add_zero]
     rfl
-  have h_split : D (1, s.F t x ()) = D (1, J t y) - D (0, ε) := by
-    rw [← map_sub]
-    congr 1
-    ext <;> simp [ε]
-  have h_cubic : -D (0, ε) ≤ 2 * p' * L₁ * ‖y‖ ^ 3 :=
-    calc -D (0, ε)
-        ≤ |fderiv ℝ (V t) x ε| := by
-          rw [fderiv_eq_fderiv_uncurry_comp_inr (hV_fderiv t ht x).differentiableAt]
-          exact neg_le_abs _
-      _ ≤ 2 * ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) (P t)‖ * ‖y‖ * ‖ε‖ :=
-          abs_fderiv_centeredQuadraticForm_le _ _ _ _
-      _ ≤ 2 * p' * ‖y‖ * (L₁ * ‖y‖ ^ 2) := by
-          gcongr
-          · exact hP' t ht
-          · exact norm_linearization_remainder_le hr h_eq hf hL₁ t
-              (ball_subset_ball (min_le_left _ _) hx)
-      _ = 2 * p' * L₁ * ‖y‖ ^ 3 := by ring
+  -- `f` differs from the linearization by `O(‖y‖²)`, and `‖∂V/∂x‖ ≤ 2‖P‖‖y‖`.
+  have h_pert := lieDerivative_le_add_norm_fderiv_mul (V := V)
+    (v := fun t x => fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq)) (w := fun t x => s.F t x ())
+    (hV_fderiv t ht x).differentiableAt
+  have h_grad : ‖fderiv ℝ (V t) x‖ ≤ 2 * p' * ‖y‖ :=
+    ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg (mul_nonneg two_pos.le hp') (norm_nonneg _))
+      fun z => by
+        rw [Real.norm_eq_abs]
+        exact (abs_fderiv_centeredQuadraticForm_le _ _ _ _).trans (by gcongr; exact hP' t ht)
+  have h_rem : ‖s.F t x () - J t y‖ ≤ L₁ * ‖y‖ ^ 2 := by
+    rw [norm_sub_rev]
+    exact norm_linearization_remainder_le hr h_eq hf hL₁ t (ball_subset_ball (min_le_left _ _) hx)
   have h_small : 2 * p' * L₁ * ‖y‖ ≤ κ / 2 :=
     calc 2 * p' * L₁ * ‖y‖
         ≤ 2 * (p' + 1) * (L₁ + 1) * (κ / (4 * (p' + 1) * (L₁ + 1))) := by
@@ -679,9 +660,12 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
         ≤ κ * (N * ‖v‖ ^ 2) := by gcongr; exact h_norm_sq y
       _ = k₃ * ‖v‖ ^ 2 := by simp only [κ]; field_simp
   change D (1, s.F t x ()) ≤ -(κ / 2 * ‖y‖ ^ 2)
-  rw [h_split, h_lin_eq]
-  calc sl.toContinuousSystem.zeroInput.lieDerivative W t v () - D (0, ε)
-      ≤ -(k₃ * ‖v‖ ^ 2) + 2 * p' * L₁ * ‖y‖ ^ 3 := by linarith
+  calc D (1, s.F t x ())
+      ≤ D (1, J t y) + ‖fderiv ℝ (V t) x‖ * ‖s.F t x () - J t y‖ := h_pert
+    _ ≤ -(k₃ * ‖v‖ ^ 2) + (2 * p' * ‖y‖) * (L₁ * ‖y‖ ^ 2) := by
+        rw [h_lin_eq]
+        exact add_le_add h_lie (mul_le_mul h_grad h_rem (norm_nonneg _)
+          (mul_nonneg (mul_nonneg two_pos.le hp') (norm_nonneg _)))
     _ ≤ -(κ * ‖y‖ ^ 2) + (2 * p' * L₁ * ‖y‖) * ‖y‖ ^ 2 := by nlinarith
     _ ≤ -(κ * ‖y‖ ^ 2) + κ / 2 * ‖y‖ ^ 2 := by gcongr
     _ = -(κ / 2 * ‖y‖ ^ 2) := by ring

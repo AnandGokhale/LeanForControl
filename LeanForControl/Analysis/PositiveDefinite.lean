@@ -1,5 +1,6 @@
 import Mathlib.Topology.ContinuousOn
 import Mathlib.Topology.Instances.Real.Lemmas
+import Mathlib.Analysis.Normed.Group.Uniform
 import Architect
 
 /-!
@@ -36,3 +37,10 @@ lemma mono (hW : IsPositiveDefiniteOn W x₀ S) (hTS : T ⊆ S) : IsPositiveDefi
   ⟨hW.1.mono hTS, hW.2.1, fun x hx hne => hW.2.2 x (hTS hx) hne⟩
 
 end IsPositiveDefiniteOn
+
+/-- A positive multiple of the squared distance to `x₀` is positive definite about `x₀`. -/
+lemma isPositiveDefiniteOn_mul_norm_sub_sq {E : Type*} [NormedAddCommGroup E] {c : ℝ}
+    (hc : 0 < c) (x₀ : E) (S : Set E) :
+    IsPositiveDefiniteOn (fun x => c * ‖x - x₀‖ ^ 2) x₀ S :=
+  ⟨(continuous_const.mul ((continuous_id.sub continuous_const).norm.pow 2)).continuousOn,
+    by simp, fun x _ hx => mul_pos hc (pow_pos (norm_pos_iff.2 (sub_ne_zero.2 hx)) 2)⟩

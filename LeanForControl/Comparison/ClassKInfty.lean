@@ -4,6 +4,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Comparison.ClassK
+import LeanForControl.Analysis.PositiveDefinite
 import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral
@@ -88,6 +89,19 @@ theorem ClassKInfty.mono_iff (α : ClassKInfty) {x y : ℝ}
     (hx : x ∈ Set.Ici 0) (hy : y ∈ Set.Ici 0) :
     α.toFun x ≤ α.toFun y ↔ x ≤ y :=
   α.strict_mono.le_iff_le hx hy
+
+/-- A class `K∞` function is nondecreasing on `[0, ∞)`. -/
+@[gcongr]
+theorem ClassKInfty.mono (α : ClassKInfty) {x y : ℝ} (hx : 0 ≤ x) (h : x ≤ y) :
+    α.toFun x ≤ α.toFun y :=
+  (α.mono_iff hx (Set.mem_Ici.2 (hx.trans h))).2 h
+
+/-- A class `K∞` function of a positive definite function is positive definite. -/
+theorem ClassKInfty.isPositiveDefiniteOn_comp (α : ClassKInfty) {E : Type*} [TopologicalSpace E]
+    {W : E → ℝ} {x₀ : E} {S : Set E} (hW : IsPositiveDefiniteOn W x₀ S) :
+    IsPositiveDefiniteOn (fun x => α.toFun (W x)) x₀ S :=
+  ⟨α.continuous.comp hW.1 fun x hx => hW.nonneg hx, by simp [hW.2.1, α.map_zero],
+    fun x hx hne => (α.pos_iff (hW.nonneg hx)).2 (hW.2.2 x hx hne)⟩
 
 @[simp]
 theorem ClassKInfty.left_inv_apply (α : ClassKInfty) {x : ℝ} (hx : 0 ≤ x) :

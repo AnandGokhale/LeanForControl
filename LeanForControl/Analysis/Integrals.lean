@@ -1,4 +1,5 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Analysis.SpecialFunctions.Integrability.Basic
 
 import Architect
@@ -123,6 +124,22 @@ lemma hasDerivAt_integral {a b : ℝ} {μ : ℝ → ℝ}
     ((hμ.mono (Icc_subset_Icc_right ht.2.le)).intervalIntegrable_of_Icc ht.1.le)
     ((hμ.mono Ioo_subset_Icc_self).stronglyMeasurableAtFilter isOpen_Ioo t ht)
     (hμ.continuousAt (Icc_mem_nhds ht.1 ht.2))
+
+/-- The integral of a continuous function up to the shifted limit `τ - t + c` has derivative
+`w(c)` at `τ = t`: the form in which an integral along a solution started at time `t` is
+differentiated in the current time `τ`. -/
+@[blueprint "lem:continuous-hasDerivAt-integral-sub-add"
+  (title := "Differentiating an integral with a shifted upper limit")
+  (latexEnv := "lemma")
+  (statement := /-- For $w$ continuous on $\mathbb{R}$,
+    \[
+      \frac{\mathrm{d}}{\mathrm{d}\tau}\Big|_{\tau = t}
+        \int_a^{\tau - t + c} w(s)\,\mathrm{d}s = w(c).
+    \] -/)]
+lemma Continuous.hasDerivAt_integral_sub_add {w : ℝ → ℝ} (hw : Continuous w) (a t c : ℝ) :
+    HasDerivAt (fun τ => ∫ s in a..τ - t + c, w s) (w c) t := by
+  simpa using (hw.integral_hasStrictDerivAt a (t - t + c)).hasDerivAt.comp t
+    (h := fun τ => τ - t + c) (((hasDerivAt_id t).sub_const t).add_const c)
 
 /-- The primitive `s ↦ ∫ τ in a..s, f τ` of an integrable `f` is continuous on `[a, t]`.
 

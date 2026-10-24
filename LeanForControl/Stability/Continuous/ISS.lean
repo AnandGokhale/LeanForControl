@@ -1,4 +1,5 @@
 import LeanForControl.Stability.Continuous.Boundedness
+import LeanForControl.Stability.Continuous.Converse
 import Architect
 
 /-!
@@ -19,6 +20,9 @@ Theory*, Lecture Notes in Mathematics 1932, Springer (2008).
 * `norm_le_of_isISSLyapunov` — the estimate of Khalil's Theorem 4.19, for a merely monotone `ρ`:
   `‖x(t) - x_c‖ ≤ β(‖x(t₀) - x_c‖, t - t₀) + α₁⁻¹(α₂(ρ(M)))`.
 * `inputToStateStable_of_isISSLyapunov` — Theorem 4.19 itself, with `ρ` of class `K∞`.
+* `inputToStateStable_of_globallyExponentiallyStable` — Khalil's Lemma 4.6: a system whose
+  unforced part is globally exponentially stable, and whose field is Lipschitz in the input, is
+  input-to-state stable.
 * `InputToStateStable.globallyUniformlyAsymptoticallyStable` — the unforced system of an
   input-to-state stable system is globally uniformly asymptotically stable.
 
@@ -92,33 +96,18 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Definition 
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Section 4.9. -/)
   (proof := /-- With $u \equiv 0$ and $M = 0$, $\gamma(M) = 0$ and the estimate is
-    $\|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0)$.  The bound
-    $\beta(r, s) + r e^{-s}$ is again global class $\mathcal{KL}$, now also radially unbounded,
-    and \cref{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL}
-    concludes. -/)]
+    $\|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0)$, a global
+    class $\mathcal{KL}$ bound;
+    \cref{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL} concludes. -/)]
 theorem InputToStateStable.globallyUniformlyAsymptoticallyStable {s : ContinuousSystem E U Y}
     {x_eq : E} (h : s.InputToStateStable x_eq) :
     s.zeroInput.GloballyUniformlyAsymptoticallyStable x_eq := by
   obtain ⟨β, γ, hβ⟩ := h
-  -- `β(r, s) + r e^{-s}`: adding `r e^{-s}` makes `β(·, 0)` radially unbounded.
+  -- With `u ≡ 0` and `M = 0`, `γ(M) = 0` and the estimate is a global class `KL` bound.
   refine (globallyUniformlyAsymptoticallyStable_iff_classKL _ _).mpr
-    ⟨fun r σ => β.toFun r σ + r * Real.exp (-σ), fun σ hσ => by simp [β.map_zero σ hσ],
-      β.continuous.add (continuous_fst.mul (continuous_snd.neg.rexp)).continuousOn,
-      fun σ hσ a ha b hb hab =>
-        add_lt_add (β.strict_mono_r σ hσ ha hb hab) (mul_lt_mul_of_pos_right hab (Real.exp_pos _)),
-      ?_, fun r hr => (β.anti_s r hr).add fun a _ b _ hab =>
-        mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (neg_le_neg hab)) hr,
-      fun r hr => by
-        simpa using (β.tendsto_zero r hr).add
-          (Real.tendsto_exp_neg_atTop_nhds_zero.const_mul r),
-      fun t₀ ht₀ t₁ x hx t ht => ?_⟩
-  · simpa using tendsto_atTop_add_left_of_le' atTop 0
-      ((eventually_ge_atTop 0).mono fun r hr => β.nonneg r hr 0 le_rfl) tendsto_id
-  · -- With `u ≡ 0` and `M = 0`, `γ(M) = 0`.
-    have h := hβ t₀ ht₀ t₁ (fun _ => 0) x hx t ht 0 fun _ _ => by simp
-    rw [γ.map_zero, add_zero] at h
-    exact h.trans (le_add_of_nonneg_right
-      (mul_nonneg (norm_nonneg _) (Real.exp_pos _).le))
+    ⟨β, fun t₀ ht₀ t₁ x hx t ht => ?_⟩
+  have h := hβ t₀ ht₀ t₁ (fun _ => 0) x hx t ht 0 fun _ _ => by simp
+  rwa [γ.map_zero, add_zero] at h
 
 section ISSLyapunov
 
@@ -136,7 +125,8 @@ Then `‖x(t) - x_c‖ ≤ β(‖x(t₀) - x_c‖, t - t₀) + α₁⁻¹(α₂(
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
 @[blueprint "thm:continuousSystem-norm-le-of-isISSLyapunov"
   (title := "Input-to-state estimate from an ISS-Lyapunov function")
-  (statement := /-- Let the state space be $\mathbb{R}^n$, $V$ differentiable, $\alpha_1,
+  (statement := /-- Let the state space be $\mathbb{R}^n$, $V$ differentiable at every $(t, x)$
+    with $t \ge 0$, $\alpha_1,
     \alpha_2$ class $\mathcal{K}_{\infty}$, $W_3$ positive definite about $x_c$ on
     $\mathbb{R}^n$ (\cref{def:isPositiveDefiniteOn}), and $\rho : [0, \infty) \to [0, \infty)$
     nondecreasing, with
@@ -162,7 +152,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
     every input.  Finally $\max\{a, b\} \le a + b$ for $a, b \ge 0$. -/)]
 theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
     {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} {ρ : ℝ → ℝ}
-    (hV : Differentiable ℝ (Function.uncurry V))
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
     (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
@@ -218,7 +208,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19. -/
     (\cref{lem:classKInfty-symm}, \cref{lem:classKInfty-comp}). -/)]
 theorem inputToStateStable_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
     {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} (α₁ α₂ ρ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
-    (hV : Differentiable ℝ (Function.uncurry V))
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
     (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
@@ -228,6 +218,88 @@ theorem inputToStateStable_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝ
   obtain ⟨β, hβ⟩ := norm_le_of_isISSLyapunov α₁ α₂ hV hV_bd hW₃ ρ.strict_mono.monotoneOn
     (fun r hr => ρ.maps_to hr) hlie
   exact ⟨β, α₁.symm.comp (α₂.comp ρ), hβ⟩
+
+/-- **Global exponential stability of the unforced system gives input-to-state stability.**
+Let the unforced field `f(t, x, 0)` be continuously differentiable and globally Lipschitz in `x`,
+uniformly in `t`, and let the input enter Lipschitz: `‖f(t, x, u) - f(t, x, 0)‖ ≤ L ‖u‖`.  If `x_c`
+is a globally exponentially stable equilibrium of the unforced system, the system is
+input-to-state stable.
+
+The converse Lyapunov function `V` of the unforced system (Theorem 4.14) is an ISS-Lyapunov
+function: along the forced system `V̇ ≤ -c₃‖x - x_c‖² + c₄ L ‖x - x_c‖ ‖u‖`, which is at most
+`-(c₃/2)‖x - x_c‖²` once `‖x - x_c‖ ≥ (2 c₄ L / c₃) ‖u‖`; then apply Theorem 4.19.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.6.  Differences: Khalil asks `f` to be
+`C¹` and globally Lipschitz in `(x, u)`; only the unforced field's regularity and the Lipschitz
+dependence on the input are used. -/
+@[blueprint "lem:continuousSystem-inputToStateStable-of-globallyExponentiallyStable"
+  (title := "Exponential stability of the unforced system gives input-to-state stability")
+  (latexEnv := "lemma")
+  (statement := /-- Let the state space be $\mathbb{R}^n$, $n \ge 1$, let $x_c$ be an equilibrium
+    of the unforced system, $f(t, x_c, 0) = 0$, with $f(t, x, 0)$ continuously differentiable on
+    $\mathbb{R} \times \mathbb{R}^n$ and globally Lipschitz in $x$, uniformly in $t$, and let
+    $\|f(t, x, u) - f(t, x, 0)\| \le L\|u\|$.  If $x_c$ is globally exponentially stable for the
+    unforced system (\cref{def:continuousSystem-globallyExponentiallyStable},
+    \cref{def:continuousSystem-zeroInput}), the system is input-to-state stable
+    (\cref{def:continuousSystem-inputToStateStable}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.6.  Differences: Khalil asks
+    $f$ to be $C^1$ and globally Lipschitz in $(x, u)$; only the regularity of the unforced field
+    and the Lipschitz dependence on the input are used. -/)
+  (proof := /-- Let $V$ be the converse Lyapunov function of the unforced system
+    (\cref{thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable}):
+    $c_1\|x - x_c\|^2 \le V \le c_2\|x - x_c\|^2$, $\dot V \le -c_3\|x - x_c\|^2$ along
+    $f(t, x, 0)$, and $\|\partial V / \partial x\| \le c_4\|x - x_c\|$.  Along $f(t, x, u)$,
+    \[
+      \dot V \le -c_3\|x - x_c\|^2 + c_4\|x - x_c\|\,L\|u\|
+        \le -\tfrac{c_3}{2}\|x - x_c\|^2
+      \quad \text{for } \|x - x_c\| \ge \tfrac{2c_4 L}{c_3}\|u\|,
+    \]
+    so \cref{thm:continuousSystem-inputToStateStable-of-isISSLyapunov} applies with
+    $\alpha_i(r) = c_i r^2$ and $\rho(r) = \tfrac{2c_4L}{c_3}r$. -/)]
+theorem inputToStateStable_of_globallyExponentiallyStable [NeZero n]
+    {s : ContinuousSystem ℝⁿ U' Y'} {x_c : ℝⁿ} (h_eq : ∀ t : ℝ, s.F t x_c 0 = 0)
+    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 0))
+    (h_lip : ∃ L : NNReal, ∀ t : ℝ, LipschitzWith L (fun x => s.F t x 0))
+    (h_input : ∃ L : ℝ, ∀ (t : ℝ) (x : ℝⁿ) (w : U'), ‖s.F t x w - s.F t x 0‖ ≤ L * ‖w‖)
+    (h_ges : s.zeroInput.GloballyExponentiallyStable x_c) :
+    s.InputToStateStable x_c := by
+  obtain ⟨Lu, hLu⟩ := h_input
+  -- Step 1. The converse Lyapunov function of the unforced system.
+  obtain ⟨V, ⟨-, hV_diff, -, c₁, hc₁, c₂, hc₂, c₃, hc₃, hV_bd⟩, c₄, hc₄, h_grad⟩ :=
+    ContinuousSystem.exists_quadraticLyapunov_of_globallyExponentiallyStable
+      (s := s.zeroInput) h_eq hf h_lip h_ges
+  -- Step 2. The ISS-Lyapunov data: `αᵢ(r) = cᵢ r²`, `ρ(r) = k r`, `W₃ = (c₃/2)‖x - x_c‖²`.
+  set k := 2 * c₄ * (|Lu| + 1) / c₃
+  have hk : 0 < k := by positivity
+  set α₁ := (ClassKInfty.power 2 two_pos).smul c₁ hc₁
+  set α₂ := (ClassKInfty.power 2 two_pos).smul c₂ hc₂
+  set ρ := (ClassKInfty.power 1 one_pos).smul k hk
+  set W₃ : ℝⁿ → ℝ := fun x => c₃ / 2 * ‖x - x_c‖ ^ 2
+  have hW₃ : IsPositiveDefiniteOn W₃ x_c univ :=
+    isPositiveDefiniteOn_mul_norm_sub_sq (by positivity) x_c univ
+  refine inputToStateStable_of_isISSLyapunov α₁ α₂ ρ (W₃ := W₃)
+    (fun t ht y => hV_diff t ht y (mem_univ y))
+    (fun t ht y => ⟨(hV_bd t ht y (mem_univ y)).1, (hV_bd t ht y (mem_univ y)).2.1⟩) hW₃
+    fun t ht y w hw => ?_
+  -- Step 3. Along the forced system, `V̇` is `V̇` of the unforced system plus `∂V/∂x · e`, with
+  -- `e = f(t, y, w) - f(t, y, 0)`; the gain `ρ` makes the second term at most half the first.
+  obtain ⟨-, -, h_lie⟩ := hV_bd t ht y (mem_univ y)
+  rw [Real.rpow_two] at h_lie
+  have hw' : k * ‖w‖ ≤ ‖y - x_c‖ := by simpa [ρ, ClassKInfty.smul, ClassKInfty.power,
+    ClassKInfty.of_strictMono, Real.rpow_one] using hw
+  have h_pert := lieDerivative_le_add_norm_fderiv_mul (V := V) (v := fun t y => s.F t y 0)
+    (w := fun t y => s.F t y w) (hV_diff t ht y (mem_univ y))
+  calc _root_.lieDerivative V (fun t y => s.F t y w) t y
+      ≤ s.zeroInput.lieDerivative V t y () + ‖fderiv ℝ (V t) y‖ * ‖s.F t y w - s.F t y 0‖ :=
+        h_pert
+    _ ≤ -(c₃ * ‖y - x_c‖ ^ 2) + (c₄ * ‖y - x_c‖) * ((|Lu| + 1) * ‖w‖) :=
+        add_le_add h_lie (mul_le_mul (h_grad t ht y)
+          ((hLu t y w).trans (by gcongr; linarith [le_abs_self Lu])) (norm_nonneg _)
+          (mul_nonneg hc₄.le (norm_nonneg _)))
+    _ = -(c₃ * ‖y - x_c‖ ^ 2) + c₃ / 2 * ‖y - x_c‖ * (k * ‖w‖) := by simp only [k]; field_simp
+    _ ≤ -(c₃ * ‖y - x_c‖ ^ 2) + c₃ / 2 * ‖y - x_c‖ * ‖y - x_c‖ := by gcongr
+    _ = -W₃ y := by simp only [W₃]; ring
 
 end ISSLyapunov
 

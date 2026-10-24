@@ -359,7 +359,8 @@ function.
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
 @[blueprint "thm:continuousSystem-exists-classKLGlobal-ultimateBound-of-lyapunov"
   (title := "Ultimate boundedness theorem, global case")
-  (statement := /-- Let the state space be $\mathbb{R}^n$, $V$ differentiable, $\alpha_1,
+  (statement := /-- Let the state space be $\mathbb{R}^n$, $V$ differentiable at every $(t, x)$
+    with $t \ge 0$, $\alpha_1,
     \alpha_2$ class $\mathcal{K}_{\infty}$, $W_3$ positive definite about $x_c$ on
     $\mathbb{R}^n$ (\cref{def:isPositiveDefiniteOn}) and $\mu \ge 0$, with
     \[
@@ -395,7 +396,7 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
     (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} (hW₃ : IsPositiveDefiniteOn W₃ x_c univ) :
     ∃ β : ClassKLGlobal,
       ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
-        Differentiable ℝ (Function.uncurry V) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
         (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
           α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
         (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
@@ -409,7 +410,7 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
   have h_local : ∀ k : ℕ, ∃ β : ClassKL (k + 1),
       (∀ ρ ∈ Ico 0 ((k : ℝ) + 1), ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ)) ∧
       ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
-        Differentiable ℝ (Function.uncurry V) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
         (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
           α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
         (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
@@ -444,7 +445,7 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
       rwa [h_inv ρ (Ico_subset_Icc_self hρ)] at h
     · have h : ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀))
           ((α₁.toClassK hR_pos).invFun (α₂.toFun μ)) :=
-        hβ (fun t _ y _ => hV _) (fun t ht y _ => hV_bd t ht y)
+        hβ (fun t ht y _ => hV t ht y) (fun t ht y _ => hV_bd t ht y)
           (fun t ht y hy _ => hlie t ht y hy) hμ hμc
           t₀ ht₀ t₁ x hx h_init t ht
       rwa [h_inv μ ⟨hμ, hμc.le⟩] at h
@@ -531,7 +532,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     $\|x(t) - x_c\| \le \max\{\beta(a, 0), \alpha_1^{-1}(\alpha_2(\mu))\}$. -/)]
 theorem globallyUniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
     {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {μ : ℝ} (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
-    (hV : Differentiable ℝ (Function.uncurry V))
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
     (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
@@ -569,7 +570,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     $\beta(a, s) \le b$ for $s \ge T(a)$; apply the estimate on $[t_0, t]$. -/)]
 theorem globallyUniformlyUltimatelyBounded_of_lyapunov [NeZero n]
     {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {μ : ℝ}
-    (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} (hV : Differentiable ℝ (Function.uncurry V))
+    (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
     (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)

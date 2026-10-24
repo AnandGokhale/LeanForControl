@@ -433,6 +433,75 @@ lemma zeroInput_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 end ZeroInput
 
+/-! ### Input offsets and cascades -/
+
+section Cascade
+
+variable {E₂ Y₂ W : Type*}
+
+/-- The system with its input **measured from `u₀`**: `ẋ = F(t, x, u + u₀)`, `y = h(t, x, u + u₀)`.
+Input-to-state stability of `s.shiftInput u₀` bounds the effect of an input by its distance from
+`u₀` rather than from `0`. -/
+@[blueprint "def:continuousSystem-shiftInput"
+  (title := "Input measured from an offset")
+  (statement := /-- For $u_0$ in the input space, the system $\dot x = F(t, x, u + u_0)$,
+    $y = h(t, x, u + u_0)$: the input is measured from $u_0$. -/)]
+def shiftInput [Add U] (s : ContinuousSystem E U Y) (u₀ : U) : ContinuousSystem E U Y where
+  F t x u := s.F t x (u + u₀)
+  h t x u := s.h t x (u + u₀)
+
+@[simp] lemma shiftInput_zero [AddZeroClass U] (s : ContinuousSystem E U Y) :
+    s.shiftInput 0 = s := by
+  cases s
+  simp [shiftInput]
+
+/-- The trajectories of `s.shiftInput u₀` under `u` are those of `s` under `u + u₀`. -/
+lemma shiftInput_isTrajectoryOn_iff [Add U] [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (s : ContinuousSystem E U Y) (u₀ : U) {u : ℝ → U} {x : ℝ → E} {I : Set ℝ} :
+    (s.shiftInput u₀).IsTrajectoryOn u x I ↔ s.IsTrajectoryOn (fun τ => u τ + u₀) x I :=
+  Iff.rfl
+
+/-- The **cascade** of `s₁`, driven by the state of `s₂`, with `s₂`, driven by the external input:
+`ẋ₁ = F₁(t, x₁, x₂)`, `ẋ₂ = F₂(t, x₂, w)`, with output `(h₁(t, x₁, x₂), h₂(t, x₂, w))`.  With
+`W = Unit` this is the cascade of `s₁` with an autonomous system. -/
+@[blueprint "def:continuousSystem-cascade"
+  (title := "Cascade of continuous-time systems")
+  (statement := /-- For a system $s_1$ whose input space is the state space of a system $s_2$
+    with input $w$, the \emph{cascade} is the system on pairs $(x_1, x_2)$ with input $w$
+    \[
+      \dot x_1 = F_1(t, x_1, x_2), \qquad \dot x_2 = F_2(t, x_2, w),
+    \]
+    with output $(h_1(t, x_1, x_2), h_2(t, x_2, w))$: the state of $s_2$ drives $s_1$. -/)]
+def cascade (s₁ : ContinuousSystem E E₂ Y) (s₂ : ContinuousSystem E₂ W Y₂) :
+    ContinuousSystem (E × E₂) W (Y × Y₂) where
+  F t x w := (s₁.F t x.1 x.2, s₂.F t x.2 w)
+  h t x w := (s₁.h t x.1 x.2, s₂.h t x.2 w)
+
+/-- A trajectory of the cascade is a pair of trajectories: of `s₁` under the input `x₂`, and of
+`s₂` under the external input. -/
+@[blueprint "lem:continuousSystem-cascade-isTrajectoryOn-iff"
+  (title := "Trajectories of a cascade")
+  (latexEnv := "lemma")
+  (statement := /-- A map $(x_1, x_2)$ is a trajectory of the cascade
+    (\cref{def:continuousSystem-cascade}) under the input $w$ on $I$ exactly when $x_1$ is a
+    trajectory of $s_1$ under the input $x_2$ on $I$ and $x_2$ is a trajectory of $s_2$ under
+    $w$ on $I$. -/)]
+lemma cascade_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup E₂]
+    [NormedSpace ℝ E₂] {s₁ : ContinuousSystem E E₂ Y} {s₂ : ContinuousSystem E₂ W Y₂}
+    {u : ℝ → W} {x : ℝ → E × E₂} {I : Set ℝ} :
+    (cascade s₁ s₂).IsTrajectoryOn u x I ↔
+      s₁.IsTrajectoryOn (fun τ => (x τ).2) (fun τ => (x τ).1) I ∧
+        s₂.IsTrajectoryOn u (fun τ => (x τ).2) I := by
+  constructor
+  · intro hx
+    exact ⟨fun t ht =>
+        (ContinuousLinearMap.fst ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht),
+      fun t ht => (ContinuousLinearMap.snd ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩
+  · rintro ⟨h₁, h₂⟩ t ht
+    exact (h₁ t ht).prodMk (h₂ t ht)
+
+end Cascade
+
 /-! ### Carathéodory trajectories -/
 
 section Caratheodory

@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+import LeanForControl.Analysis.FrechetDerivative
 import Architect
 
 /-!
@@ -26,6 +27,8 @@ Along an integral curve `γ` of `v` it is the rate of change of `t ↦ V(t, γ(t
 * `IsIntegralCurveOn.hasDerivWithinAt_lieDerivative` — the chain rule along an integral curve.
 * `IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt` — the Lie derivative is the right
   derivative of `V` along a forward integral curve, however that is computed.
+* `lieDerivative_eq_add_fderiv_sub`, `lieDerivative_le_add_norm_fderiv_mul` — changing the field
+  from `v` to `w` changes the Lie derivative by `∂V/∂x · (w - v)`.
 * `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos` — a nonpositive Lie derivative along an
   integral curve on an interval makes `V` nonincreasing along it.
 * `continuous_lieDerivative` — the Lie derivative along a continuous field of a `C¹` function
@@ -124,6 +127,36 @@ lemma IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt {V : ℝ → E → 
   have h_chain : HasDerivWithinAt (fun τ => V τ (γ τ)) (lieDerivative V v t (γ t)) (Ici t) t :=
     HasFDerivAt.comp_hasDerivWithinAt (f := fun τ => (τ, γ τ)) t hV.hasFDerivAt h_pair
   exact UniqueDiffWithinAt.eq_deriv _ (uniqueDiffWithinAt_Ici t) h_chain hW
+
+/-- **Changing the field changes the Lie derivative by the state derivative**:
+`L_w V(t, x) = L_v V(t, x) + ∂V/∂x(t, x) · (w(t, x) - v(t, x))`.  This is how a perturbation of the
+vector field — a linearization remainder, an input — enters `V̇`. -/
+@[blueprint "lem:lieDerivative-eq-add-fderiv-sub"
+  (title := "Lie derivative along a perturbed field")
+  (latexEnv := "lemma")
+  (statement := /-- If $V$ is differentiable at $(t, x)$, then for any two fields $v$ and $w$,
+    \[
+      L_w V(t, x) = L_v V(t, x) + \frac{\partial V}{\partial x}(t, x)\,\bigl(w(t, x) - v(t, x)\bigr)
+    \]
+    (\cref{def:lieDerivative}). -/)
+  (proof := /-- Linearity of the derivative of $V$ at $(t, x)$ in the direction
+    $(1, w) = (1, v) + (0, w - v)$; its value on $(0, e)$ is the state derivative applied to
+    $e$. -/)]
+lemma lieDerivative_eq_add_fderiv_sub {V : ℝ → E → ℝ} {v w : ℝ → E → E} {t : ℝ} {x : E}
+    (hV : DifferentiableAt ℝ (Function.uncurry V) (t, x)) :
+    lieDerivative V w t x = lieDerivative V v t x + fderiv ℝ (V t) x (w t x - v t x) := by
+  rw [fderiv_eq_fderiv_uncurry_comp_inr hV, ContinuousLinearMap.comp_apply, lieDerivative,
+    lieDerivative, ← map_add]
+  congr 1
+  ext <;> simp
+
+/-- The perturbation bound: `L_w V ≤ L_v V + ‖∂V/∂x‖ ‖w - v‖`. -/
+lemma lieDerivative_le_add_norm_fderiv_mul {V : ℝ → E → ℝ} {v w : ℝ → E → E} {t : ℝ} {x : E}
+    (hV : DifferentiableAt ℝ (Function.uncurry V) (t, x)) :
+    lieDerivative V w t x ≤ lieDerivative V v t x + ‖fderiv ℝ (V t) x‖ * ‖w t x - v t x‖ := by
+  rw [lieDerivative_eq_add_fderiv_sub (v := v) hV]
+  exact add_le_add le_rfl ((le_abs_self _).trans
+    (by rw [← Real.norm_eq_abs]; exact ContinuousLinearMap.le_opNorm _ _))
 
 /-- `V` is continuous along an integral curve at whose points it is differentiable. -/
 lemma IsIntegralCurveOn.continuousOn_comp {V : ℝ → E → ℝ} {v : ℝ → E → E}

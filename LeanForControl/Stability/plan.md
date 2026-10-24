@@ -291,6 +291,29 @@ What is open is readability, in descending value:
    functions, invisible because neither name says which slot is which. Fixing it lets partial
    application feed the abstraction with no lambda.
 
+### Gaps against Khalil in the converse, ISS and linearization results
+
+Each is documented in its docstring's *Differences* list; collected here so they are fixed together.
+
+1. **Input-to-state stability does not require forward completeness.** Khalil's Definition 4.7
+   says the solution *exists* for all `t ≥ t₀` and satisfies the estimate; `InputToStateStable`
+   (`Continuous/ISS.lean`) only bounds trajectories on segments `[t₀, t₁]`.  Theorem 4.19
+   (`inputToStateStable_of_isISSLyapunov`), Lemma 4.6 and Lemma 4.7 inherit this: none proves
+   existence.  Fix: add an `IsForwardCompleteOn` conjunct to the definition, and in 4.19 rule out
+   finite escape time from the estimate (an extension-of-solutions argument).
+2. **Hypotheses on `f` for all `t ∈ ℝ`, not `t ≥ 0`.** The converse theorems 4.14 (local and
+   global) and 4.16 (`Continuous/Converse.lean`), linearization 4.13 and both directions of 4.15
+   (`Continuous/Linearization.lean`), and Lemma 4.6 (`Continuous/ISS.lean`) ask `f` to be `C¹`,
+   Lipschitz and to vanish at `x_eq` for every `t ∈ ℝ`.  Cause: differentiability of `V` at
+   `t = 0` goes through solutions from slightly negative initial times (the time-augmented
+   system and the sensitivity lemmas of `ODEs/Sensitivity.lean` work on open sets).  Fix:
+   one-sided derivatives on `[0, ∞) × D` throughout the sensitivity lemmas.
+3. **Lyapunov functions are differentiable, not `C¹`.** Khalil's converse theorems 4.14 and 4.16
+   assert continuously differentiable `V`; the Lyapunov structures
+   (`Continuous/LyapunovFunctions.lean`) and the converse theorems give only differentiability.
+   Fix: continuity of the derivative — one more dominated-convergence argument in each converse
+   construction.
+
 ### `ClassKLGlobal.continuous_r` concludes on the wrong set
 
 `ClassKLGlobal.continuous_r` (`Comparison/ClassKL.lean`) takes a phantom `{a : ℝ}` and concludes
