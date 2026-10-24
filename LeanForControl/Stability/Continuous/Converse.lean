@@ -86,8 +86,8 @@ private lemma norm_sq_mul_exp_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0} {
     (hτ : t ≤ τ) :
     ‖y t - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (τ - t)) ≤ ‖y τ - x_eq‖ ^ 2 := by
   have hW : ∀ z : ℝⁿ, HasFDerivAt (fun z => -‖z - x_eq‖ ^ 2)
-      (-(2 • (innerSL ℝ (z - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ))) z := fun z =>
-    ((hasFDerivAt_id z).sub_const x_eq).norm_sq.neg
+      (-(2 • innerSL ℝ (z - x_eq))) z := fun z =>
+    ((hasFDerivAt_id z).sub_const x_eq).norm_sq.neg.congr_fderiv (by simp)
   have h_rate : ∀ σ ∈ Ioo t τ, _root_.lieDerivative (fun _ z => -‖z - x_eq‖ ^ 2) f σ (y σ) ≤
       -(2 * L) * -‖y σ - x_eq‖ ^ 2 := by
     intro σ hσ
@@ -97,10 +97,10 @@ private lemma norm_sq_mul_exp_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0} {
         _ ≤ L * dist (y σ) x_eq := (h_lip σ).dist_le_mul _ _
         _ = L * ‖y σ - x_eq‖ := by rw [dist_eq_norm]
     rw [lieDerivative_const (hW (y σ)).differentiableAt, (hW (y σ)).fderiv]
-    calc -((2 • (innerSL ℝ (y σ - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ)) (f σ (y σ)))
+    calc -((2 • innerSL ℝ (y σ - x_eq)) (f σ (y σ)))
         = -(2 * inner ℝ (y σ - x_eq) (f σ (y σ))) := by
-          simp only [ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply,
-            ContinuousLinearMap.id_apply, innerSL_apply_apply, nsmul_eq_mul, Nat.cast_ofNat]
+          simp only [ContinuousLinearMap.smul_apply, innerSL_apply_apply, nsmul_eq_mul,
+            Nat.cast_ofNat]
       _ ≤ 2 * (‖y σ - x_eq‖ * ‖f σ (y σ)‖) := by
           linarith [neg_le_of_abs_le (abs_real_inner_le_norm (y σ - x_eq) (f σ (y σ)))]
       _ ≤ 2 * (‖y σ - x_eq‖ * (L * ‖y σ - x_eq‖)) := by gcongr
@@ -966,56 +966,185 @@ private lemma norm_flow_le_klRate {f : ℝ → ℝⁿ → ℝⁿ} {B : ℝ} (hf_
         _ ≤ r₀ := by nlinarith
         _ ≤ klRate β r₀ σ := h_rate_one σ hσ1
 
-/-- **The construction for uniform asymptotic stability**, for a `C¹` field, globally Lipschitz in
-`x` uniformly in `t` and bounded, whose solutions from `D₀ = B(x_eq, r₀)` at times `t ≥ 0` obey a
-class `KL` estimate.  With `G` from Massera's lemma,
-`V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` is differentiable on `[0, ∞) × D₀`, vanishes at
-`x_eq`, is sandwiched between positive definite functions, decreases at the rate
-`G(‖x - x_eq‖²)`, and has gradient bounded by a class `K` function of `‖x - x_eq‖`. -/
-private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
+/-- **`G(β(ρ, ·)²)` is integrable** for `ρ ≤ r₀`, dominated by `G(ĝ²)`. -/
+private lemma integrableOn_comp_classKL {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀)
+    (hr₀a : r₀ < a) {G : ClassKInfty}
+    (hGg_int : IntegrableOn (fun σ => G (klRate β r₀ σ ^ 2)) (Ioi 0)) {ρ : ℝ}
+    (hρ : ρ ∈ Icc 0 r₀) :
+    IntegrableOn (fun σ => G (β.toFun ρ σ ^ 2)) (Ioi 0) := by
+  obtain ⟨-, -, -, -, hĝ_ge, -⟩ := klRate_spec β hr₀ hr₀a
+  have hρ_mem : ρ ∈ Ico 0 a := ⟨hρ.1, hρ.2.trans_lt hr₀a⟩
+  have hβ_cont : ContinuousOn (fun σ => β.toFun ρ σ) (Ici 0) :=
+    β.continuous.comp (continuousOn_const.prodMk continuousOn_id) fun σ hσ => ⟨hρ_mem, hσ⟩
+  refine Integrable.mono' hGg_int
+    (((G.continuous.comp (hβ_cont.pow 2) fun σ _ => mem_Ici.2 (sq_nonneg _)).mono
+      Ioi_subset_Ici_self).aestronglyMeasurable measurableSet_Ioi)
+    (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => ?_)
+  have hσ' : 0 ≤ σ := le_of_lt hσ
+  rw [Real.norm_of_nonneg (G.maps_to (mem_Ici.2 (sq_nonneg _)))]
+  exact G.mono (sq_nonneg _) (pow_le_pow_left₀ (β.nonneg ρ hρ_mem σ hσ')
+    (hĝ_ge ρ hρ σ σ hσ' (max_le (by linarith) hσ')) 2)
+
+/-- **`G(‖φ(t + σ; t, x) - x_eq‖²)` is integrable** for `t ≥ 0` and `x ∈ D₀`, dominated by
+`G(β(‖x - x_eq‖, σ)²)` through the class `KL` estimate. -/
+private lemma integrableOn_comp_flow {f : ℝ → ℝⁿ → ℝⁿ} {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
+    (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1)) {x_eq : ℝⁿ}
+    {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr₀a : r₀ < a)
+    (h_KL : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → ℝⁿ, y t = x →
+      IsIntegralCurveOn y f (Ici t) → ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t))
+    {G : ClassKInfty} (hGg_int : IntegrableOn (fun σ => G (klRate β r₀ σ ^ 2)) (Ioi 0))
+    {t : ℝ} (ht : 0 ≤ t) {x : ℝⁿ} (hx : x ∈ ball x_eq r₀) :
+    IntegrableOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0) := by
+  have h_cont : ContinuousOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0) :=
+    G.continuous.comp ((((hφ (t, x)).continuousOn.comp
+      (continuousOn_const.add continuousOn_id) fun σ hσ =>
+        mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ))).sub continuousOn_const).norm.pow 2)
+      fun σ _ => mem_Ici.2 (sq_nonneg _)
+  refine Integrable.mono' (integrableOn_comp_classKL β hr₀ hr₀a hGg_int
+      ⟨norm_nonneg _, (mem_ball_iff_norm.mp hx).le⟩)
+    (h_cont.aestronglyMeasurable measurableSet_Ioi)
+    (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => ?_)
+  have h := h_KL t ht x hx (φ (t, x)) (hφ0 (t, x)) (hφ (t, x)) (t + σ)
+    (by linarith [mem_Ioi.1 hσ])
+  rw [add_sub_cancel_left] at h
+  rw [Real.norm_of_nonneg (G.maps_to (mem_Ici.2 (sq_nonneg _)))]
+  exact G.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) h 2)
+
+/-- **The gradient rate** `A(ρ, σ) = 2 G'(β(ρ, σ)²) β(ρ, σ) e^{Lσ}`: by the chain rule, the
+state derivative of `G(‖φ(t + σ; t, x) - x_eq‖²)` is at most `A(‖x - x_eq‖, σ)`. -/
+private noncomputable def gradRate {a : ℝ} (β : ClassKL a) (G' : ClassKInfty) (L : ℝ≥0)
+    (ρ σ : ℝ) : ℝ :=
+  2 * G' (β.toFun ρ σ ^ 2) * β.toFun ρ σ * Real.exp (L * σ)
+
+/-- For `ρ ≤ r₀`, the gradient rate is nonnegative, dominated by `2ĝ(0) G'(ĝ²) e^{Lσ}`,
+continuous, and integrable. -/
+private lemma gradRate_spec {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr₀a : r₀ < a)
+    {G' : ClassKInfty} {L : ℝ≥0}
+    (hG'g_int : IntegrableOn (fun σ => G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)) (Ioi 0))
+    {ρ : ℝ} (hρ : ρ ∈ Icc 0 r₀) :
+    (∀ σ, 0 ≤ σ → 0 ≤ gradRate β G' L ρ σ ∧
+      gradRate β G' L ρ σ ≤ 2 * klRate β r₀ 0 * (G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ))) ∧
+    ContinuousOn (gradRate β G' L ρ) (Ici 0) ∧ IntegrableOn (gradRate β G' L ρ) (Ioi 0) := by
+  obtain ⟨-, -, hĝ_anti, -, hĝ_ge, -⟩ := klRate_spec β hr₀ hr₀a
+  have hρ_mem : ρ ∈ Ico 0 a := ⟨hρ.1, hρ.2.trans_lt hr₀a⟩
+  have hG'_nonneg : ∀ r, 0 ≤ r → 0 ≤ G' r := fun r hr => G'.maps_to hr
+  have hβ_cont : ContinuousOn (fun σ => β.toFun ρ σ) (Ici 0) :=
+    β.continuous.comp (continuousOn_const.prodMk continuousOn_id) fun σ hσ => ⟨hρ_mem, hσ⟩
+  have h_nonneg : ∀ σ, 0 ≤ σ → 0 ≤ gradRate β G' L ρ σ := fun σ hσ =>
+    mul_nonneg (mul_nonneg (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _)))
+      (β.nonneg ρ hρ_mem σ hσ)) (Real.exp_pos _).le
+  have h_le : ∀ σ, 0 ≤ σ → gradRate β G' L ρ σ ≤
+      2 * klRate β r₀ 0 * (G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)) := fun σ hσ => by
+    have hβ_nonneg := β.nonneg ρ hρ_mem σ hσ
+    have hβ : β.toFun ρ σ ≤ klRate β r₀ σ := hĝ_ge ρ hρ σ σ hσ (max_le (by linarith) hσ)
+    have hG'β := G'.mono (sq_nonneg _) (pow_le_pow_left₀ hβ_nonneg hβ 2)
+    calc gradRate β G' L ρ σ
+        ≤ 2 * G' (klRate β r₀ σ ^ 2) * klRate β r₀ 0 * Real.exp (L * σ) :=
+          mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left hG'β two_pos.le)
+            (hβ.trans (hĝ_anti.antitone hσ)) hβ_nonneg
+              (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _)))) (Real.exp_pos _).le
+      _ = 2 * klRate β r₀ 0 * (G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)) := by ring
+  have h_cont : ContinuousOn (gradRate β G' L ρ) (Ici 0) :=
+    ((continuousOn_const.mul (G'.continuous.comp (hβ_cont.pow 2)
+      fun σ _ => mem_Ici.2 (sq_nonneg _))).mul hβ_cont).mul
+        (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn
+  refine ⟨fun σ hσ => ⟨h_nonneg σ hσ, h_le σ hσ⟩, h_cont, ?_⟩
+  exact Integrable.mono' (hG'g_int.const_mul (2 * klRate β r₀ 0))
+    ((h_cont.mono Ioi_subset_Ici_self).aestronglyMeasurable measurableSet_Ioi)
+    (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
+      rw [Real.norm_of_nonneg (h_nonneg σ (le_of_lt hσ))]
+      exact h_le σ (le_of_lt hσ))
+
+/-- **The gradient bound is class `K`**: `α₄(ρ) = ∫_0^∞ A(ρ, σ) dσ + ρ` is a class `K` function
+on `[0, r₀]` dominating `∫_0^∞ A(ρ, σ) dσ`. -/
+private lemma exists_classK_ge_integral_gradRate {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀)
+    (hr₀a : r₀ < a) {G' : ClassKInfty} {L : ℝ≥0}
+    (hG'g_int : IntegrableOn (fun σ => G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)) (Ioi 0)) :
+    ∃ b₄ : ℝ, ∃ α₄ : ClassK r₀ b₄, ∀ ρ ∈ Icc 0 r₀,
+      ∫ σ in Ioi 0, gradRate β G' L ρ σ ≤ α₄.toFun ρ := by
+  have hIcc_Ico : ∀ ρ ∈ Icc 0 r₀, ρ ∈ Ico 0 a := fun ρ hρ => ⟨hρ.1, hρ.2.trans_lt hr₀a⟩
+  have h_spec := fun ρ (hρ : ρ ∈ Icc 0 r₀) => gradRate_spec β hr₀ hr₀a hG'g_int hρ
+  have h_mono : ∀ ρ ∈ Icc 0 r₀, ∀ ρ' ∈ Icc 0 r₀, ρ ≤ ρ' → ∀ σ, 0 ≤ σ →
+      gradRate β G' L ρ σ ≤ gradRate β G' L ρ' σ := by
+    intro ρ hρ ρ' hρ' h σ hσ
+    have hβ_nonneg := β.nonneg ρ (hIcc_Ico ρ hρ) σ hσ
+    have hβρ := β.mono_r (hIcc_Ico ρ hρ) (hIcc_Ico ρ' hρ') hσ h
+    have hG'ρ := G'.mono (sq_nonneg _) (pow_le_pow_left₀ hβ_nonneg hβρ 2)
+    exact mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left hG'ρ two_pos.le)
+      hβρ hβ_nonneg (mul_nonneg two_pos.le (G'.maps_to (mem_Ici.2 (sq_nonneg _)))))
+        (Real.exp_pos _).le
+  set α₄f : ℝ → ℝ := fun ρ => (∫ σ in Ioi 0, gradRate β G' L ρ σ) + ρ
+  have hα₄_zero : α₄f 0 = 0 := by
+    simp only [α₄f, add_zero]
+    exact setIntegral_eq_zero_of_forall_eq_zero fun σ hσ => by
+      simp [gradRate, β.map_zero_r (le_of_lt hσ)]
+  have hα₄_cont : ContinuousOn α₄f (Icc 0 r₀) :=
+    (continuousOn_of_dominated
+      (bound := fun σ => 2 * klRate β r₀ 0 * (G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)))
+      (fun ρ hρ => (((h_spec ρ hρ).2.1).mono Ioi_subset_Ici_self).aestronglyMeasurable
+        measurableSet_Ioi)
+      (fun ρ hρ => ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
+        rw [Real.norm_of_nonneg ((h_spec ρ hρ).1 σ (le_of_lt hσ)).1]
+        exact ((h_spec ρ hρ).1 σ (le_of_lt hσ)).2) (hG'g_int.const_mul _)
+      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
+        have hβr : ContinuousOn (fun ρ => β.toFun ρ σ) (Icc 0 r₀) :=
+          (β.continuous_r (le_of_lt hσ)).mono fun ρ hρ => hIcc_Ico ρ hρ
+        exact ((continuousOn_const.mul (G'.continuous.comp (hβr.pow 2)
+          fun ρ _ => mem_Ici.2 (sq_nonneg _))).mul hβr).mul continuousOn_const)).add
+      continuousOn_id
+  have hα₄_mono : StrictMonoOn α₄f (Icc 0 r₀) := fun ρ hρ ρ' hρ' h =>
+    add_lt_add_of_le_of_lt (setIntegral_mono_on (h_spec ρ hρ).2.2 (h_spec ρ' hρ').2.2
+      measurableSet_Ioi fun σ hσ => h_mono ρ hρ ρ' hρ' h.le σ (le_of_lt hσ)) h
+  have hα₄_pos : 0 < α₄f r₀ := add_pos_of_nonneg_of_pos
+    (setIntegral_nonneg measurableSet_Ioi fun σ hσ =>
+      ((h_spec r₀ ⟨hr₀.le, le_rfl⟩).1 σ (le_of_lt hσ)).1) hr₀
+  exact ⟨_, ClassK.of_strictMono hr₀ hα₄_pos α₄f hα₄_zero rfl hα₄_cont hα₄_mono,
+    fun ρ hρ => le_add_of_nonneg_right hρ.1⟩
+
+/-- **Differentiation under the integral sign.**  At `t ≥ 0` and `x ∈ D₀`,
+`(t, x) ↦ ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` has a derivative whose state part is at most
+`∫_0^∞ A(‖x - x_eq‖, σ) dσ` (`gradRate`).  Near `(t, x)`, solutions obey the rate `ĝ`
+(`norm_flow_le_klRate`) and separate at most like `(2B + 1) e^{Lσ}` (`norm_flow_sub_flow_le`),
+so the integrands are Lipschitz with the constant `2ĝ(0)(2B + 1) G'(ĝ²) e^{Lσ}`, integrable by
+Massera's lemma.  In the state alone they separate like `e^{Lσ}` (`dist_flow_le`). -/
+private lemma hasFDerivAt_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ}
     (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => f p.1 p.2)) {L : ℝ≥0}
     (hf_lip : ∀ t, LipschitzWith L (f t)) {B : ℝ} (hf_bdd : ∀ t y, ‖f t y‖ ≤ B)
-    {x_eq : ℝⁿ} (h_eq : ∀ t, f t x_eq = 0) {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀)
-    (hr₀a : r₀ < a)
+    {φ : ℝ × ℝⁿ → ℝ → ℝⁿ} (hφ0 : ∀ p, φ p p.1 = p.2)
+    (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1)) {x_eq : ℝⁿ} {a r₀ : ℝ} (β : ClassKL a)
+    (hr₀ : 0 < r₀) (hr₀a : r₀ < a)
     (h_KL : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → ℝⁿ, y t = x →
-      IsIntegralCurveOn y f (Ici t) → ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t)) :
-    ∃ V : ℝ → ℝⁿ → ℝ,
-      (∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, DifferentiableAt ℝ (Function.uncurry V) (t, x)) ∧
-      (∀ t : ℝ, 0 ≤ t → V t x_eq = 0) ∧
-      ∃ W₁ W₂ W₃ : ℝⁿ → ℝ, IsPositiveDefiniteOn W₁ x_eq (ball x_eq r₀) ∧
-        IsPositiveDefiniteOn W₂ x_eq (ball x_eq r₀) ∧
-        IsPositiveDefiniteOn W₃ x_eq (ball x_eq r₀) ∧
-        (∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, W₁ x ≤ V t x ∧ V t x ≤ W₂ x ∧
-          _root_.lieDerivative V f t x ≤ -W₃ x) ∧
-        ∃ b₄ : ℝ, ∃ α₄ : ClassK r₀ b₄, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
-          ‖fderiv ℝ (V t) x‖ ≤ α₄.toFun ‖x - x_eq‖ := by
-  have hr₀_mem : r₀ ∈ Ico 0 a := ⟨hr₀.le, hr₀a⟩
-  have hball_mem : ∀ x ∈ ball x_eq r₀, ‖x - x_eq‖ ∈ Icc 0 r₀ := fun x hx =>
-    ⟨norm_nonneg _, (mem_ball_iff_norm.mp hx).le⟩
-  have hIcc_Ico : ∀ ρ ∈ Icc 0 r₀, ρ ∈ Ico 0 a := fun ρ hρ => ⟨hρ.1, hρ.2.trans_lt hr₀a⟩
-  -- Step 1. Solutions from every initial time and state.
-  choose φ hφ0 hφ hφ_uniq using fun p : ℝ × ℝⁿ =>
-    exists_isIntegralCurveOn_Ici hf.continuous hf_lip p.1 p.2
-  -- Step 2. Massera's lemma for `g = ĝ²` and `h(s) = e^{Ls}`.
+      IsIntegralCurveOn y f (Ici t) → ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t))
+    {G G' : ClassKInfty} (hG : ∀ r, 0 ≤ r → HasDerivAt G (G' r) r)
+    (hGg_int : IntegrableOn (fun σ => G (klRate β r₀ σ ^ 2)) (Ioi 0))
+    (hG'g_int : IntegrableOn (fun σ => G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)) (Ioi 0))
+    {t : ℝ} (ht : 0 ≤ t) {x : ℝⁿ} (hx : x ∈ ball x_eq r₀) :
+    ∃ V' : (ℝ × ℝⁿ) →L[ℝ] ℝ, HasFDerivAt (Function.uncurry fun t x =>
+        ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) V' (t, x) ∧
+      ‖V'.comp (ContinuousLinearMap.inr ℝ ℝ ℝⁿ)‖ ≤
+        ∫ σ in Ioi 0, gradRate β G' L ‖x - x_eq‖ σ := by
   set ĝ := klRate β r₀
-  obtain ⟨hĝ_pos, hĝ_cont, hĝ_anti, hĝ_lim, hĝ_ge, -⟩ := klRate_spec β hr₀ hr₀a
+  obtain ⟨hĝ_pos, -, hĝ_anti, -, -, -⟩ := klRate_spec β hr₀ hr₀a
   have hĝ_le : ∀ σ, 0 ≤ σ → ĝ σ ≤ ĝ 0 := fun σ hσ => hĝ_anti.antitone hσ
-  have hM := ClassKInfty.massera
-    (g := fun σ => ĝ σ ^ 2) (h := fun σ => Real.exp (L * σ))
-    (fun σ _ => pow_pos (hĝ_pos σ) 2) (hĝ_cont.pow 2).continuousOn
-    (fun σ₁ _ σ₂ _ h => pow_lt_pow_left₀ (hĝ_anti h) (hĝ_pos σ₂).le two_ne_zero)
-    (by simpa using hĝ_lim.pow 2) (fun σ _ => Real.exp_pos _)
-    (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn
-    (fun σ₁ _ σ₂ _ h => Real.exp_le_exp.2 (mul_le_mul_of_nonneg_left h L.coe_nonneg))
-  obtain ⟨G, G', hG, k₁, -, k₂, -, hMassera⟩ := hM
-  obtain ⟨hGg_int, -, hG'g_int, -⟩ := hMassera (fun σ => ĝ σ ^ 2) (hĝ_cont.pow 2).continuousOn
-    fun σ _ => ⟨sq_nonneg _, le_rfl⟩
-  have hG_nonneg : ∀ r, 0 ≤ r → 0 ≤ G r := fun r hr => G.maps_to hr
   have hG'_nonneg : ∀ r, 0 ≤ r → 0 ≤ G' r := fun r hr => G'.maps_to hr
-  -- Step 3. The integrand `F(z, σ) = G(‖φ(z.1 + σ; z) - x_eq‖²)` and `V(t, x) = ∫_0^∞ F`.
+  -- The derivative of `y ↦ G(‖y - x_eq‖²)`, by the chain rule:
+  -- `D(y) = G'(‖y - x_eq‖²) • 2⟪y - x_eq, ·⟫`.
+  set D : ℝⁿ → ℝⁿ →L[ℝ] ℝ := fun y => G' (‖y - x_eq‖ ^ 2) • 2 • innerSL ℝ (y - x_eq)
+  have hD : ∀ y, HasFDerivAt (fun y => G (‖y - x_eq‖ ^ 2)) (D y) y := fun y =>
+    ((hG _ (sq_nonneg _)).comp_hasFDerivAt y
+      ((hasFDerivAt_id y).sub_const x_eq).norm_sq).congr_fderiv (by simp [D])
+  have hD_cont : Continuous D :=
+    (G'.continuous.comp_continuous ((continuous_id.sub continuous_const).norm.pow 2)
+      fun y => mem_Ici.2 (sq_nonneg _)).smul
+      (((innerSL ℝ).continuous.comp (continuous_id.sub continuous_const)).const_smul 2)
+  have hD_norm : ∀ y, ‖D y‖ = 2 * G' (‖y - x_eq‖ ^ 2) * ‖y - x_eq‖ := fun y => by
+    rw [norm_smul, RCLike.norm_nsmul ℝ, innerSL_apply_norm,
+      Real.norm_of_nonneg (hG'_nonneg _ (sq_nonneg _)), nsmul_eq_mul]
+    push_cast
+    ring
+  -- The integrand `F(z, σ) = G(‖φ(z.1 + σ; z) - x_eq‖²)`.
   set u : ℝ × ℝⁿ → ℝ → ℝⁿ := fun z σ => φ z (z.1 + σ)
   set F : ℝ × ℝⁿ → ℝ → ℝ := fun z σ => G (‖u z σ - x_eq‖ ^ 2)
-  set V : ℝ → ℝⁿ → ℝ := fun t x => ∫ σ in Ioi 0, F (t, x) σ
   have hu_cont : ∀ z, ContinuousOn (u z) (Ici 0) := fun z =>
     (hφ z).continuousOn.comp (continuousOn_const.add continuousOn_id)
       fun σ hσ => mem_Ici.2 (le_add_of_nonneg_right hσ)
@@ -1023,63 +1152,6 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
     ((G.continuous.comp (((hu_cont z).sub continuousOn_const).norm.pow 2)
       fun σ _ => mem_Ici.2 (sq_nonneg _)).mono Ioi_subset_Ici_self).aestronglyMeasurable
         measurableSet_Ioi
-  have hF_nonneg : ∀ z σ, 0 ≤ F z σ := fun z σ => hG_nonneg _ (sq_nonneg _)
-  -- Along solutions from `D₀`, the class `KL` estimate, and its domination by the rate.
-  have h_u_KL : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ σ, 0 ≤ σ →
-      ‖u (t, x) σ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ σ := fun t ht x hx σ hσ => by
-    have h := h_KL t ht x hx (φ (t, x)) (hφ0 (t, x)) (hφ (t, x)) (t + σ) (by linarith)
-    rwa [add_sub_cancel_left] at h
-  have hβ_nonneg : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ → 0 ≤ β.toFun ρ σ := fun ρ hρ σ hσ =>
-    β.nonneg ρ (hIcc_Ico ρ hρ) σ hσ
-  have hβ_le : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ → β.toFun ρ σ ≤ ĝ σ := fun ρ hρ σ hσ =>
-    hĝ_ge ρ hρ σ σ hσ (max_le (by linarith) hσ)
-  have hβ_cont_s : ∀ ρ ∈ Icc 0 r₀, ContinuousOn (fun σ => β.toFun ρ σ) (Ici 0) := fun ρ hρ =>
-    β.continuous.comp (continuousOn_const.prodMk continuousOn_id)
-      fun σ hσ => ⟨hIcc_Ico ρ hρ, hσ⟩
-  have hGβ_le : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ → G (β.toFun ρ σ ^ 2) ≤ G (ĝ σ ^ 2) :=
-    fun ρ hρ σ hσ => G.mono (sq_nonneg _)
-      (pow_le_pow_left₀ (hβ_nonneg ρ hρ σ hσ) (hβ_le ρ hρ σ hσ) 2)
-  have hF_le : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ σ, 0 ≤ σ →
-      F (t, x) σ ≤ G (β.toFun ‖x - x_eq‖ σ ^ 2) := fun t ht x hx σ hσ =>
-    G.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) (h_u_KL t ht x hx σ hσ) 2)
-  have hGβ_int : ∀ ρ ∈ Icc 0 r₀, IntegrableOn (fun σ => G (β.toFun ρ σ ^ 2)) (Ioi 0) :=
-    fun ρ hρ => Integrable.mono' hGg_int
-      (((G.continuous.comp ((hβ_cont_s ρ hρ).pow 2) fun σ _ => mem_Ici.2 (sq_nonneg _)).mono
-        Ioi_subset_Ici_self).aestronglyMeasurable measurableSet_Ioi)
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
-        rw [Real.norm_of_nonneg (hG_nonneg _ (sq_nonneg _))]
-        exact hGβ_le ρ hρ σ (le_of_lt hσ))
-  have hF_int : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, IntegrableOn (F (t, x)) (Ioi 0) :=
-    fun t ht x hx => Integrable.mono' (hGβ_int _ (hball_mem x hx)) (hF_meas _)
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
-        rw [Real.norm_of_nonneg (hF_nonneg _ _)]
-        exact hF_le t ht x hx σ (le_of_lt hσ))
-  -- Step 4. `V` is differentiable on `[0, ∞) × D₀`, by differentiation under the integral sign.
-  -- The derivative of `y ↦ G(‖y - x_eq‖²)`.
-  set D : ℝⁿ → ℝⁿ →L[ℝ] ℝ := fun y =>
-    G' (‖y - x_eq‖ ^ 2) • (2 • (innerSL ℝ (y - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ))
-  have hD : ∀ y, HasFDerivAt (fun y => G (‖y - x_eq‖ ^ 2)) (D y) y := fun y =>
-    (hG _ (sq_nonneg _)).comp_hasFDerivAt y ((hasFDerivAt_id y).sub_const x_eq).norm_sq
-  have hD_cont : Continuous D :=
-    (G'.continuous.comp_continuous ((continuous_id.sub continuous_const).norm.pow 2)
-      fun y => mem_Ici.2 (sq_nonneg _)).smul
-      ((((innerSL ℝ).continuous.comp (continuous_id.sub continuous_const)).clm_comp
-        continuous_const).const_smul 2)
-  have hD_norm : ∀ y, ‖D y‖ ≤ 2 * G' (‖y - x_eq‖ ^ 2) * ‖y - x_eq‖ := fun y => by
-    have h_inner : ‖(innerSL ℝ (y - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ)‖ ≤ ‖y - x_eq‖ :=
-      (ContinuousLinearMap.opNorm_comp_le _ _).trans (by
-        rw [innerSL_apply_norm]
-        exact mul_le_of_le_one_right (norm_nonneg _) ContinuousLinearMap.norm_id_le)
-    calc ‖D y‖
-        = G' (‖y - x_eq‖ ^ 2) *
-            ‖2 • (innerSL ℝ (y - x_eq)).comp (ContinuousLinearMap.id ℝ ℝⁿ)‖ := by
-          rw [norm_smul, Real.norm_of_nonneg (hG'_nonneg _ (sq_nonneg _))]
-      _ ≤ G' (‖y - x_eq‖ ^ 2) * (2 * ‖y - x_eq‖) := by
-          refine mul_le_mul_of_nonneg_left (norm_nsmul_le.trans ?_)
-            (hG'_nonneg _ (sq_nonneg _))
-          push_cast
-          exact mul_le_mul_of_nonneg_left h_inner two_pos.le
-      _ = 2 * G' (‖y - x_eq‖ ^ 2) * ‖y - x_eq‖ := by ring
   -- Each integrand is differentiable in the initial data, with derivative continuous in `σ`.
   have h_u_diff : ∀ z₀ σ, 0 ≤ σ →
       HasFDerivAt (fun z => u z σ) (fderiv ℝ (fun z => u z σ) z₀) z₀ := fun z₀ σ hσ => by
@@ -1107,57 +1179,96 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
   have hbound_nonneg : ∀ σ, 0 ≤ bound σ := fun σ =>
     mul_nonneg (mul_nonneg (mul_nonneg two_pos.le (hĝ_pos 0).le) (by linarith))
       (mul_nonneg (hG'_nonneg _ (sq_nonneg _)) (Real.exp_pos _).le)
-  have hV_deriv : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
-      Integrable (F' (t, x)) (volume.restrict (Ioi 0)) ∧
-        HasFDerivAt (Function.uncurry V) (∫ σ in Ioi 0, F' (t, x) σ) (t, x) := by
-    intro t ht x hx
-    obtain ⟨ε, hε, h_near⟩ := norm_flow_le_klRate hf_bdd hφ0 hφ β hr₀ hr₀a h_KL
-      (z₀ := (t, x)) ht hx
-    have h_lip : ∀ σ ∈ Ioi (0 : ℝ),
-        LipschitzOnWith (Real.nnabs (bound σ)) (fun z => F z σ) (ball (t, x) ε) := by
-      intro σ hσ
-      have hσ' : 0 ≤ σ := le_of_lt hσ
-      refine LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => ?_
-      set p := u z σ - x_eq
-      set q := u z' σ - x_eq
-      have hp : ‖p‖ ≤ ĝ σ := h_near z hz σ hσ'
-      have hq : ‖q‖ ≤ ĝ σ := h_near z' hz' σ hσ'
-      have hpq : ‖p - q‖ ≤ (2 * B + 1) * Real.exp (L * σ) * dist z z' := by
-        rw [sub_sub_sub_cancel_right]
-        exact norm_flow_sub_flow_le hf_lip hf_bdd hφ0 hφ z z' hσ'
-      rw [Real.coe_nnabs, abs_of_nonneg (hbound_nonneg σ), Real.dist_eq]
-      calc |G (‖p‖ ^ 2) - G (‖q‖ ^ 2)|
-          ≤ G' (ĝ σ ^ 2) * |‖p‖ ^ 2 - ‖q‖ ^ 2| :=
-            abs_sub_le_of_hasDerivAt hG (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hq 2)
-              (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hp 2)
-        _ ≤ G' (ĝ σ ^ 2) * ((‖p‖ + ‖q‖) * ‖p - q‖) :=
-            mul_le_mul_of_nonneg_left (abs_norm_sq_sub_norm_sq_le p q)
-              (hG'_nonneg _ (sq_nonneg _))
-        _ ≤ G' (ĝ σ ^ 2) * ((ĝ 0 + ĝ 0) * ((2 * B + 1) * Real.exp (L * σ) * dist z z')) :=
-            mul_le_mul_of_nonneg_left (mul_le_mul (add_le_add (hp.trans (hĝ_le σ hσ'))
-              (hq.trans (hĝ_le σ hσ'))) hpq (norm_nonneg _)
-                (add_nonneg (hĝ_pos 0).le (hĝ_pos 0).le)) (hG'_nonneg _ (sq_nonneg _))
-        _ = bound σ * dist z z' := by simp only [bound]; ring
-    exact hasFDerivAt_integral_of_dominated_loc_of_lip (μ := volume.restrict (Ioi 0))
-      (F := F) (F' := F' (t, x)) (x₀ := (t, x)) (bound := bound)
-      (ball_mem_nhds (t, x) hε) (Eventually.of_forall hF_meas) (hF_int t ht x hx)
-      ((hF'_cont (t, x)).aestronglyMeasurable measurableSet_Ioi)
-      (ae_restrict_of_forall_mem measurableSet_Ioi h_lip) (hG'g_int.const_mul _)
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ =>
-        hF_deriv (t, x) σ (le_of_lt hσ))
-  -- Step 5. `V(t, x_eq) = 0`: the solution from `x_eq` stays there.
-  have hV_zero : ∀ t, 0 ≤ t → V t x_eq = 0 := fun t _ => by
-    have h_const : EqOn (fun _ => x_eq) (φ (t, x_eq)) (Ici t) :=
-      hφ_uniq (t, x_eq) (fun _ => x_eq) rfl fun τ _ => by
-        simpa [h_eq τ] using hasDerivWithinAt_const τ (Ici t) x_eq
-    refine setIntegral_eq_zero_of_forall_eq_zero fun σ hσ => ?_
-    change G (‖φ (t, x_eq) (t + σ) - x_eq‖ ^ 2) = 0
-    rw [← h_const (mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ)))]
-    simp [G.map_zero]
-  -- Step 6. The bounds.  Below: solutions decay no faster than `e^{-Lσ}`, and `V ≥ ∫_0^1`.
-  set W₁ : ℝⁿ → ℝ := fun x => G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2)
-  have h_lower : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, W₁ x ≤ V t x := fun t ht x hx => by
-    have h_pt : ∀ σ ∈ Ioc (0 : ℝ) 1, W₁ x ≤ F (t, x) σ := fun σ hσ => by
+  obtain ⟨ε, hε, h_near⟩ := norm_flow_le_klRate hf_bdd hφ0 hφ β hr₀ hr₀a h_KL
+    (z₀ := (t, x)) ht hx
+  have h_lip : ∀ σ ∈ Ioi (0 : ℝ),
+      LipschitzOnWith (Real.nnabs (bound σ)) (fun z => F z σ) (ball (t, x) ε) := by
+    intro σ hσ
+    have hσ' : 0 ≤ σ := le_of_lt hσ
+    refine LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => ?_
+    set p := u z σ - x_eq
+    set q := u z' σ - x_eq
+    have hp : ‖p‖ ≤ ĝ σ := h_near z hz σ hσ'
+    have hq : ‖q‖ ≤ ĝ σ := h_near z' hz' σ hσ'
+    have hpq : ‖p - q‖ ≤ (2 * B + 1) * Real.exp (L * σ) * dist z z' := by
+      rw [sub_sub_sub_cancel_right]
+      exact norm_flow_sub_flow_le hf_lip hf_bdd hφ0 hφ z z' hσ'
+    rw [Real.coe_nnabs, abs_of_nonneg (hbound_nonneg σ), Real.dist_eq]
+    calc |G (‖p‖ ^ 2) - G (‖q‖ ^ 2)|
+        ≤ G' (ĝ σ ^ 2) * |‖p‖ ^ 2 - ‖q‖ ^ 2| :=
+          abs_sub_le_of_hasDerivAt hG (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hq 2)
+            (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hp 2)
+      _ ≤ G' (ĝ σ ^ 2) * ((‖p‖ + ‖q‖) * ‖p - q‖) :=
+          mul_le_mul_of_nonneg_left (abs_norm_sq_sub_norm_sq_le p q)
+            (hG'_nonneg _ (sq_nonneg _))
+      _ ≤ G' (ĝ σ ^ 2) * ((ĝ 0 + ĝ 0) * ((2 * B + 1) * Real.exp (L * σ) * dist z z')) :=
+          mul_le_mul_of_nonneg_left (mul_le_mul (add_le_add (hp.trans (hĝ_le σ hσ'))
+            (hq.trans (hĝ_le σ hσ'))) hpq (norm_nonneg _)
+              (add_nonneg (hĝ_pos 0).le (hĝ_pos 0).le)) (hG'_nonneg _ (sq_nonneg _))
+      _ = bound σ * dist z z' := by simp only [bound]; ring
+  obtain ⟨hF'_int, h_deriv⟩ := hasFDerivAt_integral_of_dominated_loc_of_lip
+    (μ := volume.restrict (Ioi 0)) (F := F) (F' := F' (t, x)) (x₀ := (t, x)) (bound := bound)
+    (ball_mem_nhds (t, x) hε) (Eventually.of_forall hF_meas)
+    (integrableOn_comp_flow hφ0 hφ β hr₀ hr₀a h_KL hGg_int ht hx)
+    ((hF'_cont (t, x)).aestronglyMeasurable measurableSet_Ioi)
+    (ae_restrict_of_forall_mem measurableSet_Ioi h_lip) (hG'g_int.const_mul _)
+    (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => hF_deriv (t, x) σ (le_of_lt hσ))
+  refine ⟨_, h_deriv, ?_⟩
+  -- The state part: restriction to state directions, as a continuous linear map.
+  set Rc : ((ℝ × ℝⁿ) →L[ℝ] ℝ) →L[ℝ] (ℝⁿ →L[ℝ] ℝ) :=
+    (ContinuousLinearMap.compL ℝ ℝⁿ (ℝ × ℝⁿ) ℝ).flip (ContinuousLinearMap.inr ℝ ℝ ℝⁿ)
+  have hRc : ∀ T, Rc T = T.comp (ContinuousLinearMap.inr ℝ ℝ ℝⁿ) := fun T => rfl
+  have h_pt : ∀ σ ∈ Ioi (0 : ℝ), ‖Rc (F' (t, x) σ)‖ ≤ gradRate β G' L ‖x - x_eq‖ σ := by
+    intro σ hσ
+    have hσ' : 0 ≤ σ := le_of_lt hσ
+    -- `y ↦ φ(t + σ; t, y)` is `e^{Lσ}`-Lipschitz (Gronwall).
+    have h_lipx : LipschitzWith (Real.toNNReal (Real.exp (L * σ))) (fun y => u (t, y) σ) :=
+      LipschitzWith.of_dist_le_mul fun y y' => by
+        rw [Real.coe_toNNReal _ (Real.exp_pos _).le, mul_comm]
+        exact dist_flow_le hf_lip hφ0 hφ t y y' hσ'
+    have h_comp : Rc (F' (t, x) σ) =
+        (D (u (t, x) σ)).comp (fderiv ℝ (fun y => u (t, y) σ) x) := by
+      rw [hRc]
+      simp only [F', ContinuousLinearMap.comp_assoc]
+      congr 1
+      exact (fderiv_eq_fderiv_uncurry_comp_inr (V := fun t' y => u (t', y) σ)
+        (h_u_diff (t, x) σ hσ').differentiableAt).symm
+    have hu : ‖u (t, x) σ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ σ := by
+      have h := h_KL t ht x hx (φ (t, x)) (hφ0 (t, x)) (hφ (t, x)) (t + σ) (by linarith)
+      rwa [add_sub_cancel_left] at h
+    have hG'u := G'.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hu 2)
+    rw [h_comp]
+    calc ‖(D (u (t, x) σ)).comp (fderiv ℝ (fun y => u (t, y) σ) x)‖
+        ≤ ‖D (u (t, x) σ)‖ * ‖fderiv ℝ (fun y => u (t, y) σ) x‖ :=
+          ContinuousLinearMap.opNorm_comp_le _ _
+      _ ≤ (2 * G' (‖u (t, x) σ - x_eq‖ ^ 2) * ‖u (t, x) σ - x_eq‖) * Real.exp (L * σ) := by
+          refine mul_le_mul (hD_norm _).le ?_ (norm_nonneg _)
+            (mul_nonneg (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _))) (norm_nonneg _))
+          have h := norm_fderiv_le_of_lipschitz ℝ (x₀ := x) h_lipx
+          rwa [Real.coe_toNNReal _ (Real.exp_pos _).le] at h
+      _ ≤ gradRate β G' L ‖x - x_eq‖ σ :=
+          mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left hG'u two_pos.le)
+            hu (norm_nonneg _) (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _))))
+              (Real.exp_pos _).le
+  calc ‖(∫ σ in Ioi 0, F' (t, x) σ).comp (ContinuousLinearMap.inr ℝ ℝ ℝⁿ)‖
+      = ‖∫ σ in Ioi 0, Rc (F' (t, x) σ)‖ := by rw [Rc.integral_comp_comm hF'_int, hRc]
+    _ ≤ ∫ σ in Ioi 0, gradRate β G' L ‖x - x_eq‖ σ := norm_integral_le_of_norm_le
+        (gradRate_spec β hr₀ hr₀a hG'g_int
+          ⟨norm_nonneg _, (mem_ball_iff_norm.mp hx).le⟩).2.2
+        (ae_restrict_of_forall_mem measurableSet_Ioi h_pt)
+
+/-- **`V` is bounded below** by `G(e^{-2L} ‖x - x_eq‖²)`: solutions decay no faster than
+`e^{-Lσ}` (`norm_sq_mul_exp_le`), and `V` is at least its integral over `(0, 1]`. -/
+private lemma le_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0}
+    (hf_lip : ∀ t, LipschitzWith L (f t)) {x_eq : ℝⁿ} (h_eq : ∀ t, f t x_eq = 0)
+    {φ : ℝ × ℝⁿ → ℝ → ℝⁿ} (hφ0 : ∀ p, φ p p.1 = p.2)
+    (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1)) {G : ClassKInfty} {t : ℝ} (ht : 0 ≤ t)
+    {x : ℝⁿ} (hF_int : IntegrableOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0)) :
+    G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) ≤
+      ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) := by
+  have h_pt : ∀ σ ∈ Ioc (0 : ℝ) 1,
+      G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) ≤ G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) :=
+    fun σ hσ => by
       have h := norm_sq_mul_exp_le (fun τ _ => h_eq τ) hf_lip ht (hφ (t, x)) (τ := t + σ)
         (by linarith [hσ.1])
       rw [show φ (t, x) t = x from hφ0 (t, x), add_sub_cancel_left] at h
@@ -1167,29 +1278,166 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
             rw [mul_comm]
             gcongr
             nlinarith [L.coe_nonneg, hσ.2]
-        _ ≤ ‖u (t, x) σ - x_eq‖ ^ 2 := h
-    calc W₁ x
-        = ∫ _σ in Ioc (0 : ℝ) 1, W₁ x := by simp
-      _ ≤ ∫ σ in Ioc (0 : ℝ) 1, F (t, x) σ :=
-          setIntegral_mono_on (continuousOn_const.integrableOn_Icc.mono_set Ioc_subset_Icc_self)
-            ((hF_int t ht x hx).mono_set Ioc_subset_Ioi_self) measurableSet_Ioc h_pt
-      _ ≤ V t x := setIntegral_mono_set (hF_int t ht x hx)
-          (ae_restrict_of_forall_mem measurableSet_Ioi fun σ _ => hF_nonneg _ _)
-          Ioc_subset_Ioi_self.eventuallyLE
-  -- Above: the class `KL` estimate.
+        _ ≤ ‖φ (t, x) (t + σ) - x_eq‖ ^ 2 := h
+  calc G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2)
+      = ∫ _σ in Ioc (0 : ℝ) 1, G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) := by simp
+    _ ≤ ∫ σ in Ioc (0 : ℝ) 1, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) :=
+        setIntegral_mono_on (continuousOn_const.integrableOn_Icc.mono_set Ioc_subset_Icc_self)
+          (hF_int.mono_set Ioc_subset_Ioi_self) measurableSet_Ioc h_pt
+    _ ≤ ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) := setIntegral_mono_set hF_int
+        (ae_restrict_of_forall_mem measurableSet_Ioi fun σ _ => G.maps_to (mem_Ici.2 (sq_nonneg _)))
+        Ioc_subset_Ioi_self.eventuallyLE
+
+/-- **The derivative of `V` along the system** is `-G(‖x - x_eq‖²)`.  Along the solution from
+`(t, x)`, uniqueness gives `V(τ, φ(τ)) = ∫_{τ - t}^∞ w`, with `w(σ) = G(‖φ(t + σ) - x_eq‖²)`
+extended continuously to `σ < 0`; its right derivative at `t` is `-w(0)`
+(`IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt`). -/
+private lemma lieDerivative_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ} {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
+    (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1))
+    (hφ_uniq : ∀ p (β : ℝ → ℝⁿ), β p.1 = p.2 → IsIntegralCurveOn β f (Ici p.1) →
+      EqOn β (φ p) (Ici p.1))
+    {x_eq : ℝⁿ} {G : ClassKInfty} {t : ℝ} {x : ℝⁿ}
+    (hF_int : IntegrableOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0))
+    (h_diff : DifferentiableAt ℝ (Function.uncurry fun t x =>
+      ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (t, x)) :
+    _root_.lieDerivative (fun t x => ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) f t x =
+      -G (‖x - x_eq‖ ^ 2) := by
+  set V : ℝ → ℝⁿ → ℝ := fun t x => ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)
+  have hy0 : φ (t, x) t = x := hφ0 (t, x)
+  set w : ℝ → ℝ := fun σ => G (‖φ (t, x) (t + max σ 0) - x_eq‖ ^ 2)
+  have hw : Continuous w := G.continuous.comp_continuous
+    ((((hφ (t, x)).continuousOn.comp_continuous
+      (continuous_const.add (continuous_id.max continuous_const))
+        fun σ => mem_Ici.2 (le_add_of_nonneg_right (le_max_right _ _))).sub
+          continuous_const).norm.pow 2) fun σ => mem_Ici.2 (sq_nonneg _)
+  have hw_int : IntegrableOn w (Ioi 0) :=
+    hF_int.congr_fun (fun σ hσ => by
+      change G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) = G (‖φ (t, x) (t + max σ 0) - x_eq‖ ^ 2)
+      rw [max_eq_left (le_of_lt hσ)]) measurableSet_Ioi
+  have h_along : ∀ τ ∈ Ici t,
+      V τ (φ (t, x) τ) = (∫ s in Ioi 0, w s) - ∫ s in (0 : ℝ)..τ - t, w s := by
+    intro τ hτ
+    have hτ' : t ≤ τ := hτ
+    have h_cocycle : EqOn (φ (t, x)) (φ (τ, φ (t, x) τ)) (Ici τ) :=
+      hφ_uniq (τ, φ (t, x) τ) (φ (t, x)) rfl ((hφ (t, x)).mono (Ici_subset_Ici.2 hτ'))
+    calc V τ (φ (t, x) τ)
+        = ∫ σ in Ioi 0, w (σ + (τ - t)) := setIntegral_congr_fun measurableSet_Ioi
+          fun σ hσ => by
+            have h1 : t + max (σ + (τ - t)) 0 = τ + σ := by
+              rw [max_eq_left (by linarith [mem_Ioi.1 hσ])]; ring
+            change G (‖φ (τ, φ (t, x) τ) (τ + σ) - x_eq‖ ^ 2) =
+              G (‖φ (t, x) (t + max (σ + (τ - t)) 0) - x_eq‖ ^ 2)
+            rw [h1, ← h_cocycle (mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ)))]
+      _ = ∫ s in Ioi (τ - t), w s := setIntegral_Ioi_comp_add_right w (τ - t)
+      _ = (∫ s in Ioi 0, w s) - ∫ s in (0 : ℝ)..τ - t, w s := by
+          rw [← intervalIntegral.integral_Ioi_sub_Ioi hw_int (sub_nonneg.2 hτ'),
+            sub_sub_cancel]
+  have h₂ : HasDerivAt (fun τ => ∫ s in (0 : ℝ)..τ - t, w s) (w 0) t := by
+    simpa using hw.hasDerivAt_integral_sub_add 0 t 0
+  have h_W : HasDerivWithinAt (fun τ => V τ (φ (t, x) τ)) (-w 0) (Ici t) t :=
+    ((h₂.const_sub _).hasDerivWithinAt).congr (fun τ hτ => h_along τ hτ)
+      (h_along t self_mem_Ici)
+  have h := (hφ (t, x)).lieDerivative_eq_of_hasDerivWithinAt (V := V)
+    (by rw [hy0]; exact h_diff) h_W
+  rw [hy0] at h
+  rw [h]
+  simp [w, hy0]
+
+/-- **The construction for uniform asymptotic stability**, for a `C¹` field, globally Lipschitz in
+`x` uniformly in `t` and bounded, whose solutions from `D₀ = B(x_eq, r₀)` at times `t ≥ 0` obey a
+class `KL` estimate.  With `G` from Massera's lemma,
+`V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` is differentiable on `[0, ∞) × D₀`, vanishes at
+`x_eq`, is sandwiched between positive definite functions, decreases at the rate
+`G(‖x - x_eq‖²)`, and has gradient bounded by a class `K` function of `‖x - x_eq‖`. -/
+private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
+    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => f p.1 p.2)) {L : ℝ≥0}
+    (hf_lip : ∀ t, LipschitzWith L (f t)) {B : ℝ} (hf_bdd : ∀ t y, ‖f t y‖ ≤ B)
+    {x_eq : ℝⁿ} (h_eq : ∀ t, f t x_eq = 0) {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀)
+    (hr₀a : r₀ < a)
+    (h_KL : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → ℝⁿ, y t = x →
+      IsIntegralCurveOn y f (Ici t) → ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t)) :
+    ∃ V : ℝ → ℝⁿ → ℝ,
+      (∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, DifferentiableAt ℝ (Function.uncurry V) (t, x)) ∧
+      (∀ t : ℝ, 0 ≤ t → V t x_eq = 0) ∧
+      ∃ W₁ W₂ W₃ : ℝⁿ → ℝ, IsPositiveDefiniteOn W₁ x_eq (ball x_eq r₀) ∧
+        IsPositiveDefiniteOn W₂ x_eq (ball x_eq r₀) ∧
+        IsPositiveDefiniteOn W₃ x_eq (ball x_eq r₀) ∧
+        (∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, W₁ x ≤ V t x ∧ V t x ≤ W₂ x ∧
+          _root_.lieDerivative V f t x ≤ -W₃ x) ∧
+        ∃ b₄ : ℝ, ∃ α₄ : ClassK r₀ b₄, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
+          ‖fderiv ℝ (V t) x‖ ≤ α₄.toFun ‖x - x_eq‖ := by
+  have hball_mem : ∀ x ∈ ball x_eq r₀, ‖x - x_eq‖ ∈ Icc 0 r₀ := fun x hx =>
+    ⟨norm_nonneg _, (mem_ball_iff_norm.mp hx).le⟩
+  have hIcc_Ico : ∀ ρ ∈ Icc 0 r₀, ρ ∈ Ico 0 a := fun ρ hρ => ⟨hρ.1, hρ.2.trans_lt hr₀a⟩
+  -- Step 1. Solutions from every initial time and state.
+  choose φ hφ0 hφ hφ_uniq using fun p : ℝ × ℝⁿ =>
+    exists_isIntegralCurveOn_Ici hf.continuous hf_lip p.1 p.2
+  -- Step 2. Massera's lemma for `g = ĝ²` and `h(s) = e^{Ls}`.
+  set ĝ := klRate β r₀
+  obtain ⟨hĝ_pos, hĝ_cont, hĝ_anti, hĝ_lim, hĝ_ge, -⟩ := klRate_spec β hr₀ hr₀a
+  obtain ⟨G, G', hG, k₁, -, k₂, -, hMassera⟩ := ClassKInfty.massera
+    (g := fun σ => ĝ σ ^ 2) (h := fun σ => Real.exp (L * σ))
+    (fun σ _ => pow_pos (hĝ_pos σ) 2) (hĝ_cont.pow 2).continuousOn
+    (fun σ₁ _ σ₂ _ h => pow_lt_pow_left₀ (hĝ_anti h) (hĝ_pos σ₂).le two_ne_zero)
+    (by simpa using hĝ_lim.pow 2) (fun σ _ => Real.exp_pos _)
+    (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn
+    (fun σ₁ _ σ₂ _ h => Real.exp_le_exp.2 (mul_le_mul_of_nonneg_left h L.coe_nonneg))
+  obtain ⟨hGg_int, -, hG'g_int, -⟩ := hMassera (fun σ => ĝ σ ^ 2) (hĝ_cont.pow 2).continuousOn
+    fun σ _ => ⟨sq_nonneg _, le_rfl⟩
+  -- Step 3. `V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ`, finite on `[0, ∞) × D₀`.
+  set V : ℝ → ℝⁿ → ℝ := fun t x => ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)
+  have hF_int : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
+      IntegrableOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0) := fun t ht x hx =>
+    integrableOn_comp_flow hφ0 hφ β hr₀ hr₀a h_KL hGg_int ht hx
+  -- Step 4. `V` is differentiable on `[0, ∞) × D₀`, with the gradient bound
+  -- `‖∂V/∂x‖ ≤ ∫_0^∞ A(‖x - x_eq‖, σ) dσ ≤ α₄(‖x - x_eq‖)`.
+  have hV_deriv := fun t (ht : 0 ≤ t) x (hx : x ∈ ball x_eq r₀) =>
+    hasFDerivAt_integral_comp_flow hf hf_lip hf_bdd hφ0 hφ β hr₀ hr₀a h_KL hG hGg_int
+      hG'g_int ht hx
+  have hV_diff : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
+      DifferentiableAt ℝ (Function.uncurry V) (t, x) := fun t ht x hx =>
+    (hV_deriv t ht x hx).choose_spec.1.differentiableAt
+  obtain ⟨b₄, α₄, hα₄⟩ := exists_classK_ge_integral_gradRate β hr₀ hr₀a hG'g_int
+  have h_grad : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ‖fderiv ℝ (V t) x‖ ≤ α₄.toFun ‖x - x_eq‖ := by
+    intro t ht x hx
+    obtain ⟨V', hV', hV'_le⟩ := hV_deriv t ht x hx
+    rw [fderiv_eq_fderiv_uncurry_comp_inr (V := V) hV'.differentiableAt,
+      (hV' : HasFDerivAt (Function.uncurry V) V' (t, x)).fderiv]
+    exact hV'_le.trans (hα₄ _ (hball_mem x hx))
+  -- Step 5. `V(t, x_eq) = 0`: the solution from `x_eq` stays there.
+  have hV_zero : ∀ t, 0 ≤ t → V t x_eq = 0 := fun t _ => by
+    have h_const : EqOn (fun _ => x_eq) (φ (t, x_eq)) (Ici t) :=
+      hφ_uniq (t, x_eq) (fun _ => x_eq) rfl fun τ _ => by
+        simpa [h_eq τ] using hasDerivWithinAt_const τ (Ici t) x_eq
+    refine setIntegral_eq_zero_of_forall_eq_zero fun σ hσ => ?_
+    change G (‖φ (t, x_eq) (t + σ) - x_eq‖ ^ 2) = 0
+    rw [← h_const (mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ)))]
+    simp [G.map_zero]
+  -- Step 6. The bounds: below, solutions decay no faster than `e^{-Lσ}`; above, the class `KL`
+  -- estimate.
+  set W₁ : ℝⁿ → ℝ := fun x => G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2)
+  have h_lower : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, W₁ x ≤ V t x := fun t ht x hx =>
+    le_integral_comp_flow hf_lip h_eq hφ0 hφ ht (hF_int t ht x hx)
   set W₂ : ℝⁿ → ℝ := fun x => ∫ σ in Ioi 0, G (β.toFun ‖x - x_eq‖ σ ^ 2)
+  have hGβ_le : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ → G (β.toFun ρ σ ^ 2) ≤ G (ĝ σ ^ 2) :=
+    fun ρ hρ σ hσ => G.mono (sq_nonneg _) (pow_le_pow_left₀ (β.nonneg ρ (hIcc_Ico ρ hρ) σ hσ)
+      (hĝ_ge ρ hρ σ σ hσ (max_le (by linarith) hσ)) 2)
   have h_upper : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, V t x ≤ W₂ x := fun t ht x hx =>
-    setIntegral_mono_on (hF_int t ht x hx) (hGβ_int _ (hball_mem x hx)) measurableSet_Ioi
-      fun σ hσ => hF_le t ht x hx σ (le_of_lt hσ)
+    setIntegral_mono_on (hF_int t ht x hx)
+      (integrableOn_comp_classKL β hr₀ hr₀a hGg_int (hball_mem x hx)) measurableSet_Ioi
+      fun σ hσ => by
+        have h := h_KL t ht x hx (φ (t, x)) (hφ0 (t, x)) (hφ (t, x)) (t + σ)
+          (by linarith [mem_Ioi.1 hσ])
+        rw [add_sub_cancel_left] at h
+        exact G.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) h 2)
   have hW₁ : IsPositiveDefiniteOn W₁ x_eq (ball x_eq r₀) :=
     G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_mul_norm_sub_sq (Real.exp_pos _) x_eq _)
   have hW₂ : IsPositiveDefiniteOn W₂ x_eq (ball x_eq r₀) := by
     refine ⟨continuousOn_of_dominated (bound := fun σ => G (ĝ σ ^ 2))
-      (fun x hx => ((G.continuous.comp ((hβ_cont_s _ (hball_mem x hx)).pow 2)
-        fun σ _ => mem_Ici.2 (sq_nonneg _)).mono Ioi_subset_Ici_self).aestronglyMeasurable
-          measurableSet_Ioi)
+      (fun x hx => (integrableOn_comp_classKL β hr₀ hr₀a hGg_int
+        (hball_mem x hx)).aestronglyMeasurable)
       (fun x hx => ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
-        rw [Real.norm_of_nonneg (hG_nonneg _ (sq_nonneg _))]
+        rw [Real.norm_of_nonneg (G.maps_to (mem_Ici.2 (sq_nonneg _)))]
         exact hGβ_le _ (hball_mem x hx) σ (le_of_lt hσ)) hGg_int
       (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ =>
         G.continuous.comp ((((β.continuous_r (le_of_lt hσ)).comp
@@ -1199,155 +1447,11 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
     · exact setIntegral_eq_zero_of_forall_eq_zero fun σ hσ => by
         simp [β.map_zero_r (le_of_lt hσ), G.map_zero]
     · exact (hW₁.2.2 x hx hne).trans_le ((h_lower 0 le_rfl x hx).trans (h_upper 0 le_rfl x hx))
-  -- Step 7. Along the solution from `(t, x)`, `V = ∫_{τ - t}^∞ w`, so `V̇ = -w(0)`.
+  -- Step 7. Along solutions, `V̇ = -G(‖x - x_eq‖²)`.
   have h_lie : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
-      _root_.lieDerivative V f t x = -G (‖x - x_eq‖ ^ 2) := by
-    intro t ht x hx
-    have hy0 : φ (t, x) t = x := hφ0 (t, x)
-    set w : ℝ → ℝ := fun σ => G (‖φ (t, x) (t + max σ 0) - x_eq‖ ^ 2)
-    have hw : Continuous w := G.continuous.comp_continuous
-      ((((hφ (t, x)).continuousOn.comp_continuous
-        (continuous_const.add (continuous_id.max continuous_const))
-          fun σ => mem_Ici.2 (le_add_of_nonneg_right (le_max_right _ _))).sub
-            continuous_const).norm.pow 2) fun σ => mem_Ici.2 (sq_nonneg _)
-    have hw_int : IntegrableOn w (Ioi 0) :=
-      (hF_int t ht x hx).congr_fun (fun σ hσ => by
-        change G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) = G (‖φ (t, x) (t + max σ 0) - x_eq‖ ^ 2)
-        rw [max_eq_left (le_of_lt hσ)]) measurableSet_Ioi
-    have h_along : ∀ τ ∈ Ici t,
-        V τ (φ (t, x) τ) = (∫ s in Ioi 0, w s) - ∫ s in (0 : ℝ)..τ - t, w s := by
-      intro τ hτ
-      have hτ' : t ≤ τ := hτ
-      have h_cocycle : EqOn (φ (t, x)) (φ (τ, φ (t, x) τ)) (Ici τ) :=
-        hφ_uniq (τ, φ (t, x) τ) (φ (t, x)) rfl ((hφ (t, x)).mono (Ici_subset_Ici.2 hτ'))
-      calc V τ (φ (t, x) τ)
-          = ∫ σ in Ioi 0, w (σ + (τ - t)) := setIntegral_congr_fun measurableSet_Ioi
-            fun σ hσ => by
-              have h1 : t + max (σ + (τ - t)) 0 = τ + σ := by
-                rw [max_eq_left (by linarith [mem_Ioi.1 hσ])]; ring
-              change G (‖φ (τ, φ (t, x) τ) (τ + σ) - x_eq‖ ^ 2) =
-                G (‖φ (t, x) (t + max (σ + (τ - t)) 0) - x_eq‖ ^ 2)
-              rw [h1, ← h_cocycle (mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ)))]
-        _ = ∫ s in Ioi (τ - t), w s := setIntegral_Ioi_comp_add_right w (τ - t)
-        _ = (∫ s in Ioi 0, w s) - ∫ s in (0 : ℝ)..τ - t, w s := by
-            rw [← intervalIntegral.integral_Ioi_sub_Ioi hw_int (sub_nonneg.2 hτ'),
-              sub_sub_cancel]
-    have h₂ : HasDerivAt (fun τ => ∫ s in (0 : ℝ)..τ - t, w s) (w 0) t := by
-      simpa using hw.hasDerivAt_integral_sub_add 0 t 0
-    have h_W : HasDerivWithinAt (fun τ => V τ (φ (t, x) τ)) (-w 0) (Ici t) t :=
-      ((h₂.const_sub _).hasDerivWithinAt).congr (fun τ hτ => h_along τ hτ)
-        (h_along t self_mem_Ici)
-    have h_diff : DifferentiableAt ℝ (Function.uncurry V) (t, φ (t, x) t) := by
-      rw [hy0]; exact (hV_deriv t ht x hx).2.differentiableAt
-    have h := (hφ (t, x)).lieDerivative_eq_of_hasDerivWithinAt (V := V) h_diff h_W
-    rw [hy0] at h
-    rw [h]
-    simp [w, hy0]
-  -- Step 8. The gradient bound: `‖∂V/∂x‖ ≤ ∫_0^∞ 2 G'(β²) β e^{Lσ} dσ`.
-  set A : ℝ → ℝ → ℝ := fun ρ σ => 2 * G' (β.toFun ρ σ ^ 2) * β.toFun ρ σ * Real.exp (L * σ)
-  have hA_nonneg : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ → 0 ≤ A ρ σ := fun ρ hρ σ hσ =>
-    mul_nonneg (mul_nonneg (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _)))
-      (hβ_nonneg ρ hρ σ hσ)) (Real.exp_pos _).le
-  have hA_mono : ∀ ρ ∈ Icc 0 r₀, ∀ ρ' ∈ Icc 0 r₀, ρ ≤ ρ' → ∀ σ, 0 ≤ σ → A ρ σ ≤ A ρ' σ := by
-    intro ρ hρ ρ' hρ' h σ hσ
-    have hβρ := β.mono_r (hIcc_Ico ρ hρ) (hIcc_Ico ρ' hρ') hσ h
-    have hG'ρ := G'.mono (sq_nonneg _) (pow_le_pow_left₀ (hβ_nonneg ρ hρ σ hσ) hβρ 2)
-    exact mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left hG'ρ two_pos.le)
-      hβρ (hβ_nonneg ρ hρ σ hσ) (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _))))
-        (Real.exp_pos _).le
-  have hA_le : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ →
-      A ρ σ ≤ 2 * ĝ 0 * (G' (ĝ σ ^ 2) * Real.exp (L * σ)) := fun ρ hρ σ hσ => by
-    have hβ := hβ_le ρ hρ σ hσ
-    have hG'β := G'.mono (sq_nonneg _) (pow_le_pow_left₀ (hβ_nonneg ρ hρ σ hσ) hβ 2)
-    calc A ρ σ
-        ≤ 2 * G' (ĝ σ ^ 2) * ĝ 0 * Real.exp (L * σ) :=
-          mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left hG'β two_pos.le)
-            (hβ.trans (hĝ_le σ hσ)) (hβ_nonneg ρ hρ σ hσ)
-              (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _)))) (Real.exp_pos _).le
-      _ = 2 * ĝ 0 * (G' (ĝ σ ^ 2) * Real.exp (L * σ)) := by ring
-  have hA_cont_s : ∀ ρ ∈ Icc 0 r₀, ContinuousOn (A ρ) (Ici 0) := fun ρ hρ =>
-    ((continuousOn_const.mul (G'.continuous.comp ((hβ_cont_s ρ hρ).pow 2)
-      fun σ _ => mem_Ici.2 (sq_nonneg _))).mul (hβ_cont_s ρ hρ)).mul
-        (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn
-  have hA_int : ∀ ρ ∈ Icc 0 r₀, IntegrableOn (A ρ) (Ioi 0) := fun ρ hρ =>
-    Integrable.mono' (hG'g_int.const_mul (2 * ĝ 0))
-      (((hA_cont_s ρ hρ).mono Ioi_subset_Ici_self).aestronglyMeasurable measurableSet_Ioi)
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
-        rw [Real.norm_of_nonneg (hA_nonneg ρ hρ σ (le_of_lt hσ))]
-        exact hA_le ρ hρ σ (le_of_lt hσ))
-  -- `α₄(ρ) = ∫_0^∞ A(ρ, σ) dσ + ρ` is class `K`.
-  set α₄f : ℝ → ℝ := fun ρ => (∫ σ in Ioi 0, A ρ σ) + ρ
-  have hα₄_zero : α₄f 0 = 0 := by
-    simp only [α₄f, add_zero]
-    exact setIntegral_eq_zero_of_forall_eq_zero fun σ hσ => by
-      simp [A, β.map_zero_r (le_of_lt hσ)]
-  have hα₄_cont : ContinuousOn α₄f (Icc 0 r₀) :=
-    (continuousOn_of_dominated (bound := fun σ => 2 * ĝ 0 * (G' (ĝ σ ^ 2) * Real.exp (L * σ)))
-      (fun ρ hρ => ((hA_cont_s ρ hρ).mono Ioi_subset_Ici_self).aestronglyMeasurable
-        measurableSet_Ioi)
-      (fun ρ hρ => ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
-        rw [Real.norm_of_nonneg (hA_nonneg ρ hρ σ (le_of_lt hσ))]
-        exact hA_le ρ hρ σ (le_of_lt hσ)) (hG'g_int.const_mul _)
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => by
-        have hβr : ContinuousOn (fun ρ => β.toFun ρ σ) (Icc 0 r₀) :=
-          (β.continuous_r (le_of_lt hσ)).mono fun ρ hρ => hIcc_Ico ρ hρ
-        exact ((continuousOn_const.mul (G'.continuous.comp (hβr.pow 2)
-          fun ρ _ => mem_Ici.2 (sq_nonneg _))).mul hβr).mul continuousOn_const)).add
-      continuousOn_id
-  have hα₄_mono : StrictMonoOn α₄f (Icc 0 r₀) := fun ρ hρ ρ' hρ' h =>
-    add_lt_add_of_le_of_lt (setIntegral_mono_on (hA_int ρ hρ) (hA_int ρ' hρ') measurableSet_Ioi
-      fun σ hσ => hA_mono ρ hρ ρ' hρ' h.le σ (le_of_lt hσ)) h
-  have hα₄_pos : 0 < α₄f r₀ := add_pos_of_nonneg_of_pos
-    (setIntegral_nonneg measurableSet_Ioi fun σ hσ =>
-      hA_nonneg r₀ ⟨hr₀.le, le_rfl⟩ σ (le_of_lt hσ)) hr₀
-  let α₄ : ClassK r₀ (α₄f r₀) :=
-    ClassK.of_strictMono hr₀ hα₄_pos α₄f hα₄_zero rfl hα₄_cont hα₄_mono
-  have h_grad : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ‖fderiv ℝ (V t) x‖ ≤ α₄.toFun ‖x - x_eq‖ := by
-    intro t ht x hx
-    obtain ⟨hF'_int, h_deriv⟩ := hV_deriv t ht x hx
-    -- Restriction to state directions, as a continuous linear map.
-    set Rc : ((ℝ × ℝⁿ) →L[ℝ] ℝ) →L[ℝ] (ℝⁿ →L[ℝ] ℝ) :=
-      (ContinuousLinearMap.compL ℝ ℝⁿ (ℝ × ℝⁿ) ℝ).flip (ContinuousLinearMap.inr ℝ ℝ ℝⁿ)
-    have hRc : ∀ T, Rc T = T.comp (ContinuousLinearMap.inr ℝ ℝ ℝⁿ) := fun T => rfl
-    have h_pt : ∀ σ ∈ Ioi (0 : ℝ), ‖Rc (F' (t, x) σ)‖ ≤ A ‖x - x_eq‖ σ := by
-      intro σ hσ
-      have hσ' : 0 ≤ σ := le_of_lt hσ
-      -- `y ↦ φ(t + σ; t, y)` is `e^{Lσ}`-Lipschitz (Gronwall).
-      have h_lipx : LipschitzWith (Real.toNNReal (Real.exp (L * σ))) (fun y => u (t, y) σ) :=
-        LipschitzWith.of_dist_le_mul fun y y' => by
-          rw [Real.coe_toNNReal _ (Real.exp_pos _).le, mul_comm]
-          exact dist_flow_le hf_lip hφ0 hφ t y y' hσ'
-      have h_comp : Rc (F' (t, x) σ) =
-          (D (u (t, x) σ)).comp (fderiv ℝ (fun y => u (t, y) σ) x) := by
-        rw [hRc]
-        simp only [F', ContinuousLinearMap.comp_assoc]
-        congr 1
-        exact (fderiv_eq_fderiv_uncurry_comp_inr (V := fun t' y => u (t', y) σ)
-          (h_u_diff (t, x) σ hσ').differentiableAt).symm
-      have hu := h_u_KL t ht x hx σ hσ'
-      have hG'u := G'.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hu 2)
-      rw [h_comp]
-      calc ‖(D (u (t, x) σ)).comp (fderiv ℝ (fun y => u (t, y) σ) x)‖
-          ≤ ‖D (u (t, x) σ)‖ * ‖fderiv ℝ (fun y => u (t, y) σ) x‖ :=
-            ContinuousLinearMap.opNorm_comp_le _ _
-        _ ≤ (2 * G' (‖u (t, x) σ - x_eq‖ ^ 2) * ‖u (t, x) σ - x_eq‖) * Real.exp (L * σ) := by
-            refine mul_le_mul (hD_norm _) ?_ (norm_nonneg _)
-              (mul_nonneg (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _))) (norm_nonneg _))
-            have h := norm_fderiv_le_of_lipschitz ℝ (x₀ := x) h_lipx
-            rwa [Real.coe_toNNReal _ (Real.exp_pos _).le] at h
-        _ ≤ A ‖x - x_eq‖ σ :=
-            mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left hG'u two_pos.le)
-              hu (norm_nonneg _) (mul_nonneg two_pos.le (hG'_nonneg _ (sq_nonneg _))))
-                (Real.exp_pos _).le
-    calc ‖fderiv ℝ (V t) x‖
-        = ‖Rc (∫ σ in Ioi 0, F' (t, x) σ)‖ := by
-          rw [fderiv_eq_fderiv_uncurry_comp_inr h_deriv.differentiableAt, h_deriv.fderiv, hRc]
-      _ = ‖∫ σ in Ioi 0, Rc (F' (t, x) σ)‖ := by rw [Rc.integral_comp_comm hF'_int]
-      _ ≤ ∫ σ in Ioi 0, A ‖x - x_eq‖ σ := norm_integral_le_of_norm_le
-          (hA_int _ (hball_mem x hx)) (ae_restrict_of_forall_mem measurableSet_Ioi h_pt)
-      _ ≤ α₄.toFun ‖x - x_eq‖ := le_add_of_nonneg_right (norm_nonneg _)
-  refine ⟨V, fun t ht x hx => (hV_deriv t ht x hx).2.differentiableAt, hV_zero, W₁, W₂,
-    fun x => G (1 * ‖x - x_eq‖ ^ 2), hW₁, hW₂,
+      _root_.lieDerivative V f t x = -G (‖x - x_eq‖ ^ 2) := fun t ht x hx =>
+    lieDerivative_integral_comp_flow hφ0 hφ hφ_uniq (hF_int t ht x hx) (hV_diff t ht x hx)
+  refine ⟨V, hV_diff, hV_zero, W₁, W₂, fun x => G (1 * ‖x - x_eq‖ ^ 2), hW₁, hW₂,
     G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_mul_norm_sub_sq one_pos x_eq _),
     fun t ht x hx => ⟨h_lower t ht x hx, h_upper t ht x hx, ?_⟩, _, α₄, h_grad⟩
   simp only [one_mul]
