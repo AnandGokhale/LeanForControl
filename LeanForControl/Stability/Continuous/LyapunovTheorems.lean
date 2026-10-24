@@ -210,7 +210,7 @@ reaches the sphere.
 At the first time it did, `V` would be at least `d`; but up to then `V` can only fall while above
 `η`, so it is at most `max (V(t₀, x(t₀))) η < d`. -/
 lemma norm_lt_of_level_lt {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ}
-    {ρ d η t₀ t₁ : ℝ} {x : ℝ → ℝⁿ} (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
+    {ρ d η t₀ t₁ : ℝ} {x : ℝ → ℝⁿ} (hx : s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
     (hV : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ ≤ ρ → DifferentiableAt ℝ (Function.uncurry V) (τ, x τ))
     (h_start : ‖x t₀ - x_c‖ < ρ)
     (h_level : max (V t₀ (x t₀)) η < d)
@@ -222,17 +222,16 @@ lemma norm_lt_of_level_lt {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝ�
   by_contra h_out
   -- The first time `τ ∈ [t₀, t]` at which `x` reaches the `ρ`-sphere.
   obtain ⟨τ, hτ, hτ_norm, h_before⟩ := exists_first_sphere_hit
-    ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)) h_start
-    ⟨ht.1, le_rfl⟩ (not_lt.mp h_out)
+    (hx.1.mono (Icc_subset_Icc_right ht.2)) h_start ⟨ht.1, le_rfl⟩ (not_lt.mp h_out)
   have hτ_mem : τ ∈ Icc t₀ t₁ := ⟨hτ.1, hτ.2.trans ht.2⟩
   -- Up to `τ`, `V` falls whenever it is above `η`, so it stays below `d`.
-  have hx_τ := IsIntegralCurveOn.mono hx (Icc_subset_Icc_right hτ_mem.2)
+  have hx_τ := hx.mono (Icc_subset_Icc_right hτ_mem.2)
   have hV_τ : ∀ u ∈ Icc t₀ τ, DifferentiableAt ℝ (Function.uncurry V) (u, x u) := fun u hu =>
     hV u ⟨hu.1, hu.2.trans hτ_mem.2⟩ (h_before u hu)
   have h_le := le_max_of_hasDerivWithinAt_nonpos_above
-    (IsIntegralCurveOn.continuousOn_comp hx_τ hV_τ)
-    (fun u hu => (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx_τ hV_τ
-      (Ico_subset_Icc_self hu)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hu))
+    (hx_τ.1.comp_uncurry_of_differentiableAt hV_τ)
+    (fun u hu => (hx_τ.hasDerivWithinAt_Ici hu).hasDerivWithinAt_lieDerivative
+      (hV_τ u (Ico_subset_Icc_self hu)))
     (fun u hu => h_dec u ⟨hu.1, hu.2.trans_le hτ_mem.2⟩ (h_before u (Ico_subset_Icc_self hu)))
     τ ⟨hτ.1, le_rfl⟩
   exact (h_le.trans_lt h_level).not_ge (h_sphere τ hτ_mem hτ_norm)
@@ -271,7 +270,7 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ �
       _ ≤ W₁ (x τ) := hW₁ _ hτ_lt_r
       _ ≤ V τ (x τ) := hV_lb τ (ht₀.trans hτ.1) _ (hD _ hτ_lt_r.le)
   intro t ht
-  exact (norm_lt_of_level_lt (η := V t₀ (x t₀)) hx
+  exact (norm_lt_of_level_lt (η := V t₀ (x t₀)) hx.isRightTrajectoryOn
     (fun τ hτ hτ_norm => hV.differentiableAt τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
     h_start_ρ (by rwa [max_self]) h_sphere
     (fun τ hτ hτ_norm _ => hV.lie_nonpos τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
@@ -372,7 +371,8 @@ private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V
       ⟨hτ.1, hτ.2.le.trans ht.2⟩).mono_of_mem_nhdsWithin
         (Icc_mem_nhdsGE_of_mem ⟨hτ.1, hτ.2.trans_le ht.2⟩)
   have hv_cont : ContinuousOn (fun u => V u (x u)) (Icc t₀ t) :=
-    (IsIntegralCurveOn.continuousOn_comp hx hV).mono (Icc_subset_Icc_right ht.2)
+    ((IsIntegralCurveOn.continuousOn hx).comp_uncurry_of_differentiableAt hV).mono
+      (Icc_subset_Icc_right ht.2)
   exact hσ ht.1 (fun u => V u (x u)) hv_cont (hv_range t₀ ⟨le_rfl, ht.1⟩)
     (fun τ hτ => hv_range τ (Ico_subset_Icc_self hτ))
     (fun τ hτ => by rw [diniDerivRight_of_hasDerivWithinAt (hderiv τ hτ)]; exact hlie τ hτ)

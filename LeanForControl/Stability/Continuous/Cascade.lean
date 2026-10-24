@@ -132,18 +132,18 @@ private lemma norm_fst_sub_le_of_cascade {E₁ E₂ Y₁ : Type*} [NormedAddComm
     {s₁ : ContinuousSystem E₁ E₂ Y₁} {x_c : E₁} {x_e : E₂} {β₁ : ClassKLGlobal}
     {γ₁ : ClassKInfty}
     (hISS : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (u : ℝ → E₂) (x : ℝ → E₁),
-      (s₁.shiftInput x_e).IsTrajectoryOn u x (Icc t₀ t₁) →
+      (s₁.shiftInput x_e).IsRightTrajectoryOn u x (Icc t₀ t₁) →
         ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ‖ ≤ M) →
           ‖x t - x_c‖ ≤ β₁.toFun ‖x t₀ - x_c‖ (t - t₀) + γ₁.toFun M)
     {β₂ : ClassKLGlobal} {g r t₀ t₁ t : ℝ} (ht₀ : 0 ≤ t₀) (ht : t ∈ Icc t₀ t₁)
-    {x₁ : ℝ → E₁} {x₂ : ℝ → E₂} (hx₁ : s₁.IsTrajectoryOn x₂ x₁ (Icc t₀ t₁))
+    {x₁ : ℝ → E₁} {x₂ : ℝ → E₂} (hx₁ : s₁.IsRightTrajectoryOn x₂ x₁ (Icc t₀ t₁))
     (hr₁ : ‖x₁ t₀ - x_c‖ ≤ r) (h_x₂ : ∀ τ ∈ Icc t₀ t, ‖x₂ τ - x_e‖ ≤ β₂.toFun r (τ - t₀) + g) :
     ‖x₁ t - x_c‖ ≤ β₁.toFun (β₁.toFun r ((t - t₀) / 2) + γ₁.toFun (β₂.toFun r 0 + g))
       ((t - t₀) / 2) + γ₁.toFun (β₂.toFun r ((t - t₀) / 2) + g) := by
   have hr : 0 ≤ r := (norm_nonneg _).trans hr₁
   -- `x₁` is a trajectory of the shifted system under `x₂ - x_e`.
-  have hx₁' : (s₁.shiftInput x_e).IsTrajectoryOn (fun τ => x₂ τ - x_e) x₁ (Icc t₀ t₁) := by
-    rw [shiftInput_isTrajectoryOn_iff]
+  have hx₁' : (s₁.shiftInput x_e).IsRightTrajectoryOn (fun τ => x₂ τ - x_e) x₁ (Icc t₀ t₁) := by
+    rw [shiftInput_isRightTrajectoryOn_iff]
     simpa only [sub_add_cancel] using hx₁
   set m := (t₀ + t) / 2
   have hσ : 0 ≤ (t - t₀) / 2 := by linarith [ht.1]
@@ -233,7 +233,7 @@ theorem cascade_globallyUniformlyAsymptoticallyStable {s₁ : ContinuousSystem E
     rw [add_zero]
     exact (hβ₂ t₀ ht₀ t₁ (fun τ => (x τ).2) hx₂ τ hτ).trans
       (β₂.mono_r (norm_nonneg _) (by linarith [hτ.1]) hr₂)
-  have h_x₁ := norm_fst_sub_le_of_cascade hISS ht₀ ht hx₁ hr₁
+  have h_x₁ := norm_fst_sub_le_of_cascade hISS ht₀ ht (IsTrajectoryOn.isRightTrajectoryOn hx₁) hr₁
     fun τ hτ => h_x₂ τ ⟨hτ.1, hτ.2.trans ht.2⟩
   simp only [add_zero] at h_x₁
   calc ‖x t - (x_c, x_e)‖
@@ -318,7 +318,7 @@ theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
       exact le_add_of_nonneg_left (add_nonneg (β₁.nonneg _ (hγ₂₁ M hM) 0 le_rfl)
         (γ₁.maps_to (mul_nonneg two_pos.le (hγ₂_nonneg M hM)))))
   refine ⟨β, γ, fun t₀ ht₀ t₁ w x hx t ht M hM => ?_⟩
-  obtain ⟨hx₁, hx₂⟩ := cascade_isTrajectoryOn_iff.1 hx
+  obtain ⟨hx₁, hx₂⟩ := cascade_isRightTrajectoryOn_iff.1 hx
   set r := ‖x t₀ - (x_c, x_e)‖
   have hr : 0 ≤ r := norm_nonneg _
   have hr₁ : ‖(x t₀).1 - x_c‖ ≤ r := norm_fst_le (x t₀ - (x_c, x_e))

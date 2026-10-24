@@ -307,6 +307,8 @@ for time invariance instead.
 
 \inputleannode{lem:continuousSystem-cascade-isTrajectoryOn-iff}
 
+\inputleannode{lem:continuousSystem-cascade-isRightTrajectoryOn-iff}
+
 Well-posedness is kept apart from stability. The stability notions quantify over every solution,
 so they need no uniqueness; forward completeness enters only where a limit as $t \to \infty$ is
 taken. Theorems that need either property assume it.
@@ -332,6 +334,15 @@ taken. Theorems that need either property assume it.
 \inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
 
 \inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+Inputs that switch — steps, sample-and-hold, bang-bang — produce solutions with corners at the
+switching times.  With the input taken right-continuous, such a solution still has a right
+derivative everywhere, given by the new value of the input; these right trajectories are the
+solution concept for input-to-state stability, and every trajectory is one.
+
+\inputleannode{def:continuousSystem-isRightTrajectoryOn}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-isRightTrajectoryOn}
 
 A set is forward invariant when trajectories that start in it stay in it.
 

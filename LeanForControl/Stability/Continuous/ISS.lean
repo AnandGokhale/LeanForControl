@@ -43,8 +43,12 @@ so the same `β` serves every input.
   gain `γ` is dominated by `γ + id`, of class `K∞`.  Theorem 4.19 accordingly asks for `ρ` of
   class `K∞`, also no loss, since enlarging `ρ` only weakens its hypothesis;
   `norm_le_of_isISSLyapunov` keeps Khalil's exact gain `α₁⁻¹ ∘ α₂ ∘ ρ` for any monotone `ρ`.
+* Trajectories are *right trajectories* (`IsRightTrajectoryOn`): continuous, with right
+  derivative `F(t, x, u(t))`.  These are the solutions under piecewise continuous inputs, taken
+  right-continuous — Khalil's input class — so the estimate covers step, sample-and-hold and
+  switching inputs, whose solutions have corners.  Every classical trajectory is one.
 * As for every bound in this library, trajectories are quantified on segments: solutions are not
-  required to exist for all time.  A global bound rules out escape in finite time.
+  required to exist for all time (see the forward-completeness item in `Stability/plan.md`).
 -/
 
 open Set Filter Topology Metric
@@ -55,7 +59,8 @@ variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCo
 
 /-- The system is **input-to-state stable** about `x_eq`: there are a global class `KL` function
 `β` and a class `K∞` gain `γ` with `‖x(t) - x_eq‖ ≤ β(‖x(t₀) - x_eq‖, t - t₀) + γ(M)` along every
-trajectory, whenever `M` bounds `‖u‖` on `[t₀, t]`.
+right trajectory, whenever `M` bounds `‖u‖` on `[t₀, t]`.  Right trajectories are the solutions
+under piecewise continuous, right-continuous inputs, so discontinuous inputs are covered.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.7; Sontag (2008), for the class
 `K∞` gain. -/
@@ -64,8 +69,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.7; Sontag (2008),
   (statement := /-- A continuous-time system with input is \emph{input-to-state stable} about
     $x_{\mathrm{eq}}$ when there are a global class $\mathcal{KL}$ function $\beta$
     (\cref{def:isClassKLGlobal}) and a class $\mathcal{K}_{\infty}$ function $\gamma$
-    (\cref{def:isClassKInfty}) such that every trajectory on a segment $[t_0, t_1]$,
-    $t_0 \ge 0$, under any input $u$ satisfies
+    (\cref{def:isClassKInfty}) such that every right trajectory
+    (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
+    under any input $u$ satisfies
     \[
       \|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0) + \gamma(M)
       \qquad \forall\, t \in [t_0, t_1]
@@ -76,10 +82,12 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.7; Sontag (2008),
     \begin{itemize} \item Any bound $M$ on the input replaces its supremum, which is equivalent.
     \item $\gamma$ is class $\mathcal{K}_{\infty}$, as in Sontag, rather than class
     $\mathcal{K}$; a class $\mathcal{K}$ gain $\gamma$ is dominated by $\gamma + \mathrm{id}$.
+    \item Trajectories are right trajectories, the solutions under Khalil's piecewise continuous
+    inputs (taken right-continuous): continuous, with right derivative $F(t, x, u(t))$.
     \item Solutions are not required to exist for all time. \end{itemize} -/)]
 def InputToStateStable (s : ContinuousSystem E U Y) (x_eq : E) : Prop :=
   ∃ β : ClassKLGlobal, ∃ γ : ClassKInfty, ∀ t₀ : ℝ, 0 ≤ t₀ →
-    ∀ (t₁ : ℝ) (u : ℝ → U) (x : ℝ → E), s.IsTrajectoryOn u x (Icc t₀ t₁) →
+    ∀ (t₁ : ℝ) (u : ℝ → U) (x : ℝ → E), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
       ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ‖ ≤ M) →
         ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) + γ.toFun M
 
@@ -106,7 +114,8 @@ theorem InputToStateStable.globallyUniformlyAsymptoticallyStable {s : Continuous
   -- With `u ≡ 0` and `M = 0`, `γ(M) = 0` and the estimate is a global class `KL` bound.
   refine (globallyUniformlyAsymptoticallyStable_iff_classKL _ _).mpr
     ⟨β, fun t₀ ht₀ t₁ x hx t ht => ?_⟩
-  have h := hβ t₀ ht₀ t₁ (fun _ => 0) x hx t ht 0 fun _ _ => by simp
+  have h := hβ t₀ ht₀ t₁ (fun _ => 0) x (IsTrajectoryOn.isRightTrajectoryOn hx) t ht 0
+    fun _ _ => by simp
   rwa [γ.map_zero, add_zero] at h
 
 section ISSLyapunov
@@ -135,7 +144,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
       \dot V(t, x, u) \le -W_3(x) \quad \text{for } \|x - x_c\| \ge \rho(\|u\|)
     \]
     for all $t \ge 0$, $x$ and $u$.  Then there is a global class $\mathcal{KL}$ function
-    $\beta$ such that every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, satisfies
+    $\beta$ such that every right trajectory
+    (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
+    satisfies
     \[
       \|x(t) - x_c\| \le \beta(\|x(t_0) - x_c\|, t - t_0) + \alpha_1^{-1}(\alpha_2(\rho(M)))
     \]
@@ -160,7 +171,7 @@ theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
     (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : ℝⁿ) (w : U'), ρ ‖w‖ ≤ ‖y - x_c‖ →
       s.lieDerivative V t y w ≤ -W₃ y) :
     ∃ β : ClassKLGlobal, ∀ t₀ : ℝ, 0 ≤ t₀ →
-      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → ℝⁿ), s.IsTrajectoryOn u x (Icc t₀ t₁) →
+      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → ℝⁿ), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
         ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ‖ ≤ M) →
           ‖x t - x_c‖ ≤ β.toFun ‖x t₀ - x_c‖ (t - t₀) + α₁.invFun (α₂.toFun (ρ M)) := by
   -- `β` is chosen once, before the input.
@@ -176,9 +187,10 @@ theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
   let s' : ContinuousSystem ℝⁿ Unit Y' :=
     autonomous (fun τ y => s.F τ y (u (clamp τ))) (fun τ y => s.h τ y (u (clamp τ)))
   -- On `[t₀, t]` the frozen system has the same trajectories ...
-  have hx' : s'.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t) := fun τ hτ => by
-    simpa [s', vectorField, h_clamp_eq τ hτ] using
-      (hx τ ⟨hτ.1, hτ.2.trans ht.2⟩).mono (Icc_subset_Icc_right ht.2)
+  have hx' : s'.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t) :=
+    ⟨hx.1.mono (Icc_subset_Icc_right ht.2), fun τ hτ => by
+      simpa [s', vectorField, h_clamp_eq τ hτ] using (hx.2 τ ⟨hτ.1, hτ.2.trans ht.2⟩).mono
+        (inter_subset_inter_left _ (Icc_subset_Icc_right ht.2))⟩
   -- ... and `V̇ ≤ -W₃` outside the ball of radius `ρ(M)`, as `ρ(‖u‖) ≤ ρ(M)` at every time.
   have hlie' : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ρ M ≤ ‖y - x_c‖ →
       s'.lieDerivative V τ y () ≤ -W₃ y := fun τ hτ y hy =>

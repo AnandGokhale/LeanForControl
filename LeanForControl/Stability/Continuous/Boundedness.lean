@@ -81,7 +81,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
     the closed $r$-ball (\cref{def:isPositiveDefiniteOn}) and $0 \le \mu < c$, where $c < r$
     and $\alpha_2(c) < b_1$.  Then there is a class $\mathcal{KL}$ function $\beta$ on
     $[0, c)$, depending only on $\alpha_1, \alpha_2, W_3$ and $c$ --- not on the system, $V$
-    or $\mu$ --- such that every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, with
+    or $\mu$ --- such that every right trajectory
+    (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$, with
     $\|x(t_0) - x_c\| < c$ satisfies
     \[
       \|x(t) - x_c\| \le \max\bigl\{\beta(\|x(t_0) - x_c\|, t - t_0),\;
@@ -121,7 +122,7 @@ theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ} {r b�
           s.lieDerivative V t y () ≤ -W₃ y) →
         0 ≤ μ → μ < c →
         ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
-          s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
+          s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
   -- Step 1. The level `d = α₂(c) < b₁`, and `α₃ ≤ W₃` on the ball.
@@ -206,11 +207,11 @@ theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ} {r b�
   have hV_traj : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, x τ) :=
     fun τ hτ => hV τ (ht₀.trans hτ.1) _ (h_trap τ hτ)
   have hv_cont : ContinuousOn (fun τ => V τ (x τ)) (Icc t₀ t₁) :=
-    IsIntegralCurveOn.continuousOn_comp hx hV_traj
+    hx.1.comp_uncurry_of_differentiableAt hV_traj
   have hv_deriv : ∀ τ ∈ Ico t₀ t₁, HasDerivWithinAt (fun u => V u (x u))
       (s.lieDerivative V τ (x τ) ()) (Ici τ) τ := fun τ hτ =>
-    (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV_traj
-      (Ico_subset_Icc_self hτ)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hτ)
+    (hx.hasDerivWithinAt_Ici hτ).hasDerivWithinAt_lieDerivative
+      (hV_traj τ (Ico_subset_Icc_self hτ))
   -- Step 5. Inside the ball `v` falls while above `η`, so it stays in `[0, d)`, and decays to `η`:
   -- `v(t) ≤ max (σ(v(t₀), t - t₀)) η`.
   have hv_max : ∀ τ ∈ Icc t₀ t₁, V τ (x τ) ≤ max (V t₀ (x t₀)) η :=
@@ -279,7 +280,8 @@ theorem uniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Uni
     rwa [β.map_zero_r le_rfl] at h
   intro t₀ ht₀ t₁ x hx h_init t ht
   have hx₀_mem : ‖x t₀ - x_c‖ ∈ Ico 0 c := ⟨norm_nonneg _, h_init.trans_lt hac⟩
-  refine (hβ t₀ ht₀ t₁ x hx hx₀_mem.2 t ht).trans (max_le_max ?_ le_rfl)
+  refine (hβ t₀ ht₀ t₁ x (IsTrajectoryOn.isRightTrajectoryOn hx) hx₀_mem.2 t ht).trans
+    (max_le_max ?_ le_rfl)
   calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
       ≤ β.toFun ‖x t₀ - x_c‖ 0 :=
         β.anti_s_mono hx₀_mem (mem_Ici.mpr le_rfl) (mem_Ici.mpr (sub_nonneg.mpr ht.1))
@@ -335,7 +337,8 @@ theorem uniformlyUltimatelyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem 
   refine ⟨max T 0, le_max_right _ _, fun t₀ ht₀ x hx h_init t ht => ?_⟩
   have hT_le : max T 0 ≤ t - t₀ := by linarith
   have hx₀_mem : ‖x t₀ - x_c‖ ∈ Ico 0 c := ⟨norm_nonneg _, h_init.trans_lt hac⟩
-  have h_est := hβ t₀ ht₀ t x (hx.mono Icc_subset_Ici_self) hx₀_mem.2 t
+  have h_est := hβ t₀ ht₀ t x
+      (IsTrajectoryOn.isRightTrajectoryOn (hx.mono Icc_subset_Ici_self)) hx₀_mem.2 t
     ⟨by linarith [le_max_right T 0], le_rfl⟩
   refine h_est.trans (max_le ?_ le_rfl)
   calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
@@ -369,8 +372,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     \]
     for all $t \ge 0$ and $x \in \mathbb{R}^n$.  Then there is a global class $\mathcal{KL}$
     function $\beta$ (\cref{def:isClassKLGlobal}), depending only on $\alpha_1, \alpha_2$ and
-    $W_3$ --- not on the system, $V$ or $\mu$ --- such that every trajectory on a segment
-    $[t_0, t_1]$, $t_0 \ge 0$, satisfies
+    $W_3$ --- not on the system, $V$ or $\mu$ --- such that every right trajectory
+    (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
+    satisfies
     \[
       \|x(t) - x_c\| \le \max\bigl\{\beta(\|x(t_0) - x_c\|, t - t_0),\;
         \alpha_1^{-1}(\alpha_2(\mu))\bigr\} \qquad \forall\, t \in [t_0, t_1].
@@ -402,7 +406,7 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
         (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
         0 ≤ μ →
         ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
-          s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
+          s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
   -- Step 1. The local theorem from the ball of radius `k + 1`, for each `k : ℕ`, read through the
@@ -416,7 +420,7 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
         (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
         0 ≤ μ → μ < k + 1 →
         ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
-          s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < k + 1 →
+          s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < k + 1 →
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
     intro k
@@ -547,7 +551,8 @@ theorem globallyUniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem �
     rwa [β.map_zero 0 le_rfl] at h
   intro t₀ ht₀ t₁ x hx h_init t ht
   have hθ : 0 ≤ t - t₀ := sub_nonneg.mpr ht.1
-  refine (hβ t₀ ht₀ t₁ x hx t ht).trans (max_le_max ?_ le_rfl)
+  refine (hβ t₀ ht₀ t₁ x (IsTrajectoryOn.isRightTrajectoryOn hx) t ht).trans
+    (max_le_max ?_ le_rfl)
   calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
       ≤ β.toFun ‖x t₀ - x_c‖ 0 := β.anti_s _ (norm_nonneg _) (mem_Ici.mpr le_rfl) hθ hθ
     _ ≤ β.toFun a 0 := (β.strict_mono_r 0 le_rfl).monotoneOn (norm_nonneg _) ha.le h_init
@@ -589,8 +594,9 @@ theorem globallyUniformlyUltimatelyBounded_of_lyapunov [NeZero n]
   refine ⟨max T 0, le_max_right _ _, fun t₀ ht₀ x hx h_init t ht => ?_⟩
   have hT_le : max T 0 ≤ t - t₀ := by linarith
   have hθ : 0 ≤ t - t₀ := (le_max_right T 0).trans hT_le
-  refine (hβ t₀ ht₀ t x (hx.mono Icc_subset_Ici_self) t ⟨by linarith, le_rfl⟩).trans
-    (max_le ?_ le_rfl)
+  refine (hβ t₀ ht₀ t x
+      (IsTrajectoryOn.isRightTrajectoryOn (hx.mono Icc_subset_Ici_self)) t
+      ⟨by linarith, le_rfl⟩).trans (max_le ?_ le_rfl)
   calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
       ≤ β.toFun a (t - t₀) := (β.strict_mono_r _ hθ).monotoneOn (norm_nonneg _) ha.le h_init
     _ ≤ α₁.invFun (α₂.toFun μ) := (hT _ ((le_max_left T 0).trans hT_le)).le

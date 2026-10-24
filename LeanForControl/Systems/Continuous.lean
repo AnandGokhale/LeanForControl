@@ -262,6 +262,54 @@ lemma IsTrajectory.isTrajectoryOn {s : ContinuousSystem E U Y} {u : ℝ → U} {
     (h : s.IsTrajectory u x) (I : Set ℝ) : s.IsTrajectoryOn u x I :=
   IsIntegralCurve.isIntegralCurveOn h I
 
+/-- `x` is a **right trajectory** of `s` under the input `u` on `I`: continuous on `I`, with right
+derivative `ẋ(t⁺) = F(t, x(t), u(t))` at every `t ∈ I` (taken within `I ∩ [t, ∞)`).
+
+This is the solution concept for piecewise continuous inputs, taken right-continuous: between
+switching times the input is continuous and the solution classical, and at a switching time the
+solution has a corner — no two-sided derivative — but its right derivative uses the input's new
+value.  Sample-and-hold, step and switching signals are of this kind.  Every trajectory is a right
+trajectory (`IsTrajectoryOn.isRightTrajectoryOn`), and the Lyapunov comparison arguments only use
+right derivatives, so they hold along right trajectories unchanged. -/
+@[blueprint "def:continuousSystem-isRightTrajectoryOn"
+  (title := "Right trajectory of a continuous-time system")
+  (statement := /-- A map $x : \mathbb{R} \to E$ is a \emph{right trajectory} of $s$ under the
+    input $u$ on $I \subseteq \mathbb{R}$ when it is continuous on $I$ and has right derivative
+    \[
+      \dot x(t^+) = F(t, x(t), u(t)), \qquad \forall\, t \in I,
+    \]
+    taken within $I \cap [t, \infty)$.  It is the solution concept for piecewise continuous,
+    right-continuous inputs: at a switching time the solution has a corner, but its right
+    derivative is given by the new value of the input.  Every trajectory
+    (\cref{def:continuousSystem-isTrajectoryOn}) is one. -/)]
+def IsRightTrajectoryOn (s : ContinuousSystem E U Y) (u : ℝ → U) (x : ℝ → E) (I : Set ℝ) :
+    Prop :=
+  ContinuousOn x I ∧ ∀ t ∈ I, HasDerivWithinAt x (s.vectorField u t (x t)) (I ∩ Set.Ici t) t
+
+/-- Every trajectory is a right trajectory. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-isRightTrajectoryOn"
+  (title := "Trajectories are right trajectories")
+  (latexEnv := "lemma")
+  (statement := /-- A trajectory on $I$ (\cref{def:continuousSystem-isTrajectoryOn}) is a right
+    trajectory on $I$ (\cref{def:continuousSystem-isRightTrajectoryOn}). -/)]
+lemma IsTrajectoryOn.isRightTrajectoryOn {s : ContinuousSystem E U Y} {u : ℝ → U} {x : ℝ → E}
+    {I : Set ℝ} (h : s.IsTrajectoryOn u x I) : s.IsRightTrajectoryOn u x I :=
+  ⟨IsIntegralCurveOn.continuousOn h, fun t ht => (h t ht).mono Set.inter_subset_left⟩
+
+/-- A right trajectory on `I` is one on every subset of `I`. -/
+lemma IsRightTrajectoryOn.mono {s : ContinuousSystem E U Y} {u : ℝ → U} {x : ℝ → E}
+    {I J : Set ℝ} (h : s.IsRightTrajectoryOn u x I) (hJI : J ⊆ I) :
+    s.IsRightTrajectoryOn u x J :=
+  ⟨h.1.mono hJI, fun t ht => (h.2 t (hJI ht)).mono (Set.inter_subset_inter_left _ hJI)⟩
+
+/-- On a segment, a right trajectory has right derivative `F(t, x(t), u(t))` at every `t` before
+the right end, within `[t, ∞)`. -/
+lemma IsRightTrajectoryOn.hasDerivWithinAt_Ici {s : ContinuousSystem E U Y} {u : ℝ → U}
+    {x : ℝ → E} {t₀ t₁ : ℝ} (h : s.IsRightTrajectoryOn u x (Set.Icc t₀ t₁)) {t : ℝ}
+    (ht : t ∈ Set.Ico t₀ t₁) : HasDerivWithinAt x (s.vectorField u t (x t)) (Set.Ici t) t :=
+  (h.2 t (Set.Ico_subset_Icc_self ht)).mono_of_mem_nhdsWithin
+    (Filter.inter_mem (Icc_mem_nhdsGE_of_mem ht) self_mem_nhdsWithin)
+
 /-! ### The derivative of a function along the system -/
 
 /-- The derivative of `V(t, x)` along the system at the input value `u`,
@@ -461,6 +509,13 @@ lemma shiftInput_isTrajectoryOn_iff [Add U] [NormedAddCommGroup E] [NormedSpace 
     (s.shiftInput u₀).IsTrajectoryOn u x I ↔ s.IsTrajectoryOn (fun τ => u τ + u₀) x I :=
   Iff.rfl
 
+/-- The right trajectories of `s.shiftInput u₀` under `u` are those of `s` under `u + u₀`. -/
+lemma shiftInput_isRightTrajectoryOn_iff [Add U] [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (s : ContinuousSystem E U Y) (u₀ : U) {u : ℝ → U} {x : ℝ → E} {I : Set ℝ} :
+    (s.shiftInput u₀).IsRightTrajectoryOn u x I ↔
+      s.IsRightTrajectoryOn (fun τ => u τ + u₀) x I :=
+  Iff.rfl
+
 /-- The **cascade** of `s₁`, driven by the state of `s₂`, with `s₂`, driven by the external input:
 `ẋ₁ = F₁(t, x₁, x₂)`, `ẋ₂ = F₂(t, x₂, w)`, with output `(h₁(t, x₁, x₂), h₂(t, x₂, w))`.  With
 `W = Unit` this is the cascade of `s₁` with an autonomous system. -/
@@ -499,6 +554,30 @@ lemma cascade_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E] [Nor
       fun t ht => (ContinuousLinearMap.snd ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩
   · rintro ⟨h₁, h₂⟩ t ht
     exact (h₁ t ht).prodMk (h₂ t ht)
+
+/-- A right trajectory of the cascade is a pair of right trajectories, as for trajectories
+(`cascade_isTrajectoryOn_iff`). -/
+@[blueprint "lem:continuousSystem-cascade-isRightTrajectoryOn-iff"
+  (title := "Right trajectories of a cascade")
+  (latexEnv := "lemma")
+  (statement := /-- A map $(x_1, x_2)$ is a right trajectory of the cascade
+    (\cref{def:continuousSystem-isRightTrajectoryOn}, \cref{def:continuousSystem-cascade})
+    under $w$ on $I$ exactly when $x_1$ is a right trajectory of $s_1$ under the input $x_2$ and
+    $x_2$ is a right trajectory of $s_2$ under $w$, on $I$. -/)]
+lemma cascade_isRightTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup E₂] [NormedSpace ℝ E₂] {s₁ : ContinuousSystem E E₂ Y}
+    {s₂ : ContinuousSystem E₂ W Y₂} {u : ℝ → W} {x : ℝ → E × E₂} {I : Set ℝ} :
+    (cascade s₁ s₂).IsRightTrajectoryOn u x I ↔
+      s₁.IsRightTrajectoryOn (fun τ => (x τ).2) (fun τ => (x τ).1) I ∧
+        s₂.IsRightTrajectoryOn u (fun τ => (x τ).2) I := by
+  constructor
+  · rintro ⟨hc, hx⟩
+    exact ⟨⟨continuous_fst.comp_continuousOn hc, fun t ht =>
+        (ContinuousLinearMap.fst ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩,
+      ⟨continuous_snd.comp_continuousOn hc, fun t ht =>
+        (ContinuousLinearMap.snd ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩⟩
+  · rintro ⟨⟨hc₁, h₁⟩, ⟨hc₂, h₂⟩⟩
+    exact ⟨hc₁.prodMk hc₂, fun t ht => (h₁ t ht).prodMk (h₂ t ht)⟩
 
 end Cascade
 

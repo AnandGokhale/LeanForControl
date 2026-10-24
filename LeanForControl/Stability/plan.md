@@ -295,12 +295,30 @@ What is open is readability, in descending value:
 
 Each is documented in its docstring's *Differences* list; collected here so they are fixed together.
 
-1. **Input-to-state stability does not require forward completeness.** Khalil's Definition 4.7
-   says the solution *exists* for all `t ≥ t₀` and satisfies the estimate; `InputToStateStable`
-   (`Continuous/ISS.lean`) only bounds trajectories on segments `[t₀, t₁]`.  Theorem 4.19
-   (`inputToStateStable_of_isISSLyapunov`), Lemma 4.6 and Lemma 4.7 inherit this: none proves
-   existence.  Fix: add an `IsForwardCompleteOn` conjunct to the definition, and in 4.19 rule out
-   finite escape time from the estimate (an extension-of-solutions argument).
+1. **The estimate-only notions do not assert that solutions exist.** Khalil's uniform asymptotic
+   stability (Definition 4.4), exponential stability (Definition 4.5) and input-to-state
+   stability (Definition 4.7) say the solution *exists* for all `t ≥ t₀` and satisfies the
+   estimate.  `UniformlyAsymptoticallyStable`, `GloballyUniformlyAsymptoticallyStable`,
+   `LocallyExponentiallyStable`, `GloballyExponentiallyStable` (`Continuous/Defs.lean`) and
+   `InputToStateStable` (`Continuous/ISS.lean`) only bound trajectory segments `[t₀, t₁]`; the
+   theorems producing them (4.19, Lemma 4.6, Lemma 4.7, the Lyapunov theorems) never prove
+   existence.  Two consequences: finite escape is not excluded by the definition, and an
+   ill-posed system with no classical solutions — e.g. under a discontinuous input — satisfies
+   the estimate vacuously.
+
+   *Decision (2026-10-24): keep the definitions estimate-only* — every result is an
+   estimate-to-estimate implication and composes as is, and changing only ISS would split it from
+   GUAS, which it feeds.  *Fix:* prove the **extension theorem** — a solution of a locally
+   Lipschitz, continuous field that stays bounded on `[t₀, t₁)` extends past `t₁`
+   (`ODEs/PicardLindelof.lean` has global existence only for globally Lipschitz fields) — and
+   then one lemma per estimate-only notion: *estimate + well-posed ⇒ forward complete*
+   (`IsForwardComplete`).  That closes the gap with Khalil for all of them at once.
+
+   Related design question: the library is split on this.  `LocallyAsymptoticallyStable`,
+   `GloballyAsymptoticallyStable` and the ultimate-boundedness notions *do* carry
+   `IsForwardCompleteOn`; the uniform and exponential notions and ISS do not, and Lemma 4.5 has
+   separate `…_of_isForwardComplete` variants.  Even `IsForwardCompleteOn` asserts only that
+   existing segments extend, not that a solution exists from every initial state.
 2. **Hypotheses on `f` for all `t ∈ ℝ`, not `t ≥ 0`.** The converse theorems 4.14 (local and
    global) and 4.16 (`Continuous/Converse.lean`), linearization 4.13 and both directions of 4.15
    (`Continuous/Linearization.lean`), and Lemma 4.6 (`Continuous/ISS.lean`) ask `f` to be `C¹`,

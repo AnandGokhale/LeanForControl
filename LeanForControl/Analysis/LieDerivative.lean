@@ -87,6 +87,16 @@ lemma lieDerivative_add_mul {V : E → ℝ} {v : ℝ → E → E} {t : ℝ} {x :
     (hV.hasFDerivAt.comp (t, x) hasFDerivAt_snd).add (hasFDerivAt_fst.const_mul c)
   simp [lieDerivative, h.fderiv]
 
+/-- **Chain rule at a point**: if `γ` has derivative `v(t, γ(t))` at `t` within a set `s` — for
+instance a one-sided derivative — then `τ ↦ V(τ, γ(τ))` has derivative `L_v V(t, γ(t))` there,
+within the same set. -/
+lemma HasDerivWithinAt.hasDerivWithinAt_lieDerivative {V : ℝ → E → ℝ} {v : ℝ → E → E}
+    {γ : ℝ → E} {s : Set ℝ} {t : ℝ} (hγ : HasDerivWithinAt γ (v t (γ t)) s t)
+    (hV : DifferentiableAt ℝ (Function.uncurry V) (t, γ t)) :
+    HasDerivWithinAt (fun τ => V τ (γ τ)) (lieDerivative V v t (γ t)) s t :=
+  HasFDerivAt.comp_hasDerivWithinAt (f := fun τ => (τ, γ τ)) t hV.hasFDerivAt
+    ((hasDerivWithinAt_id t s).prodMk hγ)
+
 /-- **Chain rule along an integral curve**: the rate of change of `t ↦ V(t, γ(t))` is the
 Lie derivative of `V` along the field. -/
 @[blueprint "lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative"
@@ -101,10 +111,8 @@ Lie derivative of `V` along the field. -/
 lemma IsIntegralCurveOn.hasDerivWithinAt_lieDerivative {V : ℝ → E → ℝ} {v : ℝ → E → E}
     {γ : ℝ → E} {I : Set ℝ} (hγ : IsIntegralCurveOn γ v I)
     (hV : ∀ τ ∈ I, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ)) {t : ℝ} (ht : t ∈ I) :
-    HasDerivWithinAt (fun τ => V τ (γ τ)) (lieDerivative V v t (γ t)) I t := by
-  have h_pair : HasDerivWithinAt (fun τ => (τ, γ τ)) (1, v t (γ t)) I t :=
-    (hasDerivWithinAt_id t I).prodMk (hγ t ht)
-  exact (hV t ht).hasFDerivAt.comp_hasDerivWithinAt t h_pair
+    HasDerivWithinAt (fun τ => V τ (γ τ)) (lieDerivative V v t (γ t)) I t :=
+  (hγ t ht).hasDerivWithinAt_lieDerivative (hV t ht)
 
 /-- **The Lie derivative read off along a solution**: if `V(τ, γ(τ))` has right derivative `w` at
 `t` along a forward integral curve `γ` from `t`, then the Lie derivative at `(t, γ(t))` is `w`.
@@ -121,12 +129,9 @@ lemma IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt {V : ℝ → E → 
     {γ : ℝ → E} {t w : ℝ} (hγ : IsIntegralCurveOn γ v (Ici t))
     (hV : DifferentiableAt ℝ (Function.uncurry V) (t, γ t))
     (hW : HasDerivWithinAt (fun τ => V τ (γ τ)) w (Ici t) t) :
-    lieDerivative V v t (γ t) = w := by
-  have h_pair : HasDerivWithinAt (fun τ => (τ, γ τ)) (1, v t (γ t)) (Ici t) t :=
-    (hasDerivWithinAt_id t _).prodMk (hγ t self_mem_Ici)
-  have h_chain : HasDerivWithinAt (fun τ => V τ (γ τ)) (lieDerivative V v t (γ t)) (Ici t) t :=
-    HasFDerivAt.comp_hasDerivWithinAt (f := fun τ => (τ, γ τ)) t hV.hasFDerivAt h_pair
-  exact UniqueDiffWithinAt.eq_deriv _ (uniqueDiffWithinAt_Ici t) h_chain hW
+    lieDerivative V v t (γ t) = w :=
+  UniqueDiffWithinAt.eq_deriv _ (uniqueDiffWithinAt_Ici t)
+    ((hγ t self_mem_Ici).hasDerivWithinAt_lieDerivative hV) hW
 
 /-- **Changing the field changes the Lie derivative by the state derivative**:
 `L_w V(t, x) = L_v V(t, x) + ∂V/∂x(t, x) · (w(t, x) - v(t, x))`.  This is how a perturbation of the
@@ -158,13 +163,12 @@ lemma lieDerivative_le_add_norm_fderiv_mul {V : ℝ → E → ℝ} {v w : ℝ �
   exact add_le_add le_rfl ((le_abs_self _).trans
     (by rw [← Real.norm_eq_abs]; exact ContinuousLinearMap.le_opNorm _ _))
 
-/-- `V` is continuous along an integral curve at whose points it is differentiable. -/
-lemma IsIntegralCurveOn.continuousOn_comp {V : ℝ → E → ℝ} {v : ℝ → E → E}
-    {γ : ℝ → E} {I : Set ℝ} (hγ : IsIntegralCurveOn γ v I)
-    (hV : ∀ τ ∈ I, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ)) :
+/-- `V` is continuous along a continuous curve at whose points it is differentiable. -/
+lemma ContinuousOn.comp_uncurry_of_differentiableAt {V : ℝ → E → ℝ} {γ : ℝ → E} {I : Set ℝ}
+    (hγ : ContinuousOn γ I) (hV : ∀ τ ∈ I, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ)) :
     ContinuousOn (fun τ => V τ (γ τ)) I := fun τ hτ =>
   ContinuousAt.comp_continuousWithinAt (g := Function.uncurry V) (f := fun σ => (σ, γ σ))
-    (hV τ hτ).continuousAt (continuousWithinAt_id.prodMk (hγ.continuousOn τ hτ))
+    (hV τ hτ).continuousAt (continuousWithinAt_id.prodMk (hγ τ hτ))
 
 /-- A nonpositive Lie derivative along an integral curve on a convex set `s` (an interval) makes
 `V` nonincreasing along it.  Only the interior of `s` is tested. -/
@@ -182,7 +186,7 @@ lemma IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos {V : ℝ → E → �
     (h_nonpos : ∀ t ∈ interior s, lieDerivative V v t (γ t) ≤ 0) :
     AntitoneOn (fun τ => V τ (γ τ)) s :=
   antitoneOn_of_hasDerivWithinAt_nonpos (f' := fun t => lieDerivative V v t (γ t)) hs
-    (hγ.continuousOn_comp hV)
+    (hγ.continuousOn.comp_uncurry_of_differentiableAt hV)
     (fun _ ht => (hγ.hasDerivWithinAt_lieDerivative hV (interior_subset ht)).mono interior_subset)
     h_nonpos
 
@@ -209,7 +213,7 @@ lemma IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le {V : ℝ → E → ℝ} {
       (f' := fun σ => Real.exp (c * σ) * (c * V σ (γ σ) + lieDerivative V v σ (γ σ)))
       (convex_Icc t₀ t₁) ?_ (fun σ hσ => ?_) (fun σ hσ => ?_)
     · exact (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn.mul
-        (hγ.continuousOn_comp hV)
+        (hγ.continuousOn.comp_uncurry_of_differentiableAt hV)
     · rw [interior_Icc] at hσ ⊢
       have he : HasDerivAt (fun σ => Real.exp (c * σ)) (Real.exp (c * σ) * c) σ := by
         simpa using ((hasDerivAt_id σ).const_mul c).exp
