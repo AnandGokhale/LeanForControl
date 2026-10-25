@@ -2,6 +2,7 @@ import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Analysis.Asymptotics.Defs
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Normed.Module.Convex
 import Architect
 
@@ -14,7 +15,7 @@ than the little-o form Mathlib states them in. The linearization error
 it is `o (‖x - x₀‖)`, and what the proofs need is an explicit radius on which it is small.
 -/
 
-open Filter Asymptotics
+open Filter Asymptotics Set
 open scoped Topology
 
 variable {𝕜 E F : Type*}
@@ -49,45 +50,67 @@ section Quadratic
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- **A Lipschitz derivative makes the linearization error quadratic**: if `Df` is `L`-Lipschitz on
-a convex set containing `x₀` and `x`, then `‖f x - f x₀ - Df(x₀)(x - x₀)‖ ≤ L ‖x - x₀‖²`. -/
-@[blueprint "thm:norm-sub-sub-fderiv-le-of-lipschitzOnWith"
+/-- **A Lipschitz derivative makes the linearization error quadratic**: if `f` has derivative `f'`
+within a convex set `s` and `f'` is `L`-Lipschitz on `s`, then for `x₀, x ∈ s`,
+`‖f x - f x₀ - f'(x₀)(x - x₀)‖ ≤ (L / 2) ‖x - x₀‖²`.
+
+Along the segment `y = x₀ + τ (x - x₀)` the derivative error is at most `L τ ‖x - x₀‖`, whose
+integral over `τ ∈ [0, 1]` is `(L / 2) ‖x - x₀‖²`. -/
+@[blueprint "thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith"
   (title := "Quadratic linearization error")
-  (statement := /-- Let $f$ be differentiable on a convex set $s$, with $Df$ $L$-Lipschitz on $s$.
-    For $x_0, x \in s$,
+  (statement := /-- Let $f$ have derivative $f'$ within a convex set $s$, with $f'$ $L$-Lipschitz
+    on $s$.  For $x_0, x \in s$,
     \[
-      \|f(x) - f(x_0) - Df(x_0)(x - x_0)\| \le L\,\|x - x_0\|^2.
+      \|f(x) - f(x_0) - f'(x_0)(x - x_0)\| \le \tfrac{L}{2}\,\|x - x_0\|^2.
     \] -/)
-  (proof := /-- On the segment from $x_0$ to $x$, the map $y \mapsto f(y) - Df(x_0)y$ has
-    derivative $Df(y) - Df(x_0)$, of norm at most $L\|y - x_0\| \le L\|x - x_0\|$; apply the mean
-    value inequality. -/)]
-theorem norm_sub_sub_fderiv_le_of_lipschitzOnWith {f : E → F} {s : Set E} (hs : Convex ℝ s)
-    (hf : ∀ y ∈ s, DifferentiableAt ℝ f y) {L : NNReal} (hL : LipschitzOnWith L (fderiv ℝ f) s)
-    {x₀ x : E} (hx₀ : x₀ ∈ s) (hx : x ∈ s) :
-    ‖f x - f x₀ - fderiv ℝ f x₀ (x - x₀)‖ ≤ L * ‖x - x₀‖ ^ 2 := by
-  have h_seg : segment ℝ x₀ x ⊆ s := hs.segment_subset hx₀ hx
-  -- `y ↦ f y - Df(x₀) y` has derivative `Df(y) - Df(x₀)`.
-  have h_deriv : ∀ y ∈ segment ℝ x₀ x, HasFDerivAt (fun y => f y - fderiv ℝ f x₀ y)
-      (fderiv ℝ f y - fderiv ℝ f x₀) y := fun y hy =>
-    (hf y (h_seg hy)).hasFDerivAt.sub (fderiv ℝ f x₀).hasFDerivAt
-  have h_mvt := (convex_segment x₀ x).norm_image_sub_le_of_norm_fderiv_le
-    (f := fun y => f y - fderiv ℝ f x₀ y) (C := L * ‖x - x₀‖)
-    (fun y hy => (h_deriv y hy).differentiableAt)
-    (fun y hy => by
-      rw [(h_deriv y hy).fderiv, ← dist_eq_norm]
-      calc dist (fderiv ℝ f y) (fderiv ℝ f x₀)
-          ≤ L * dist y x₀ := hL.dist_le_mul y (h_seg hy) x₀ hx₀
-        _ ≤ L * ‖x - x₀‖ := by
-            rw [dist_eq_norm]
-            exact mul_le_mul_of_nonneg_left (norm_sub_le_of_mem_segment hy) L.coe_nonneg)
-    (left_mem_segment ℝ x₀ x) (right_mem_segment ℝ x₀ x)
-  calc ‖f x - f x₀ - fderiv ℝ f x₀ (x - x₀)‖
-      = ‖(f x - fderiv ℝ f x₀ x) - (f x₀ - fderiv ℝ f x₀ x₀)‖ := by
-        rw [map_sub]
-        congr 1
-        abel
-    _ ≤ L * ‖x - x₀‖ * ‖x - x₀‖ := h_mvt
-    _ = L * ‖x - x₀‖ ^ 2 := by ring
+  (proof := /-- With $h = x - x_0$, let
+    $g(\tau) = f(x_0 + \tau h) - f(x_0) - \tau f'(x_0) h$ on $[0, 1]$.  Then $g(0) = 0$ and
+    $\|g'(\tau)\| = \|(f'(x_0 + \tau h) - f'(x_0)) h\| \le L \tau \|h\|^2$, the derivative
+    of $B(\tau) = \tfrac{L}{2} \tau^2 \|h\|^2$.  The norm comparison theorem gives
+    $\|g(1)\| \le B(1)$. -/)]
+theorem Convex.norm_image_sub_sub_le_of_lipschitzOnWith {f : E → F} {f' : E → E →L[ℝ] F}
+    {s : Set E} (hs : Convex ℝ s) (hf : ∀ y ∈ s, HasFDerivWithinAt f (f' y) s y) {L : NNReal}
+    (hf' : LipschitzOnWith L f' s) {x₀ x : E} (hx₀ : x₀ ∈ s) (hx : x ∈ s) :
+    ‖f x - f x₀ - f' x₀ (x - x₀)‖ ≤ L / 2 * ‖x - x₀‖ ^ 2 := by
+  -- The segment `τ ↦ x₀ + τ h`, `h = x - x₀`, stays in `s`.
+  have hp_mem : MapsTo (fun τ : ℝ => x₀ + τ • (x - x₀)) (Icc 0 1) s := fun τ hτ =>
+    hs.segment_subset hx₀ hx (by rw [segment_eq_image']; exact ⟨τ, hτ, rfl⟩)
+  -- `g(τ) = f(x₀ + τ h) - f(x₀) - τ f'(x₀) h` has derivative `(f'(x₀ + τ h) - f'(x₀)) h`.
+  have hg : ∀ τ ∈ Icc (0 : ℝ) 1, HasDerivWithinAt
+      (fun τ : ℝ => f (x₀ + τ • (x - x₀)) - f x₀ - τ • f' x₀ (x - x₀))
+      (f' (x₀ + τ • (x - x₀)) (x - x₀) - f' x₀ (x - x₀)) (Icc 0 1) τ := by
+    intro τ hτ
+    have hp : HasDerivWithinAt (fun τ : ℝ => x₀ + τ • (x - x₀)) (x - x₀) (Icc 0 1) τ := by
+      simpa using (((hasDerivAt_id τ).smul_const (x - x₀)).const_add x₀).hasDerivWithinAt
+    have hlin : HasDerivWithinAt (fun τ : ℝ => τ • f' x₀ (x - x₀)) (f' x₀ (x - x₀))
+        (Icc 0 1) τ := by
+      simpa using ((hasDerivAt_id τ).smul_const (f' x₀ (x - x₀))).hasDerivWithinAt
+    exact (((hf _ (hp_mem hτ)).comp_hasDerivWithinAt τ hp hp_mem).sub_const (f x₀)).sub hlin
+  -- The derivative error is at most `L τ ‖h‖²`.
+  have h_bound : ∀ τ ∈ Ico (0 : ℝ) 1,
+      ‖f' (x₀ + τ • (x - x₀)) (x - x₀) - f' x₀ (x - x₀)‖ ≤ L * τ * ‖x - x₀‖ ^ 2 := by
+    intro τ hτ
+    calc ‖f' (x₀ + τ • (x - x₀)) (x - x₀) - f' x₀ (x - x₀)‖
+        = ‖(f' (x₀ + τ • (x - x₀)) - f' x₀) (x - x₀)‖ := by rw [ContinuousLinearMap.sub_apply]
+      _ ≤ ‖f' (x₀ + τ • (x - x₀)) - f' x₀‖ * ‖x - x₀‖ := ContinuousLinearMap.le_opNorm _ _
+      _ ≤ L * ‖x₀ + τ • (x - x₀) - x₀‖ * ‖x - x₀‖ := by
+          gcongr
+          rw [← dist_eq_norm, ← dist_eq_norm]
+          exact hf'.dist_le_mul _ (hp_mem (Ico_subset_Icc_self hτ)) _ hx₀
+      _ = L * τ * ‖x - x₀‖ ^ 2 := by
+          rw [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg hτ.1]
+          ring
+  -- Compare with `B(τ) = (L / 2) τ² ‖h‖²`, of derivative `L τ ‖h‖²`.
+  have h := image_norm_le_of_norm_deriv_right_le_deriv_boundary
+    (fun τ hτ => (hg τ hτ).continuousWithinAt)
+    (fun τ hτ => (hg τ (Ico_subset_Icc_self hτ)).mono_of_mem_nhdsWithin
+      (Icc_mem_nhdsGE_of_mem hτ))
+    (B := fun τ => L / 2 * τ ^ 2 * ‖x - x₀‖ ^ 2) (B' := fun τ => L * τ * ‖x - x₀‖ ^ 2)
+    (by simp)
+    (fun τ => (((hasDerivAt_pow 2 τ).const_mul ((L : ℝ) / 2)).mul_const (‖x - x₀‖ ^ 2)).congr_deriv
+      (by push_cast; ring))
+    h_bound (right_mem_Icc.2 zero_le_one)
+  simpa using h
 
 end Quadratic
 

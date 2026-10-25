@@ -57,6 +57,32 @@ lemma norm_le_of_mulVec_le {M : Matrix X X ℝ} {C : ℝ} (hC : 0 ≤ C)
   rw [linfty_opNorm_eq_opNorm]
   exact ContinuousLinearMap.opNorm_le_bound _ hC h
 
+/-! ## Quadratic forms under the sup norm -/
+
+/-- `|x ⬝ᵥ y| ≤ |X| ‖x‖ ‖y‖` for the sup norm. -/
+theorem abs_dotProduct_le (x y : X → ℝ) :
+    |x ⬝ᵥ y| ≤ Fintype.card X * (‖x‖ * ‖y‖) :=
+  calc |x ⬝ᵥ y|
+      ≤ ∑ i, |x i * y i| := Finset.abs_sum_le_sum_abs _ _
+    _ ≤ ∑ _i : X, ‖x‖ * ‖y‖ := Finset.sum_le_sum fun i _ => by
+        rw [abs_mul, ← Real.norm_eq_abs, ← Real.norm_eq_abs]
+        exact mul_le_mul (norm_le_pi_norm x i) (norm_le_pi_norm y i) (norm_nonneg _)
+          (norm_nonneg _)
+    _ = Fintype.card X * (‖x‖ * ‖y‖) := by simp
+
+/-- `xᵀ M x ≤ |X| ‖M‖ ‖x‖²` for the sup norm and the `L∞` operator norm. -/
+theorem dotProduct_mulVec_le (M : Matrix X X ℝ) (x : X → ℝ) :
+    x ⬝ᵥ (M *ᵥ x) ≤ Fintype.card X * ‖M‖ * ‖x‖ ^ 2 :=
+  calc x ⬝ᵥ (M *ᵥ x)
+      ≤ Fintype.card X * (‖x‖ * ‖M *ᵥ x‖) := (le_abs_self _).trans (abs_dotProduct_le _ _)
+    _ ≤ Fintype.card X * (‖x‖ * (‖M‖ * ‖x‖)) := by gcongr; exact linfty_opNorm_mulVec M x
+    _ = Fintype.card X * ‖M‖ * ‖x‖ ^ 2 := by ring
+
+/-- `xᵀ (Mᵀ N M) x = (M x)ᵀ N (M x)`. -/
+theorem dotProduct_transpose_mul_mulVec (M N : Matrix X X ℝ) (x : X → ℝ) :
+    x ⬝ᵥ ((Mᵀ * N * M) *ᵥ x) = (M *ᵥ x) ⬝ᵥ (N *ᵥ (M *ᵥ x)) := by
+  rw [← mulVec_mulVec, ← mulVec_mulVec, dotProduct_mulVec, vecMul_transpose]
+
 variable [DecidableEq X]
 
 /-- The Euclidean operator norm of a matrix is at most `√|X|` times its `L∞` operator norm. -/

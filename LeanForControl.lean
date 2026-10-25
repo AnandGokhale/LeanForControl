@@ -6,6 +6,7 @@ import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
+import LeanForControl.Analysis.Norm
 import LeanForControl.Analysis.OmegaLimit
 import LeanForControl.Analysis.PositiveDefinite
 import LeanForControl.Analysis.SpectralRadius

@@ -69,32 +69,6 @@ theorem differentialLyapunovEquation_const_iff {A P Q : Matrix X X ℝ} :
     rw [h0]
     exact hasDerivAt_const t P
 
-/-! ## Quadratic forms under the sup norm -/
-
-/-- `|x ⬝ᵥ y| ≤ |X| ‖x‖ ‖y‖` for the sup norm. -/
-private lemma abs_dotProduct_le (x y : X → ℝ) :
-    |x ⬝ᵥ y| ≤ Fintype.card X * (‖x‖ * ‖y‖) :=
-  calc |x ⬝ᵥ y|
-      ≤ ∑ i, |x i * y i| := Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _i : X, ‖x‖ * ‖y‖ := Finset.sum_le_sum fun i _ => by
-        rw [abs_mul, ← Real.norm_eq_abs, ← Real.norm_eq_abs]
-        exact mul_le_mul (norm_le_pi_norm x i) (norm_le_pi_norm y i) (norm_nonneg _)
-          (norm_nonneg _)
-    _ = Fintype.card X * (‖x‖ * ‖y‖) := by simp
-
-/-- `xᵀ M x ≤ |X| ‖M‖ ‖x‖²` for the sup norm and the `L∞` operator norm. -/
-private lemma dotProduct_mulVec_le (M : Matrix X X ℝ) (x : X → ℝ) :
-    x ⬝ᵥ (M *ᵥ x) ≤ Fintype.card X * ‖M‖ * ‖x‖ ^ 2 :=
-  calc x ⬝ᵥ (M *ᵥ x)
-      ≤ Fintype.card X * (‖x‖ * ‖M *ᵥ x‖) := (le_abs_self _).trans (abs_dotProduct_le _ _)
-    _ ≤ Fintype.card X * (‖x‖ * (‖M‖ * ‖x‖)) := by gcongr; exact linfty_opNorm_mulVec M x
-    _ = Fintype.card X * ‖M‖ * ‖x‖ ^ 2 := by ring
-
-/-- `xᵀ (Mᵀ N M) x = (M x)ᵀ N (M x)`. -/
-private lemma dotProduct_transpose_mul_mulVec (M N : Matrix X X ℝ) (x : X → ℝ) :
-    x ⬝ᵥ ((Mᵀ * N * M) *ᵥ x) = (M *ᵥ x) ⬝ᵥ (N *ᵥ (M *ᵥ x)) := by
-  rw [← mulVec_mulVec, ← mulVec_mulVec, dotProduct_mulVec, vecMul_transpose]
-
 /-- A quadratic form `x ↦ xᵀ P(t) x` with `P` differentiable at `t` is differentiable in `(t, x)`:
 its value is a polynomial in the entries of `P(t)` and the coordinates of `x`. -/
 private lemma differentiableAt_dotProduct_mulVec {P : ℝ → Matrix X X ℝ} {t : ℝ}
@@ -287,7 +261,7 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
         map_smul' := fun c M => by simp [smul_mulVec, dotProduct_smul] },
       fun M => rfl, fun σ => ?_⟩
     change _ = y ⬝ᵥ (G σ *ᵥ y)
-    rw [dotProduct_transpose_mul_mulVec, mulVec_mulVec, hΦ_mul]
+    rw [MatrixAlgebra.dotProduct_transpose_mul_mulVec, mulVec_mulVec, hΦ_mul]
   have hψ_cont : ∀ t x, Continuous (ψ t x) := fun t x => by
     obtain ⟨ℓ, -, hℓ⟩ := hψ_lin t x
     rw [funext hℓ]
@@ -301,7 +275,7 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
     rw [funext hℓ]
     refine ⟨ℓ.integrable_comp hG_int_t, ?_⟩
     calc x ⬝ᵥ (P t *ᵥ x)
-        = ℓ (R t) := by rw [hℓ_apply, ← dotProduct_transpose_mul_mulVec]
+        = ℓ (R t) := by rw [hℓ_apply, ← MatrixAlgebra.dotProduct_transpose_mul_mulVec]
       _ = ℓ (∫ σ in Ioi t, G σ) := by rw [hR_Ioi t ht]
       _ = ∫ σ in Ioi t, ℓ (G σ) := (ℓ.integral_comp_comm hG_int_t).symm
   -- Step 5. The quadratic bounds.
@@ -328,7 +302,7 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
       _ ≤ x ⬝ᵥ (P t *ᵥ x) := by linarith
   have h_upper : ∀ t, 0 ≤ t → ∀ x, x ⬝ᵥ (P t *ᵥ x) ≤ c₂ * ‖x‖ ^ 2 := fun t ht x =>
     calc x ⬝ᵥ (P t *ᵥ x)
-        ≤ Fintype.card X * ‖P t‖ * ‖x‖ ^ 2 := dotProduct_mulVec_le _ _
+        ≤ Fintype.card X * ‖P t‖ * ‖x‖ ^ 2 := MatrixAlgebra.dotProduct_mulVec_le _ _
       _ ≤ c₂ * ‖x‖ ^ 2 := by
           gcongr
           exact mul_le_mul (by linarith) (by linarith [hP_bdd t ht]) (norm_nonneg _)
@@ -364,11 +338,9 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
       simp only [ψ, φ, homogeneousResponse, mulVec_mulVec, ← hΦ_def, Matrix.mul_assoc, hΦ_mul]
     rw [show V τ (φ τ) = φ τ ⬝ᵥ (P τ *ᵥ φ τ) from rfl, (hψ_int τ (ht.trans hτ') (φ τ)).2,
       h_shift, ← intervalIntegral.integral_Ioi_sub_Ioi (hψ_int t ht x).1 hτ', sub_sub_cancel]
-  have h_W : HasDerivWithinAt (fun τ => V τ (φ τ)) (-ψ t x t) (Ici t) t :=
-    ((((hψ_cont t x).integral_hasStrictDerivAt t t).hasDerivAt).const_sub
-      (∫ σ in Ioi t, ψ t x σ)).hasDerivWithinAt.congr (fun τ hτ => h_along τ hτ)
-        (h_along t self_mem_Ici)
-  have h_eq := hφ.lieDerivative_eq_of_hasDerivWithinAt (hV_diff t (φ t)) h_W
+  have h_eq := hφ.lieDerivative_eq_of_eq_add_integral (hV_diff t (φ t))
+    (ψ := fun σ => -ψ t x σ) (by fun_prop) fun τ hτ => by
+      rw [h_along τ hτ, intervalIntegral.integral_neg, sub_eq_add_neg]
   rw [hφ_t] at h_eq
   calc s.toContinuousSystem.zeroInput.lieDerivative V t x ()
       = -ψ t x t := h_eq

@@ -440,22 +440,51 @@ def IsForwardInvariant (s : ContinuousSystem E U Y) (u : ℝ → U) (S : Set E) 
 
 end Trajectory
 
-/-! ### The unforced system -/
+/-! ### Holding the input constant -/
 
-section ZeroInput
+section ConstInput
+
+/-- The system with its input **held at `u₀`**: the autonomous system `ẋ = F(t, x, u₀)`,
+`y = h(t, x, u₀)`.  With `u₀ = 0` this is the unforced system (`zeroInput`); a general `u₀` is
+the operating point of a system whose equilibrium is not at the zero input. -/
+@[blueprint "def:continuousSystem-constInput"
+  (title := "The system with its input held constant")
+  (statement := /-- For $u_0$ in the input space, the autonomous system
+    (\cref{def:continuousSystem-autonomous}) $\dot x = F(t, x, u_0)$, $y = h(t, x, u_0)$ obtained
+    by holding the input at $u_0$. -/)]
+def constInput (s : ContinuousSystem E U Y) (u₀ : U) : ContinuousSystem E Unit Y :=
+  autonomous (fun t x => s.F t x u₀) (fun t x => s.h t x u₀)
+
+@[simp] lemma constInput_F (s : ContinuousSystem E U Y) (u₀ : U) (t : ℝ) (x : E) (v : Unit) :
+    (s.constInput u₀).F t x v = s.F t x u₀ := rfl
+
+@[simp] lemma constInput_h (s : ContinuousSystem E U Y) (u₀ : U) (t : ℝ) (x : E) (v : Unit) :
+    (s.constInput u₀).h t x v = s.h t x u₀ := rfl
+
+/-- The system with its input held constant is autonomous. -/
+lemma isAutonomous_constInput (s : ContinuousSystem E U Y) (u₀ : U) :
+    (s.constInput u₀).IsAutonomous :=
+  isAutonomous_autonomous _ _
+
+/-- The trajectories of the system with its input held at `u₀` are those of the system under the
+constant input `u₀`. -/
+lemma constInput_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (s : ContinuousSystem E U Y) (u₀ : U) {x : ℝ → E} {I : Set ℝ} :
+    (s.constInput u₀).IsTrajectoryOn (fun _ => ()) x I ↔ s.IsTrajectoryOn (fun _ => u₀) x I :=
+  Iff.rfl
 
 variable [Zero U]
 
-/-- The *unforced* system: the input held at `0`, as an autonomous system `ẋ = F(t, x, 0)`,
-`y = h(t, x, 0)`.  Stability of a system with input is stability of this system; input–output
-notions such as input-to-state stability are stated on the system itself. -/
+/-- The *unforced* system: the input held at `0` (`constInput`), as an autonomous system
+`ẋ = F(t, x, 0)`, `y = h(t, x, 0)`.  Stability of a system with input is stability of this system;
+input–output notions such as input-to-state stability are stated on the system itself. -/
 @[blueprint "def:continuousSystem-zeroInput"
   (title := "The unforced system")
-  (statement := /-- The autonomous system (\cref{def:continuousSystem-autonomous})
-    $\dot x = F(t, x, 0)$, $y = h(t, x, 0)$ obtained by holding the input at $0$.  Stability of a
-    system with input means stability of this system. -/)]
+  (statement := /-- The system with its input held at $0$
+    (\cref{def:continuousSystem-constInput}): $\dot x = F(t, x, 0)$, $y = h(t, x, 0)$.
+    Stability of a system with input means stability of this system. -/)]
 def zeroInput (s : ContinuousSystem E U Y) : ContinuousSystem E Unit Y :=
-  autonomous (fun t x => s.F t x 0) (fun t x => s.h t x 0)
+  s.constInput 0
 
 @[simp] lemma zeroInput_F (s : ContinuousSystem E U Y) (t : ℝ) (x : E) (v : Unit) :
     s.zeroInput.F t x v = s.F t x 0 := rfl
@@ -465,7 +494,7 @@ def zeroInput (s : ContinuousSystem E U Y) : ContinuousSystem E Unit Y :=
 
 /-- The unforced system is autonomous. -/
 lemma isAutonomous_zeroInput (s : ContinuousSystem E U Y) : s.zeroInput.IsAutonomous :=
-  isAutonomous_autonomous _ _
+  isAutonomous_constInput s 0
 
 /-- The trajectories of the unforced system are those of the system under the zero input. -/
 @[blueprint "lem:continuousSystem-zeroInput-isTrajectoryOn-iff"
@@ -479,42 +508,13 @@ lemma zeroInput_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
     s.zeroInput.IsTrajectoryOn (fun _ => ()) x I ↔ s.IsTrajectoryOn 0 x I :=
   Iff.rfl
 
-end ZeroInput
+end ConstInput
 
-/-! ### Input offsets and cascades -/
+/-! ### Cascades -/
 
 section Cascade
 
 variable {E₂ Y₂ W : Type*}
-
-/-- The system with its input **measured from `u₀`**: `ẋ = F(t, x, u + u₀)`, `y = h(t, x, u + u₀)`.
-Input-to-state stability of `s.shiftInput u₀` bounds the effect of an input by its distance from
-`u₀` rather than from `0`. -/
-@[blueprint "def:continuousSystem-shiftInput"
-  (title := "Input measured from an offset")
-  (statement := /-- For $u_0$ in the input space, the system $\dot x = F(t, x, u + u_0)$,
-    $y = h(t, x, u + u_0)$: the input is measured from $u_0$. -/)]
-def shiftInput [Add U] (s : ContinuousSystem E U Y) (u₀ : U) : ContinuousSystem E U Y where
-  F t x u := s.F t x (u + u₀)
-  h t x u := s.h t x (u + u₀)
-
-@[simp] lemma shiftInput_zero [AddZeroClass U] (s : ContinuousSystem E U Y) :
-    s.shiftInput 0 = s := by
-  cases s
-  simp [shiftInput]
-
-/-- The trajectories of `s.shiftInput u₀` under `u` are those of `s` under `u + u₀`. -/
-lemma shiftInput_isTrajectoryOn_iff [Add U] [NormedAddCommGroup E] [NormedSpace ℝ E]
-    (s : ContinuousSystem E U Y) (u₀ : U) {u : ℝ → U} {x : ℝ → E} {I : Set ℝ} :
-    (s.shiftInput u₀).IsTrajectoryOn u x I ↔ s.IsTrajectoryOn (fun τ => u τ + u₀) x I :=
-  Iff.rfl
-
-/-- The right trajectories of `s.shiftInput u₀` under `u` are those of `s` under `u + u₀`. -/
-lemma shiftInput_isRightTrajectoryOn_iff [Add U] [NormedAddCommGroup E] [NormedSpace ℝ E]
-    (s : ContinuousSystem E U Y) (u₀ : U) {u : ℝ → U} {x : ℝ → E} {I : Set ℝ} :
-    (s.shiftInput u₀).IsRightTrajectoryOn u x I ↔
-      s.IsRightTrajectoryOn (fun τ => u τ + u₀) x I :=
-  Iff.rfl
 
 /-- The **cascade** of `s₁`, driven by the state of `s₂`, with `s₂`, driven by the external input:
 `ẋ₁ = F₁(t, x₁, x₂)`, `ẋ₂ = F₂(t, x₂, w)`, with output `(h₁(t, x₁, x₂), h₂(t, x₂, w))`.  With

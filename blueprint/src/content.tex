@@ -26,6 +26,10 @@ open region. First sphere crossing is the open-ball specialization of the genera
 
 \inputleannode{thm:exists-first-sphere-hit}
 
+A field cut off outside a set stays Lipschitz.
+
+\inputleannode{lem:lipschitzWith-smul-of-lipschitzOnWith}
+
 \section{Limits superior}
 
 Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
@@ -95,7 +99,9 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:hasDerivAt-integral}
 
-\inputleannode{lem:continuous-hasDerivAt-integral-sub-add}
+\inputleannode{lem:continuous-hasDerivAt-integral-comp}
+
+\inputleannode{lem:setIntegral-Ioi-comp-add-right}
 
 \inputleannode{lem:continuousOn-integral-Icc}
 
@@ -105,6 +111,12 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:tendsto-integral-average-atTop-zero}
 
+\section{Norm inequalities}
+
+\inputleannode{lem:abs-norm-sq-sub-norm-sq-le}
+
+\inputleannode{lem:prod-norm-le-norm-fst-add-norm-snd}
+
 \section{Positive definite functions}
 
 Positive definiteness in the sense of functions, not matrices: a function that vanishes at a
@@ -112,6 +124,8 @@ point and is positive elsewhere.  It is the shape every Lyapunov function and ev
 bound takes.
 
 \inputleannode{def:isPositiveDefiniteOn}
+
+\inputleannode{lem:isPositiveDefiniteOn-comp-norm-sub}
 
 \chapter{Ordinary differential equations}
 
@@ -177,6 +191,8 @@ $0$.
 
 \inputleannode{lem:eqOn-of-isIntegralCurveOn-Icc}
 
+\inputleannode{lem:isIntegralCurveOn-norm-sub-le}
+
 \inputleannode{thm:exists-isIntegralCurveOn-Ici}
 
 \inputleannode{thm:exists-isIntegralSolution-Icc-of-lipschitz}
@@ -189,6 +205,11 @@ of the field. Everything downstream that needs uniqueness gets it from here, by 
 solutions to agree initially and the perturbation to vanish, which collapses the bound to zero.
 
 \inputleannode{thm:continuous-dependence-ODE}
+
+The same mechanism bounds a single solution from below: an equilibrium cannot be approached
+faster than exponentially.
+
+\inputleannode{thm:isIntegralCurveOn-norm-sub-mul-exp-le}
 
 \inputleannode{thm:continuous-dependence-parameters}
 
@@ -235,6 +256,8 @@ and invariance argument differentiates.
 \inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
 
 \inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-hasDerivWithinAt}
+
+\inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-eq-add-integral}
 
 \inputleannode{lem:lieDerivative-eq-add-fderiv-sub}
 
@@ -297,11 +320,11 @@ for time invariance instead.
 
 \inputleannode{lem:continuousSystem-isAutonomous-exists}
 
+\inputleannode{def:continuousSystem-constInput}
+
 \inputleannode{def:continuousSystem-zeroInput}
 
 \inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
-
-\inputleannode{def:continuousSystem-shiftInput}
 
 \inputleannode{def:continuousSystem-cascade}
 
@@ -1566,7 +1589,7 @@ as well, once the linearization error is absorbed near the equilibrium.
 
 \inputleannode{thm:frechet-linearization-error-bound}
 
-\inputleannode{thm:norm-sub-sub-fderiv-le-of-lipschitzOnWith}
+\inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
 
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 

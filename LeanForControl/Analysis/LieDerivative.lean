@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.ODE.Basic
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import LeanForControl.Analysis.FrechetDerivative
 import Architect
 
@@ -132,6 +133,28 @@ lemma IsIntegralCurveOn.lieDerivative_eq_of_hasDerivWithinAt {V : ℝ → E → 
     lieDerivative V v t (γ t) = w :=
   UniqueDiffWithinAt.eq_deriv _ (uniqueDiffWithinAt_Ici t)
     ((hγ t self_mem_Ici).hasDerivWithinAt_lieDerivative hV) hW
+
+/-- **The Lie derivative of a function given by an integral along the solution**: if, along a
+forward integral curve `γ` from `t`, `V(τ, γ(τ)) = C + ∫_t^τ ψ` with `ψ` continuous, then the
+Lie derivative at `(t, γ(t))` is `ψ(t)`.  This is how a Lyapunov function defined as an integral
+along solutions is differentiated. -/
+@[blueprint "lem:isIntegralCurveOn-lieDerivative-eq-of-eq-add-integral"
+  (title := "The Lie derivative of an integral along a solution")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\gamma$ be an integral curve of $v$ on $[t, \infty)$, $V$ differentiable
+    at $(t, \gamma(t))$, $\psi$ continuous, and
+    $V(\tau, \gamma(\tau)) = C + \int_t^\tau \psi$ for $\tau \ge t$.
+    Then $L_v V(t, \gamma(t)) = \psi(t)$. -/)
+  (proof := /-- By the fundamental theorem of calculus the right-hand side has derivative
+    $\psi(t)$ at $t$; apply \cref{lem:isIntegralCurveOn-lieDerivative-eq-of-hasDerivWithinAt}. -/)]
+lemma IsIntegralCurveOn.lieDerivative_eq_of_eq_add_integral {V : ℝ → E → ℝ} {v : ℝ → E → E}
+    {γ : ℝ → E} {t C : ℝ} {ψ : ℝ → ℝ} (hγ : IsIntegralCurveOn γ v (Ici t))
+    (hV : DifferentiableAt ℝ (Function.uncurry V) (t, γ t)) (hψ : Continuous ψ)
+    (h_along : ∀ τ ∈ Ici t, V τ (γ τ) = C + ∫ σ in t..τ, ψ σ) :
+    lieDerivative V v t (γ t) = ψ t :=
+  hγ.lieDerivative_eq_of_hasDerivWithinAt hV
+    ((((hψ.integral_hasStrictDerivAt t t).hasDerivAt).const_add C).hasDerivWithinAt.congr
+      (fun τ hτ => h_along τ hτ) (h_along t self_mem_Ici))
 
 /-- **Changing the field changes the Lie derivative by the state derivative**:
 `L_w V(t, x) = L_v V(t, x) + ∂V/∂x(t, x) · (w(t, x) - v(t, x))`.  This is how a perturbation of the

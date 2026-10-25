@@ -372,12 +372,16 @@ private lemma norm_linearization_remainder_le {Y : Type*} {s : ContinuousSystem 
     {L₁ : ℝ≥0} (hL₁ : ∀ t : ℝ, LipschitzOnWith L₁ (fderiv ℝ (fun x => s.F t x ())) (ball x_eq r))
     (t : ℝ) {x : ℝⁿ} (hx : x ∈ ball x_eq r) :
     ‖fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq) - s.F t x ()‖ ≤ L₁ * ‖x - x_eq‖ ^ 2 := by
-  have h_diff : ∀ y ∈ ball x_eq r, DifferentiableAt ℝ (fun x => s.F t x ()) y := fun y hy =>
-    ((hf.contDiffAt (prod_mem_nhds Filter.univ_mem (isOpen_ball.mem_nhds hy))).differentiableAt
-      one_ne_zero).comp y ((differentiableAt_const t).prodMk differentiableAt_id)
+  have h_diff : ∀ y ∈ ball x_eq r, HasFDerivWithinAt (fun x => s.F t x ())
+      (fderiv ℝ (fun x => s.F t x ()) y) (ball x_eq r) y := fun y hy =>
+    (((hf.contDiffAt (prod_mem_nhds Filter.univ_mem (isOpen_ball.mem_nhds hy))).differentiableAt
+      one_ne_zero).comp y ((differentiableAt_const t).prodMk differentiableAt_id)).hasFDerivAt
+      |>.hasFDerivWithinAt
+  have h := (convex_ball x_eq r).norm_image_sub_sub_le_of_lipschitzOnWith h_diff (hL₁ t)
+    (mem_ball_self hr) hx
   rw [norm_sub_rev]
-  simpa [h_eq t] using norm_sub_sub_fderiv_le_of_lipschitzOnWith (convex_ball x_eq r) h_diff
-    (hL₁ t) (mem_ball_self hr) hx
+  simp only [h_eq t, sub_zero] at h
+  exact h.trans (mul_le_mul_of_nonneg_right (half_le_self L₁.coe_nonneg) (sq_nonneg _))
 
 /-- **Exponential stability passes to the linearization** (Khalil, Theorem 4.15, the "only if"
 direction).  Let `x_eq` be an equilibrium of `ẋ = f(t, x)` with `f` continuously
@@ -411,7 +415,7 @@ linearization near `x_eq`: the two vector fields differ by `O(‖x - x_eq‖²)`
         \bigl(A(t)(x - x_{\mathrm{eq}}) - f(t, x)\bigr)
       \le -c_3\|x - x_{\mathrm{eq}}\|^2 + c_4 L_1 \|x - x_{\mathrm{eq}}\|^3,
     \]
-    by \cref{thm:norm-sub-sub-fderiv-le-of-lipschitzOnWith}.  On a small ball this is at most
+    by \cref{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}.  On a small ball this is at most
     $-\tfrac{c_3}{2}\|x - x_{\mathrm{eq}}\|^2$, so $V$ is an exponential Lyapunov function for the
     linearization
     (\cref{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable}). -/)]
@@ -508,7 +512,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.13. -/
     \[
       \dot V \le -c_3\|x - x_{\mathrm{eq}}\|^2 + 2\|P\|L_1\|x - x_{\mathrm{eq}}\|^3,
     \]
-    by \cref{thm:norm-sub-sub-fderiv-le-of-lipschitzOnWith}, which is at most
+    by \cref{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}, which is at most
     $-\tfrac{c_3}{2}\|x - x_{\mathrm{eq}}\|^2$ on a small ball; conclude by
     \cref{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable}. -/)]
 theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}

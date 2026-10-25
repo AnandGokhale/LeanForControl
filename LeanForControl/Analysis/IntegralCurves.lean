@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.ODE.Basic
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.ODE.Transform
 import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.Analysis.Integrals
@@ -316,3 +317,19 @@ lemma IsIntegralCurveOn.isIntegralSolution_of_continuous {g : E → E} {t₀ t�
     (hg.comp_continuousOn (fun s hs => (hx s hs).continuousWithinAt))).mpr hx
 
 end IntegralCurve
+
+/-- **Bounded speed**: an integral curve of a field bounded by `B` along it, on a convex set,
+moves at most `B |τ₂ - τ₁|` between two of its times. -/
+@[blueprint "lem:isIntegralCurveOn-norm-sub-le"
+  (title := "Integral curves of a bounded field move at bounded speed")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\gamma$ be an integral curve of $v$ on a convex set $s$, with
+    $\|v(\tau, \gamma(\tau))\| \le B$ for $\tau \in s$.  Then
+    $\|\gamma(\tau_2) - \gamma(\tau_1)\| \le B\,|\tau_2 - \tau_1|$ for $\tau_1, \tau_2 \in s$. -/)]
+theorem IsIntegralCurveOn.norm_sub_le {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {γ : ℝ → E} {v : ℝ → E → E} {s : Set ℝ} {B : ℝ} (hγ : IsIntegralCurveOn γ v s)
+    (hs : Convex ℝ s) (hv : ∀ τ ∈ s, ‖v τ (γ τ)‖ ≤ B) {τ₁ τ₂ : ℝ} (h₁ : τ₁ ∈ s) (h₂ : τ₂ ∈ s) :
+    ‖γ τ₂ - γ τ₁‖ ≤ B * |τ₂ - τ₁| := by
+  simpa [Real.norm_eq_abs] using
+    hs.norm_image_sub_le_of_norm_hasDerivWithin_le (fun τ hτ => hγ τ hτ) hv h₁ h₂
+

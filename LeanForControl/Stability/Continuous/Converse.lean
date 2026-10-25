@@ -3,6 +3,7 @@ import LeanForControl.ODEs.Sensitivity
 import LeanForControl.Comparison.Massera
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Analysis.FrechetDerivative
+import LeanForControl.Analysis.Norm
 import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
@@ -60,59 +61,6 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-! ## Ingredients -/
 
-/-- Squared norms differ by at most `(‖a‖ + ‖b‖) ‖a - b‖`. -/
-private lemma abs_norm_sq_sub_norm_sq_le {F : Type*} [SeminormedAddCommGroup F] (a b : F) :
-    |‖a‖ ^ 2 - ‖b‖ ^ 2| ≤ (‖a‖ + ‖b‖) * ‖a - b‖ := by
-  rw [show ‖a‖ ^ 2 - ‖b‖ ^ 2 = (‖a‖ + ‖b‖) * (‖a‖ - ‖b‖) by ring, abs_mul,
-    abs_of_nonneg (by positivity)]
-  exact mul_le_mul_of_nonneg_left (abs_norm_sub_norm_le a b) (by positivity)
-
-/-- Along a solution from time `t`, `σ ↦ ‖y(t + σ) - x_eq‖²` is integrable on `[0, δ]`. -/
-private lemma intervalIntegrable_norm_sq_comp_add {y : ℝ → ℝⁿ} {t : ℝ}
-    (hy : ContinuousOn y (Ici t)) (x_eq : ℝⁿ) {δ : ℝ} (hδ : 0 ≤ δ) :
-    IntervalIntegrable (fun σ => ‖y (t + σ) - x_eq‖ ^ 2) MeasureTheory.volume 0 δ :=
-  ContinuousOn.intervalIntegrable_of_Icc hδ ((((hy.comp (continuousOn_const.add continuousOn_id))
-    fun σ hσ => by simpa using hσ.1).sub continuousOn_const).norm.pow 2)
-
-/-- **Solutions decay no faster than exponentially** (Khalil, Exercise 3.17): if `f(t, x_eq) = 0`
-and `f(t, ·)` is `L`-Lipschitz, a solution from `x` at time `t` satisfies
-`‖x - x_eq‖² e^{-2L(τ - t)} ≤ ‖y(τ) - x_eq‖²` for `τ ≥ t`.
-
-This is the integrating-factor bound `IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` for
-`W = -‖· - x_eq‖²`, whose Lie derivative `-2⟪y - x_eq, f⟫` is at most `2L ‖y - x_eq‖² = -2L W`. -/
-private lemma norm_sq_mul_exp_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0} {x_eq : ℝⁿ}
-    (h_eq : ∀ τ : ℝ, 0 ≤ τ → f τ x_eq = 0) (h_lip : ∀ τ, LipschitzWith L (f τ))
-    {y : ℝ → ℝⁿ} {t : ℝ} (ht : 0 ≤ t) (hy : IsIntegralCurveOn y f (Ici t)) {τ : ℝ}
-    (hτ : t ≤ τ) :
-    ‖y t - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (τ - t)) ≤ ‖y τ - x_eq‖ ^ 2 := by
-  have hW : ∀ z : ℝⁿ, HasFDerivAt (fun z => -‖z - x_eq‖ ^ 2)
-      (-(2 • innerSL ℝ (z - x_eq))) z := fun z =>
-    ((hasFDerivAt_id z).sub_const x_eq).norm_sq.neg.congr_fderiv (by simp)
-  have h_rate : ∀ σ ∈ Ioo t τ, _root_.lieDerivative (fun _ z => -‖z - x_eq‖ ^ 2) f σ (y σ) ≤
-      -(2 * L) * -‖y σ - x_eq‖ ^ 2 := by
-    intro σ hσ
-    have h_f : ‖f σ (y σ)‖ ≤ L * ‖y σ - x_eq‖ :=
-      calc ‖f σ (y σ)‖
-          = dist (f σ (y σ)) (f σ x_eq) := by rw [h_eq σ (ht.trans hσ.1.le), dist_zero_right]
-        _ ≤ L * dist (y σ) x_eq := (h_lip σ).dist_le_mul _ _
-        _ = L * ‖y σ - x_eq‖ := by rw [dist_eq_norm]
-    rw [lieDerivative_const (hW (y σ)).differentiableAt, (hW (y σ)).fderiv]
-    calc -((2 • innerSL ℝ (y σ - x_eq)) (f σ (y σ)))
-        = -(2 * inner ℝ (y σ - x_eq) (f σ (y σ))) := by
-          simp only [ContinuousLinearMap.smul_apply, innerSL_apply_apply, nsmul_eq_mul,
-            Nat.cast_ofNat]
-      _ ≤ 2 * (‖y σ - x_eq‖ * ‖f σ (y σ)‖) := by
-          linarith [neg_le_of_abs_le (abs_real_inner_le_norm (y σ - x_eq) (f σ (y σ)))]
-      _ ≤ 2 * (‖y σ - x_eq‖ * (L * ‖y σ - x_eq‖)) := by gcongr
-      _ = -(2 * L) * -‖y σ - x_eq‖ ^ 2 := by ring
-  have h_diff : ∀ σ ∈ Icc t τ, DifferentiableAt ℝ
-      (Function.uncurry fun (_ : ℝ) (z : ℝⁿ) => -‖z - x_eq‖ ^ 2) (σ, y σ) := fun σ _ =>
-    (hW (y σ)).differentiableAt.comp (g := fun z => -‖z - x_eq‖ ^ 2) (σ, y σ) differentiableAt_snd
-  have h : -‖y τ - x_eq‖ ^ 2 ≤ Real.exp (-(2 * L) * (τ - t)) * -‖y t - x_eq‖ ^ 2 :=
-    IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le (hy.mono Icc_subset_Ici_self) h_diff h_rate
-      τ ⟨hτ, le_rfl⟩
-  linarith [mul_comm (Real.exp (-(2 * L) * (τ - t))) (‖y t - x_eq‖ ^ 2)]
-
 /-- **Appending time to the state.**  If `φ (t, x)` solves `ẋ = f(t, x)` from `x` at time `t`,
 then `σ ↦ (t + σ, φ (t, x) (t + σ))` solves the autonomous system `ż = (1, f(z))` from `(t, x)`. -/
 private lemma isIntegralCurveOn_timeAugmented {f : ℝ → ℝⁿ → ℝⁿ} {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
@@ -125,21 +73,32 @@ private lemma isIntegralCurveOn_timeAugmented {f : ℝ → ℝⁿ → ℝⁿ} {�
     fun u hu => by simpa using hu.1
   exact hshift.prodMk (by simpa using hφσ)
 
-/-- **Solutions are differentiable in their initial time and state.**  On `[0, δ]`,
-`z ↦ (z.1 + σ, φ z (z.1 + σ))` has derivative `Φ σ` at `z₀`, with `Φ` continuous in `σ`: the
-variational solution of the time-augmented system (`hasFDerivAt_of_isIntegralCurveOn`). -/
+/-- **Solutions are differentiable and locally Lipschitz in their initial time and state.**  On
+`[0, δ]`, `z ↦ (z.1 + σ, φ z (z.1 + σ))` has derivative `Φ σ` at `z₀`, with `Φ` continuous in
+`σ`: the variational solution of the time-augmented system (`hasFDerivAt_of_isIntegralCurveOn`).
+Near `z₀` these maps are `e^{Kδ}`-Lipschitz (`IsIntegralCurveOn.exists_dist_le_of_contDiff`). -/
 private lemma exists_hasFDerivAt_flow {f : ℝ → ℝⁿ → ℝⁿ}
     (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => f p.1 p.2)) {φ : ℝ × ℝⁿ → ℝ → ℝⁿ}
     (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1))
     {δ : ℝ} (hδ : 0 ≤ δ) (z₀ : ℝ × ℝⁿ) :
-    ∃ Φ : ℝ → (ℝ × ℝⁿ) →L[ℝ] (ℝ × ℝⁿ), ContinuousOn Φ (Icc 0 δ) ∧ ∀ σ ∈ Icc 0 δ,
-      HasFDerivAt (fun z : ℝ × ℝⁿ => (z.1 + σ, φ z (z.1 + σ))) (Φ σ) z₀ := by
+    (∃ Φ : ℝ → (ℝ × ℝⁿ) →L[ℝ] (ℝ × ℝⁿ), ContinuousOn Φ (Icc 0 δ) ∧ ∀ σ ∈ Icc 0 δ,
+      HasFDerivAt (fun z : ℝ × ℝⁿ => (z.1 + σ, φ z (z.1 + σ))) (Φ σ) z₀) ∧
+    ∃ K : ℝ≥0, ∃ ρ > 0, ∀ z ∈ ball z₀ ρ, ∀ z' ∈ ball z₀ ρ, ∀ σ ∈ Icc 0 δ,
+      ‖(z.1 + σ, φ z (z.1 + σ)) - (z'.1 + σ, φ z' (z'.1 + σ))‖ ≤ dist z z' * Real.exp (K * δ) := by
   set g : ℝ × ℝⁿ → ℝ × ℝⁿ := fun z => (1, f z.1 z.2)
   have hg : ContDiff ℝ 1 g := contDiff_const.prodMk hf
   have hΨ0 : ∀ z : ℝ × ℝⁿ, (z.1 + 0, φ z (z.1 + 0)) = z := fun z => by simp [hφ0]
-  obtain ⟨Φ, hΦ0, hΦ⟩ := (isIntegralCurveOn_timeAugmented hφ z₀ δ).exists_variational hg hδ
-  exact ⟨Φ, hΦ.continuousOn, fun σ hσ => hasFDerivAt_of_isIntegralCurveOn hg
-    (fun z => isIntegralCurveOn_timeAugmented hφ z δ) hΨ0 hΦ0 hΦ hσ⟩
+  have hΨ := fun z => isIntegralCurveOn_timeAugmented hφ z δ
+  obtain ⟨Φ, hΦ0, hΦ⟩ := (hΨ z₀).exists_variational hg hδ
+  refine ⟨⟨Φ, hΦ.continuousOn, fun σ hσ =>
+    hasFDerivAt_of_isIntegralCurveOn hg hΨ hΨ0 hΦ0 hΦ hσ⟩, ?_⟩
+  obtain ⟨K, ρ, hρ, h_sep⟩ := (hΨ z₀).exists_dist_le_of_contDiff hg
+  refine ⟨K, ρ, hρ, fun z hz z' hz' σ hσ => ?_⟩
+  have h := h_sep _ _ (hΨ z) (hΨ z') (by simpa [hφ0] using hz) (by simpa [hφ0] using hz') σ hσ
+  beta_reduce at h
+  rw [hΨ0, hΨ0, dist_eq_norm] at h
+  exact h.trans (mul_le_mul_of_nonneg_left
+    (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hσ.2 K.coe_nonneg)) dist_nonneg)
 
 /-- **The integral of the squared distance along solutions is differentiable** in the initial time
 and state.  With `φ (t, x)` the solution of `ẋ = f(t, x)` from `x` at time `t`, the map
@@ -154,15 +113,13 @@ private lemma differentiableAt_integral_norm_sq {f : ℝ → ℝⁿ → ℝⁿ}
     (hφ0 : ∀ p, φ p p.1 = p.2) (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1))
     {δ : ℝ} (hδ : 0 < δ) (x_eq : ℝⁿ) (z₀ : ℝ × ℝⁿ) :
     DifferentiableAt ℝ (fun z : ℝ × ℝⁿ => ∫ σ in (0 : ℝ)..δ, ‖φ z (z.1 + σ) - x_eq‖ ^ 2) z₀ := by
-  -- Step 1. Time appended to the state: `z = (t, x)` solves `ż = g(z) = (1, f(z))`.
-  set g : ℝ × ℝⁿ → ℝ × ℝⁿ := fun z => (1, f z.1 z.2)
-  have hg : ContDiff ℝ 1 g := contDiff_const.prodMk hf
+  -- Step 1. With time appended to the state, `Ψ z σ = (z.1 + σ, φ z (z.1 + σ))` is
+  -- differentiable at `z₀` with derivative `Φ σ`, and `e^{Kδ}`-Lipschitz near `z₀`.
   set Ψ : ℝ × ℝⁿ → ℝ → ℝ × ℝⁿ := fun z σ => (z.1 + σ, φ z (z.1 + σ))
-  have hΨ0 : ∀ z, Ψ z 0 = z := fun z => by simp [Ψ, hφ0]
-  have hΨ : ∀ z, IsIntegralCurveOn (Ψ z) (fun _ => g) (Icc 0 δ) := fun z =>
-    isIntegralCurveOn_timeAugmented hφ z δ
+  obtain ⟨⟨Φ, hΦ_cont, h_flow⟩, K, ρ, hρ, h_sep'⟩ := exists_hasFDerivAt_flow hf hφ0 hφ hδ.le z₀
+  have hΨ_cont : ∀ z, ContinuousOn (Ψ z) (Icc 0 δ) := fun z =>
+    (isIntegralCurveOn_timeAugmented hφ z δ).continuousOn
   -- Step 2. Each integrand is differentiable at `z₀`, through the flow derivative `Φ`.
-  obtain ⟨Φ, hΦ_cont, h_flow⟩ := exists_hasFDerivAt_flow hf hφ0 hφ hδ.le z₀
   set F : ℝ × ℝⁿ → ℝ → ℝ := fun z σ => ‖(Ψ z σ).2 - x_eq‖ ^ 2
   set F' : ℝ → (ℝ × ℝⁿ) →L[ℝ] ℝ := fun σ =>
     2 • (innerSL ℝ ((Ψ z₀ σ).2 - x_eq)).comp ((ContinuousLinearMap.snd ℝ ℝ ℝⁿ).comp (Φ σ))
@@ -171,19 +128,11 @@ private lemma differentiableAt_integral_norm_sq {f : ℝ → ℝⁿ → ℝⁿ}
         ((ContinuousLinearMap.snd ℝ ℝ ℝⁿ).comp (Φ σ)) z₀ :=
       (hasFDerivAt_snd.comp z₀ (h_flow σ hσ)).sub_const x_eq
     exact h_snd.norm_sq
-  -- Step 3. A uniform Lipschitz bound in `z` near `z₀`.
-  obtain ⟨K, ρ, hρ, h_sep⟩ := (hΨ z₀).exists_dist_le_of_contDiff hg
+  -- Step 3. A uniform Lipschitz bound in `z` near `z₀`: the integrand is bounded by `R` there.
   obtain ⟨B, hB⟩ := isCompact_Icc.exists_bound_of_continuousOn
-    ((continuous_snd.comp_continuousOn (hΨ z₀).continuousOn).sub continuousOn_const)
+    ((continuous_snd.comp_continuousOn (hΨ_cont z₀)).sub continuousOn_const)
   set R := B + ρ * Real.exp (K * δ)
   set C := 2 * R * Real.exp (K * δ)
-  have h_sep' : ∀ z ∈ ball z₀ ρ, ∀ z' ∈ ball z₀ ρ, ∀ σ ∈ Icc 0 δ,
-      ‖Ψ z σ - Ψ z' σ‖ ≤ dist z z' * Real.exp (K * δ) := fun z hz z' hz' σ hσ => by
-    have h := h_sep (Ψ z) (Ψ z') (hΨ z) (hΨ z') (by rw [hΨ0, hΨ0]; exact hz)
-      (by rw [hΨ0, hΨ0]; exact hz') σ hσ
-    rw [hΨ0, hΨ0, dist_eq_norm] at h
-    exact h.trans (mul_le_mul_of_nonneg_left
-      (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hσ.2 K.coe_nonneg)) dist_nonneg)
   have h_R : ∀ z ∈ ball z₀ ρ, ∀ σ ∈ Icc 0 δ, ‖(Ψ z σ).2 - x_eq‖ ≤ R := fun z hz σ hσ =>
     calc ‖(Ψ z σ).2 - x_eq‖
         ≤ ‖(Ψ z σ).2 - (Ψ z₀ σ).2‖ + ‖(Ψ z₀ σ).2 - x_eq‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
@@ -219,10 +168,10 @@ private lemma differentiableAt_integral_norm_sq {f : ℝ → ℝⁿ → ℝⁿ}
     rw [uIoc_of_le hδ.le]
     exact Ioc_subset_Icc_self
   have hF_cont : ∀ z, ContinuousOn (F z) (Icc 0 δ) := fun z =>
-    ((continuous_snd.comp_continuousOn (hΨ z).continuousOn).sub continuousOn_const).norm.pow 2
+    ((continuous_snd.comp_continuousOn (hΨ_cont z)).sub continuousOn_const).norm.pow 2
   have hF'_cont : ContinuousOn F' (Icc 0 δ) :=
     (((innerSL ℝ).continuous.comp_continuousOn
-      ((continuous_snd.comp_continuousOn (hΨ z₀).continuousOn).sub continuousOn_const)).clm_comp
+      ((continuous_snd.comp_continuousOn (hΨ_cont z₀)).sub continuousOn_const)).clm_comp
         (continuousOn_const.clm_comp hΦ_cont)).const_smul _
   exact (intervalIntegral.hasFDerivAt_integral_of_dominated_loc_of_lip (μ := MeasureTheory.volume)
     (bound := fun _ => C) (ball_mem_nhds z₀ hρ)
@@ -276,8 +225,11 @@ private lemma lieDerivative_integral_norm_sq {f : ℝ → ℝⁿ → ℝⁿ}
   have h_W : HasDerivAt (fun τ => (∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) - ∫ σ in (0 : ℝ)..τ - t, w σ)
       (w δ - w 0) t := by
     have h₂ : HasDerivAt (fun τ => ∫ σ in (0 : ℝ)..τ - t, w σ) (w 0) t := by
-      simpa using hw.hasDerivAt_integral_sub_add 0 t 0
-    exact (hw.hasDerivAt_integral_sub_add 0 t δ).sub h₂
+      simpa using hw.hasDerivAt_integral_comp (hasDerivAt_const t 0) ((hasDerivAt_id t).sub_const t)
+    have h₁ : HasDerivAt (fun τ => ∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) (w δ) t := by
+      simpa using hw.hasDerivAt_integral_comp (hasDerivAt_const t 0)
+        (((hasDerivAt_id t).sub_const t).add_const δ)
+    exact h₁.sub h₂
   have h_W' : HasDerivWithinAt (fun τ => V τ (φ (t, x) τ)) (w δ - w 0) (Ici t) t :=
     h_W.hasDerivWithinAt.congr (fun τ hτ => h_along τ hτ) (h_along t self_mem_Ici)
   -- Step 3. That right derivative is the Lie derivative.
@@ -357,8 +309,11 @@ private lemma norm_fderiv_integral_norm_sq_le {f : ℝ → ℝⁿ → ℝⁿ} {L
               (‖y - y'‖ * Real.exp (L * δ)) := by gcongr
         _ = 2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) := by ring
     have h_int : ∀ z : ℝⁿ, IntervalIntegrable (fun σ => ‖φ (t, z) (t + σ) - x_eq‖ ^ 2)
-        MeasureTheory.volume 0 δ := fun z =>
-      intervalIntegrable_norm_sq_comp_add (hφ (t, z)).continuousOn x_eq hδ.le
+        MeasureTheory.volume 0 δ := fun z => by
+      have hc : ContinuousOn (φ (t, z)) (Ici t) := (hφ (t, z)).continuousOn
+      apply ContinuousOn.intervalIntegrable
+      rw [uIcc_of_le hδ.le]
+      fun_prop (disch := intro σ hσ; simp only [mem_Ici]; linarith [hσ.1])
     calc dist (∫ σ in (0 : ℝ)..δ, ‖φ (t, y) (t + σ) - x_eq‖ ^ 2)
           (∫ σ in (0 : ℝ)..δ, ‖φ (t, y') (t + σ) - x_eq‖ ^ 2)
         = ‖∫ σ in (0 : ℝ)..δ,
@@ -417,8 +372,11 @@ private lemma exists_quadraticLyapunov_of_estimateOn {f : ℝ → ℝⁿ → ℝ
   -- Step 4. `V(t, x) = ∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ`.
   set V : ℝ → ℝⁿ → ℝ := fun t x => ∫ σ in (0 : ℝ)..δ, ‖φ (t, x) (t + σ) - x_eq‖ ^ 2
   have h_int : ∀ (t : ℝ) (x : ℝⁿ), IntervalIntegrable (fun σ => ‖φ (t, x) (t + σ) - x_eq‖ ^ 2)
-      MeasureTheory.volume 0 δ := fun t x =>
-    intervalIntegrable_norm_sq_comp_add (hφ (t, x)).continuousOn x_eq hδ.le
+      MeasureTheory.volume 0 δ := fun t x => by
+    have hc : ContinuousOn (φ (t, x)) (Ici t) := (hφ (t, x)).continuousOn
+    apply ContinuousOn.intervalIntegrable
+    rw [uIcc_of_le hδ.le]
+    fun_prop (disch := intro σ hσ; simp only [mem_Ici]; linarith [hσ.1])
   refine ⟨V, fun t x => differentiableAt_integral_norm_sq hf hφ0 hφ hδ x_eq (t, x),
     δ * Real.exp (-(2 * L) * δ), by positivity, δ * k ^ 2, by positivity,
     2 * (k * δ * Real.exp (L * δ)), by positivity, fun t ht x hx => ⟨?_, ?_, ?_, ?_⟩⟩
@@ -435,9 +393,13 @@ private lemma exists_quadraticLyapunov_of_estimateOn {f : ℝ → ℝⁿ → ℝ
                   rw [show t + σ - t = σ by ring]
                   nlinarith [mul_nonneg L.coe_nonneg (sub_nonneg.mpr hσ.2)])) (by positivity)
             _ ≤ ‖φ (t, x) (t + σ) - x_eq‖ ^ 2 := by
-                have h := norm_sq_mul_exp_le (fun τ _ => h_eq τ) hf_lip ht (hφ (t, x))
-                  (τ := t + σ) (by linarith [hσ.1])
-                rwa [show φ (t, x) t = x from hφ0 (t, x)] at h
+                have h := ((hφ (t, x)).mono Icc_subset_Ici_self).norm_sub_mul_exp_le (t := t)
+                  (τ := t + σ) (by linarith [hσ.1]) (fun τ _ => h_eq τ) (fun τ _ => hf_lip τ)
+                rw [show φ (t, x) t = x from hφ0 (t, x)] at h
+                calc ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (t + σ - t))
+                    = (‖x - x_eq‖ * Real.exp (-(L * (t + σ - t)))) ^ 2 := by
+                      rw [mul_pow, ← Real.exp_nat_mul]; ring_nf
+                  _ ≤ _ := pow_le_pow_left₀ (by positivity) h 2
   · -- The upper bound: solutions stay within `k‖x - x_eq‖` of `x_eq`.
     calc V t x
         ≤ ∫ σ in (0 : ℝ)..δ, k ^ 2 * ‖x - x_eq‖ ^ 2 :=
@@ -464,45 +426,6 @@ private lemma exists_quadraticLyapunov_of_estimateOn {f : ℝ → ℝⁿ → ℝ
       _ = -(1 / 2 * ‖x - x_eq‖ ^ 2) := by ring
   · -- The gradient bound.
     exact norm_fderiv_integral_norm_sq_le hf_lip hφ0 hφ hδ hk hU (h_upper' t ht) hx
-
-/-- **Cutting off a field that is Lipschitz on a set.**  If `g` is `L`-Lipschitz and bounded by `B`
-on `S`, and `χ` is `M`-Lipschitz with `|χ| ≤ 1` and vanishes off `S`, then `χ • g` is
-`(L + M B)`-Lipschitz everywhere. -/
-private lemma lipschitzWith_smul_of_lipschitzOnWith {F : Type*} [NormedAddCommGroup F]
-    [NormedSpace ℝ F] {χ : ℝⁿ → ℝ} {g : ℝⁿ → F} {S : Set ℝⁿ} {M L B : ℝ≥0}
-    (hχ : LipschitzWith M χ) (hχ_le : ∀ y, |χ y| ≤ 1) (hχ_zero : ∀ y ∉ S, χ y = 0)
-    (hg : LipschitzOnWith L g S) (hg_le : ∀ y ∈ S, ‖g y‖ ≤ B) :
-    LipschitzWith (L + M * B) fun y => χ y • g y := by
-  -- Away from `S`, `χ • g` is `0`, and next to a point of `S` it moves only through `χ`.
-  have h_one : ∀ y z, y ∈ S → z ∉ S → ‖χ y • g y‖ ≤ (L + M * B) * dist y z := fun y z hy hz =>
-    calc ‖χ y • g y‖
-        = |χ y - χ z| * ‖g y‖ := by rw [hχ_zero z hz, sub_zero, norm_smul, Real.norm_eq_abs]
-      _ ≤ (M * dist y z) * B := by
-          gcongr
-          · exact (Real.dist_eq _ _).symm.le.trans (hχ.dist_le_mul y z)
-          · exact hg_le y hy
-      _ ≤ (L + M * B) * dist y z := by nlinarith [dist_nonneg (x := y) (y := z), L.coe_nonneg]
-  refine LipschitzWith.of_dist_le_mul fun y z => ?_
-  rw [dist_eq_norm]
-  by_cases hy : y ∈ S <;> by_cases hz : z ∈ S
-  · calc ‖χ y • g y - χ z • g z‖
-        = ‖χ y • (g y - g z) + (χ y - χ z) • g z‖ := by rw [smul_sub, sub_smul]; abel_nf
-      _ ≤ |χ y| * ‖g y - g z‖ + |χ y - χ z| * ‖g z‖ := by
-          refine (norm_add_le _ _).trans ?_
-          rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs]
-      _ ≤ 1 * (L * dist y z) + (M * dist y z) * B := by
-          gcongr
-          · exact hχ_le y
-          · rw [← dist_eq_norm]; exact hg.dist_le_mul y hy z hz
-          · exact (Real.dist_eq _ _).symm.le.trans (hχ.dist_le_mul y z)
-          · exact hg_le z hz
-      _ = (L + M * B) * dist y z := by ring
-  · rw [hχ_zero z hz, zero_smul, sub_zero]
-    exact h_one y z hy hz
-  · rw [hχ_zero y hy, zero_smul, zero_sub, norm_neg, dist_comm]
-    exact h_one z y hz hy
-  · simp only [hχ_zero y hy, hχ_zero z hz, zero_smul, sub_zero, norm_zero]
-    positivity
 
 /-- **The cut-off field.**  If `f` is `C¹` and `L`-Lipschitz on the ball `D` of radius `r`, with
 `f(t, x_eq) = 0`, then for `ρ₁ < r` there is a `C¹` field `fχ`, globally Lipschitz in `x`
@@ -808,13 +731,6 @@ private lemma klRate_spec {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr
         ≤ r₀ * Real.exp (1 - σ) := le_mul_of_one_le_right hr₀.le (Real.one_le_exp (by linarith))
       _ ≤ klRate β r₀ σ := le_add_of_nonneg_left (hβ_nonneg σ)
 
-/-- **Solutions of a bounded field move at bounded speed**: `‖y(τ₂) - y(τ₁)‖ ≤ B |τ₂ - τ₁|`. -/
-private lemma norm_sub_le_of_isIntegralCurveOn {f : ℝ → ℝⁿ → ℝⁿ} {B : ℝ}
-    (hf_bdd : ∀ t y, ‖f t y‖ ≤ B) {y : ℝ → ℝⁿ} {t : ℝ} (hy : IsIntegralCurveOn y f (Ici t))
-    {τ₁ τ₂ : ℝ} (h₁ : t ≤ τ₁) (h₂ : t ≤ τ₂) : ‖y τ₂ - y τ₁‖ ≤ B * |τ₂ - τ₁| := by
-  simpa [Real.norm_eq_abs] using Convex.norm_image_sub_le_of_norm_hasDerivWithin_le
-    (fun τ hτ => hy τ hτ) (fun τ _ => hf_bdd _ _) (convex_Ici t) (mem_Ici.2 h₁) (mem_Ici.2 h₂)
-
 /-- **Solutions from nearby initial times and states stay nearby**: with `f(t, ·)` `L`-Lipschitz
 and `‖f‖ ≤ B`, the solutions from `z` and `z'`, compared after the same elapsed time `σ`, differ
 by at most `(2B + 1) e^{Lσ} dist(z, z')`.  Run both to the later initial time (speed `B`), then
@@ -841,7 +757,7 @@ private lemma norm_flow_sub_flow_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0
     have hd : 0 ≤ d := dist_nonneg
     -- `φ z` runs from `z.1` to `z'.1` at speed `B`.
     have h_speed : ∀ σ' τ, z.1 ≤ σ' → z.1 ≤ τ → ‖φ z τ - φ z σ'‖ ≤ B * |τ - σ'| :=
-      fun σ' τ h₁ h₂ => norm_sub_le_of_isIntegralCurveOn hf_bdd (hφ z) h₁ h₂
+      fun σ' τ h₁ h₂ => (hφ z).norm_sub_le (convex_Ici _) (fun _ _ => hf_bdd _ _) h₁ h₂
     have h_gron : ‖φ z (z'.1 + σ) - φ z' (z'.1 + σ)‖ ≤
         ‖φ z z'.1 - z'.2‖ * Real.exp (L * σ) := by
       have h := dist_le_of_isIntegralCurveOn_Icc hf_lip
@@ -872,29 +788,6 @@ private lemma norm_flow_sub_flow_le {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0
   · exact h_one z z' h
   · rw [norm_sub_rev, dist_comm]
     exact h_one z' z h
-
-/-- **Translating an integral over `(0, ∞)`**: `∫_0^∞ w(σ + c) dσ = ∫_c^∞ w`. -/
-private lemma setIntegral_Ioi_comp_add_right (w : ℝ → ℝ) (c : ℝ) :
-    ∫ σ in Ioi (0 : ℝ), w (σ + c) = ∫ s in Ioi c, w s := by
-  rw [← MeasureTheory.integral_indicator measurableSet_Ioi,
-    ← MeasureTheory.integral_indicator measurableSet_Ioi,
-    ← MeasureTheory.integral_add_right_eq_self (fun s => (Ioi c).indicator w s) c]
-  congr 1
-  funext σ
-  by_cases hσ : 0 < σ
-  · simp [Set.indicator, hσ, show c < σ + c by linarith]
-  · simp [Set.indicator, hσ, show ¬ c < σ + c by linarith]
-
-/-- **The mean value bound for Massera's `G`**: on `[0, c]`, `G` is `G'(c)`-Lipschitz. -/
-private lemma abs_sub_le_of_hasDerivAt {G G' : ClassKInfty}
-    (hG : ∀ r, 0 ≤ r → HasDerivAt G (G' r) r) {a b c : ℝ} (ha : 0 ≤ a) (hac : a ≤ c)
-    (hb : 0 ≤ b) (hbc : b ≤ c) : |G b - G a| ≤ G' c * |b - a| := by
-  have h := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le (f := G.toFun) (f' := G'.toFun)
-    (s := Icc 0 c) (fun r hr => (hG r hr.1).hasDerivWithinAt) (fun r hr => by
-      rw [Real.norm_eq_abs, abs_of_nonneg (G'.maps_to hr.1)]
-      exact (G'.mono_iff hr.1 (mem_Ici.2 (hr.1.trans hr.2))).2 hr.2)
-    (convex_Icc 0 c) ⟨ha, hac⟩ ⟨hb, hbc⟩
-  simpa [Real.norm_eq_abs] using h
 
 /-- **Solutions from near `(t₀, x₀)` obey the rate `ĝ`**, for `t₀ ≥ 0` and `x₀ ∈ D₀`: on a small
 ball around `(t₀, x₀)` every solution satisfies `‖φ(z.1 + σ) - x_eq‖ ≤ ĝ(σ)`.  From a nonnegative
@@ -929,7 +822,7 @@ private lemma norm_flow_le_klRate {f : ℝ → ℝⁿ → ℝⁿ} {B : ℝ} (hf_
       _ = ρ + ε := add_comm _ _
   have hx_r₀ : ‖z.2 - x_eq‖ < r₀ := by nlinarith
   have h_speed := fun {τ₁ τ₂ : ℝ} (h₁ : z.1 ≤ τ₁) (h₂ : z.1 ≤ τ₂) =>
-    norm_sub_le_of_isIntegralCurveOn hf_bdd (hφ z) h₁ h₂
+    (hφ z).norm_sub_le (convex_Ici _) (fun _ _ => hf_bdd _ _) h₁ h₂
   rcases le_or_gt 0 z.1 with hz1 | hz1
   · -- From a nonnegative initial time: the estimate itself.
     have h := h_KL z.1 hz1 z.2 (mem_ball_iff_norm.mpr hx_r₀) (φ z) (hφ0 z) (hφ z) (z.1 + σ)
@@ -1155,7 +1048,7 @@ private lemma hasFDerivAt_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ}
   -- Each integrand is differentiable in the initial data, with derivative continuous in `σ`.
   have h_u_diff : ∀ z₀ σ, 0 ≤ σ →
       HasFDerivAt (fun z => u z σ) (fderiv ℝ (fun z => u z σ) z₀) z₀ := fun z₀ σ hσ => by
-    obtain ⟨Φ, -, hΦ⟩ := exists_hasFDerivAt_flow hf hφ0 hφ hσ z₀
+    obtain ⟨⟨Φ, -, hΦ⟩, -⟩ := exists_hasFDerivAt_flow hf hφ0 hφ hσ z₀
     exact (hasFDerivAt_snd.comp z₀ (hΦ σ ⟨hσ, le_rfl⟩)).differentiableAt.hasFDerivAt
   set F' : ℝ × ℝⁿ → ℝ → (ℝ × ℝⁿ) →L[ℝ] ℝ := fun z₀ σ =>
     (D (u z₀ σ)).comp (fderiv ℝ (fun z => u z σ) z₀)
@@ -1164,7 +1057,7 @@ private lemma hasFDerivAt_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ}
       (h_u_diff z₀ σ hσ)
   have hDu_cont : ∀ z₀, ContinuousOn (fun σ => fderiv ℝ (fun z => u z σ) z₀) (Ioi 0) := by
     intro z₀ σ₀ hσ₀
-    obtain ⟨Φ, hΦ_cont, hΦ⟩ :=
+    obtain ⟨⟨Φ, hΦ_cont, hΦ⟩, -⟩ :=
       exists_hasFDerivAt_flow hf hφ0 hφ (δ := σ₀ + 1) (by linarith [mem_Ioi.1 hσ₀]) z₀
     have h_at : ContinuousAt (fun σ => (ContinuousLinearMap.snd ℝ ℝ ℝⁿ).comp (Φ σ)) σ₀ :=
       (continuousOn_const.clm_comp hΦ_cont).continuousAt (Icc_mem_nhds hσ₀ (lt_add_one σ₀))
@@ -1195,9 +1088,16 @@ private lemma hasFDerivAt_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ}
       exact norm_flow_sub_flow_le hf_lip hf_bdd hφ0 hφ z z' hσ'
     rw [Real.coe_nnabs, abs_of_nonneg (hbound_nonneg σ), Real.dist_eq]
     calc |G (‖p‖ ^ 2) - G (‖q‖ ^ 2)|
-        ≤ G' (ĝ σ ^ 2) * |‖p‖ ^ 2 - ‖q‖ ^ 2| :=
-          abs_sub_le_of_hasDerivAt hG (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hq 2)
-            (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) hp 2)
+        ≤ G' (ĝ σ ^ 2) * |‖p‖ ^ 2 - ‖q‖ ^ 2| := by
+          -- The mean value bound: on `[0, ĝ(σ)²]`, `G' ≤ G'(ĝ(σ)²)`.
+          simpa [Real.norm_eq_abs] using Convex.norm_image_sub_le_of_norm_hasDerivWithin_le
+            (f := G.toFun) (f' := G'.toFun) (s := Icc 0 (ĝ σ ^ 2))
+            (fun r hr => (hG r hr.1).hasDerivWithinAt)
+            (fun r hr => by
+              rw [Real.norm_eq_abs, abs_of_nonneg (G'.maps_to hr.1)]
+              exact G'.mono hr.1 hr.2)
+            (convex_Icc 0 _) ⟨sq_nonneg ‖q‖, pow_le_pow_left₀ (norm_nonneg _) hq 2⟩
+            ⟨sq_nonneg ‖p‖, pow_le_pow_left₀ (norm_nonneg _) hp 2⟩
       _ ≤ G' (ĝ σ ^ 2) * ((‖p‖ + ‖q‖) * ‖p - q‖) :=
           mul_le_mul_of_nonneg_left (abs_norm_sq_sub_norm_sq_le p q)
             (hG'_nonneg _ (sq_nonneg _))
@@ -1258,19 +1158,20 @@ private lemma hasFDerivAt_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ}
         (ae_restrict_of_forall_mem measurableSet_Ioi h_pt)
 
 /-- **`V` is bounded below** by `G(e^{-2L} ‖x - x_eq‖²)`: solutions decay no faster than
-`e^{-Lσ}` (`norm_sq_mul_exp_le`), and `V` is at least its integral over `(0, 1]`. -/
+`e^{-Lσ}` (`IsIntegralCurveOn.norm_sub_mul_exp_le`), and `V` is at least its integral over
+`(0, 1]`. -/
 private lemma le_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0}
     (hf_lip : ∀ t, LipschitzWith L (f t)) {x_eq : ℝⁿ} (h_eq : ∀ t, f t x_eq = 0)
     {φ : ℝ × ℝⁿ → ℝ → ℝⁿ} (hφ0 : ∀ p, φ p p.1 = p.2)
-    (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1)) {G : ClassKInfty} {t : ℝ} (ht : 0 ≤ t)
-    {x : ℝⁿ} (hF_int : IntegrableOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0)) :
+    (hφ : ∀ p, IsIntegralCurveOn (φ p) f (Ici p.1)) {G : ClassKInfty} {t : ℝ} {x : ℝⁿ}
+    (hF_int : IntegrableOn (fun σ => G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0)) :
     G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) ≤
       ∫ σ in Ioi 0, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) := by
   have h_pt : ∀ σ ∈ Ioc (0 : ℝ) 1,
       G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) ≤ G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) :=
     fun σ hσ => by
-      have h := norm_sq_mul_exp_le (fun τ _ => h_eq τ) hf_lip ht (hφ (t, x)) (τ := t + σ)
-        (by linarith [hσ.1])
+      have h := ((hφ (t, x)).mono Icc_subset_Ici_self).norm_sub_mul_exp_le (t := t)
+        (τ := t + σ) (by linarith [hσ.1]) (fun τ _ => h_eq τ) (fun τ _ => hf_lip τ)
       rw [show φ (t, x) t = x from hφ0 (t, x), add_sub_cancel_left] at h
       refine G.mono (mul_nonneg (Real.exp_pos _).le (sq_nonneg _)) ?_
       calc Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2
@@ -1278,7 +1179,9 @@ private lemma le_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ} {L : ℝ≥0
             rw [mul_comm]
             gcongr
             nlinarith [L.coe_nonneg, hσ.2]
-        _ ≤ ‖φ (t, x) (t + σ) - x_eq‖ ^ 2 := h
+        _ = (‖x - x_eq‖ * Real.exp (-(L * σ))) ^ 2 := by
+            rw [mul_pow, ← Real.exp_nat_mul]; ring_nf
+        _ ≤ ‖φ (t, x) (t + σ) - x_eq‖ ^ 2 := pow_le_pow_left₀ (by positivity) h 2
   calc G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2)
       = ∫ _σ in Ioc (0 : ℝ) 1, G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) := by simp
     _ ≤ ∫ σ in Ioc (0 : ℝ) 1, G (‖φ (t, x) (t + σ) - x_eq‖ ^ 2) :=
@@ -1328,17 +1231,14 @@ private lemma lieDerivative_integral_comp_flow {f : ℝ → ℝⁿ → ℝⁿ} {
             change G (‖φ (τ, φ (t, x) τ) (τ + σ) - x_eq‖ ^ 2) =
               G (‖φ (t, x) (t + max (σ + (τ - t)) 0) - x_eq‖ ^ 2)
             rw [h1, ← h_cocycle (mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ)))]
-      _ = ∫ s in Ioi (τ - t), w s := setIntegral_Ioi_comp_add_right w (τ - t)
+      _ = ∫ s in Ioi (τ - t), w s := by simpa using setIntegral_Ioi_comp_add_right w 0 (τ - t)
       _ = (∫ s in Ioi 0, w s) - ∫ s in (0 : ℝ)..τ - t, w s := by
           rw [← intervalIntegral.integral_Ioi_sub_Ioi hw_int (sub_nonneg.2 hτ'),
             sub_sub_cancel]
-  have h₂ : HasDerivAt (fun τ => ∫ s in (0 : ℝ)..τ - t, w s) (w 0) t := by
-    simpa using hw.hasDerivAt_integral_sub_add 0 t 0
-  have h_W : HasDerivWithinAt (fun τ => V τ (φ (t, x) τ)) (-w 0) (Ici t) t :=
-    ((h₂.const_sub _).hasDerivWithinAt).congr (fun τ hτ => h_along τ hτ)
-      (h_along t self_mem_Ici)
-  have h := (hφ (t, x)).lieDerivative_eq_of_hasDerivWithinAt (V := V)
-    (by rw [hy0]; exact h_diff) h_W
+  have h := (hφ (t, x)).lieDerivative_eq_of_eq_add_integral (V := V) (by rw [hy0]; exact h_diff)
+    (ψ := fun σ => -w (σ - t)) (by fun_prop) fun τ hτ => by
+      rw [h_along τ hτ, intervalIntegral.integral_neg, intervalIntegral.integral_comp_sub_right,
+        sub_self, sub_eq_add_neg]
   rw [hy0] at h
   rw [h]
   simp [w, hy0]
@@ -1417,7 +1317,7 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
   -- estimate.
   set W₁ : ℝⁿ → ℝ := fun x => G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2)
   have h_lower : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀, W₁ x ≤ V t x := fun t ht x hx =>
-    le_integral_comp_flow hf_lip h_eq hφ0 hφ ht (hF_int t ht x hx)
+    le_integral_comp_flow hf_lip h_eq hφ0 hφ (hF_int t ht x hx)
   set W₂ : ℝⁿ → ℝ := fun x => ∫ σ in Ioi 0, G (β.toFun ‖x - x_eq‖ σ ^ 2)
   have hGβ_le : ∀ ρ ∈ Icc 0 r₀, ∀ σ, 0 ≤ σ → G (β.toFun ρ σ ^ 2) ≤ G (ĝ σ ^ 2) :=
     fun ρ hρ σ hσ => G.mono (sq_nonneg _) (pow_le_pow_left₀ (β.nonneg ρ (hIcc_Ico ρ hρ) σ hσ)
@@ -1431,7 +1331,9 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
         rw [add_sub_cancel_left] at h
         exact G.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) h 2)
   have hW₁ : IsPositiveDefiniteOn W₁ x_eq (ball x_eq r₀) :=
-    G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_mul_norm_sub_sq (Real.exp_pos _) x_eq _)
+    G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_comp_norm_sub
+      (g := fun r => Real.exp (-(2 * L)) * r ^ 2) (by fun_prop) (by simp)
+      (fun r hr => by positivity) x_eq _)
   have hW₂ : IsPositiveDefiniteOn W₂ x_eq (ball x_eq r₀) := by
     refine ⟨continuousOn_of_dominated (bound := fun σ => G (ĝ σ ^ 2))
       (fun x hx => (integrableOn_comp_classKL β hr₀ hr₀a hGg_int
@@ -1451,11 +1353,11 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
   have h_lie : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
       _root_.lieDerivative V f t x = -G (‖x - x_eq‖ ^ 2) := fun t ht x hx =>
     lieDerivative_integral_comp_flow hφ0 hφ hφ_uniq (hF_int t ht x hx) (hV_diff t ht x hx)
-  refine ⟨V, hV_diff, hV_zero, W₁, W₂, fun x => G (1 * ‖x - x_eq‖ ^ 2), hW₁, hW₂,
-    G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_mul_norm_sub_sq one_pos x_eq _),
-    fun t ht x hx => ⟨h_lower t ht x hx, h_upper t ht x hx, ?_⟩, _, α₄, h_grad⟩
-  simp only [one_mul]
-  exact (h_lie t ht x hx).le
+  exact ⟨V, hV_diff, hV_zero, W₁, W₂, fun x => G (‖x - x_eq‖ ^ 2), hW₁, hW₂,
+    G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_comp_norm_sub (g := fun r => r ^ 2)
+      (by fun_prop) (by simp) (fun r hr => by positivity) x_eq _),
+    fun t ht x hx => ⟨h_lower t ht x hx, h_upper t ht x hx, (h_lie t ht x hx).le⟩, _, α₄,
+    h_grad⟩
 
 /-- **Converse Lyapunov theorem for uniform asymptotic stability.**  Let `x_eq` be an
 equilibrium of `ẋ = f(t, x)` with `f` continuously differentiable and Lipschitz on the ball
