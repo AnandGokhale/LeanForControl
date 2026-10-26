@@ -37,6 +37,7 @@ import LeanForControl.LinearSystems.Observability.Observability
 import LeanForControl.LinearSystems.Solutions.CtsLTI
 import LeanForControl.LinearSystems.Solutions.CtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
+import LeanForControl.LinearSystems.Solutions.PeanoBaker
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.DifferentialLyapunov

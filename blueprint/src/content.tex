@@ -555,15 +555,15 @@ chapter, by definition.
 
 \section{Peano--Baker series and the state transition matrix}
 
-For a genuinely time-varying state matrix $A(t)$, this section constructs the state transition
-matrix $\Phi(t,t_0)$ as the Peano--Baker series and proves Theorem 5.1: $\Phi$ solves the
-matrix ODE $\dot\Phi(t,t_0) = A(t)\Phi(t,t_0)$ with $\Phi(t_0,t_0) = I$, and consequently
-$x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
+For a genuinely time-varying coefficient $A(t)$ in a real Banach algebra --- matrices under
+any submultiplicative norm, or the bounded operators on a Banach space --- this section
+constructs the state transition matrix $\Phi(t,t_0)$ as the Peano--Baker series and proves
+Theorem 5.1: $\Phi$ solves $\dot\Phi(t,t_0) = A(t)\Phi(t,t_0)$ with $\Phi(t_0,t_0) = 1$, and
+consequently $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 
-\emph{Standing hypotheses.} Throughout this section $A$ is continuous and satisfies
-$\|A(s)\| \le M$ for all $s$ on the segment between the two times named in each statement. Both
-are needed: continuity to differentiate the series term by term, the bound to make it converge
-at all. Statements below do not repeat them.
+\emph{Standing hypothesis.} Throughout this section $A$ is continuous. The term-wise estimates
+additionally assume a bound $\|A(s)\| \le M$ on the segment between the two times named; the
+results about $\Phi$ itself need none, since $A$ is bounded on every compact interval.
 
 \inputleannode{def:peanoBakerTerm}
 
@@ -573,25 +573,23 @@ at all. Statements below do not repeat them.
 
 \inputleannode{lem:norm-peanoBakerTerm-le}
 
-\inputleannode{lem:norm-peanoBakerTerm-le-of-mem}
-
 \inputleannode{lem:summable-peanoBakerTerm}
 
-\inputleannode{lem:continuousOn-stateTransitionMatrix}
-
 \inputleannode{thm:hasDerivAt-stateTransitionMatrix}
+
+\inputleannode{lem:continuous-stateTransitionMatrix}
 
 \inputleannode{thm:stateTransitionMatrix-self}
 
 \inputleannode{thm:hasDerivAt-stateTransitionMatrix-mulVec}
-
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-mul}
 
 \inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mulVec}
 
 \inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mul}
 
 \subsection{Uniqueness}
+
+\inputleannode{thm:ODE-solution-unique-linear}
 
 \inputleannode{thm:stateTransitionMatrix-mulVec-unique}
 
@@ -604,6 +602,17 @@ at all. Statements below do not repeat them.
 Uniqueness is what makes these available: two expressions that solve the same matrix initial
 value problem must agree, and each identity below is an instance of that.
 
+\inputleannode{thm:stateTransitionMatrix-mul}
+
+\inputleannode{thm:stateTransitionMatrix-mul-swap}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd}
+
+\inputleannode{lem:norm-stateTransitionMatrix-le}
+
+The matrix-level forms below, with the times ordered, predate the general results above and
+are being retired.
+
 \inputleannode{thm:stateTransitionMatrix-semigroup}
 
 \inputleannode{thm:stateTransitionMatrix-inv}
@@ -615,19 +624,6 @@ value problem must agree, and each identity below is an instance of that.
 \inputleannode{lem:stateTransitionMatrix-comp-base}
 
 \inputleannode{lem:continuousOn-stateTransitionMatrix-snd}
-
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd}
-
-\inputleannode{lem:norm-stateTransitionMatrix-le}
-
-When $A$ is bounded on all of $\mathbb{R}$, the transition matrix is defined and differentiable
-everywhere, and the composition law and both derivatives hold with no ordering of the times.
-
-\inputleannode{thm:stateTransitionMatrix-mul}
-
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-of-bound}
-
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd-of-bound}
 
 \subsection{Variation of constants}
 
@@ -664,6 +660,10 @@ quantifies over.
 
 \inputleannode{lem:forcedResponse-zero-input}
 
+\inputleannode{def:continuousLTV-stateTransition}
+
+\inputleannode{thm:continuousLTV-stateTransition-comp}
+
 \inputleannode{thm:isTrajectory-homogeneousResponse}
 
 \inputleannode{thm:eq-homogeneousResponse-of-isIntegralCurveOn}
@@ -673,6 +673,10 @@ quantifies over.
 \inputleannode{thm:eq-homogeneousResponse-of-isTrajectoryOn}
 
 \inputleannode{thm:continuousLTV-isForwardComplete-zeroInput}
+
+\inputleannode{thm:continuousLTV-hasUniqueSolutions-zero}
+
+\inputleannode{thm:continuousLTV-stateTransitionMap-zero}
 
 \subsection{The time-invariant case: the matrix exponential}
 
@@ -1424,9 +1428,7 @@ matrix. Two generic facts about exponential envelopes are recorded first.
 
 \inputleannode{lem:tendsto-zero-of-norm-le-envelope}
 
-\inputleannode{thm:isHurwitz-exists-norm-exp-le}
-
-\inputleannode{thm:isHurwitz-exists-norm-exp-mulVec-le}
+\inputleannode{thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le}
 
 \inputleannode{thm:isHurwitz-of-tendsto-exp}
 
@@ -1434,7 +1436,7 @@ matrix. Two generic facts about exponential envelopes are recorded first.
 
 \inputleannode{thm:isHurwitz-iff-tendsto-exp}
 
-\inputleannode{thm:isHurwitz-iff-exists-norm-exp-le}
+\inputleannode{thm:isHurwitz-iff-exists-tendsto-exp}
 
 \subsection{Hespanha's Theorem 8.1}
 

@@ -116,7 +116,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.12. -/
     exponential decay of $\Phi$; the same decay bounds $P(t)$.  Then
     $\dot R(t) = -\Phi(t, 0)^{\mathsf T}Q(t)\Phi(t, 0)$ and
     $\partial_t\Phi(0, t) = -\Phi(0, t)A(t)$
-    (\cref{thm:hasDerivAt-stateTransitionMatrix-snd-of-bound}), and the product rule gives
+    (\cref{thm:hasDerivAt-stateTransitionMatrix-snd}), and the product rule gives
     $-\dot P = PA + A^{\mathsf T}P + Q$.  Along a solution,
     $x^{\mathsf T}P(t)x = \int_t^\infty (\Phi(\tau, t)x)^{\mathsf T}Q(\tau)\Phi(\tau, t)x\,d\tau$:
     exponential decay bounds it above, the growth bound
@@ -134,10 +134,10 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
   set Φ : ℝ → ℝ → Matrix X X ℝ := stateTransitionMatrix s.A with hΦ_def
   have hL : 0 ≤ L := (norm_nonneg _).trans (hA_bdd 0)
   have hq : 0 ≤ q := (norm_nonneg _).trans (hQ_bdd 0)
-  have hΦ_mul : ∀ t r τ, Φ t r * Φ r τ = Φ t τ := stateTransitionMatrix_mul hA hA_bdd
+  have hΦ_mul : ∀ t r τ, Φ t r * Φ r τ = Φ t τ := stateTransitionMatrix_mul hA
   have hΦ_self : ∀ t, Φ t t = 1 := stateTransitionMatrix_self
   have hΦ_cont : ∀ τ, Continuous fun σ => Φ σ τ := fun τ => continuous_iff_continuousAt.mpr
-    fun σ => (hasDerivAt_stateTransitionMatrix_of_bound hA hA_bdd τ σ).continuousAt
+    fun σ => (hasDerivAt_stateTransitionMatrix hA σ τ).continuousAt
   -- Transposition, as a continuous linear map.
   let T : Matrix X X ℝ →L[ℝ] Matrix X X ℝ :=
     LinearMap.toContinuousLinearMap (Matrix.transposeLinearEquiv X X ℝ ℝ).toLinearMap
@@ -233,7 +233,7 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : 
   -- Step 3. The differential Lyapunov equation, by the product rule.
   have hP_deriv : ∀ t, HasDerivAt P (-(P t * s.A t + (s.A t)ᵀ * P t + Q t)) t := by
     intro t
-    have hΦ₀ := hasDerivAt_stateTransitionMatrix_snd_of_bound hA hA_bdd 0 t
+    have hΦ₀ := hasDerivAt_stateTransitionMatrix_snd hA 0 t
     have hΦ₀T : HasDerivAt (fun σ => (Φ 0 σ)ᵀ) (-(Φ 0 t * s.A t))ᵀ t :=
       T.hasFDerivAt.comp_hasDerivAt t hΦ₀
     have h_cancel : Φ t 0 * Φ 0 t = 1 := by rw [hΦ_mul, hΦ_self]

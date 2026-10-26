@@ -25,9 +25,6 @@ Each structure stores both `toFun` and its inverse `invFun` so that `symm` and `
 never require re-proving the inverse properties.
 -/
 
-variable {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
-
 -- ─── Class K ──────────────────────────────────────────────────────────────────
 
 /-! ### Class K

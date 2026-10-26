@@ -46,7 +46,7 @@ The sandwich turns this into the bound on the state.
 * `μ = 0` is allowed, recovering the class `KL` bound of Theorem 4.9.
 * Khalil's time `T` depends on `x(t₀)`; the combined estimate gives one depending only on a bound
   for `‖x(t₀) - x_c‖`, which is what uniform ultimate boundedness asks for.
-* In the global case Khalil takes one class `K` lower bound for `W₃` on all of `ℝⁿ`, which need
+* In the global case Khalil takes one class `K` lower bound for `W₃` on all of `E`, which need
   not exist: a positive definite `W₃` may tend to `0` at infinity.  The global class `KL`
   function is instead assembled from the local ones of a sequence of balls
   (`ClassKLGlobal.of_KInfty_LSingular_family`).
@@ -59,8 +59,7 @@ namespace ContinuousSystem
 
 universe u
 
-variable {Y : Type u} {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+variable {Y : Type u} {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 /-- **Khalil's ultimate boundedness theorem.**  Let `α₁(‖x - x_c‖) ≤ V(t, x) ≤ α₂(‖x - x_c‖)` on
 the `r`-ball, with `V̇ ≤ -W₃(x)` for `‖x - x_c‖ ≥ μ` there and `W₃` positive definite.  Then from
@@ -108,20 +107,20 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
     \cref{thm:classK-bound-above-level} gives
     $v(t) \le \max\{\sigma(\alpha_2(\|x(t_0) - x_c\|), t - t_0), \eta\}$.  Apply the increasing
     $\alpha_1^{-1}$ and set $\beta(\rho, s) = \alpha_1^{-1}(\sigma(\alpha_2(\rho), s))$. -/)]
-theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ} {r b₁ b₂ c : ℝ}
-    (α₁ : ClassK r b₁) (α₂ : ClassK r b₂) {W₃ : ℝⁿ → ℝ}
+theorem exists_classKL_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E} {r b₁ b₂ c : ℝ}
+    (α₁ : ClassK r b₁) (α₂ : ClassK r b₂) {W₃ : E → ℝ}
     (hW₃ : IsPositiveDefiniteOn W₃ x_c (closedBall x_c r))
     (hc_pos : 0 < c) (hcr : c < r) (hc : α₂.toFun c < b₁) :
     ∃ β : ClassKL c, (∀ ρ ∈ Ico 0 c, ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ)) ∧
-      ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+      ∀ {Y : Type u} {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ} {μ : ℝ},
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_c‖ < r →
           DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_c‖ < r →
           α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
           s.lieDerivative V t y () ≤ -W₃ y) →
         0 ≤ μ → μ < c →
-        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
           s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
@@ -163,16 +162,16 @@ theorem exists_classKL_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ} {r b�
   have hη_lt_d : η < d := α₂.strict_mono hμ_mem hc_mem hμc
   have hη_nonneg : 0 ≤ η := (α₂.maps_to hμ_mem).1
   -- Above `η` in the ball, `α₂(‖y - x_c‖) ≥ V > α₂(μ)`, so `y` is outside the `μ`-ball ...
-  have h_far : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ‖y - x_c‖ < r → η < V τ y → μ < ‖y - x_c‖ :=
+  have h_far : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ‖y - x_c‖ < r → η < V τ y → μ < ‖y - x_c‖ :=
     fun τ hτ y hy hηV =>
       (α₂.strict_mono_iff hμ_mem ⟨norm_nonneg _, hy⟩).mp (hηV.trans_le (hV_bd τ hτ y hy).2)
   -- ... where `V̇ ≤ -W₃(y) ≤ 0` ...
-  have h_nonpos : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ‖y - x_c‖ < r → η < V τ y →
+  have h_nonpos : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ‖y - x_c‖ < r → η < V τ y →
       s.lieDerivative V τ y () ≤ 0 := fun τ hτ y hy hηV => by
     linarith [hlie τ hτ y (h_far τ hτ y hy hηV).le hy,
       hW₃.nonneg (mem_closedBall_iff_norm.mpr hy.le)]
   -- ... and `V̇ ≤ -W₃(y) ≤ -α₃(‖y - x_c‖) ≤ -α₃(α₂⁻¹(V)) = -α(V)`.
-  have h_decay : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ‖y - x_c‖ < r → η < V τ y →
+  have h_decay : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ‖y - x_c‖ < r → η < V τ y →
       s.lieDerivative V τ y () ≤ -α.toFun (V τ y) := fun τ hτ y hy hηV => by
     have hy_mem : ‖y - x_c‖ ∈ Ico 0 r := ⟨norm_nonneg _, hy⟩
     have hV_up := (hV_bd τ hτ y hy).2
@@ -259,15 +258,15 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
   (proof := /-- From the $c$-ball, start within $a < c$: the estimate gives
     $\|x(t) - x_c\| \le \max\{\beta(a, 0), \alpha_1^{-1}(\alpha_2(\mu))\}$, as $\beta$ is
     increasing in its first argument and decreasing in its second. -/)]
-theorem uniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
-    {W₃ : ℝⁿ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+theorem uniformlyBounded_of_lyapunov [Nontrivial E] {s : ContinuousSystem E Unit Y}
+    {V : ℝ → E → ℝ} {x_c : E} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
+    {W₃ : E → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_c‖ < r →
       DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_c‖ < r →
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c (closedBall x_c r))
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
+    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
       s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 ≤ μ) (hμc : μ < c) (hcr : c < r) (hc : α₂.toFun c < b₁) :
     s.UniformlyBounded x_c := by
@@ -307,15 +306,15 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18. -/
   (proof := /-- The ultimate bound $b = \alpha_1^{-1}(\alpha_2(\mu))$ is positive, and
     $\beta(a, s) \to 0$, so $\beta(a, s) \le b$ for $s \ge T(a)$.  Restrict a trajectory on
     $[t_0, \infty)$ to $[t_0, t]$ and apply the estimate. -/)]
-theorem uniformlyUltimatelyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
-    {W₃ : ℝⁿ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+theorem uniformlyUltimatelyBounded_of_lyapunov [Nontrivial E] {s : ContinuousSystem E Unit Y}
+    {V : ℝ → E → ℝ} {x_c : E} {r b₁ b₂ μ c : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
+    {W₃ : E → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_c‖ < r →
       DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, ‖y - x_c‖ < r →
+    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_c‖ < r →
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c (closedBall x_c r))
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
+    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → ‖y - x_c‖ < r →
       s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 < μ) (hμc : μ < c) (hcr : c < r) (hc : α₂.toFun c < b₁)
     (h_complete : ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ (ball x_c c)) :
@@ -348,12 +347,12 @@ theorem uniformlyUltimatelyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem 
 /-! ## The global case -/
 
 /-- **Khalil's ultimate boundedness theorem, global case.**  If the sandwich and the decrease
-condition hold on all of `ℝⁿ`, with `α₁, α₂` of class `K∞`, then every trajectory obeys
+condition hold on all of `E`, with `α₁, α₂` of class `K∞`, then every trajectory obeys
 `‖x(t) - x_c‖ ≤ max (β(‖x(t₀) - x_c‖, t - t₀)) (α₁⁻¹(α₂(μ)))` for a single global class `KL`
 function `β`.
 
 `W₃` need not be bounded below away from the origin: a positive definite `W₃` may tend to `0` at
-infinity, so no class `K` function of `‖x - x_c‖` lies below it on all of `ℝⁿ`, and the class
+infinity, so no class `K` function of `‖x - x_c‖` lies below it on all of `E`, and the class
 `KL` bound of each ball cannot simply be reused for every ball.  Instead the local bounds of the
 balls of radius `k + 1`, `k ∈ ℕ`, are summed into a family of decay envelopes monotone in the
 radius, which `ClassKLGlobal.of_KInfty_LSingular_family` assembles into one global class `KL`
@@ -396,16 +395,16 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     \cref{lem:classKLGlobal-of-KInfty-LSingular-family} turns the class $\mathcal{K}_{\infty}$
     bound $\alpha$ and the family $U$ into a global class $\mathcal{KL}$ $\beta$ above
     $\min\{\alpha(r), \sqrt{\alpha(r)\,U(r + 1, s)}\}$. -/)]
-theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
-    (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} (hW₃ : IsPositiveDefiniteOn W₃ x_c univ) :
+theorem exists_classKLGlobal_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E}
+    (α₁ α₂ : ClassKInfty) {W₃ : E → ℝ} (hW₃ : IsPositiveDefiniteOn W₃ x_c univ) :
     ∃ β : ClassKLGlobal,
-      ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+      ∀ {Y : Type u} {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ} {μ : ℝ},
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E,
           α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
         0 ≤ μ →
-        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
           s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
@@ -413,13 +412,13 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [NeZero n] {x_c : ℝⁿ}
   -- class `K∞` functions.
   have h_local : ∀ k : ℕ, ∃ β : ClassKL (k + 1),
       (∀ ρ ∈ Ico 0 ((k : ℝ) + 1), ∀ θ : ℝ, 0 ≤ θ → β.toFun ρ θ ≤ α₁.invFun (α₂.toFun ρ)) ∧
-      ∀ {Y : Type u} {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {μ : ℝ},
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+      ∀ {Y : Type u} {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ} {μ : ℝ},
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y)) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E,
           α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖) →
-        (∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
+        (∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y) →
         0 ≤ μ → μ < k + 1 →
-        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → ℝⁿ),
+        ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
           s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < k + 1 →
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
@@ -534,13 +533,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     (\cref{def:continuousSystem-globallyUniformlyBounded}). -/)
   (proof := /-- Starting within $a$, the estimate gives
     $\|x(t) - x_c\| \le \max\{\beta(a, 0), \alpha_1^{-1}(\alpha_2(\mu))\}$. -/)]
-theorem globallyUniformlyBounded_of_lyapunov [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {μ : ℝ} (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+theorem globallyUniformlyBounded_of_lyapunov [Nontrivial E] {s : ContinuousSystem E Unit Y}
+    {V : ℝ → E → ℝ} {x_c : E} {μ : ℝ} (α₁ α₂ : ClassKInfty) {W₃ : E → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y))
+    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : E,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
+    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 ≤ μ) :
     s.GloballyUniformlyBounded x_c := by
   obtain ⟨β, hβ'⟩ := exists_classKLGlobal_ultimateBound_of_lyapunov α₁ α₂ hW₃
@@ -573,14 +572,14 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.18, global case. -/
     (\cref{def:continuousSystem-globallyUniformlyUltimatelyBounded}). -/)
   (proof := /-- The ultimate bound $b$ is positive and $\beta(a, s) \to 0$, so
     $\beta(a, s) \le b$ for $s \ge T(a)$; apply the estimate on $[t_0, t]$. -/)]
-theorem globallyUniformlyUltimatelyBounded_of_lyapunov [NeZero n]
-    {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {μ : ℝ}
-    (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+theorem globallyUniformlyUltimatelyBounded_of_lyapunov [Nontrivial E]
+    {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ} {x_c : E} {μ : ℝ}
+    (α₁ α₂ : ClassKInfty) {W₃ : E → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y))
+    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : E,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
+    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ y : E, μ ≤ ‖y - x_c‖ → s.lieDerivative V t y () ≤ -W₃ y)
     (hμ : 0 < μ) (h_complete : ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ univ) :
     s.GloballyUniformlyUltimatelyBounded x_c (α₁.invFun (α₂.toFun μ)) := by
   obtain ⟨β, hβ'⟩ := exists_classKLGlobal_ultimateBound_of_lyapunov α₁ α₂ hW₃

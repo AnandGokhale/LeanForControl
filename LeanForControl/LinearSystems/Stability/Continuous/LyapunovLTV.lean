@@ -44,7 +44,7 @@ characterization itself is solution theory and lives in `Solutions/CtsLTV.lean`:
 
 ## One state space, one set of stability predicates
 
-Everything here lives in `X → ℝ` under the `L∞` norm — the space `Solutions/` works in,
+Everything here lives in `EuclideanSpace ℝ X` under the `L∞` norm — the space `Solutions/` works in,
 because that is where matrix multiplication is submultiplicative and the Peano–Baker series
 converges. `Stability/Continuous/Defs.lean` is stated over an arbitrary real normed space,
 so its predicates apply here directly: there is no second notion of stability for linear
@@ -86,7 +86,7 @@ namespace LinearSystems
 open Matrix Set Filter Topology ContinuousLTV
 open scoped Matrix.Norms.Operator
 
-variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U]
+variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U] [DecidableEq U]
 variable {A : ℝ → Matrix X X ℝ}
 
 /-! ## Trajectories of a linear system
@@ -126,22 +126,22 @@ scale that to every `x`.  With `a = t₀` and `ε = 1` this is a stability margi
 it is a convergence time. -/
 private lemma bound_of_margin (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
     {t₀ a δ ε : ℝ} (hδ : 0 < δ) (hε : 0 < ε)
-    (hstab : ∀ (t₁ : ℝ) (φ : ℝ → X → ℝ),
+    (hstab : ∀ (t₁ : ℝ) (φ : ℝ → EuclideanSpace ℝ X),
       s.toContinuousSystem.zeroInput.IsTrajectoryOn (fun _ => ()) φ (Icc t₀ t₁) →
         ‖φ t₀ - 0‖ < δ → ∀ t ∈ Icc a t₁, ‖φ t - 0‖ < ε) :
-    ∀ t ≥ a, ∀ x : X → ℝ,
-      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ 2 * ε / δ * ‖x‖ := by
+    ∀ t ≥ a, ∀ x : EuclideanSpace ℝ X,
+      ‖s.stateTransition t t₀ x‖ ≤ 2 * ε / δ * ‖x‖ := by
   intro t ht x
   -- From the `δ`-ball the response is within `ε` of the origin at time `t`.
-  have hball : ∀ y : X → ℝ, ‖y‖ < δ → ‖stateTransitionMatrix s.A t t₀ *ᵥ y‖ ≤ ε := by
+  have hball : ∀ y : EuclideanSpace ℝ X, ‖y‖ < δ → ‖s.stateTransition t t₀ y‖ ≤ ε := by
     intro y hy
     have htraj := IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ y)
       (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)
-    have hy' : ‖homogeneousResponse s.A t₀ y t₀ - 0‖ < δ := by simpa using hy
+    have hy' : ‖s.stateTransition t₀ t₀ y - 0‖ < δ := by simpa using hy
     simpa [homogeneousResponse] using (hstab t _ htraj hy' t ⟨ht, le_rfl⟩).le
   -- On the shell `δ / 2 ≤ ‖y‖ < δ` that is a bound by `(2ε / δ) ‖y‖`, which scales everywhere.
   have hop := ContinuousLinearMap.opNorm_le_of_shell
-    (f := LinearMap.toContinuousLinearMap (stateTransitionMatrix s.A t t₀).mulVecLin) hδ
+    (f := s.stateTransition t t₀) hδ
     (by positivity : (0 : ℝ) ≤ 2 * ε / δ) (c := (2 : ℝ)) (by norm_num) fun y hy1 hy2 => by
       rw [Real.norm_two] at hy1
       have h2 : ε ≤ 2 * ε / δ * ‖y‖ := by
@@ -156,9 +156,9 @@ margin `ε/(C+1)` is then real arithmetic. No positivity hypothesis on `ε` is n
 `ε ≤ 0` the margin hypothesis is already impossible. -/
 private lemma margin_of_bound (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
     {t₀ C : ℝ} (hC0 : 0 ≤ C)
-    (hC : ∀ t ≥ t₀, ∀ x : X → ℝ, ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C * ‖x‖)
+    (hC : ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X, ‖s.stateTransition t t₀ x‖ ≤ C * ‖x‖)
     {ε : ℝ} :
-    ∀ (t₁ : ℝ) (φ : ℝ → X → ℝ),
+    ∀ (t₁ : ℝ) (φ : ℝ → EuclideanSpace ℝ X),
       s.toContinuousSystem.zeroInput.IsTrajectoryOn (fun _ => ()) φ (Icc t₀ t₁) →
         ‖φ t₀ - 0‖ < ε / (C + 1) → ∀ t ∈ Icc t₀ t₁, ‖φ t - 0‖ < ε := by
   intro t₁ φ hφ hφ0 t ht
@@ -206,9 +206,9 @@ because the bound on every state, not the per-initial-condition one, is what lat
     $\|\varphi(t)\| \le C\|\varphi(t_{0})\| < \varepsilon$. -/)]
 theorem stable_iff_boundedStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.Stable (0 : X → ℝ) ↔
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ C ≥ (0 : ℝ), ∀ t ≥ t₀, ∀ x : X → ℝ,
-        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C * ‖x‖ := by
+    s.toContinuousSystem.zeroInput.Stable (0 : EuclideanSpace ℝ X) ↔
+      ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ C ≥ (0 : ℝ), ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+        ‖s.stateTransition t t₀ x‖ ≤ C * ‖x‖ := by
   constructor
   · intro hS t₀ ht₀
     obtain ⟨δ, hδ, hstab⟩ := hS 1 one_pos t₀ ht₀
@@ -247,9 +247,9 @@ norm-bounded. -/
     a Banach space is norm-bounded, by the uniform boundedness principle. -/)]
 theorem stable_iff_boundedHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.Stable (0 : X → ℝ) ↔
-      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ, ∃ C : ℝ, ∀ t ≥ t₀,
-        ‖homogeneousResponse s.A t₀ x₀ t‖ ≤ C := by
+    s.toContinuousSystem.zeroInput.Stable (0 : EuclideanSpace ℝ X) ↔
+      ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : EuclideanSpace ℝ X, ∃ C : ℝ, ∀ t ≥ t₀,
+        ‖s.stateTransition t t₀ x₀‖ ≤ C := by
   rw [stable_iff_boundedStateTransition s hA]
   constructor
   · intro h t₀ ht₀ x₀
@@ -258,13 +258,12 @@ theorem stable_iff_boundedHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
   · intro h t₀ ht₀
     obtain ⟨C, hC⟩ := banach_steinhaus
       (g := fun i : {t : ℝ // t₀ ≤ t} =>
-        LinearMap.toContinuousLinearMap (stateTransitionMatrix s.A i.1 t₀).mulVecLin)
+        s.stateTransition i.1 t₀)
       (fun x => by
         obtain ⟨C, hC⟩ := h t₀ ht₀ x
         exact ⟨C, fun i => hC i.1 i.2⟩)
     refine ⟨max C 0, le_max_right _ _, fun t ht x => ?_⟩
-    exact (LinearMap.toContinuousLinearMap
-      (stateTransitionMatrix s.A t t₀).mulVecLin).le_of_opNorm_le
+    exact (s.stateTransition t t₀).le_of_opNorm_le
       ((hC ⟨t, ht⟩).trans (le_max_left _ _)) x
 
 /-- Uniform stability is the same bound made independent of the initial time.
@@ -294,9 +293,9 @@ response may depend on `t₀`. -/
     margin $\delta$ and the bound $C$ both carried outside the quantifier on $t_{0}$. -/)]
 theorem uniformlyStable_iff_uniformlyBoundedStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.UniformlyStable (0 : X → ℝ) ↔
-      ∃ C ≥ (0 : ℝ), ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
-        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C * ‖x‖ := by
+    s.toContinuousSystem.zeroInput.UniformlyStable (0 : EuclideanSpace ℝ X) ↔
+      ∃ C ≥ (0 : ℝ), ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+        ‖s.stateTransition t t₀ x‖ ≤ C * ‖x‖ := by
   constructor
   · intro hS
     obtain ⟨δ, hδ, hstab⟩ := hS 1 one_pos
@@ -338,18 +337,19 @@ it is needed: a continuous response that converges is bounded. -/
     convergence of the trajectories, from any radius. -/)]
 theorem locallyAsymptoticallyStable_iff_decayingHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : X → ℝ) ↔
-      (∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ, ∃ C : ℝ, ∀ t ≥ t₀,
-        ‖homogeneousResponse s.A t₀ x₀ t‖ ≤ C) ∧
-      (∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : X → ℝ,
-        Tendsto (homogeneousResponse s.A t₀ x₀) atTop (𝓝 0)) := by
+    s.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : EuclideanSpace ℝ X) ↔
+      (∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : EuclideanSpace ℝ X, ∃ C : ℝ, ∀ t ≥ t₀,
+        ‖s.stateTransition t t₀ x₀‖ ≤ C) ∧
+      (∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x₀ : EuclideanSpace ℝ X,
+        Tendsto (fun t => s.stateTransition t t₀ x₀) atTop (𝓝 0)) := by
   constructor
   · rintro ⟨hS, hattr⟩
     refine ⟨(stable_iff_boundedHomogeneousResponse s hA).1 hS, fun t₀ ht₀ x₀ => ?_⟩
     obtain ⟨c, hc, -, hconv⟩ := hattr t₀ ht₀
     rcases eq_or_ne x₀ 0 with rfl | hx
-    · have h0 : homogeneousResponse s.A t₀ (0 : X → ℝ) = fun _ : ℝ => (0 : X → ℝ) := by
-        funext t; simp [homogeneousResponse]
+    · have h0 : (fun t => s.stateTransition t t₀ (0 : EuclideanSpace ℝ X)) =
+          fun _ : ℝ => (0 : EuclideanSpace ℝ X) := by
+        funext t; simp
       rw [h0]
       exact tendsto_const_nhds
     have hx0 : 0 < ‖x₀‖ := norm_pos_iff.2 hx
@@ -401,22 +401,22 @@ theorem locallyAsymptoticallyStable_iff_decayingHomogeneousResponse (s : Continu
     and conversely the estimate on any ball scales to the estimate everywhere. -/)]
 theorem globallyExponentiallyStable_iff_decayingStateTransition
     (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.GloballyExponentiallyStable (0 : X → ℝ) ↔
-      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
-        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
+    s.toContinuousSystem.zeroInput.GloballyExponentiallyStable (0 : EuclideanSpace ℝ X) ↔
+      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+        ‖s.stateTransition t t₀ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
   constructor
   · rintro ⟨k, hk, γ, hγ, hbd⟩
     refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht x => ?_⟩
-    have h1 : ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := by
+    have h1 : ‖s.stateTransition t t₀ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := by
       simpa [homogeneousResponse, stateTransitionMatrix_self] using
         hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x)
           Icc_subset_Ici_self) t ⟨ht, le_rfl⟩
-    calc ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := h1
+    calc ‖s.stateTransition t t₀ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := h1
       _ = k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by ring
   · rintro ⟨k, hk, γ, hγ, hbd⟩
     refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t₁ φ hφ t ht => ?_⟩
     rw [sub_zero, sub_zero, eq_homogeneousResponse_of_isTrajectoryOn s hA hφ ht]
-    calc ‖homogeneousResponse s.A t₀ (φ t₀) t‖
+    calc ‖s.stateTransition t t₀ (φ t₀)‖
         ≤ k * Real.exp (-γ * (t - t₀)) * ‖φ t₀‖ := hbd t₀ ht₀ t ht.1 (φ t₀)
       _ = k * ‖φ t₀‖ * Real.exp (-γ * (t - t₀)) := by ring
 
@@ -449,38 +449,32 @@ definition carries no information for a linear system. -/
     the scaling argument, and $c = 1$ serves in the converse. -/)]
 theorem locallyExponentiallyStable_iff_decayingStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ) ↔
-      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
-        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
+    s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : EuclideanSpace ℝ X) ↔
+      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+        ‖s.stateTransition t t₀ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
   constructor
   · rintro ⟨c, hc, k, hk, γ, hγ, hbd⟩
     refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht x => ?_⟩
     -- The estimate holds on the `c`-ball, and scales to every state.
-    have hball : ∀ y ∈ Metric.ball (0 : X → ℝ) c,
-        ‖LinearMap.toContinuousLinearMap (stateTransitionMatrix s.A t t₀).mulVecLin y‖ ≤
+    have hball : ∀ y ∈ Metric.ball (0 : EuclideanSpace ℝ X) c,
+        ‖s.stateTransition t t₀ y‖ ≤
           k * Real.exp (-γ * (t - t₀)) * ‖y‖ := by
       intro y hy
       rw [mem_ball_zero_iff] at hy
-      have hself : homogeneousResponse s.A t₀ y t₀ = y := by
-        simp [homogeneousResponse, stateTransitionMatrix_self]
-      have hy' : ‖homogeneousResponse s.A t₀ y t₀ - 0‖ < c := by rw [hself]; simpa using hy
-      have hraw := hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono
-        (isTrajectoryOn_homogeneousResponse s hA t₀ y) Icc_subset_Ici_self) hy' t ⟨ht, le_rfl⟩
-      rw [hself] at hraw
-      have h1 : ‖stateTransitionMatrix s.A t t₀ *ᵥ y‖ ≤
-          k * ‖y‖ * Real.exp (-γ * (t - t₀)) := by
-        simpa [homogeneousResponse] using hraw
+      have hy' : ‖s.stateTransition t₀ t₀ y - 0‖ < c := by simpa using hy
+      have h1 : ‖s.stateTransition t t₀ y‖ ≤ k * ‖y‖ * Real.exp (-γ * (t - t₀)) := by
+        simpa using hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono
+          (isTrajectoryOn_homogeneousResponse s hA t₀ y) Icc_subset_Ici_self) hy' t ⟨ht, le_rfl⟩
       simpa [mul_right_comm] using h1
     simpa using ContinuousLinearMap.le_of_opNorm_le _
       (ContinuousLinearMap.opNorm_le_of_ball hc (by positivity) hball) x
   · rintro ⟨k, hk, γ, hγ, hbd⟩
     refine ⟨1, one_pos, k, hk, γ, hγ, fun t₀ ht₀ t₁ φ hφ _ t ht => ?_⟩
     rw [sub_zero, sub_zero, eq_homogeneousResponse_of_isTrajectoryOn s hA hφ ht]
-    calc ‖homogeneousResponse s.A t₀ (φ t₀) t‖
+    calc ‖s.stateTransition t t₀ (φ t₀)‖
         ≤ k * Real.exp (-γ * (t - t₀)) * ‖φ t₀‖ := hbd t₀ ht₀ t ht.1 (φ t₀)
       _ = k * ‖φ t₀‖ * Real.exp (-γ * (t - t₀)) := by ring
 
-omit [DecidableEq X] in
 /-- For a linear system, exponential stability is automatically global.
 
 A linear system has no nontrivial region of attraction: the two definitions differ only by a
@@ -503,8 +497,8 @@ radius, and the response is homogeneous, so the radius scales away. -/
     \cref{thm:continuousLTV-globallyExponentiallyStable-iff-decayingStateTransition}. -/)]
 theorem locallyExponentiallyStable_iff_globallyExponentiallyStable (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ) ↔
-      s.toContinuousSystem.zeroInput.GloballyExponentiallyStable (0 : X → ℝ) := by
+    s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : EuclideanSpace ℝ X) ↔
+      s.toContinuousSystem.zeroInput.GloballyExponentiallyStable (0 : EuclideanSpace ℝ X) := by
   classical
   exact (locallyExponentiallyStable_iff_decayingStateTransition s hA).trans
     (globallyExponentiallyStable_iff_decayingStateTransition s hA).symm
@@ -540,9 +534,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.11. -/
     gives $\|\Phi(t, t_0)\| \le \max(C, 1)\, e^{-N} \le e \max(C, 1)\, e^{-(t - t_0)/T}$. -/)]
 theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.UniformlyAsymptoticallyStable (0 : X → ℝ) ↔
-      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
-        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
+    s.toContinuousSystem.zeroInput.UniformlyAsymptoticallyStable (0 : EuclideanSpace ℝ X) ↔
+      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+        ‖s.stateTransition t t₀ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
   constructor
   swap
   · intro h
@@ -552,28 +546,21 @@ theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : Continuou
   -- Step 1. A uniform bound `C' ≥ 1` on the state transition matrix.
   obtain ⟨C, hC0, hC⟩ := (uniformlyStable_iff_uniformlyBoundedStateTransition s hA).mp hUS
   set C' := max C 1
-  have hC' : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
-      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C' * ‖x‖ := fun t₀ ht₀ t ht x =>
+  have hC' : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+      ‖s.stateTransition t t₀ x‖ ≤ C' * ‖x‖ := fun t₀ ht₀ t ht x =>
     (hC t₀ ht₀ t ht x).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
   -- Step 2. After the convergence time `T`, the state transition matrix shrinks by `1/e`.
   obtain ⟨T, hT, hT_conv⟩ := hconv (c / (2 * Real.exp 1)) (by positivity)
-  have h_window : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀ + T, ∀ x : X → ℝ,
-      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ Real.exp (-1) * ‖x‖ := fun t₀ ht₀ t ht x => by
+  have h_window : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀ + T, ∀ x : EuclideanSpace ℝ X,
+      ‖s.stateTransition t t₀ x‖ ≤ Real.exp (-1) * ‖x‖ := fun t₀ ht₀ t ht x => by
     have h := bound_of_margin s hA hc (by positivity) (hT_conv t₀ ht₀) t ht x
     have h_eq : 2 * (c / (2 * Real.exp 1)) / c = Real.exp (-1) := by
       rw [Real.exp_neg]
       field_simp
     rwa [h_eq] at h
   -- Step 3. Over `N` windows, `‖Φ(t, t₀) x‖ ≤ C' e^{-N} ‖x‖`, by the semigroup property.
-  have h_mulVec : ∀ τ σ t : ℝ, τ ≤ σ → σ < t → ∀ x : X → ℝ,
-      stateTransitionMatrix s.A t τ *ᵥ x =
-        stateTransitionMatrix s.A t σ *ᵥ (stateTransitionMatrix s.A σ τ *ᵥ x) := by
-    intro τ σ t hτσ hσt x
-    obtain ⟨M, hM⟩ := isCompact_Icc.exists_bound_of_continuousOn
-      (hA.continuousOn (s := Icc τ t))
-    rw [Matrix.mulVec_mulVec, stateTransitionMatrix_semigroup hA hτσ hσt hM]
-  have h_steps : ∀ N : ℕ, ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀ + N * T, ∀ x : X → ℝ,
-      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C' * Real.exp (-N) * ‖x‖ := by
+  have h_steps : ∀ N : ℕ, ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀ + N * T, ∀ x : EuclideanSpace ℝ X,
+      ‖s.stateTransition t t₀ x‖ ≤ C' * Real.exp (-N) * ‖x‖ := by
     intro N
     induction N with
     | zero =>
@@ -586,9 +573,9 @@ theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : Continuou
       rcases hs.lt_or_eq with hs | hs
       · -- `Φ(t, t₀) = Φ(t, t₀ + T) Φ(t₀ + T, t₀)`: the first factor by induction, the second by
         -- one window.
-        rw [h_mulVec t₀ (t₀ + T) t (by linarith) hs x]
-        calc ‖stateTransitionMatrix s.A t (t₀ + T) *ᵥ (stateTransitionMatrix s.A (t₀ + T) t₀ *ᵥ x)‖
-            ≤ C' * Real.exp (-N) * ‖stateTransitionMatrix s.A (t₀ + T) t₀ *ᵥ x‖ :=
+        rw [← s.stateTransition_comp hA t (t₀ + T) t₀ x]
+        calc ‖s.stateTransition t (t₀ + T) (s.stateTransition (t₀ + T) t₀ x)‖
+            ≤ C' * Real.exp (-N) * ‖s.stateTransition (t₀ + T) t₀ x‖ :=
               ih (t₀ + T) (by linarith) t (by linarith) _
           _ ≤ C' * Real.exp (-N) * (Real.exp (-1) * ‖x‖) := by
               gcongr
@@ -600,7 +587,7 @@ theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : Continuou
       · -- Exactly one window: `N = 0`.
         have hN : (N : ℝ) = 0 := by nlinarith [N.cast_nonneg (α := ℝ)]
         rw [← hs]
-        calc ‖stateTransitionMatrix s.A (t₀ + T) t₀ *ᵥ x‖
+        calc ‖s.stateTransition (t₀ + T) t₀ x‖
             ≤ Real.exp (-1) * ‖x‖ := h_window t₀ ht₀ _ le_rfl x
           _ ≤ C' * Real.exp (-↑(N + 1)) * ‖x‖ := by
               push_cast
@@ -612,7 +599,7 @@ theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : Continuou
   have hN_le : (N : ℝ) * T ≤ t - t₀ :=
     (le_div_iff₀ hT).mp (Nat.floor_le (div_nonneg (by linarith) hT.le))
   have hN_gt : (t - t₀) / T < N + 1 := Nat.lt_floor_add_one _
-  calc ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖
+  calc ‖s.stateTransition t t₀ x‖
       ≤ C' * Real.exp (-N) * ‖x‖ := h_steps N t₀ ht₀ t (by linarith) x
     _ ≤ C' * Real.exp 1 * Real.exp (-(1 / T) * (t - t₀)) * ‖x‖ := by
         rw [show C' * Real.exp 1 * Real.exp (-(1 / T) * (t - t₀)) =
@@ -641,9 +628,9 @@ coincide for a linear time-varying system, both being exponential decay of `Φ(t
     global uniform asymptotic stability. -/)]
 theorem globallyUniformlyAsymptoticallyStable_iff_decayingStateTransition
     (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.GloballyUniformlyAsymptoticallyStable (0 : X → ℝ) ↔
-      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
-        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ :=
+    s.toContinuousSystem.zeroInput.GloballyUniformlyAsymptoticallyStable (0 : EuclideanSpace ℝ X) ↔
+      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+        ‖s.stateTransition t t₀ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ :=
   ⟨fun h => (uniformlyAsymptoticallyStable_iff_decayingStateTransition s hA).mp
       h.uniformlyAsymptoticallyStable,
     fun h => ((globallyExponentiallyStable_iff_decayingStateTransition s hA).mpr h)
@@ -671,9 +658,9 @@ some initial condition has an unbounded homogeneous response. -/
   (proof := /-- The negation of \cref{thm:continuousLTV-stable-iff-boundedHomogeneousResponse}. -/)]
 theorem unstable_iff_unboundedHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
-    s.toContinuousSystem.zeroInput.Unstable (0 : X → ℝ) ↔
-      ∃ t₀ : ℝ, 0 ≤ t₀ ∧ ∃ x₀ : X → ℝ, ∀ C : ℝ, ∃ t ≥ t₀,
-        C < ‖homogeneousResponse s.A t₀ x₀ t‖ := by
+    s.toContinuousSystem.zeroInput.Unstable (0 : EuclideanSpace ℝ X) ↔
+      ∃ t₀ : ℝ, 0 ≤ t₀ ∧ ∃ x₀ : EuclideanSpace ℝ X, ∀ C : ℝ, ∃ t ≥ t₀,
+        C < ‖s.stateTransition t t₀ x₀‖ := by
   rw [ContinuousSystem.Unstable, stable_iff_boundedHomogeneousResponse s hA]
   push Not
   rfl

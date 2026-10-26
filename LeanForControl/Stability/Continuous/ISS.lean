@@ -132,8 +132,7 @@ section ISSLyapunov
 
 universe u
 
-variable {U' Y' : Type u} [NormedAddCommGroup U'] {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+variable {U' Y' : Type u} [NormedAddCommGroup U'] [FiniteDimensional ℝ E]
 
 /-- **The input-to-state estimate of an ISS-Lyapunov function.**  Let
 `α₁(‖x - x_c‖) ≤ V(t, x) ≤ α₂(‖x - x_c‖)` with `α₁, α₂` of class `K∞`, and `V̇ ≤ -W₃(x)`
@@ -174,17 +173,17 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
     \cref{thm:continuousSystem-exists-classKLGlobal-ultimateBound-of-lyapunov} with
     $\mu = \rho(M)$; its $\beta$ does not depend on the system or on $\mu$, so it is the same for
     every input.  Finally $\max\{a, b\} \le a + b$ for $a, b \ge 0$. -/)]
-theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {u_eq : U'} (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} {ρ : ℝ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+theorem norm_le_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
+    {V : ℝ → E → ℝ} {x_c : E} {u_eq : U'} (α₁ α₂ : ClassKInfty) {W₃ : E → ℝ} {ρ : ℝ → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y))
+    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : E,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
     (hρ_mono : MonotoneOn ρ (Ici 0)) (hρ_nonneg : ∀ r, 0 ≤ r → 0 ≤ ρ r)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : ℝⁿ) (w : U'), ρ ‖w - u_eq‖ ≤ ‖y - x_c‖ →
+    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : E) (w : U'), ρ ‖w - u_eq‖ ≤ ‖y - x_c‖ →
       s.lieDerivative V t y w ≤ -W₃ y) :
     ∃ β : ClassKLGlobal, ∀ t₀ : ℝ, 0 ≤ t₀ →
-      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → ℝⁿ), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
+      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → E), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
         ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ - u_eq‖ ≤ M) →
           ‖x t - x_c‖ ≤ β.toFun ‖x t₀ - x_c‖ (t - t₀) + α₁.invFun (α₂.toFun (ρ M)) := by
   -- `β` is chosen once, before the input.
@@ -197,7 +196,7 @@ theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
     ⟨le_max_left _ _, max_le ht.1 (min_le_right _ _)⟩
   have h_clamp_eq : ∀ τ ∈ Icc t₀ t, clamp τ = τ := fun τ hτ => by
     simp only [clamp, min_eq_left hτ.2, max_eq_right hτ.1]
-  let s' : ContinuousSystem ℝⁿ Unit Y' :=
+  let s' : ContinuousSystem E Unit Y' :=
     autonomous (fun τ y => s.F τ y (u (clamp τ))) (fun τ y => s.h τ y (u (clamp τ)))
   -- On `[t₀, t]` the frozen system has the same trajectories ...
   have hx' : s'.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t) :=
@@ -206,7 +205,7 @@ theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
         (inter_subset_inter_left _ (Icc_subset_Icc_right ht.2))⟩
   -- ... and `V̇ ≤ -W₃` outside the ball of radius `ρ(M)`, as `ρ(‖u - u_eq‖) ≤ ρ(M)` at every
   -- time.
-  have hlie' : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ρ M ≤ ‖y - x_c‖ →
+  have hlie' : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ρ M ≤ ‖y - x_c‖ →
       s'.lieDerivative V τ y () ≤ -W₃ y := fun τ hτ y hy =>
     hlie τ hτ y (u (clamp τ)) ((hρ_mono (norm_nonneg _) hM_nonneg
       (hM _ (h_clamp_mem τ))).trans hy)
@@ -233,13 +232,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19. -/
   (proof := /-- \cref{thm:continuousSystem-norm-le-of-isISSLyapunov}, with
     $\alpha_1^{-1} \circ \alpha_2 \circ \rho$ class $\mathcal{K}_{\infty}$
     (\cref{lem:classKInfty-symm}, \cref{lem:classKInfty-comp}). -/)]
-theorem inputToStateStable_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {u_eq : U'} (α₁ α₂ ρ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
+theorem inputToStateStable_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
+    {V : ℝ → E → ℝ} {x_c : E} {u_eq : U'} (α₁ α₂ ρ : ClassKInfty) {W₃ : E → ℝ}
+    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y))
+    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : E,
       α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : ℝⁿ) (w : U'), ρ.toFun ‖w - u_eq‖ ≤ ‖y - x_c‖ →
+    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : E) (w : U'), ρ.toFun ‖w - u_eq‖ ≤ ‖y - x_c‖ →
       s.lieDerivative V t y w ≤ -W₃ y) :
     s.InputToStateStable x_c u_eq := by
   obtain ⟨β, hβ⟩ := norm_le_of_isISSLyapunov α₁ α₂ hV hV_bd hW₃ ρ.strict_mono.monotoneOn
@@ -289,11 +288,12 @@ used. -/
     \]
     so \cref{thm:continuousSystem-inputToStateStable-of-isISSLyapunov} applies with
     $\alpha_i(r) = c_i r^2$ and $\rho(r) = \tfrac{2c_4L}{c_3}r$. -/)]
-theorem inputToStateStable_of_globallyExponentiallyStable [NeZero n]
-    {s : ContinuousSystem ℝⁿ U' Y'} {x_c : ℝⁿ} {u_eq : U'} (h_eq : ∀ t : ℝ, s.F t x_c u_eq = 0)
-    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 u_eq))
+theorem inputToStateStable_of_globallyExponentiallyStable {H : Type*} [NormedAddCommGroup H]
+    [InnerProductSpace ℝ H] [FiniteDimensional ℝ H] [Nontrivial H]
+    {s : ContinuousSystem H U' Y'} {x_c : H} {u_eq : U'} (h_eq : ∀ t : ℝ, s.F t x_c u_eq = 0)
+    (hf : ContDiff ℝ 1 (fun p : ℝ × H => s.F p.1 p.2 u_eq))
     (h_lip : ∃ L : NNReal, ∀ t : ℝ, LipschitzWith L (fun x => s.F t x u_eq))
-    (h_input : ∃ L : ℝ, ∀ (t : ℝ) (x : ℝⁿ) (w : U'),
+    (h_input : ∃ L : ℝ, ∀ (t : ℝ) (x : H) (w : U'),
       ‖s.F t x w - s.F t x u_eq‖ ≤ L * ‖w - u_eq‖)
     (h_ges : (s.constInput u_eq).GloballyExponentiallyStable x_c) :
     s.InputToStateStable x_c u_eq := by
@@ -308,7 +308,7 @@ theorem inputToStateStable_of_globallyExponentiallyStable [NeZero n]
   set α₁ := (ClassKInfty.power 2 two_pos).smul c₁ hc₁
   set α₂ := (ClassKInfty.power 2 two_pos).smul c₂ hc₂
   set ρ := (ClassKInfty.power 1 one_pos).smul k hk
-  set W₃ : ℝⁿ → ℝ := fun x => c₃ / 2 * ‖x - x_c‖ ^ 2
+  set W₃ : H → ℝ := fun x => c₃ / 2 * ‖x - x_c‖ ^ 2
   have hW₃ : IsPositiveDefiniteOn W₃ x_c univ :=
     IsPositiveDefiniteOn.comp (g := fun r => c₃ / 2 * r ^ 2)
       ⟨by fun_prop, by simp, fun r hr hne => by

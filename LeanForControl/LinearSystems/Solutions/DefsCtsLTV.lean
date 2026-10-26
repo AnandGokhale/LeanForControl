@@ -10,13 +10,13 @@ lives here, apart from the theorems proved about them (`CtsLTV.lean`, `CtsLTI.le
 project convention: definitions live apart from theorems. The discrete-time definitions are in
 `DefsDiscLTV.lean`.
 
-The state matrix is a genuinely *time-varying* `A : ℝ → Matrix X X ℝ`; the time-invariant case
-is the constant map, specialized in `CtsLTI.lean` rather than given a separate definition.
+The Peano-Baker series is defined for a time-varying coefficient `A : ℝ → 𝔸` in any real
+normed algebra `𝔸`; its theory (`PeanoBaker.lean`) uses only the algebra structure. The
+time-invariant case is the constant map, specialized in `CtsLTI.lean` rather than given a
+separate definition.
 
-`Matrix X X ℝ` carries no default norm instance in Mathlib (there are several
-natural choices). We fix the `L∞`-operator norm, `Matrix.Norms.Operator`, throughout this
-track: it is the one under which matrix multiplication is submultiplicative
-(`‖A * B‖ ≤ ‖A‖ * ‖B‖`), which the Peano-Baker series' convergence proof needs.
+The response formulas are still stated for matrices, under the `L∞`-operator norm
+`Matrix.Norms.Operator`.
 
 * `peanoBakerTerm` — the `k`-th iterated-integral term of the Peano-Baker series.
 * `stateTransitionMatrix` — the Peano-Baker series itself,
@@ -33,9 +33,11 @@ namespace LinearSystems
 open Matrix
 open scoped Matrix.Norms.Operator
 
-variable {X U : Type*} [Fintype X] [DecidableEq X] [Fintype U]
+section BanachAlgebra
 
-/-- The `k`-th term of the Peano-Baker series for a time-varying state matrix `A`:
+variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸]
+
+/-- The `k`-th term of the Peano-Baker series for a time-varying coefficient `A`:
 `peanoBakerTerm A 0 t t₀ = 1` and
 `peanoBakerTerm A (k+1) t t₀ = ∫ s in t₀..t, A s * peanoBakerTerm A k s t₀`.
 
@@ -43,16 +45,15 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5 (Peano-Baker s
 @[blueprint "def:peanoBakerTerm"
   (title := "Peano--Baker term")
   (statement := /-- The $k$-th term of the Peano--Baker series for a time-varying state
-    matrix $A(t)$:
+    coefficient $A(t)$:
     \[
-      P_0(t,t_0) := I, \qquad
+      P_0(t,t_0) := 1, \qquad
       P_{k+1}(t,t_0) := \int_{t_0}^{t} A(s)\, P_k(s,t_0)\,\mathrm{d}s.
     \]
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5 (Peano-Baker series).
   -/)]
-noncomputable def peanoBakerTerm (A : ℝ → Matrix X X ℝ) :
-    ℕ → ℝ → ℝ → Matrix X X ℝ
+noncomputable def peanoBakerTerm (A : ℝ → 𝔸) : ℕ → ℝ → ℝ → 𝔸
   | 0,     _, _  => 1
   | k + 1, t, t₀ => ∫ s in t₀..t, A s * peanoBakerTerm A k s t₀
 
@@ -72,9 +73,12 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.1 (Peano-Baker
     series).
   -/)]
-noncomputable def stateTransitionMatrix (A : ℝ → Matrix X X ℝ) (t t₀ : ℝ) :
-    Matrix X X ℝ :=
+noncomputable def stateTransitionMatrix (A : ℝ → 𝔸) (t t₀ : ℝ) : 𝔸 :=
   ∑' k, peanoBakerTerm A k t t₀
+
+end BanachAlgebra
+
+variable {X U : Type*} [Fintype X] [DecidableEq X] [Fintype U]
 
 /-- The *forced response* of `ẋ = A(t) x + B(t) u(t)` from the state `x₀` at time `t₀`, given
 by the variation-of-constants formula

@@ -227,6 +227,20 @@ definition already in `Stability/Continuous/Defs.lean`, applied to the unforced 
 `s.toContinuousSystem.zeroInput`, not a second one.  That is why `LinearSystems/Stability/` needs
 no stability predicate of its own.
 
+Two further connections between `Φ` and the nonlinear state transition map `φ`:
+
+- **On linear systems they agree** — done: `ContinuousLTV.stateTransitionMap_zero` says
+  `φ(t; t₀, x₀) = Φ(t, t₀) x₀` for `t ≥ t₀` under zero input, from
+  `ContinuousLTV.hasUniqueSolutions_zero`.
+- **`Φ` is the derivative of the flow** — future. For `ẋ = f(t, x)` with `f` `C¹` in `x`,
+  `∂φ(t; t₀, x₀)/∂x₀ = Φ_A(t, t₀)` with `A(t) = D_x f(t, x(t))` along the trajectory (the
+  variational equation). It is the mechanism behind linearization and behind contraction
+  (bounding `‖∂φ/∂x₀‖` through the log-norm of `A(t)`, Coppel's inequality). The
+  Peano-Baker core (`Solutions/PeanoBaker.lean`) already works in `E →L[ℝ] E`, which is
+  where `D_x f` lives, so no matrix layer is needed. The missing piece is differentiability of
+  the flow in the initial state: Mathlib has Lipschitz dependence (Grönwall) but not `C¹`
+  dependence.
+
 ## Status: blueprint coverage
 
 Every public declaration in the rest of the library carries a `@[blueprint]` node, every label
@@ -337,6 +351,33 @@ in the directory tree above marked `(planned)`.
 ## Known tech debt
 
 Not blocking anything; recorded so it is not rediscovered.
+
+### Linear systems should eventually be built on linear maps, not matrices
+
+Decided 2026-10-26.  The library states theorems over an abstract normed space wherever it can
+(the nonlinear stability theory already does).  The linear objects (`ContinuousLTV`,
+`ContinuousLTI` and the discrete ones) are matrix-based; for now their states live in
+`EuclideanSpace ℝ X` with matrices under the L² operator norm, which makes the Lyapunov bounds
+exact and the linearization bridge exact (`toEuclideanCLM` is an isometry).
+
+The eventual target is systems on linear maps: `A : ℝ → E →L[ℝ] E` on a normed space `E`, with
+an inner product only where needed (the Lyapunov equation becomes `A† P + P A = -Q`).  What that
+conversion involves, file by file:
+
+* objects: fields become continuous linear maps; an `ofMatrix` constructor for coordinates;
+* solutions: Peano–Baker in the Banach algebra `E →L[ℝ] E` (only `norm_mul_le` is needed, so it
+  also covers bounded operators in infinite dimensions); `e^{tA}` via `NormedSpace.exp`;
+  Cayley–Hamilton via `minpoly` / `aeval`;
+* stability: Hurwitz/Schur through the spectrum of the complexified map (complexification of
+  real linear maps is the hard part in Mathlib); Gelfand's formula already holds in any Banach
+  algebra;
+* controllability/observability: reachable subspace `⨆ k, range (A ^ k ∘L B)`, Hautus via
+  eigenvectors of `A†`; Kalman decomposition as an invariant-subspace decomposition;
+* linearization: `fderiv f x_eq` directly, with no conversion at all.
+
+Rough size: most of `LinearSystems/` and `MatrixAlgebra/` (~10k lines), with new design in the
+spectral and Kalman parts.  Worth doing when infinite-dimensional linear systems or a
+Mathlib-style linear-systems API are needed.
 
 ### Clean-interfaces pass on `MatrixAlgebra/Spectrum.lean`
 

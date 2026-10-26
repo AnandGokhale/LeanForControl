@@ -277,10 +277,9 @@ end Complete
 
 /-! ## The theorems of Barbashin and Krasovskii -/
 
-section Euclidean
+section FiniteDimensional
 
-variable {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+variable [FiniteDimensional ℝ E]
 
 /-- **Barbashin's theorem**: local asymptotic stability by LaSalle.  `V` is `C¹` and positive
 definite on a neighbourhood `D` of `x_eq` with `∇V · f ≤ 0` there; some sublevel set
@@ -309,9 +308,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.1. -/
     Convergence: near $x_{\mathrm{eq}}$, $V < c$, so a trajectory starting there starts in
     $\Omega_c$, and \cref{thm:continuousSystem-lasalle-invariance-principle} with
     $M = \{x_{\mathrm{eq}}\}$ applies. -/)]
-theorem locallyAsymptoticallyStable_of_lasalle [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
-    {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x) {K : NNReal} (hf : LipschitzWith K f)
-    {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} (hD : D ∈ 𝓝 x_eq) (hV_c1 : ContDiff ℝ 1 V)
+theorem locallyAsymptoticallyStable_of_lasalle [Nontrivial E] {s : ContinuousSystem E Unit Y}
+    {f : E → E} (hF : ∀ t x, s.F t x () = f x) {K : NNReal} (hf : LipschitzWith K f)
+    {V : E → ℝ} {x_eq : E} {D : Set E} (hD : D ∈ 𝓝 x_eq) (hV_c1 : ContDiff ℝ 1 V)
     (hV_pos : IsPositiveDefiniteOn V x_eq D) (h_nonpos : ∀ x ∈ D, fderiv ℝ V x (f x) ≤ 0)
     {c : ℝ} (hc : 0 < c) (hΩ_sub : {x | V x ≤ c} ⊆ D) (hΩ : IsCompact {x | V x ≤ c})
     (hΩ_inv : s.IsForwardInvariant (fun _ => ()) {x | V x ≤ c})
@@ -360,9 +359,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.2. -/
     $\{V \le V(x(t_0))\}$ is compact and, since $V$ does not increase along trajectories, forward
     invariant; apply \cref{thm:continuousSystem-lasalle-invariance-principle} with
     $M = \{x_{\mathrm{eq}}\}$. -/)]
-theorem globallyAsymptoticallyStable_of_lasalle [NeZero n] {s : ContinuousSystem ℝⁿ Unit Y}
-    {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x) {K : NNReal} (hf : LipschitzWith K f)
-    {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} (hV_c1 : ContDiff ℝ 1 V) (hV_pos : IsPositiveDefiniteOn V x_eq univ)
+theorem globallyAsymptoticallyStable_of_lasalle [Nontrivial E] {s : ContinuousSystem E Unit Y}
+    {f : E → E} (hF : ∀ t x, s.F t x () = f x) {K : NNReal} (hf : LipschitzWith K f)
+    {V : E → ℝ} {x_eq : E} (hV_c1 : ContDiff ℝ 1 V) (hV_pos : IsPositiveDefiniteOn V x_eq univ)
     (hV_sub : ∀ c, IsCompact {x | V x ≤ c}) (h_nonpos : ∀ x, fderiv ℝ V x (f x) ≤ 0)
     (hE : ∀ c, ∀ N ⊆ {x | V x ≤ c ∧ fderiv ℝ V x (f x) = 0},
       s.IsForwardInvariant (fun _ => ()) N → N ⊆ {x_eq}) :
@@ -384,6 +383,6 @@ theorem globallyAsymptoticallyStable_of_lasalle [NeZero n] {s : ContinuousSystem
     (fun y _ => h_nonpos y) (hE (V (x t₀))) hx (show V (x t₀) ≤ V (x t₀) from le_rfl)
   rwa [nhdsSet_singleton] at h_lim
 
-end Euclidean
+end FiniteDimensional
 
 end ContinuousSystem
