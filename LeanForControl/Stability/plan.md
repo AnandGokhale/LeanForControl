@@ -341,6 +341,23 @@ done; matrix algebra, ODEs, LTV, the stability definitions, boundedness, ISS, ca
 linearization and the converse theorems remain, together with the list of breaking changes to
 declarations that exist on `main`.
 
+### Coordinate changes for systems
+
+Khalil, Hespanha and the linear-systems theory change coordinates constantly: shifting an
+equilibrium to the origin ("without loss of generality `x = 0`"), similarity transforms `z = Tx`
+(`A' = TAT⁻¹`, `B' = TB`, `C' = CT⁻¹`; modal and Kalman forms), and later Lyapunov
+transformations `z = T(t)x` and diffeomorphisms.  Today each use is done by hand: Theorem 4.13 is
+stated at the origin and generalized to `x_eq` with an inline shifted system and
+`LocallyExponentiallyStable.of_semiconj`.
+
+Plan, after the audit backlog is down: an affine coordinate change `s.map φ`,
+`φ(x) = Lx + b` with `L : E ≃L[ℝ] E'`, `F'(t, z, u) = L F(t, φ⁻¹ z, u)`; trajectories and
+equilibria correspond; every stability notion transfers both ways (norms distort by at most
+`‖L‖`, `‖L⁻¹‖`), with `of_semiconj` a special case.  Similarity transforms of `ContinuousLTV` and
+`ContinuousLTI` as instances.  Put it in leaf files (`Systems/CoordinateChange.lean`,
+`Stability/Continuous/CoordinateChange.lean`), not in `Systems/Continuous.lean`.  Nonlinear and
+time-varying changes only when a theorem needs them.
+
 ### `comparison_lemma` asks for its comparison solutions
 
 The Dini derivative is now `EReal`-valued (as in Saks, Bruckner and Bullo), so `comparison_lemma`

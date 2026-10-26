@@ -18,7 +18,7 @@ namespace LinearSystems
 
 open Matrix
 
-variable {X U Y : Type*} [Fintype X] [DecidableEq X]
+variable {X U Y : Type*} [Fintype X] [Fintype U] [Fintype Y] [DecidableEq X] [DecidableEq U]
 
 /-!
 ## P6.3 and P6.5 are proved elsewhere
@@ -44,11 +44,10 @@ open scoped Matrix.Norms.Operator in
 theorem stateTransition_toLTV (sys : ContinuousLTI X U Y ℝ) (t t₀ : ℝ) :
     sys.toLTV.stateTransition t t₀ =
       toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) := by
-  rw [ContinuousLTV.stateTransition, show sys.toLTV.A = fun _ => sys.A from rfl,
+  rw [ContinuousLTV.stateTransition,
+    show sys.toLTV.A = fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) sys.A from rfl,
     stateTransitionMatrix_const,
     NormedSpace.map_exp _ continuous_toEuclideanCLM, map_smul]
-
-variable [Fintype U] [DecidableEq U]
 
 /-- **LTI uniqueness** (Hespanha, P6.1): every trajectory of the unforced LTI system is
 `e^{A(t-t₀)} x(t₀)`. -/

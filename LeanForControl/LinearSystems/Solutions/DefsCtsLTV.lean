@@ -1,5 +1,4 @@
 import LeanForControl.LinearSystems.Continuous
-import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Architect
 
@@ -16,14 +15,13 @@ normed algebra `𝔸`; its theory (`PeanoBaker.lean`) uses only the algebra stru
 time-invariant case is the constant map, specialized in `CtsLTI.lean` rather than given a
 separate definition.
 
-For a real LTV system the coefficient is the state matrix read as an operator on Euclidean
-space, so `Φ` and the responses act on `EuclideanSpace ℝ X`.
+For an LTV system the coefficient is the state operator `A(t)` itself, so `Φ` and the responses
+act on the state space.
 
 * `peanoBakerTerm` — the `k`-th iterated-integral term of the Peano-Baker series.
 * `stateTransitionMatrix` — the Peano-Baker series itself,
   `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
-* `ContinuousLTV.stateTransition` — `Φ` for a real LTV system, as an operator on Euclidean
-  states.
+* `ContinuousLTV.stateTransition` — `Φ` for an LTV system, an operator on its state space.
 * `ContinuousLTV.forcedResponse` — the variation-of-constants formula for
   `ẋ = A(t)x + B(t)u(t)`.
 
@@ -81,22 +79,19 @@ end BanachAlgebra
 
 namespace ContinuousLTV
 
-variable {X U Y : Type*} [Fintype X] [DecidableEq X]
+variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup U]
+  [NormedSpace ℝ U] [NormedAddCommGroup Y] [NormedSpace ℝ Y]
 
-/-- The **state transition operator** of a real LTV system: the Peano-Baker series `Φ(t, t₀)`
-of the state matrix read as an operator `A(t)` on the Euclidean state space, in the Banach
-algebra of continuous linear operators on that space.
+/-- The **state transition operator** of an LTV system: the Peano-Baker series `Φ(t, t₀)` of the
+state operator `A`, in the Banach algebra of continuous linear operators on the state space.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "def:continuousLTV-stateTransition"
   (title := "State transition operator of an LTV system")
   (statement := /-- The state transition matrix $\Phi(t, t_0)$ (\cref{def:stateTransitionMatrix})
-    of $A$, acting on the Euclidean state space $\mathbb{R}^X$. -/)]
-noncomputable def stateTransition (s : ContinuousLTV X U Y ℝ) (t t₀ : ℝ) :
-    EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X :=
-  stateTransitionMatrix (fun t => toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A t)) t t₀
-
-variable [Fintype U] [DecidableEq U]
+    of the state operator $A$, an operator on the state space. -/)]
+noncomputable def stateTransition (s : ContinuousLTV E U Y) (t t₀ : ℝ) : E →L[ℝ] E :=
+  stateTransitionMatrix s.A t t₀
 
 /-- The **forced response** of `ẋ = A(t) x + B(t) u(t)` from the state `x₀` at time `t₀`, given
 by the variation-of-constants formula
@@ -118,9 +113,9 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. 
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
   -/)]
-noncomputable def forcedResponse (s : ContinuousLTV X U Y ℝ) (u : ℝ → EuclideanSpace ℝ U)
-    (t₀ : ℝ) (x₀ : EuclideanSpace ℝ X) (t : ℝ) : EuclideanSpace ℝ X :=
-  s.stateTransition t t₀ x₀ + ∫ τ in t₀..t, s.stateTransition t τ (toEuclideanLin (s.B τ) (u τ))
+noncomputable def forcedResponse (s : ContinuousLTV E U Y) (u : ℝ → U) (t₀ : ℝ) (x₀ : E)
+    (t : ℝ) : E :=
+  s.stateTransition t t₀ x₀ + ∫ τ in t₀..t, s.stateTransition t τ (s.B τ (u τ))
 
 end ContinuousLTV
 

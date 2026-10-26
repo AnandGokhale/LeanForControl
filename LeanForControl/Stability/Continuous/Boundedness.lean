@@ -125,13 +125,11 @@ theorem exists_classKL_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E} {r b�
             ∀ t ∈ Icc t₀ t₁,
               ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) (α₁.invFun (α₂.toFun μ)) := by
   -- Step 1. The level `d = α₂(c) < b₁`, and `α₃ ≤ W₃` on the ball.
-  have hr : 0 < r := hc_pos.trans hcr
   have hc_mem : c ∈ Ico 0 r := ⟨hc_pos.le, hcr⟩
   set d := α₂.toFun c
   have hd_pos : 0 < d := (α₂.pos_iff hc_mem).mpr hc_pos
-  have hd_lt_b₂ : d < b₂ := (α₂.maps_to hc_mem).2
   have hd_mem₁ : d ∈ Ico 0 b₁ := ⟨hd_pos.le, hc⟩
-  obtain ⟨_, _, α₃, _, hW₃_bd⟩ := hW₃.exists_classK_bounds hr subset_rfl
+  obtain ⟨_, _, α₃, _, hW₃_bd⟩ := hW₃.exists_classK_bounds (hc_pos.trans hcr) subset_rfl
   -- Step 2. The comparison function `α = α₃ ∘ α₂⁻¹` on `[0, d)`, its class KL bound `σ`, and
   -- `β(ρ, s) = α₁⁻¹(σ(α₂(ρ), s))`.  `ClassK.comp` needs the domain of `α₃`'s restriction to be
   -- literally the range of `α₂⁻¹` on `[0, d)`, which is `α₂⁻¹(d)`; that this is `c` is a
@@ -141,8 +139,7 @@ theorem exists_classKL_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E} {r b�
   let α : ClassK d _ := ClassK.comp (α₃.restrict (c := α₂.symm.toFun d)
     (show 0 < α₂.invFun d by rw [h_inv_d]; exact hc_pos)
     (show α₂.invFun d < r by rw [h_inv_d]; exact hcr))
-    (α₂.symm.restrict hd_pos hd_lt_b₂)
-  have hα_eq : ∀ y, α.toFun y = α₃.toFun (α₂.invFun y) := fun _ => rfl
+    (α₂.symm.restrict hd_pos (α₂.maps_to hc_mem).2)
   obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_above_level
   obtain ⟨β, hβ_eq⟩ := ClassKL.exists_comp_sandwich α₁ α₂ hσ_zero hc_pos hcr rfl hc
   -- `β` never exceeds its value at elapsed time `0`, which is at most `α₁⁻¹(α₂(ρ))`, since
@@ -151,16 +148,14 @@ theorem exists_classKL_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E} {r b�
     fun ρ hρ θ hθ => by
     have hy := α₂.toFun_mem_Ico hcr rfl hρ
     have hσ_mem := σ.toFun_mem_Ico hσ_zero hy hθ
-    have hσ_le : σ.toFun (α₂.toFun ρ) θ ≤ α₂.toFun ρ :=
-      (σ.anti_s_mono hy (mem_Ici.mpr le_rfl) (mem_Ici.mpr hθ) hθ).trans (hσ_zero _ hy)
     rw [hβ_eq]
-    exact (α₁.inv_mono_iff ⟨hσ_mem.1, hσ_mem.2.trans hc⟩ ⟨hy.1, hy.2.trans hc⟩).mpr hσ_le
+    exact (α₁.inv_mono_iff ⟨hσ_mem.1, hσ_mem.2.trans hc⟩ ⟨hy.1, hy.2.trans hc⟩).mpr
+      ((σ.anti_s_mono hy (mem_Ici.mpr le_rfl) (mem_Ici.mpr hθ) hθ).trans (hσ_zero _ hy))
   refine ⟨β, hβ_le, fun {Y s V μ} hV hV_bd hlie hμ hμc t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
   -- The ultimate level `η = α₂(μ) < d`.
   have hμ_mem : μ ∈ Ico 0 r := ⟨hμ, hμc.trans hcr⟩
   set η := α₂.toFun μ
   have hη_lt_d : η < d := α₂.strict_mono hμ_mem hc_mem hμc
-  have hη_nonneg : 0 ≤ η := (α₂.maps_to hμ_mem).1
   -- Above `η` in the ball, `α₂(‖y - x_c‖) ≥ V > α₂(μ)`, so `y` is outside the `μ`-ball ...
   have h_far : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ‖y - x_c‖ < r → η < V τ y → μ < ‖y - x_c‖ :=
     fun τ hτ y hy hηV =>
@@ -175,11 +170,11 @@ theorem exists_classKL_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E} {r b�
       s.lieDerivative V τ y () ≤ -α.toFun (V τ y) := fun τ hτ y hy hηV => by
     have hy_mem : ‖y - x_c‖ ∈ Ico 0 r := ⟨norm_nonneg _, hy⟩
     have hV_up := (hV_bd τ hτ y hy).2
-    have hV_mem : V τ y ∈ Ico 0 b₂ :=
-      ⟨(α₁.maps_to hy_mem).1.trans (hV_bd τ hτ y hy).1, hV_up.trans_lt (α₂.maps_to hy_mem).2⟩
-    have h_α_le : α.toFun (V τ y) ≤ α₃.toFun ‖y - x_c‖ := by
-      rw [hα_eq]
-      exact α₂.toFun_invFun_le α₃ hy_mem hV_mem hV_up
+    -- `α(V) = α₃(α₂⁻¹(V)) ≤ α₃(‖y - x_c‖)`.
+    have h_α_le : α.toFun (V τ y) ≤ α₃.toFun ‖y - x_c‖ :=
+      α₂.toFun_invFun_le α₃ hy_mem
+        ⟨(α₁.maps_to hy_mem).1.trans (hV_bd τ hτ y hy).1, hV_up.trans_lt (α₂.maps_to hy_mem).2⟩
+        hV_up
     linarith [hlie τ hτ y (h_far τ hτ y hy hηV).le hy, (hW₃_bd y hy).1]
   -- Step 3. `v(τ) = V(τ, x(τ))` starts below `d`.
   have hx₀_mem : ‖x t₀ - x_c‖ ∈ Ico 0 r := ⟨norm_nonneg _, h_init.trans hcr⟩
@@ -230,7 +225,7 @@ theorem exists_classKL_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E} {r b�
   set S := σ.toFun (α₂.toFun ‖x t₀ - x_c‖) (t - t₀)
   have hS_mem : S ∈ Ico 0 b₁ :=
     let h := σ.toFun_mem_Ico hσ_zero h_α₂₀_mem ht_sub; ⟨h.1, h.2.trans hc⟩
-  have hη_mem : η ∈ Ico 0 b₁ := ⟨hη_nonneg, hη_lt_d.trans hc⟩
+  have hη_mem : η ∈ Ico 0 b₁ := ⟨(α₂.maps_to hμ_mem).1, hη_lt_d.trans hc⟩
   have hxt_mem : ‖x t - x_c‖ ∈ Ico 0 r := ⟨norm_nonneg _, h_trap t ht⟩
   have h_α₁t : α₁.toFun ‖x t - x_c‖ ≤ max S η :=
     calc α₁.toFun ‖x t - x_c‖
@@ -461,9 +456,9 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E}
     (β k).nonneg _ (hk_mem k) θ hθ
   have hU_pos : ∀ r > 0, ∀ θ > 0, 0 < U r θ := by
     intro r hr θ hθ
-    have hk : (0 : ℝ) < ⌈r⌉₊ := Nat.cast_pos.mpr (Nat.ceil_pos.mpr hr)
     have h_mono : (β ⌈r⌉₊).toFun 0 θ < (β ⌈r⌉₊).toFun ⌈r⌉₊ θ :=
-      (β ⌈r⌉₊).strict_mono_r θ hθ.le ⟨le_rfl, by positivity⟩ (hk_mem _) hk
+      (β ⌈r⌉₊).strict_mono_r θ hθ.le ⟨le_rfl, by positivity⟩ (hk_mem _)
+        (Nat.cast_pos.mpr (Nat.ceil_pos.mpr hr))
     rw [(β ⌈r⌉₊).map_zero_r hθ.le] at h_mono
     exact h_mono.trans_le (Finset.single_le_sum (fun k _ => h_term_nonneg k θ hθ.le)
       (Finset.self_mem_range_succ _))

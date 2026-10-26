@@ -41,3 +41,6 @@ texput.log
 
 # Local reference PDFs.
 CTDS-*.pdf
+
+# Local audit tooling and approvals.
+/audit/

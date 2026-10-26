@@ -40,7 +40,7 @@ namespace LinearSystems
 
 open Matrix Set Filter Topology NormedSpace ContinuousLTV
 
-variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U] [DecidableEq U]
+variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U] [DecidableEq U] [Fintype Y]
 
 namespace ContinuousLTI
 

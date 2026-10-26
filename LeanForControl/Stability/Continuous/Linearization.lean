@@ -479,40 +479,165 @@ theorem ContinuousSystem.locallyExponentiallyStable_linearization {Y : Type*}
     _ ≤ -(k₃ * ‖x - x_eq‖ ^ 2) + k₃ / 2 * ‖x - x_eq‖ ^ 2 := by gcongr
     _ = -(k₃ / 2 * ‖x - x_eq‖ ^ 2) := by ring
 
-/-- **Lyapunov's indirect method for time-varying systems.**  Let `x_eq` be an equilibrium of
-`ẋ = f(t, x)` with `f` continuously differentiable, Lipschitz, and with Lipschitz Jacobian on a
-ball `D`, uniformly in `t`.  If `x_eq` is locally exponentially stable for the linearization
-`ẋ = A(t)(x - x_eq)`, `A(t) = ∂f/∂x(t, x_eq)`, it is so for `ẋ = f(t, x)`.
+/-- **The gradient of a quadratic form**: `‖∂/∂x ⟪x, M x⟫‖ ≤ 2‖M‖‖x‖`. -/
+theorem norm_fderiv_inner_apply_self_le {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] (M : E →L[ℝ] E) (x : E) :
+    ‖fderiv ℝ (fun y => inner ℝ y (M y)) x‖ ≤ 2 * ‖M‖ * ‖x‖ := by
+  have h : HasFDerivAt (fun y => inner ℝ y (M y))
+      ((fderivInnerCLM ℝ (x, M x)).comp ((ContinuousLinearMap.id ℝ E).prod M)) x :=
+    (hasFDerivAt_id x).inner ℝ M.hasFDerivAt
+  rw [h.fderiv]
+  refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun z => ?_
+  simp only [ContinuousLinearMap.comp_apply, ContinuousLinearMap.prod_apply,
+    ContinuousLinearMap.id_apply, fderivInnerCLM_apply, Real.norm_eq_abs]
+  calc |inner ℝ x (M z) + inner ℝ z (M x)|
+      ≤ ‖x‖ * ‖M z‖ + ‖z‖ * ‖M x‖ :=
+        (abs_add_le _ _).trans (add_le_add (abs_real_inner_le_norm _ _)
+          (abs_real_inner_le_norm _ _))
+    _ ≤ ‖x‖ * (‖M‖ * ‖z‖) + ‖z‖ * (‖M‖ * ‖x‖) :=
+        add_le_add (mul_le_mul_of_nonneg_left (M.le_opNorm z) (norm_nonneg _))
+          (mul_le_mul_of_nonneg_left (M.le_opNorm x) (norm_nonneg _))
+    _ = 2 * ‖M‖ * ‖x‖ * ‖z‖ := by ring
 
-The linearization, in coordinates, is a linear time-varying system with `A` continuous and
-bounded.  Theorem 4.12 with `Q = I` gives `P(t)`, and `V(t, x) = (x - x_eq)ᵀ P(t) (x - x_eq)`
-decreases along `f` as along the linearization, up to a cubic error.
+/-- **Lyapunov's indirect method for time-varying systems** (Khalil, Theorem 4.13).  Let the
+origin be an equilibrium of `ẋ = f(t, x)`, with `f` continuously differentiable on `ℝ × D`,
+`D = {‖x‖ < r}`, and `f(t, ·)` and its Jacobian Lipschitz on `D`, uniformly in `t`.  If the origin
+is exponentially stable for the linear system `ẋ = A(t) x`, `A(t) = ∂f/∂x(t, 0)`, it is so for
+`ẋ = f(t, x)`.
+
+Khalil's proof: Theorem 4.12 gives `P(t)` for the linear system, and along `f = A(t)x + g`,
+`V̇ = -xᵀQx + 2xᵀPg ≤ -c₃‖x‖² + 2c₂L‖x‖³`, negative definite for `‖x‖ < ρ`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.13. -/
-@[blueprint "thm:continuousSystem-locallyExponentiallyStable-of-linearization"
+@[blueprint "thm:continuousSystem-locallyExponentiallyStable-of-linearization-zero"
   (title := "Lyapunov's indirect method for time-varying systems")
-  (statement := /-- Under the hypotheses of
-    \cref{thm:continuousSystem-locallyExponentiallyStable-linearization}, if
-    $x_{\mathrm{eq}}$ is a locally exponentially stable equilibrium of the linearization
-    $\dot x = A(t)(x - x_{\mathrm{eq}})$,
-    $A(t) = \frac{\partial f}{\partial x}(t, x_{\mathrm{eq}})$,
-    then it is locally exponentially stable for $\dot x = f(t, x)$.
+  (statement := /-- Let the origin be an equilibrium of $\dot x = f(t, x)$ on $\mathbb{R}^n$, with
+    $f$ continuously differentiable on $\mathbb{R} \times D$, $D = \{x : \|x\| < r\}$, and
+    $f(t, \cdot)$ and $\partial f / \partial x(t, \cdot)$ Lipschitz on $D$, uniformly in $t$.  If
+    the origin is an exponentially stable equilibrium of the linear system $\dot x = A(t)x$,
+    $A(t) = \frac{\partial f}{\partial x}(t, 0)$, then it is an exponentially stable equilibrium
+    of $\dot x = f(t, x)$.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.13.  Khalil's bounded
     Jacobian is the Lipschitz bound on $f(t, \cdot)$. -/)
-  (proof := /-- In coordinates the linearization is $\dot v = A(t)v$ with $A$ continuous and
-    bounded, and exponentially stable
-    (\cref{lem:continuousSystem-locallyExponentiallyStable-of-semiconj}).
-    \Cref{thm:continuousLTV-exists-differentialLyapunovEquation} with $Q = I$ gives a bounded
-    $P(t)$ with $c_1\|x\|^2 \le x^{\mathsf T}P(t)x \le c_2\|x\|^2$ and derivative
-    $-x^{\mathsf T}x$ along the linearization.  Along $f$, $V = (x - x_{\mathrm{eq}})^{\mathsf T}
-    P(t)(x - x_{\mathrm{eq}})$ has derivative
+  (proof := /-- $A(t)$ is continuous and bounded, so
+    \cref{thm:continuousLTV-exists-differentialLyapunovEquation} with $Q = I$ gives $P(t)$, and
+    $V(t, x) = x^{\mathsf T}P(t)x$ is an exponential Lyapunov function for the linear system
+    (\cref{thm:continuousLTV-isExponentialLyapunovFunction-of-differentialLyapunovEquation}).
+    Writing $f(t, x) = A(t)x + g(t, x)$ with $\|g(t, x)\| \le L_1\|x\|^2$
+    (\cref{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}),
     \[
-      \dot V \le -c_3\|x - x_{\mathrm{eq}}\|^2 + 2\|P\|L_1\|x - x_{\mathrm{eq}}\|^3,
+      \dot V \le -c_3\|x\|^2 + 2\|P\|L_1\|x\|^3,
     \]
-    by \cref{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}, which is at most
-    $-\tfrac{c_3}{2}\|x - x_{\mathrm{eq}}\|^2$ on a small ball; conclude by
+    which is at most $-\tfrac{c_3}{2}\|x\|^2$ for $\|x\| < \rho$; conclude by
     \cref{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable}. -/)]
+theorem ContinuousSystem.locallyExponentiallyStable_of_linearization_zero {Y : Type*}
+    {s : ContinuousSystem ℝⁿ Unit Y} {r : ℝ} (hr : 0 < r) (h_eq : ∀ t : ℝ, s.F t 0 () = 0)
+    (hf : ContDiffOn ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 ()) (univ ×ˢ ball 0 r))
+    (h_lip : ∃ L : ℝ≥0, ∀ t : ℝ, LipschitzOnWith L (fun x => s.F t x ()) (ball 0 r))
+    (h_jac_lip : ∃ L₁ : ℝ≥0, ∀ t : ℝ,
+      LipschitzOnWith L₁ (fderiv ℝ (fun x => s.F t x ())) (ball 0 r))
+    (h_lin : (ContinuousSystem.autonomous (fun t x => fderiv ℝ (fun y => s.F t y ()) 0 x)
+      (fun _ _ => ())).LocallyExponentiallyStable 0) :
+    s.LocallyExponentiallyStable 0 := by
+  obtain ⟨L, hL⟩ := h_lip
+  obtain ⟨L₁, hL₁⟩ := h_jac_lip
+  set J : ℝ → ℝⁿ →L[ℝ] ℝⁿ := fun t => fderiv ℝ (fun y => s.F t y ()) 0
+  -- Step 1. `A(t) = ∂f/∂x(t, 0)` is continuous and bounded, and the linear system `ẋ = A(t)x`
+  -- is exponentially stable.
+  have h_open : IsOpen ((univ : Set ℝ) ×ˢ ball (0 : ℝⁿ) r) := isOpen_univ.prod isOpen_ball
+  have h_mem : ∀ t : ℝ, (t, (0 : ℝⁿ)) ∈ (univ : Set ℝ) ×ˢ ball (0 : ℝⁿ) r := fun t =>
+    ⟨mem_univ t, mem_ball_self hr⟩
+  have hJ_cont : Continuous J := by
+    rw [show J = fun t => (fderiv ℝ (fun p : ℝ × ℝⁿ => s.F p.1 p.2 ()) (t, 0)).comp
+        (ContinuousLinearMap.inr ℝ ℝ ℝⁿ) from funext fun t =>
+      fderiv_eq_fderiv_uncurry_comp_inr (V := fun t x => s.F t x ())
+        ((hf.contDiffAt (h_open.mem_nhds (h_mem t))).differentiableAt one_ne_zero)]
+    exact ((hf.continuousOn_fderiv_of_isOpen h_open le_rfl).comp_continuous
+      (continuous_id.prodMk continuous_const) h_mem).clm_comp continuous_const
+  set sl : ContinuousLTV ℝⁿ ℝⁿ ℝⁿ := ⟨J, 0, 0, 0⟩
+  have hF : ∀ t y, sl.toContinuousSystem.zeroInput.F t y () = J t y := fun t y => by
+    change J t y + (0 : ℝ → ℝⁿ →L[ℝ] ℝⁿ) t 0 = J t y
+    simp
+  have h_sl : sl.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0 :=
+    h_lin.of_semiconj (x_eq := (0 : ℝⁿ)) (ContinuousLinearMap.id ℝ ℝⁿ) one_pos one_pos
+      (fun v => by simp) (fun v => by simp) fun t v => by
+        rw [hF]
+        simp [J]
+  -- Step 2. Theorem 4.12 with `Q = I` gives `P(t)`; `V(t, x) = ⟪x, P(t) x⟫` is an exponential
+  -- Lyapunov function for the linear system (Example 4.21).
+  have hQ_pos : ∀ v : ℝⁿ, 1 * ‖v‖ ^ 2 ≤ inner ℝ v ((1 : ℝⁿ →L[ℝ] ℝⁿ) v) := fun v => by
+    rw [ContinuousLinearMap.one_apply, real_inner_self_eq_norm_sq, one_mul]
+  obtain ⟨P, hP, -, ⟨p, hP_bdd⟩, c₁, hc₁, hP_low⟩ := exists_differentialLyapunovEquation sl
+    hJ_cont (fun t => norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds 0 hr) (hL t))
+    (Q := fun _ => 1) continuous_const (q := 1) (fun _ => ContinuousLinearMap.norm_id_le)
+    (fun _ => IsSelfAdjoint.one _) one_pos (fun _ => hQ_pos) h_sl
+  set V : ℝ → ℝⁿ → ℝ := fun t v => inner ℝ v (P t v)
+  obtain ⟨-, hV_diff, -, c₁', hc₁', c₂, hc₂, k₃, hk₃, hV_bounds⟩ :=
+    isExponentialLyapunovFunction_of_differentialLyapunovEquation sl hP hP_bdd hc₁
+      (fun t _ x => hP_low t x) one_pos (fun _ _ => hQ_pos)
+  have hp : 0 ≤ p := (norm_nonneg _).trans (hP_bdd 0 le_rfl)
+  -- Step 3. `V̇ ≤ -c₃‖x‖² + 2‖P‖L₁‖x‖³ ≤ -(c₃/2)‖x‖²` for `‖x‖ < ρ`.
+  set ρ := min r (k₃ / (4 * (p + 1) * (L₁ + 1)))
+  have hρ : 0 < ρ := lt_min hr (by positivity)
+  refine IsExponentialLyapunovFunction.locallyExponentiallyStable (D := ball 0 ρ) (a := 2)
+    ⟨ball_mem_nhds 0 hρ, fun t ht x _ => hV_diff t ht x (mem_univ _), two_pos, c₁', hc₁', c₂,
+      hc₂, k₃ / 2, by positivity, fun t ht x hx => ?_⟩
+  obtain ⟨h_low, h_up, h_lie⟩ := hV_bounds t ht x (mem_univ _)
+  simp only [sub_zero, Real.rpow_two] at h_low h_up h_lie ⊢
+  refine ⟨h_low, h_up, ?_⟩
+  -- `V̇` along `f` is `V̇` along the linear system plus `∂V/∂x · g`, `g = f - A(t)x`.
+  have h_pert := lieDerivative_le_add_norm_fderiv_mul (V := V) (v := fun t y => J t y)
+    (w := fun t y => s.F t y ()) (hV_diff t ht x (mem_univ _))
+  have h_linear : _root_.lieDerivative V (fun t y => J t y) t x =
+      sl.toContinuousSystem.zeroInput.lieDerivative V t x () := by
+    change fderiv ℝ (Function.uncurry V) (t, x) (1, J t x) =
+      fderiv ℝ (Function.uncurry V) (t, x) (1, sl.toContinuousSystem.zeroInput.F t x ())
+    rw [hF]
+  have h_grad : ‖fderiv ℝ (V t) x‖ ≤ 2 * p * ‖x‖ :=
+    (norm_fderiv_inner_apply_self_le (P t) x).trans (mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_left (hP_bdd t ht) two_pos.le) (norm_nonneg _))
+  have h_g : ‖s.F t x () - J t x‖ ≤ L₁ * ‖x‖ ^ 2 := by
+    have h := norm_linearization_remainder_le hr h_eq hf hL₁ t
+      (ball_subset_ball (min_le_left _ _) hx)
+    rwa [norm_sub_rev, sub_zero] at h
+  have h_small : 2 * p * L₁ * ‖x‖ ≤ k₃ / 2 :=
+    calc 2 * p * L₁ * ‖x‖
+        ≤ 2 * (p + 1) * (L₁ + 1) * ‖x‖ :=
+          mul_le_mul_of_nonneg_right (mul_le_mul (mul_le_mul_of_nonneg_left (by linarith)
+            two_pos.le) (by linarith) L₁.coe_nonneg (by positivity)) (norm_nonneg _)
+      _ ≤ 2 * (p + 1) * (L₁ + 1) * (k₃ / (4 * (p + 1) * (L₁ + 1))) :=
+          mul_le_mul_of_nonneg_left ((mem_ball_zero_iff.mp hx).le.trans (min_le_right _ _))
+            (by positivity)
+      _ = k₃ / 2 := by field_simp; ring
+  calc s.lieDerivative V t x ()
+      ≤ _root_.lieDerivative V (fun t y => J t y) t x +
+          ‖fderiv ℝ (V t) x‖ * ‖s.F t x () - J t x‖ := h_pert
+    _ ≤ -(k₃ * ‖x‖ ^ 2) + (2 * p * ‖x‖) * (L₁ * ‖x‖ ^ 2) := by
+        rw [h_linear]
+        exact add_le_add h_lie (mul_le_mul h_grad h_g (norm_nonneg _) (by positivity))
+    _ = -(k₃ * ‖x‖ ^ 2) + (2 * p * L₁ * ‖x‖) * ‖x‖ ^ 2 := by ring
+    _ ≤ -(k₃ * ‖x‖ ^ 2) + k₃ / 2 * ‖x‖ ^ 2 :=
+        add_le_add le_rfl (mul_le_mul_of_nonneg_right h_small (sq_nonneg _))
+    _ = -(k₃ / 2 * ‖x‖ ^ 2) := by ring
+
+/-- **Lyapunov's indirect method at any equilibrium**: Khalil's Theorem 4.13 for an equilibrium
+`x_eq`, by translating it to the origin, `y = x - x_eq`. -/
+@[blueprint "thm:continuousSystem-locallyExponentiallyStable-of-linearization"
+  (title := "Lyapunov's indirect method at any equilibrium")
+  (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = f(t, x)$, with $f$
+    continuously differentiable on $\mathbb{R} \times D$,
+    $D = \{x : \|x - x_{\mathrm{eq}}\| < r\}$, and $f(t, \cdot)$ and
+    $\partial f / \partial x(t, \cdot)$ Lipschitz on $D$, uniformly in $t$.  If $x_{\mathrm{eq}}$
+    is a locally exponentially stable equilibrium of the linearization
+    $\dot x = A(t)(x - x_{\mathrm{eq}})$,
+    $A(t) = \frac{\partial f}{\partial x}(t, x_{\mathrm{eq}})$, then it is locally exponentially
+    stable for $\dot x = f(t, x)$. -/)
+  (proof := /-- In the coordinates $y = x - x_{\mathrm{eq}}$ the system is
+    $\dot y = f(t, y + x_{\mathrm{eq}})$, with the same hypotheses on $\|y\| < r$ and the same
+    Jacobian at the origin; apply
+    \cref{thm:continuousSystem-locallyExponentiallyStable-of-linearization-zero} and translate
+    back (\cref{lem:continuousSystem-locallyExponentiallyStable-of-semiconj}). -/)]
 theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
     {s : ContinuousSystem ℝⁿ Unit Y} {x_eq : ℝⁿ} {r : ℝ} (hr : 0 < r)
     (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
@@ -526,110 +651,33 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
     s.LocallyExponentiallyStable x_eq := by
   obtain ⟨L, hL⟩ := h_lip
   obtain ⟨L₁, hL₁⟩ := h_jac_lip
-  set J : ℝ → ℝⁿ →L[ℝ] ℝⁿ := fun t => fderiv ℝ (fun y => s.F t y ()) x_eq
-  -- Step 1. The linearization is `v̇ = A(t) v`, with `A` continuous and bounded.
-  set A : ℝ → Matrix (Fin n) (Fin n) ℝ :=
-    fun t => (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ)).symm (J t)
-  have hJA : ∀ t, Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) (A t) = J t := fun t =>
-    StarAlgEquiv.apply_symm_apply _ _
-  have h_open : IsOpen ((univ : Set ℝ) ×ˢ ball x_eq r) := isOpen_univ.prod isOpen_ball
-  have h_mem : ∀ t : ℝ, (t, x_eq) ∈ (univ : Set ℝ) ×ˢ ball x_eq r := fun t =>
-    ⟨mem_univ t, mem_ball_self hr⟩
-  have hJ_cont : Continuous J := by
-    have hJ_joint : J = fun t => (fderiv ℝ (fun p : ℝ × ℝⁿ => s.F p.1 p.2 ()) (t, x_eq)).comp
-        (ContinuousLinearMap.inr ℝ ℝ ℝⁿ) := funext fun t =>
-      fderiv_eq_fderiv_uncurry_comp_inr (V := fun t x => s.F t x ())
-        ((hf.contDiffAt (h_open.mem_nhds (h_mem t))).differentiableAt one_ne_zero)
-    rw [hJ_joint]
-    exact ((hf.continuousOn_fderiv_of_isOpen h_open le_rfl).comp_continuous
-      (continuous_id.prodMk continuous_const) h_mem).clm_comp continuous_const
-  have hA_cont : Continuous A :=
-    (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ)).symm.toAlgEquiv.toLinearMap
-      |>.continuous_of_finiteDimensional |>.comp hJ_cont
-  have hA_bdd : ∀ t, ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) (A t)‖ ≤ L := fun t => by
-    rw [hJA]
-    exact norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds x_eq hr) (hL t)
-  set sl : ContinuousLTV (Fin n) (Fin 0) (Fin 0) ℝ := ⟨A, 0, 0, 0⟩
-  -- Step 2. It is exponentially stable: its trajectories are those of the linearization,
-  -- shifted to the origin.
-  have h_sl : sl.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0 := by
-    refine h_lin.of_semiconj (x_eq := (0 : ℝⁿ)) (ContinuousLinearMap.id ℝ ℝⁿ) one_pos one_pos
-      (fun v => by simp) (fun v => by simp) (fun t v => ?_)
-    change J t (x_eq + (v - 0) - x_eq) =
-      toEuclideanLin (A t) v + toEuclideanLin (0 : Matrix (Fin n) (Fin 0) ℝ) 0
-    rw [← hJA t, map_zero, add_zero, sub_zero, add_sub_cancel_left]
-    rfl
-  -- Step 3. Theorem 4.12 with `Q = I`, and Example 4.21: `W(t, v) = vᵀ P(t) v`.
-  obtain ⟨P, hP, -, ⟨p, hP_bdd⟩, c₁, hc₁, hP_low⟩ := exists_differentialLyapunovEquation sl
-    hA_cont hA_bdd (Q := fun _ => 1) continuous_const (q := 1)
-    (fun _ => by rw [map_one]; exact ContinuousLinearMap.norm_id_le) (fun _ => transpose_one)
-    one_pos (fun _ v => by simp) h_sl
-  set W : ℝ → ℝⁿ → ℝ :=
-    fun t v => inner ℝ v (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) (P t) v)
-  obtain ⟨-, hW_diff, -, c₁', hc₁', c₂, hc₂, k₃, hk₃, hW_bounds⟩ :=
-    isExponentialLyapunovFunction_of_differentialLyapunovEquation sl hP hP_bdd hc₁
-      (fun t _ x => hP_low t x) one_pos (fun _ _ v => by simp)
-  have hp : 0 ≤ p := (norm_nonneg _).trans (hP_bdd 0 le_rfl)
-  -- Step 4. `V(t, x) = W(t, x - x_eq)`, so `DV = DW ∘ M` with `M(τ, y) = (τ, y)`.
-  set V : ℝ → ℝⁿ → ℝ := fun t x => centeredQuadraticForm (P t) x_eq x
-  set M : ℝ × ℝⁿ →L[ℝ] ℝ × ℝⁿ :=
-    (ContinuousLinearMap.fst ℝ ℝ ℝⁿ).prod (ContinuousLinearMap.snd ℝ ℝ ℝⁿ)
-  have hV_fderiv : ∀ t, 0 ≤ t → ∀ x, HasFDerivAt (Function.uncurry V)
-      ((fderiv ℝ (Function.uncurry W) (t, x - x_eq)).comp M) (t, x) := by
-    intro t ht x
-    have hM : HasFDerivAt (fun z : ℝ × ℝⁿ => (z.1, z.2 - x_eq)) M (t, x) :=
-      hasFDerivAt_fst.prodMk (hasFDerivAt_snd.sub_const x_eq)
-    exact (hW_diff t ht _ (mem_univ _)).hasFDerivAt.comp (t, x) hM
-  -- Step 5. On a small ball the cubic error is at most half the decay rate.
-  set ρ := min r (k₃ / (4 * (p + 1) * (L₁ + 1)))
-  have hρ : 0 < ρ := lt_min hr (by positivity)
-  refine IsExponentialLyapunovFunction.locallyExponentiallyStable (D := ball x_eq ρ) (a := 2)
-    ⟨ball_mem_nhds x_eq hρ, fun t ht x _ => (hV_fderiv t ht x).differentiableAt, two_pos,
-      c₁', hc₁', c₂, hc₂, k₃ / 2, by positivity, fun t ht x hx => ?_⟩
-  obtain ⟨h_low, h_up, h_lie⟩ := hW_bounds t ht (x - x_eq) (mem_univ _)
-  simp only [sub_zero, Real.rpow_two] at h_low h_up h_lie ⊢
-  have hx_ρ := mem_ball_iff_norm.mp hx
-  set y := x - x_eq
-  refine ⟨h_low, h_up, ?_⟩
-  -- The decrease: along the linearization it is the LTV one, and `f` differs by `ε = O(‖y‖²)`.
-  set D := fderiv ℝ (Function.uncurry V) (t, x)
-  have h_lin_eq : D (1, J t y) = sl.toContinuousSystem.zeroInput.lieDerivative W t y () := by
-    rw [show D = (fderiv ℝ (Function.uncurry W) (t, y)).comp M from (hV_fderiv t ht x).fderiv]
-    change fderiv ℝ (Function.uncurry W) (t, y) (1, J t y) =
-      fderiv ℝ (Function.uncurry W) (t, y)
-        (1, toEuclideanLin (A t) y + toEuclideanLin (0 : Matrix (Fin n) (Fin 0) ℝ) 0)
-    rw [← hJA t, map_zero, add_zero]
-    rfl
-  -- `f` differs from the linearization by `O(‖y‖²)`, and `‖∂V/∂x‖ ≤ 2‖P‖‖y‖`.
-  have h_pert := lieDerivative_le_add_norm_fderiv_mul (V := V)
-    (v := fun t x => fderiv ℝ (fun y => s.F t y ()) x_eq (x - x_eq)) (w := fun t x => s.F t x ())
-    (hV_fderiv t ht x).differentiableAt
-  have h_grad : ‖fderiv ℝ (V t) x‖ ≤ 2 * p * ‖y‖ :=
-    ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg (mul_nonneg two_pos.le hp) (norm_nonneg _))
-      fun z => by
-        rw [Real.norm_eq_abs]
-        exact (abs_fderiv_centeredQuadraticForm_le _ _ _ _).trans (by gcongr; exact hP_bdd t ht)
-  have h_rem : ‖s.F t x () - J t y‖ ≤ L₁ * ‖y‖ ^ 2 := by
-    rw [norm_sub_rev]
-    exact norm_linearization_remainder_le hr h_eq hf hL₁ t (ball_subset_ball (min_le_left _ _) hx)
-  have h_small : 2 * p * L₁ * ‖y‖ ≤ k₃ / 2 :=
-    calc 2 * p * L₁ * ‖y‖
-        ≤ 2 * (p + 1) * (L₁ + 1) * (k₃ / (4 * (p + 1) * (L₁ + 1))) := by
-          gcongr
-          · linarith
-          · linarith
-          · exact hx_ρ.le.trans (min_le_right _ _)
-      _ = k₃ / 2 := by field_simp; ring
-  change D (1, s.F t x ()) ≤ -(k₃ / 2 * ‖y‖ ^ 2)
-  calc D (1, s.F t x ())
-      ≤ D (1, J t y) + ‖fderiv ℝ (V t) x‖ * ‖s.F t x () - J t y‖ := h_pert
-    _ ≤ -(k₃ * ‖y‖ ^ 2) + (2 * p * ‖y‖) * (L₁ * ‖y‖ ^ 2) := by
-        rw [h_lin_eq]
-        exact add_le_add h_lie (mul_le_mul h_grad h_rem (norm_nonneg _)
-          (mul_nonneg (mul_nonneg two_pos.le hp) (norm_nonneg _)))
-    _ = -(k₃ * ‖y‖ ^ 2) + (2 * p * L₁ * ‖y‖) * ‖y‖ ^ 2 := by ring
-    _ ≤ -(k₃ * ‖y‖ ^ 2) + k₃ / 2 * ‖y‖ ^ 2 := by gcongr
-    _ = -(k₃ / 2 * ‖y‖ ^ 2) := by ring
+  -- The system in the coordinates `y = x - x_eq`.
+  set s' : ContinuousSystem ℝⁿ Unit Y := ⟨fun t y u => s.F t (y + x_eq) u,
+    fun t y u => s.h t (y + x_eq) u⟩
+  have h_maps : MapsTo (· + x_eq) (ball (0 : ℝⁿ) r) (ball x_eq r) := fun y hy => by
+    simpa [mem_ball, dist_eq_norm] using hy
+  have h_shift : LipschitzWith 1 (· + x_eq : ℝⁿ → ℝⁿ) :=
+    LipschitzWith.of_dist_le_mul fun a b => by rw [dist_add_right, NNReal.coe_one, one_mul]
+  have h_jac : ∀ t, fderiv ℝ (fun y => s'.F t y ()) = fun y =>
+      fderiv ℝ (fun x => s.F t x ()) (y + x_eq) :=
+    fun t => funext fun y => fderiv_comp_add_right (f := fun x => s.F t x ()) x_eq
+  have h_zero := ContinuousSystem.locallyExponentiallyStable_of_linearization_zero (s := s') hr
+    (fun t => by simpa [s'] using h_eq t)
+    (hf.comp (contDiff_fst.prodMk (contDiff_snd.add contDiff_const)).contDiffOn
+      fun p hp => ⟨mem_univ _, h_maps hp.2⟩)
+    ⟨L, fun t => by simpa using (hL t).comp h_shift.lipschitzOnWith h_maps⟩
+    ⟨L₁, fun t => by rw [h_jac]; simpa using (hL₁ t).comp h_shift.lipschitzOnWith h_maps⟩
+    (h_lin.of_semiconj (x_eq := (0 : ℝⁿ)) (ContinuousLinearMap.id ℝ ℝⁿ) one_pos one_pos
+      (fun v => by simp) (fun v => by simp) fun t y => by
+        change fderiv ℝ (fun x => s.F t x ()) x_eq (x_eq + (y - 0) - x_eq) =
+          fderiv ℝ (fun z => s'.F t z ()) 0 y
+        rw [h_jac]
+        beta_reduce
+        rw [zero_add, sub_zero, add_sub_cancel_left])
+  exact h_zero.of_semiconj (ContinuousLinearMap.id ℝ ℝⁿ) one_pos one_pos (fun v => by simp)
+    (fun v => by simp) fun t x => by
+      change s.F t (0 + (x - x_eq) + x_eq) () = s.F t x ()
+      rw [zero_add, sub_add_cancel]
 
 /-- **Exponential stability is decided by the linearization** (Khalil's Theorem 4.15): under the
 hypotheses of `ContinuousSystem.locallyExponentiallyStable_linearization`, `x_eq` is locally
