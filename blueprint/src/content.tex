@@ -30,54 +30,35 @@ A field cut off outside a set stays Lipschitz.
 
 \inputleannode{lem:lipschitzWith-smul-of-lipschitzOnWith}
 
-\section{Limits superior}
-
-Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
-function is bounded. The facts collected here are stated over an arbitrary filter and have no
-differential-equation content; the Dini derivative of the next section is the only current
-consumer.
-
-\inputleannode{lem:limsup-add-tendsto-zero}
-
 \section{Dini derivatives}
 
 The upper right Dini derivative replaces the ordinary derivative where a function is only known
-to be continuous, which is the situation the comparison lemma is in. It is defined here as a
-$\limsup$ valued in $\mathbb{R}$ rather than in $[-\infty, +\infty]$, so most results below carry
-a hypothesis that the forward difference quotients are bounded: without it an unbounded quotient
-makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as $0$.
+to be continuous, which is the situation of the comparison lemma. As in the literature it takes
+values in $[-\infty, +\infty]$: the forward difference quotients may be unbounded, and the
+extended-real $\limsup$ always exists, so no boundedness hypotheses are needed. Bounds against a
+real number are characterized by the difference quotients themselves.
 
 \inputleannode{def:diniDerivRight}
 
 \subsection{Relationship to the classical derivative}
 
-\inputleannode{lem:hasDerivWithinAt-tendsto-forward-slope}
+\inputleannode{lem:hasDerivWithinAt-tendsto-slope-zero-right}
+
+\inputleannode{lem:hasDerivWithinAt-tendsto-slope-zero-left}
 
 \inputleannode{lem:diniDerivRight-of-hasDerivWithinAt}
 
-\subsection{Characterization by difference quotients}
+\subsection{Upper bounds}
 
 \inputleannode{lem:diniDerivRight-le-iff}
 
-\inputleannode{lem:le-diniDerivRight-iff}
+\inputleannode{lem:diniDerivRight-mono}
 
-\subsection{Linearity properties}
+\subsection{Gr\"onwall's inequality in Dini form}
 
-\inputleannode{lem:diniDerivRight-add-le}
+\inputleannode{thm:le-mul-exp-of-diniDerivRight-le}
 
-\inputleannode{lem:diniDerivRight-add-differentiable}
-
-\inputleannode{lem:diniDerivRight-add-linear}
-
-\inputleannode{lem:diniDerivRight-const-mul-pos}
-
-\inputleannode{lem:neg-diniDerivRight-neg-le}
-
-\subsection{The comparison step}
-
-\inputleannode{lem:le-diniDerivRight-of-upper-bound}
-
-\inputleannode{lem:le-max-of-hasDerivWithinAt-nonpos-above}
+\inputleannode{lem:diniDerivRight-le-of-add-integral-le}
 
 \section{Interval integrals}
 
@@ -111,11 +92,31 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:tendsto-integral-average-atTop-zero}
 
+\section{Monotonicity above a level}
+
+\inputleannode{lem:le-max-of-hasDerivWithinAt-nonpos-above}
+
 \section{Norm inequalities}
 
 \inputleannode{lem:abs-norm-sq-sub-norm-sq-le}
 
 \inputleannode{lem:prod-norm-le-norm-fst-add-norm-snd}
+
+\section{One-sided Lipschitz maps}
+
+\inputleannode{def:oneSidedLipschitzOnWith}
+
+\inputleannode{def:isInfinitesimallyNonexpansiveOn}
+
+\inputleannode{def:isInfinitesimallyContractingOn}
+
+\inputleannode{thm:oneSidedLipschitzOnWith-norm-sub-le-exp}
+
+\inputleannode{thm:isInfinitesimallyNonexpansiveOn-antitoneOn-norm-sub}
+
+\inputleannode{thm:oneSidedLipschitzOnWith-speed-le-exp}
+
+\inputleannode{thm:isInfinitesimallyNonexpansiveOn-antitoneOn-speed}
 
 \section{Positive definite functions}
 
@@ -182,6 +183,8 @@ $0$.
 \inputleannode{lem:isIntegralCurveOn-comp-add-autonomous}
 
 \inputleannode{lem:isIntegralCurveOn-shift-to-zero}
+
+\inputleannode{lem:isIntegralCurveOn-const}
 
 \inputleannode{lem:contDiffAt-exists-isIntegralCurveOn-Icc}
 
@@ -262,6 +265,8 @@ and invariance argument differentiates.
 \inputleannode{lem:lieDerivative-eq-add-fderiv-sub}
 
 \inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
+
+\inputleannode{lem:isIntegralCurveOn-add-integral-le-of-lieDerivative-le}
 
 \inputleannode{lem:isIntegralCurveOn-le-exp-mul-of-lieDerivative-le}
 
@@ -345,6 +350,8 @@ taken. Theorems that need either property assume it.
 \inputleannode{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}
 
 \inputleannode{thm:continuousSystem-isForwardComplete-of-lipschitz}
+
+\inputleannode{thm:continuousSystem-isTrajectoryOn-eqOn-of-equilibrium}
 
 \subsection{The state transition map}
 

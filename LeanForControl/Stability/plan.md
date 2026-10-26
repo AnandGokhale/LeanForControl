@@ -354,6 +354,17 @@ root, settle one state space for linear and nonlinear systems, after which the b
 Decide the root question first (it is the L²/L∞ question of the Stability/Continuous rewrite), so
 the local fix is not thrown away.
 
+### `comparison_lemma` asks for its comparison solutions
+
+The Dini derivative is now `EReal`-valued (as in Saks, Bruckner and Bullo), so `comparison_lemma`
+no longer carries boundedness hypotheses on the difference quotients.  It still asks the caller
+for the perturbed solutions `z_λ` of `ż = f(t, z) + λ` (`hz_exists`), which every caller
+discharges with `exists_isIntegralSolution_Icc_of_lipschitz`; build them inside the proof instead.
+For the linear case, `le_mul_exp_of_diniDerivRight_le` (a wrapper of Mathlib's Grönwall) is
+already the lighter tool.  (`IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` is *not* a
+corollary of it: the Lie-derivative version needs its rate bound only on the open interval, the
+Dini one on `[t₀, t₁)`.)
+
 ### `ClassKLGlobal.continuous_r` concludes on the wrong set
 
 `ClassKLGlobal.continuous_r` (`Comparison/ClassKL.lean`) takes a phantom `{a : ℝ}` and concludes

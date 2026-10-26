@@ -724,8 +724,7 @@ hypothesis on `α` beyond class `K` is needed. -/
   (statement := /-- Let $\alpha$ be
     class $\mathcal{K}$ on $[0,a)$.  Then there is a class $\mathcal{KL}$ function $\sigma$
     with $\sigma(r,0) \le r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
-    in $[0,a)$ there, has bounded forward difference quotients, and is a Dini subsolution of
-    the decay system (\cref{def:classK-decaySystem}),
+    in $[0,a)$ there, and is a Dini subsolution of the decay system (\cref{def:classK-decaySystem}),
     \[
       D^{+}v(s) \;\le\; -\alpha(v(s)),
     \]
@@ -752,8 +751,6 @@ theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b)
         v t₀ ∈ Set.Ico 0 a →
         (∀ s ∈ Set.Ico t₀ t, v s ∈ Set.Ico 0 a) →
         (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ α.decaySystem.F s (v s) ()) →
-        (∀ s ∈ Set.Ico t₀ t,
-            IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (s + h) - v s) / h)) →
         v t ≤ σ.toFun (v t₀) (t - t₀) := by
   obtain ⟨_, L, β, hL_pos, hβ_le_α, hβ_lin, hLip⟩ := exists_classK_minorant_lipschitz α
   have h_base : a / 2 ∈ Set.Ioo 0 a := ⟨half_pos α.ha, half_lt_self α.ha⟩
@@ -765,16 +762,14 @@ theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b)
     intro r hr
     exact le_of_eq (hσ_init r hr)
   · -- Trajectory bound
-    intro t₀ t ht v hv_cont hv₀ hv_range hDv hv_bdd
+    intro t₀ t ht v hv_cont hv₀ hv_range hDv
     rcases eq_or_lt_of_le ht with rfl | ht_lt
     · simp only [sub_self]
       exact le_of_eq (hσ_init (v t₀) hv₀).symm
     · -- Strengthen: D⁺v ≤ -α(v) ≤ -β(v)
-      have hDv' : ∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ (fun _ x => -β.toFun x) s (v s) := by
-        intro s hs
-        have h1 : D⁺ v s ≤ -α.toFun (v s) := hDv s hs
-        have h2 : β.toFun (v s) ≤ α.toFun (v s) := hβ_le_α (v s) (hv_range s hs)
-        linarith
+      have hDv' : ∀ s ∈ Set.Ico t₀ t,
+          D⁺ v s ≤ (((fun _ x => -β.toFun x) s (v s) : ℝ) : EReal) := fun s hs =>
+        (hDv s hs).trans (EReal.coe_le_coe_iff.2 (neg_le_neg (hβ_le_α (v s) (hv_range s hs))))
       -- σ satisfies the comparison ODE u̇ = -β(u)
       have hu_deriv : ∀ s ∈ Set.Ioo t₀ t,
           HasDerivAt (fun x => σ.toFun (v t₀) (x - t₀))
@@ -800,7 +795,7 @@ theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b)
           ((hLip.continuous.neg.comp continuous_snd))
           (fun _ _ => hLip.neg)
           hu_deriv hu_cont hu₀
-          hv_cont hDv' hv_bdd le_rfl
+          hv_cont hDv' le_rfl
           (fun lam _ =>
             exists_isIntegralSolution_Icc_of_lipschitz (g := fun _ x => -β.toFun x + lam)
               ((hLip.continuous.neg.add continuous_const).comp continuous_snd)
@@ -838,10 +833,9 @@ theorem ClassK.exists_classKL_bound_above_level {a b : ℝ} (α : ClassK a b) :
   by_cases h_above : ∀ s ∈ Set.Ico t₀ t, η < v s
   · -- Above `η` throughout: `v` is a subsolution of the decay system.
     refine le_max_of_le_left (hσ ht v hv (hv_mem t₀ ⟨le_rfl, ht⟩)
-      (fun s hs => hv_mem s (Set.Ico_subset_Icc_self hs)) (fun s hs => ?_)
-      (fun s hs => (hv' s hs).tendsto_forward_slope.isBoundedUnder_le))
+      (fun s hs => hv_mem s (Set.Ico_subset_Icc_self hs)) (fun s hs => ?_))
     rw [diniDerivRight_of_hasDerivWithinAt (hv' s hs)]
-    exact h_decay s hs (h_above s hs)
+    exact EReal.coe_le_coe_iff.2 (h_decay s hs (h_above s hs))
   · -- At most `η` at some `τ < t`, and `v` cannot climb back above `η`.
     push Not at h_above
     obtain ⟨τ, hτ, hvτ⟩ := h_above

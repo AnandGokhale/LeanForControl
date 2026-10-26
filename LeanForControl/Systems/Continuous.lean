@@ -418,6 +418,30 @@ theorem isForwardComplete_of_lipschitz [CompleteSpace E] {s : ContinuousSystem E
   exact ⟨y, hy, hasUniqueSolutions_of_lipschitz hL t₀ t₁ y x
     (IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self) hx hy₀⟩
 
+/-- **No equilibrium is reached in finite time.**  For a field that is Lipschitz in the state, a
+trajectory on `[t₀, t₁]` that is at an equilibrium at time `t₁` was there all along: solutions are
+unique backward in time too. -/
+@[blueprint "thm:continuousSystem-isTrajectoryOn-eqOn-of-equilibrium"
+  (title := "Equilibria are not reached in finite time")
+  (statement := /-- If the state equation is Lipschitz in the state, uniformly in time, and a
+    trajectory on $[t_0, t_1]$ satisfies $F(t, x(t_1), u(t)) = 0$ for all $t$, then
+    $x(t) = x(t_1)$ for every $t \in [t_0, t_1]$. -/)
+  (proof := /-- $x$ and the constant curve at $x(t_1)$
+    (\cref{lem:isIntegralCurveOn-const}) are two solutions agreeing at $t_1$; backward
+    uniqueness (Gr\"onwall) makes them equal. -/)]
+theorem IsTrajectoryOn.eqOn_of_equilibrium {s : ContinuousSystem E U Y} {u : ℝ → U}
+    {K : NNReal} (hL : ∀ t, LipschitzWith K (s.vectorField u t)) {x : ℝ → E} {t₀ t₁ : ℝ}
+    (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁)) (h_eq : ∀ t, s.vectorField u t (x t₁) = 0) :
+    Set.EqOn x (fun _ => x t₁) (Set.Icc t₀ t₁) :=
+  ODE_solution_unique_of_mem_Icc_left (s := fun _ => Set.univ)
+    (fun t _ => (hL t).lipschitzOnWith) (IsIntegralCurveOn.continuousOn hx)
+    (fun t ht => (hx t (Set.Ioc_subset_Icc_self ht)).mono_of_mem_nhdsWithin
+      (Icc_mem_nhdsLE_of_mem ht))
+    (fun _ _ => Set.mem_univ _) continuousOn_const
+    (fun t _ => (isIntegralCurveOn_const (s := Set.univ) fun r _ => h_eq r) t
+      (Set.mem_univ _) |>.mono (Set.subset_univ _))
+    (fun _ _ => Set.mem_univ _) rfl
+
 /-! ### The state transition map -/
 
 /-- The **existence interval** of the trajectory from `x₀` at time `t₀`: the times `t ≥ t₀` up to
@@ -582,10 +606,8 @@ lemma stateTransitionMap_semigroup (hu : s.HasUniqueSolutions u) {t₀ τ t : �
 `φ(t; t₀, x_eq) = x_eq` for `t ≥ t₀`. -/
 lemma stateTransitionMap_of_equilibrium (hu : s.HasUniqueSolutions u) {x_eq : E}
     (h_eq : ∀ t, s.vectorField u t x_eq = 0) {t₀ t : ℝ} (ht : t₀ ≤ t) :
-    s.stateTransitionMap u t t₀ x_eq = x_eq := by
-  have h_const : s.IsTrajectoryOn u (fun _ => x_eq) (Set.Icc t₀ t) := fun r _ =>
-    (hasDerivWithinAt_const r (Set.Icc t₀ t) x_eq).congr_deriv (h_eq r).symm
-  exact (eq_stateTransitionMap hu h_const t ⟨ht, le_rfl⟩).symm
+    s.stateTransitionMap u t t₀ x_eq = x_eq :=
+  (eq_stateTransitionMap hu (isIntegralCurveOn_const fun r _ => h_eq r) t ⟨ht, le_rfl⟩).symm
 
 /-! ### Invariance -/
 

@@ -38,3 +38,6 @@ texput.log
 # Personal migration/working notes, not for tracking.
 /INVENTORY.md
 /AUDIT.md
+
+# Local reference PDFs.
+CTDS-*.pdf

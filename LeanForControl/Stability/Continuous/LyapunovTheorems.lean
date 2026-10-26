@@ -347,16 +347,14 @@ theorem IsUniformLyapunovFunction.uniformlyStable [NeZero n] {s : ContinuousSyst
 `v(τ) = V(τ, x(τ))` stays in `[0, d)` on `[t₀, t]` and `V̇ ≤ -α(V)` there, then `v` is a
 subsolution of the decay system of `α`, so `V(t, x(t)) ≤ σ(V(t₀, x(t₀)), t - t₀)`.
 
-This only checks the side conditions: `v` is continuous, its Dini derivative is the derivative
-along the system, and its difference quotients are bounded. -/
+This only checks the side conditions: `v` is continuous and its Dini derivative is the
+derivative along the system. -/
 private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ}
     {d e : ℝ} {α : ClassK d e} {σ : ClassKL d}
     (hσ : ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Icc t₀ t) →
         v t₀ ∈ Ico 0 d →
         (∀ s ∈ Ico t₀ t, v s ∈ Ico 0 d) →
         (∀ s ∈ Ico t₀ t, D⁺ v s ≤ α.decaySystem.F s (v s) ()) →
-        (∀ s ∈ Ico t₀ t,
-            IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (s + h) - v s) / h)) →
         v t ≤ σ.toFun (v t₀) (t - t₀))
     {x : ℝ → ℝⁿ} {t₀ t₁ t : ℝ} (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
     (hV : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, x τ))
@@ -375,8 +373,9 @@ private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V
       (Icc_subset_Icc_right ht.2)
   exact hσ ht.1 (fun u => V u (x u)) hv_cont (hv_range t₀ ⟨le_rfl, ht.1⟩)
     (fun τ hτ => hv_range τ (Ico_subset_Icc_self hτ))
-    (fun τ hτ => by rw [diniDerivRight_of_hasDerivWithinAt (hderiv τ hτ)]; exact hlie τ hτ)
-    (fun τ hτ => (hderiv τ hτ).tendsto_forward_slope.isBoundedUnder_le)
+    (fun τ hτ => by
+      rw [diniDerivRight_of_hasDerivWithinAt (hderiv τ hτ)]
+      exact EReal.coe_le_coe_iff.2 (hlie τ hτ))
 
 /-! ## Lyapunov's uniform asymptotic stability theorem -/
 

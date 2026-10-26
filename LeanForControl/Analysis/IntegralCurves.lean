@@ -318,6 +318,17 @@ lemma IsIntegralCurveOn.isIntegralSolution_of_continuous {g : E → E} {t₀ t�
 
 end IntegralCurve
 
+/-- **An equilibrium is a constant integral curve**: if `v(t, p) = 0` for `t ∈ s`, then
+`t ↦ p` is an integral curve of `v` on `s`. -/
+@[blueprint "lem:isIntegralCurveOn-const"
+  (title := "Constant integral curves at equilibria")
+  (latexEnv := "lemma")
+  (statement := /-- If $v(t, p) = 0$ for every $t \in s$, then the constant curve $t \mapsto p$
+    is an integral curve of $\dot x = v(t, x)$ on $s$. -/)]
+lemma isIntegralCurveOn_const {v : ℝ → E → E} {p : E} {s : Set ℝ} (h : ∀ t ∈ s, v t p = 0) :
+    IsIntegralCurveOn (fun _ => p) v s := fun t ht =>
+  (hasDerivWithinAt_const t s p).congr_deriv (h t ht).symm
+
 /-- **Bounded speed**: an integral curve of a field bounded by `B` along it, on a convex set,
 moves at most `B |τ₂ - τ₁|` between two of its times. -/
 @[blueprint "lem:isIntegralCurveOn-norm-sub-le"
