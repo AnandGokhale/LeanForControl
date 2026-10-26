@@ -33,6 +33,9 @@ stability.
   `locallyExponentiallyStable_iff_globallyExponentiallyStable` recording that for a linear
   system the two coincide.
 * **Definition 8.1(4)** — `unstable_iff_unboundedHomogeneousResponse`.
+* **Khalil, Theorem 4.11** — `uniformlyAsymptoticallyStable_iff_decayingStateTransition` and
+  `globallyUniformlyAsymptoticallyStable_iff_decayingStateTransition`: for a linear system,
+  uniform asymptotic stability is already exponential.
 
 Every one of them is the trajectory characterization plus homogeneity. The trajectory
 characterization itself is solution theory and lives in `Solutions/CtsLTV.lean`:
@@ -114,32 +117,35 @@ initial time sits — Khalil's whole distinction is the order of `∃ δ` and `�
 below are the content at a *fixed* `t₀`, with the margin `δ` and the bound `C` explicit, so that
 each of the two theorems is nothing but quantifier placement on top of them. -/
 
-/-- A stability margin at `t₀` gives a bound on the state transition matrix there.
+/-- A margin gives a bound on the state transition matrix: if every response from the `δ`-ball
+at `t₀` is within `ε` of the origin from time `a` on, then `‖Φ(t, t₀) x‖ ≤ (2ε/δ) ‖x‖` for
+`t ≥ a`.
 
-Apply the margin to the homogeneous response from each `x` in the `δ`-ball: it stays inside the
-unit ball, and homogeneity scales that to every `x`. -/
+Apply the margin to the homogeneous response from each `x` in the `δ`-ball, and let homogeneity
+scale that to every `x`.  With `a = t₀` and `ε = 1` this is a stability margin; with `a = t₀ + T`
+it is a convergence time. -/
 private lemma bound_of_margin (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
-    {t₀ δ : ℝ} (hδ : 0 < δ)
+    {t₀ a δ ε : ℝ} (hδ : 0 < δ) (hε : 0 < ε)
     (hstab : ∀ (t₁ : ℝ) (φ : ℝ → X → ℝ),
       s.toContinuousSystem.zeroInput.IsTrajectoryOn (fun _ => ()) φ (Icc t₀ t₁) →
-        ‖φ t₀ - 0‖ < δ → ∀ t ∈ Icc t₀ t₁, ‖φ t - 0‖ < 1) :
-    ∀ t ≥ t₀, ∀ x : X → ℝ,
-      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ 2 / δ * ‖x‖ := by
+        ‖φ t₀ - 0‖ < δ → ∀ t ∈ Icc a t₁, ‖φ t - 0‖ < ε) :
+    ∀ t ≥ a, ∀ x : X → ℝ,
+      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ 2 * ε / δ * ‖x‖ := by
   intro t ht x
-  -- From the `δ`-ball the response stays in the unit ball.
-  have hball : ∀ y : X → ℝ, ‖y‖ < δ → ‖stateTransitionMatrix s.A t t₀ *ᵥ y‖ ≤ 1 := by
+  -- From the `δ`-ball the response is within `ε` of the origin at time `t`.
+  have hball : ∀ y : X → ℝ, ‖y‖ < δ → ‖stateTransitionMatrix s.A t t₀ *ᵥ y‖ ≤ ε := by
     intro y hy
     have htraj := IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ y)
       (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)
     have hy' : ‖homogeneousResponse s.A t₀ y t₀ - 0‖ < δ := by simpa using hy
     simpa [homogeneousResponse] using (hstab t _ htraj hy' t ⟨ht, le_rfl⟩).le
-  -- On the shell `δ / 2 ≤ ‖y‖ < δ` that is a bound by `(2 / δ) ‖y‖`, which scales everywhere.
+  -- On the shell `δ / 2 ≤ ‖y‖ < δ` that is a bound by `(2ε / δ) ‖y‖`, which scales everywhere.
   have hop := ContinuousLinearMap.opNorm_le_of_shell
     (f := LinearMap.toContinuousLinearMap (stateTransitionMatrix s.A t t₀).mulVecLin) hδ
-    (by positivity : (0 : ℝ) ≤ 2 / δ) (c := (2 : ℝ)) (by norm_num) fun y hy1 hy2 => by
+    (by positivity : (0 : ℝ) ≤ 2 * ε / δ) (c := (2 : ℝ)) (by norm_num) fun y hy1 hy2 => by
       rw [Real.norm_two] at hy1
-      have h2 : 1 ≤ 2 / δ * ‖y‖ := by
-        rw [div_mul_eq_mul_div, le_div_iff₀ hδ]; linarith
+      have h2 : ε ≤ 2 * ε / δ * ‖y‖ := by
+        rw [div_mul_eq_mul_div, le_div_iff₀ hδ]; nlinarith
       simpa using (hball y hy2).trans h2
   simpa using ContinuousLinearMap.le_of_opNorm_le _ hop x
 
@@ -206,7 +212,7 @@ theorem stable_iff_boundedStateTransition (s : ContinuousLTV X U Y ℝ)
   constructor
   · intro hS t₀ ht₀
     obtain ⟨δ, hδ, hstab⟩ := hS 1 one_pos t₀ ht₀
-    exact ⟨2 / δ, by positivity, bound_of_margin s hA hδ hstab⟩
+    exact ⟨2 * 1 / δ, by positivity, bound_of_margin s hA hδ one_pos hstab⟩
   · intro hbd ε hε t₀ ht₀
     obtain ⟨C, hC0, hC⟩ := hbd t₀ ht₀
     exact ⟨ε / (C + 1), div_pos hε (by linarith), margin_of_bound s hA hC0 hC⟩
@@ -294,7 +300,8 @@ theorem uniformlyStable_iff_uniformlyBoundedStateTransition (s : ContinuousLTV X
   constructor
   · intro hS
     obtain ⟨δ, hδ, hstab⟩ := hS 1 one_pos
-    exact ⟨2 / δ, by positivity, fun t₀ ht₀ => bound_of_margin s hA hδ (hstab t₀ ht₀)⟩
+    exact ⟨2 * 1 / δ, by positivity,
+      fun t₀ ht₀ => bound_of_margin s hA hδ one_pos (hstab t₀ ht₀)⟩
   · rintro ⟨C, hC0, hC⟩ ε hε
     exact ⟨ε / (C + 1), div_pos hε (by linarith),
       fun t₀ ht₀ => margin_of_bound s hA hC0 (hC t₀ ht₀)⟩
@@ -501,6 +508,146 @@ theorem locallyExponentiallyStable_iff_globallyExponentiallyStable (s : Continuo
   classical
   exact (locallyExponentiallyStable_iff_decayingStateTransition s hA).trans
     (globallyExponentiallyStable_iff_decayingStateTransition s hA).symm
+
+/-! ## Uniform asymptotic stability is exponential -/
+
+/-- **For a linear time-varying system, uniform asymptotic stability is exponential**: the origin
+of `ẋ = A(t) x` is uniformly asymptotically stable if and only if
+`‖Φ(t, t₀) x‖ ≤ k e^{-γ(t - t₀)} ‖x‖`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.11. -/
+@[blueprint "thm:continuousLTV-uniformlyAsymptoticallyStable-iff-decayingStateTransition"
+  (title := "Uniform asymptotic stability of a linear time-varying system is exponential")
+  (statement := /-- Consider the linear time-varying system $\dot x = A(t)\,x$ with $A$
+    continuous, and write $\Phi(t,t_{0})$ for its state transition matrix
+    (\cref{def:stateTransitionMatrix}).  The origin is uniformly asymptotically stable
+    (\cref{def:continuousSystem-uniformlyAsymptoticallyStable}) if and only if there are
+    $k, \gamma > 0$ with
+    \[
+      \|\Phi(t, t_{0})\, x\| \le k\, e^{-\gamma (t - t_{0})}\,\|x\|,
+      \qquad \forall\, t \ge t_{0} \ge 0,\ \forall\, x.
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.11. -/)
+  (proof := /-- ($\Leftarrow$) The estimate is exponential stability
+    (\cref{thm:continuousLTV-locallyExponentiallyStable-iff-decayingStateTransition}), which is
+    uniform asymptotic stability.  ($\Rightarrow$) Uniform stability bounds
+    $\|\Phi(t, t_0)\| \le C$
+    (\cref{thm:continuousLTV-uniformlyStable-iff-uniformlyBoundedStateTransition}), and a uniform
+    convergence time $T$ from the $c$-ball to the $c/(2e)$-ball gives $\|\Phi(t, t_0)\| \le 1/e$
+    for $t \ge t_0 + T$, by homogeneity.  Splitting $[t_0, t]$ into $N = \lfloor (t - t_0)/T
+    \rfloor$ windows of length $T$ and using $\Phi(t, t_0) = \Phi(t, t_0 + T)\,\Phi(t_0 + T, t_0)$
+    gives $\|\Phi(t, t_0)\| \le \max(C, 1)\, e^{-N} \le e \max(C, 1)\, e^{-(t - t_0)/T}$. -/)]
+theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : ContinuousLTV X U Y ℝ)
+    (hA : Continuous s.A) :
+    s.toContinuousSystem.zeroInput.UniformlyAsymptoticallyStable (0 : X → ℝ) ↔
+      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
+        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by
+  constructor
+  swap
+  · intro h
+    exact ((locallyExponentiallyStable_iff_decayingStateTransition s hA).mpr h)
+      |>.uniformlyAsymptoticallyStable
+  rintro ⟨hUS, c, hc, hconv⟩
+  -- Step 1. A uniform bound `C' ≥ 1` on the state transition matrix.
+  obtain ⟨C, hC0, hC⟩ := (uniformlyStable_iff_uniformlyBoundedStateTransition s hA).mp hUS
+  set C' := max C 1
+  have hC' : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
+      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C' * ‖x‖ := fun t₀ ht₀ t ht x =>
+    (hC t₀ ht₀ t ht x).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
+  -- Step 2. After the convergence time `T`, the state transition matrix shrinks by `1/e`.
+  obtain ⟨T, hT, hT_conv⟩ := hconv (c / (2 * Real.exp 1)) (by positivity)
+  have h_window : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀ + T, ∀ x : X → ℝ,
+      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ Real.exp (-1) * ‖x‖ := fun t₀ ht₀ t ht x => by
+    have h := bound_of_margin s hA hc (by positivity) (hT_conv t₀ ht₀) t ht x
+    have h_eq : 2 * (c / (2 * Real.exp 1)) / c = Real.exp (-1) := by
+      rw [Real.exp_neg]
+      field_simp
+    rwa [h_eq] at h
+  -- Step 3. Over `N` windows, `‖Φ(t, t₀) x‖ ≤ C' e^{-N} ‖x‖`, by the semigroup property.
+  have h_mulVec : ∀ τ σ t : ℝ, τ ≤ σ → σ < t → ∀ x : X → ℝ,
+      stateTransitionMatrix s.A t τ *ᵥ x =
+        stateTransitionMatrix s.A t σ *ᵥ (stateTransitionMatrix s.A σ τ *ᵥ x) := by
+    intro τ σ t hτσ hσt x
+    obtain ⟨M, hM⟩ := isCompact_Icc.exists_bound_of_continuousOn
+      (hA.continuousOn (s := Icc τ t))
+    rw [Matrix.mulVec_mulVec, stateTransitionMatrix_semigroup hA hτσ hσt hM]
+  have h_steps : ∀ N : ℕ, ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀ + N * T, ∀ x : X → ℝ,
+      ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ C' * Real.exp (-N) * ‖x‖ := by
+    intro N
+    induction N with
+    | zero =>
+      intro t₀ ht₀ t ht x
+      simpa using hC' t₀ ht₀ t (by simpa using ht) x
+    | succ N ih =>
+      intro t₀ ht₀ t ht x
+      push_cast at ht
+      have hs : t₀ + T ≤ t := by nlinarith [N.cast_nonneg (α := ℝ)]
+      rcases hs.lt_or_eq with hs | hs
+      · -- `Φ(t, t₀) = Φ(t, t₀ + T) Φ(t₀ + T, t₀)`: the first factor by induction, the second by
+        -- one window.
+        rw [h_mulVec t₀ (t₀ + T) t (by linarith) hs x]
+        calc ‖stateTransitionMatrix s.A t (t₀ + T) *ᵥ (stateTransitionMatrix s.A (t₀ + T) t₀ *ᵥ x)‖
+            ≤ C' * Real.exp (-N) * ‖stateTransitionMatrix s.A (t₀ + T) t₀ *ᵥ x‖ :=
+              ih (t₀ + T) (by linarith) t (by linarith) _
+          _ ≤ C' * Real.exp (-N) * (Real.exp (-1) * ‖x‖) := by
+              gcongr
+              exact h_window t₀ ht₀ (t₀ + T) le_rfl x
+          _ = C' * Real.exp (-↑(N + 1)) * ‖x‖ := by
+              push_cast
+              rw [show -((N : ℝ) + 1) = -N + -1 by ring, Real.exp_add]
+              ring
+      · -- Exactly one window: `N = 0`.
+        have hN : (N : ℝ) = 0 := by nlinarith [N.cast_nonneg (α := ℝ)]
+        rw [← hs]
+        calc ‖stateTransitionMatrix s.A (t₀ + T) t₀ *ᵥ x‖
+            ≤ Real.exp (-1) * ‖x‖ := h_window t₀ ht₀ _ le_rfl x
+          _ ≤ C' * Real.exp (-↑(N + 1)) * ‖x‖ := by
+              push_cast
+              rw [hN, zero_add, mul_assoc]
+              exact le_mul_of_one_le_left (by positivity) (le_max_right C 1)
+  -- Step 4. With `N = ⌊(t - t₀)/T⌋`, `e^{-N} ≤ e · e^{-(t - t₀)/T}`.
+  refine ⟨C' * Real.exp 1, by positivity, 1 / T, by positivity, fun t₀ ht₀ t ht x => ?_⟩
+  set N := ⌊(t - t₀) / T⌋₊
+  have hN_le : (N : ℝ) * T ≤ t - t₀ :=
+    (le_div_iff₀ hT).mp (Nat.floor_le (div_nonneg (by linarith) hT.le))
+  have hN_gt : (t - t₀) / T < N + 1 := Nat.lt_floor_add_one _
+  calc ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖
+      ≤ C' * Real.exp (-N) * ‖x‖ := h_steps N t₀ ht₀ t (by linarith) x
+    _ ≤ C' * Real.exp 1 * Real.exp (-(1 / T) * (t - t₀)) * ‖x‖ := by
+        rw [show C' * Real.exp 1 * Real.exp (-(1 / T) * (t - t₀)) =
+            C' * Real.exp (1 + -(1 / T) * (t - t₀)) by rw [mul_assoc, ← Real.exp_add]]
+        gcongr
+        rw [show -(1 / T) * (t - t₀) = -((t - t₀) / T) by ring]
+        linarith
+
+/-- **Khalil's Theorem 4.11, global form**: uniform asymptotic stability and its global version
+coincide for a linear time-varying system, both being exponential decay of `Φ(t, t₀)`. -/
+@[blueprint "cor:continuousLTV-globallyUniformlyAsymptoticallyStable-iff-decayingStateTransition"
+  (title := "Global uniform asymptotic stability of a linear time-varying system")
+  (latexEnv := "corollary")
+  (statement := /-- Under the hypotheses of
+    \cref{thm:continuousLTV-uniformlyAsymptoticallyStable-iff-decayingStateTransition}, the
+    origin is globally uniformly asymptotically stable
+    (\cref{def:continuousSystem-globallyUniformlyAsymptoticallyStable}) if and only if
+    $\Phi(t, t_0)$ decays exponentially, uniformly in $t_0 \ge 0$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.11. -/)
+  (proof := /-- Global uniform asymptotic stability is uniform asymptotic stability, hence
+    exponential decay
+    (\cref{thm:continuousLTV-uniformlyAsymptoticallyStable-iff-decayingStateTransition}); the
+    decay is global exponential stability
+    (\cref{thm:continuousLTV-globallyExponentiallyStable-iff-decayingStateTransition}), which is
+    global uniform asymptotic stability. -/)]
+theorem globallyUniformlyAsymptoticallyStable_iff_decayingStateTransition
+    (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A) :
+    s.toContinuousSystem.zeroInput.GloballyUniformlyAsymptoticallyStable (0 : X → ℝ) ↔
+      ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : X → ℝ,
+        ‖stateTransitionMatrix s.A t t₀ *ᵥ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖ :=
+  ⟨fun h => (uniformlyAsymptoticallyStable_iff_decayingStateTransition s hA).mp
+      h.uniformlyAsymptoticallyStable,
+    fun h => ((globallyExponentiallyStable_iff_decayingStateTransition s hA).mpr h)
+      |>.globallyUniformlyAsymptoticallyStable⟩
 
 /-! ## Definition 8.1(4): instability -/
 

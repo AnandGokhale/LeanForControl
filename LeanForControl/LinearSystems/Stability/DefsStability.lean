@@ -1,5 +1,7 @@
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Data.Matrix.Mul
+import Mathlib.Analysis.Matrix.Normed
+import Mathlib.Analysis.Calculus.Deriv.Basic
 import LeanForControl.MatrixAlgebra.Complex
 import Architect
 
@@ -11,8 +13,9 @@ abstract index type `X` rather than `Fin n`, matching the convention everything 
 the `ContinuousLTV` object follows.
 
 The continuous-time conditions (`IsHurwitz`, `IsHurwitzWithRate`, the Lyapunov equation
-`PA + AᵀP = -Q`) and their discrete-time counterparts (`IsSchur`: every eigenvalue in the open
-unit disc; the discrete Lyapunov equation `AᵀPA - P = -Q`).
+`PA + AᵀP = -Q` and its time-varying form `-Ṗ = PA + AᵀP + Q`) and their discrete-time
+counterparts (`IsSchur`: every eigenvalue in the open unit disc; the discrete Lyapunov equation
+`AᵀPA - P = -Q`).
 
 Both predicates are stated through eigenpairs of the complexification rather than through an
 enumeration of eigenvalues or through `spectrum`: that is the form in which they are produced
@@ -91,6 +94,37 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
   -/)]
 def ContinuousLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
   P * A + Aᵀ * P = -Q
+
+section Differential
+
+open scoped Matrix.Norms.Operator
+
+/-- `P` satisfies the **differential Lyapunov equation** for `A` with forcing `Q` when, at every
+`t ≥ 0`,
+
+    -Ṗ(t) = P(t) A(t) + A(t)ᵀ P(t) + Q(t).
+
+The time-varying form of `ContinuousLyapunovEquation`: for `P` positive definite, `x ↦ xᵀ P(t) x`
+decreases along `ẋ = A(t) x` at the rate set by `Q(t)`.  Derivatives of matrix-valued functions
+are taken for the `L∞` operator norm, as for the state transition matrix.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), equation (4.28). -/
+@[blueprint "def:differentialLyapunovEquation"
+  (title := "Differential Lyapunov equation")
+  (statement := /-- For matrix-valued functions $A$, $P$ and $Q$ of time, $P$ satisfies the
+    \emph{differential Lyapunov equation} for $A$ with forcing $Q$ when, for every $t \ge 0$,
+    $P$ is differentiable at $t$ and
+    \[
+      -\dot P(t) = P(t)A(t) + A(t)^{\mathsf T}P(t) + Q(t).
+    \]
+    For constant matrices it is the continuous Lyapunov equation
+    (\cref{def:continuousLyapunovEquation}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), equation (4.28). -/)]
+def DifferentialLyapunovEquation (A P Q : ℝ → Matrix X X ℝ) : Prop :=
+  ∀ t : ℝ, 0 ≤ t → HasDerivAt P (-(P t * A t + (A t)ᵀ * P t + Q t)) t
+
+end Differential
 
 /-- A real square matrix is **Schur** when every complex eigenvalue lies in the open unit disc.
 

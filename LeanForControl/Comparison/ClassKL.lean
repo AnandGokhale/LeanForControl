@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
+import Mathlib.Analysis.SpecialFunctions.Exp
 
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
@@ -526,20 +527,22 @@ theorem ClassKL.exists_comp_sandwich {r b₁ b₂ c d : ℝ}
 /-! ### Class KL Global
 
 A *global class KL* function `β(r, s)` is like `ClassKL` but defined on all of
-`[0, ∞) × [0, ∞)`: class K∞ in the first argument (continuous, strictly increasing,
-zero at zero, radially unbounded), antitone and tending to 0 in the second. -/
+`[0, ∞) × [0, ∞)`: class K in the first argument (continuous, strictly increasing, zero at
+zero), antitone and tending to 0 in the second.  As in Khalil, `β(·, s)` need not be unbounded;
+`ClassKLGlobal.exists_le_radiallyUnbounded` dominates any `β` by one with `β(·, 0)` unbounded,
+for the one argument that needs it. -/
 
-/-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K∞ in the first argument,
-    antitone and tending to 0 in the second. 
-    
+/-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K in the first argument,
+    antitone and tending to 0 in the second.  `β(·, s)` need not be unbounded.
+
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.3 with `a = ∞`. -/
 @[blueprint "def:isClassKLGlobal"
   (title := "Global class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{global class $\mathcal{KL}$} function is a map
-    $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is class
-    $\mathcal{K}_{\infty}$ in the first argument (continuous, strictly increasing,
-    zero at zero, radially unbounded) and, for each fixed $r \ge 0$, is antitone
-    and tends to $0$ as $s \to \infty$.
+    $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$, jointly continuous, that is
+    class $\mathcal{K}$ in the first argument (strictly increasing, zero at zero) and, for each
+    fixed $r \ge 0$, is antitone and tends to $0$ as $s \to \infty$.  As in Khalil,
+    $\beta(\cdot, s)$ need not be unbounded.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.3 with $a = \infty$.
   -/)]
@@ -552,6 +555,48 @@ structure ClassKLGlobal where
   nonneg        : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ toFun r s
   anti_s        : ∀ r ≥ 0, AntitoneOn (fun s => toFun r s) (Set.Ici 0)
   tendsto_zero  : ∀ r ≥ 0, Filter.Tendsto (fun s => toFun r s) Filter.atTop (nhds 0)
+
+/-- **Every global class `KL` function has a radially unbounded majorant**: a global class `KL`
+function `β' ≥ β` with `β'(r, 0) → ∞`.  A global class `KL` function need not be radially
+unbounded itself (`r / (1 + r) · e^{-s}` is not); `β(r, s) + r e^{-s}` is a majorant that is. -/
+@[blueprint "lem:classKLGlobal-exists-le-radiallyUnbounded"
+  (title := "Radially unbounded majorant of a class $\\mathcal{KL}$ function")
+  (latexEnv := "lemma")
+  (statement := /-- For every global class $\mathcal{KL}$ function $\beta$
+    (\cref{def:isClassKLGlobal}) there is a global class $\mathcal{KL}$ function $\beta'$ with
+    $\beta(r, s) \le \beta'(r, s)$ for $r, s \ge 0$ and $\beta'(r, 0) \to \infty$ as
+    $r \to \infty$. -/)
+  (proof := /-- $\beta'(r, s) = \beta(r, s) + r e^{-s}$. -/)]
+theorem ClassKLGlobal.exists_le_radiallyUnbounded (β : ClassKLGlobal) :
+    ∃ β' : ClassKLGlobal, (∀ r, 0 ≤ r → ∀ s, β.toFun r s ≤ β'.toFun r s) ∧
+      Tendsto (fun r => β'.toFun r 0) atTop atTop := by
+  let β' : ClassKLGlobal :=
+    { toFun := fun r s => β.toFun r s + r * Real.exp (-s)
+      map_zero := fun s hs => by simp [β.map_zero s hs]
+      continuous :=
+        β.continuous.add (continuous_fst.mul (continuous_snd.neg.rexp)).continuousOn
+      strict_mono_r := fun s hs a ha b hb hab =>
+        add_lt_add (β.strict_mono_r s hs ha hb hab) (mul_lt_mul_of_pos_right hab (Real.exp_pos _))
+      nonneg := fun r hr s hs => add_nonneg (β.nonneg r hr s hs) (mul_nonneg hr (Real.exp_pos _).le)
+      anti_s := fun r hr => (β.anti_s r hr).add fun a _ b _ hab =>
+        mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (neg_le_neg hab)) hr
+      tendsto_zero := fun r hr => by
+        simpa using (β.tendsto_zero r hr).add (Real.tendsto_exp_neg_atTop_nhds_zero.const_mul r) }
+  refine ⟨β', fun r hr s => le_add_of_nonneg_right (mul_nonneg hr (Real.exp_pos _).le), ?_⟩
+  simpa [β'] using tendsto_atTop_add_left_of_le' atTop 0
+    ((eventually_ge_atTop 0).mono fun r hr => β.nonneg r hr 0 le_rfl) tendsto_id
+
+/-- A global class KL function is nondecreasing in `r`. -/
+@[gcongr]
+theorem ClassKLGlobal.mono_r (β : ClassKLGlobal) {r₁ r₂ s : ℝ} (hr₁ : 0 ≤ r₁) (hs : 0 ≤ s)
+    (h : r₁ ≤ r₂) : β.toFun r₁ s ≤ β.toFun r₂ s :=
+  (β.strict_mono_r s hs).monotoneOn hr₁ (hr₁.trans h) h
+
+/-- A global class KL function is nonincreasing in `s`. -/
+@[gcongr]
+theorem ClassKLGlobal.anti_s_mono (β : ClassKLGlobal) {r s₁ s₂ : ℝ} (hr : 0 ≤ r) (hs₁ : 0 ≤ s₁)
+    (h : s₁ ≤ s₂) : β.toFun r s₂ ≤ β.toFun r s₁ :=
+  β.anti_s r hr hs₁ (hs₁.trans h) h
 
 /-- A global class KL function is continuous in `r` for each fixed `s ≥ 0`: the section of the
     joint continuity in the `continuous` field. -/

@@ -1,9 +1,12 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Topology.Order.IntermediateValue
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Comparison.ClassK
+import LeanForControl.Analysis.PositiveDefinite
 import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral
@@ -88,6 +91,17 @@ theorem ClassKInfty.mono_iff (α : ClassKInfty) {x y : ℝ}
     (hx : x ∈ Set.Ici 0) (hy : y ∈ Set.Ici 0) :
     α.toFun x ≤ α.toFun y ↔ x ≤ y :=
   α.strict_mono.le_iff_le hx hy
+
+/-- A class `K∞` function is nondecreasing on `[0, ∞)`. -/
+@[gcongr]
+theorem ClassKInfty.mono (α : ClassKInfty) {x y : ℝ} (hx : 0 ≤ x) (h : x ≤ y) :
+    α.toFun x ≤ α.toFun y :=
+  (α.mono_iff hx (Set.mem_Ici.2 (hx.trans h))).2 h
+
+/-- A class `K∞` function is positive definite about `0` on `[0, ∞)`. -/
+theorem ClassKInfty.isPositiveDefiniteOn (α : ClassKInfty) :
+    IsPositiveDefiniteOn α.toFun 0 (Set.Ici 0) :=
+  ⟨α.continuous, α.map_zero, fun _ hr hne => (α.pos_iff hr).2 (lt_of_le_of_ne hr hne.symm)⟩
 
 @[simp]
 theorem ClassKInfty.left_inv_apply (α : ClassKInfty) {x : ℝ} (hx : 0 ≤ x) :
@@ -290,6 +304,16 @@ noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a)
     (α.continuous.mono Set.Icc_subset_Ici_self)
     (α.strict_mono.mono Set.Icc_subset_Ici_self)
 
+/-- `ClassKInfty.toClassK` keeps the inverse: on the range `[0, α(a))` of the restriction, its
+inverse agrees with that of `α`.  The restriction stores its own inverse, so this is a theorem,
+not a definitional equality. -/
+theorem ClassKInfty.toClassK_invFun (α : ClassKInfty) {a : ℝ} (ha : 0 < a) {y : ℝ}
+    (hy : y ∈ Set.Ico 0 (α.toFun a)) : (α.toClassK ha).invFun y = α.invFun y := by
+  have h_mem := (α.toClassK ha).inv_maps_to hy
+  calc (α.toClassK ha).invFun y
+      = α.invFun (α.toFun ((α.toClassK ha).invFun y)) := (α.left_inv h_mem.1).symm
+    _ = α.invFun y := congrArg α.invFun ((α.toClassK ha).right_inv hy)
+
 
 /-- Pointwise sum of two class K∞ functions is class K∞. -/
 @[blueprint "lem:classKInfty-add"
@@ -361,3 +385,69 @@ lemma exists_classKInfty_upper_bound (ω : ℝ → ℝ)
     exists_strictMono_upper_bound_global ω hω_zero hω_mono hω_cont
   exact ⟨ClassKInfty.of_strictMono f hf_zero hf_cont hf_mono hf_top,
          fun r hr => hf_bound r hr⟩
+
+/-! ### The integral of a class `K∞` function -/
+
+/-- `s ↦ α(max s 0)`: `α`, read as `α(0) = 0` below `0`, is continuous on all of `ℝ`. -/
+private lemma ClassKInfty.continuous_max (α : ClassKInfty) : Continuous fun s => α (max s 0) :=
+  α.continuous.comp_continuous (continuous_id.max continuous_const) fun s => le_max_right s 0
+
+private lemma ClassKInfty.hasDerivAt_integral_max (α : ClassKInfty) (r : ℝ) :
+    HasDerivAt (fun r => ∫ s in (0 : ℝ)..r, α (max s 0)) (α (max r 0)) r :=
+  (α.continuous_max.integral_hasStrictDerivAt 0 r).hasDerivAt
+
+/-- **The integral of a class `K∞` function is class `K∞`**: `r ↦ ∫_0^r α`.  Below `0` the
+integrand is read as `α(0) = 0`, so the integral is `0` there and differentiable at `0`. -/
+@[blueprint "def:classKInfty-integral"
+  (title := "The integral of a class $\\mathcal{K}_\\infty$ function")
+  (statement := /-- For a class $\mathcal{K}_\infty$ function $\alpha$
+    (\cref{def:isClassKInfty}), $r \mapsto \int_0^r \alpha(s)\,ds$ is class
+    $\mathcal{K}_\infty$, with derivative $\alpha$ on $[0, \infty)$. -/)
+  (proof := /-- Its derivative $\alpha$ is positive on $(0, \infty)$, so it is strictly
+    increasing; since $\alpha$ is increasing,
+    $\int_0^r \alpha \ge \int_0^1 \alpha + (r - 1)\alpha(1) \to \infty$. -/)]
+noncomputable def ClassKInfty.integral (α : ClassKInfty) : ClassKInfty :=
+  have h_cont : Continuous fun r => ∫ s in (0 : ℝ)..r, α (max s 0) :=
+    continuous_iff_continuousAt.2 fun r => (α.hasDerivAt_integral_max r).continuousAt
+  ClassKInfty.of_strictMono (fun r => ∫ s in (0 : ℝ)..r, α (max s 0)) integral_same
+    h_cont.continuousOn
+    (strictMonoOn_of_deriv_pos (convex_Ici 0) h_cont.continuousOn fun r hr => by
+      rw [interior_Ici] at hr
+      rw [(α.hasDerivAt_integral_max r).deriv, max_eq_left (le_of_lt hr)]
+      exact (α.pos_iff (le_of_lt hr)).2 hr)
+    (by
+      -- Since `α` is increasing, `∫_0^r α ≥ ∫_0^1 α + (r - 1) α(1)` for `r ≥ 1`.
+      have h_lin : ∀ r, 1 ≤ r → (∫ s in (0 : ℝ)..1, α (max s 0)) + (r - 1) * α 1 ≤
+          ∫ s in (0 : ℝ)..r, α (max s 0) := fun r hr => by
+        have h_split := integral_add_adjacent_intervals
+          (α.continuous_max.intervalIntegrable (μ := volume) 0 1)
+          (α.continuous_max.intervalIntegrable (μ := volume) 1 r)
+        have h_int : (r - 1) * α 1 ≤ ∫ s in (1 : ℝ)..r, α (max s 0) :=
+          calc (r - 1) * α 1
+              = ∫ _s in (1 : ℝ)..r, α 1 := by simp
+            _ ≤ ∫ s in (1 : ℝ)..r, α (max s 0) :=
+                integral_mono_on hr intervalIntegral.intervalIntegrable_const
+                  (α.continuous_max.intervalIntegrable 1 r)
+                  fun s hs => α.mono zero_le_one (hs.1.trans (le_max_left s 0))
+        linarith
+      refine tendsto_atTop_mono' _ ?_ (tendsto_atTop_add_const_left _
+        (∫ s in (0 : ℝ)..1, α (max s 0))
+        ((tendsto_atTop_add_const_right _ (-1) tendsto_id).atTop_mul_const
+          ((α.pos_iff zero_le_one).2 one_pos)))
+      filter_upwards [eventually_ge_atTop 1] with r hr
+      simpa [sub_eq_add_neg] using h_lin r hr)
+
+/-- On `[0, ∞)`, the integral of `α` is `r ↦ ∫_0^r α`. -/
+theorem ClassKInfty.integral_apply (α : ClassKInfty) {r : ℝ} (hr : 0 ≤ r) :
+    α.integral r = ∫ s in (0 : ℝ)..r, α s :=
+  integral_congr fun s hs => by
+    rw [uIcc_of_le hr] at hs
+    simp only [max_eq_left hs.1]
+
+/-- The derivative of the integral of `α` is `α`. -/
+theorem ClassKInfty.hasDerivAt_integral (α : ClassKInfty) {r : ℝ} (hr : 0 ≤ r) :
+    HasDerivAt α.integral (α r) r := by
+  have h := α.hasDerivAt_integral_max r
+  rw [max_eq_left hr] at h
+  exact h
+

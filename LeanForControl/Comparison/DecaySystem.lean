@@ -806,3 +806,49 @@ theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b)
               ((hLip.continuous.neg.add continuous_const).comp continuous_snd)
               (fun _ => lipschitzWith_add_const hLip.neg lam) ht_lt.le)
       exact h_bound t ⟨ht_lt.le, le_rfl⟩
+
+/-- **Decay down to a level.**  The comparison bound of
+`ClassK.exists_classKL_bound_of_subsolution` when `v̇ ≤ -α(v)` holds only *above* a level `η`:
+then `v(t) ≤ max (σ(v(t₀), t − t₀)) η`.  Either `v` stays above `η` on `[t₀, t)`, and the
+comparison lemma applies; or it drops to `η` at some `τ < t`, and since it can only fall while
+above `η`, it is still at most `η` at `t`. -/
+@[blueprint "thm:classK-bound-above-level"
+  (title := "Subsolutions above a level decay to it")
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$, and $\sigma$ the class
+    $\mathcal{KL}$ function of \cref{thm:classK-dini-bound}.  Let $v$ be continuous on
+    $[t_0,t]$ with values in $[0,a)$, with right derivative $v'$ on $[t_0, t)$ satisfying
+    $v'(s) \le -\alpha(v(s))$ whenever $v(s) > \eta$.  Then
+    \[
+      v(t) \le \max\{\sigma(v(t_0), t - t_0),\ \eta\}.
+    \] -/)
+  (proof := /-- If $v > \eta$ on all of $[t_0, t)$, $v$ is a subsolution of the decay system
+    there and \cref{thm:classK-dini-bound} applies.  Otherwise $v(\tau) \le \eta$ for some
+    $\tau \in [t_0, t)$.  Wherever $v > \eta$, $v' \le -\alpha(v) \le 0$, so by
+    \cref{lem:le-max-of-hasDerivWithinAt-nonpos-above} on $[\tau, t]$,
+    $v(t) \le \max\{v(\tau), \eta\} = \eta$. -/)]
+theorem ClassK.exists_classKL_bound_above_level {a b : ℝ} (α : ClassK a b) :
+    ∃ σ : ClassKL a, (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
+      ∀ {t₀ t η : ℝ} {v v' : ℝ → ℝ}, t₀ ≤ t → ContinuousOn v (Set.Icc t₀ t) →
+        (∀ s ∈ Set.Ico t₀ t, HasDerivWithinAt v (v' s) (Set.Ici s) s) →
+        (∀ s ∈ Set.Icc t₀ t, v s ∈ Set.Ico 0 a) →
+        (∀ s ∈ Set.Ico t₀ t, η < v s → v' s ≤ -α.toFun (v s)) →
+        v t ≤ max (σ.toFun (v t₀) (t - t₀)) η := by
+  obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_of_subsolution
+  refine ⟨σ, hσ_zero, fun {t₀ t η v v'} ht hv hv' hv_mem h_decay => ?_⟩
+  by_cases h_above : ∀ s ∈ Set.Ico t₀ t, η < v s
+  · -- Above `η` throughout: `v` is a subsolution of the decay system.
+    refine le_max_of_le_left (hσ ht v hv (hv_mem t₀ ⟨le_rfl, ht⟩)
+      (fun s hs => hv_mem s (Set.Ico_subset_Icc_self hs)) (fun s hs => ?_)
+      (fun s hs => (hv' s hs).tendsto_forward_slope.isBoundedUnder_le))
+    rw [diniDerivRight_of_hasDerivWithinAt (hv' s hs)]
+    exact h_decay s hs (h_above s hs)
+  · -- At most `η` at some `τ < t`, and `v` cannot climb back above `η`.
+    push Not at h_above
+    obtain ⟨τ, hτ, hvτ⟩ := h_above
+    have h_le := le_max_of_hasDerivWithinAt_nonpos_above (v' := v')
+      (hv.mono (Set.Icc_subset_Icc_left hτ.1))
+      (fun s hs => hv' s ⟨hτ.1.trans hs.1, hs.2⟩)
+      (fun s hs hηs => (h_decay s ⟨hτ.1.trans hs.1, hs.2⟩ hηs).trans
+        (neg_nonpos.mpr (α.maps_to (hv_mem s ⟨hτ.1.trans hs.1, hs.2.le⟩)).1))
+      t ⟨hτ.2.le, le_rfl⟩
+    exact le_max_of_le_right (h_le.trans (max_le hvτ le_rfl))

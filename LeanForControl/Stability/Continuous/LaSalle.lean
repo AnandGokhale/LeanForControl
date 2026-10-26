@@ -52,7 +52,7 @@ private lemma antitoneOn_comp_of_fderiv_nonpos {s : ContinuousSystem E Unit Y} {
     (h_nonpos : ∀ t ∈ interior I, fderiv ℝ V (φ t) (f (φ t)) ≤ 0) :
     AntitoneOn (V ∘ φ) I :=
   IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos (V := fun _ => V) hφ hI
-    (hV.comp differentiable_snd) fun t ht => by
+    (fun t _ => (hV (φ t)).comp (t, φ t) differentiableAt_snd) fun t ht => by
       rw [lieDerivative_const (hV _)]
       simp only [vectorField_apply, hF]
       exact h_nonpos t ht
@@ -320,7 +320,7 @@ theorem locallyAsymptoticallyStable_of_lasalle [NeZero n] {s : ContinuousSystem 
     s.LocallyAsymptoticallyStable x_eq := by
   have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
   have h_stable : s.Stable x_eq :=
-    (IsUniformLyapunovFunction.of_timeInvariant hD hV hV_pos fun t _ x hx => by
+    (IsUniformLyapunovFunction.of_timeInvariant hD (fun x _ => hV x) hV_pos fun t _ x hx => by
       rw [hF]
       exact h_nonpos x hx).uniformlyStable.stable
   have h_fc := isForwardComplete_of_timeInvariant hF hf
@@ -369,7 +369,8 @@ theorem globallyAsymptoticallyStable_of_lasalle [NeZero n] {s : ContinuousSystem
     s.GloballyAsymptoticallyStable x_eq := by
   have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
   have h_stable : s.Stable x_eq :=
-    (IsUniformLyapunovFunction.of_timeInvariant univ_mem hV hV_pos fun t _ x _ => by
+    (IsUniformLyapunovFunction.of_timeInvariant univ_mem (fun x _ => hV x) hV_pos
+      fun t _ x _ => by
       rw [hF]
       exact h_nonpos x).uniformlyStable.stable
   have h_fc := isForwardComplete_of_timeInvariant hF hf

@@ -132,7 +132,7 @@ There is no separate "forward" API: `Stable`, `LocallyExponentiallyStable` and `
 | Escape witness gives instability | `unstable_of_escape` | `Continuous/Defs.lean` | ✅ done |
 | Hurwitz exponential contractivity block | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | ✅ done |
 | Arbitrary-`Q` continuous Lyapunov equation | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `LinearSystems/Stability/Continuous/LyapunovEquation.lean` | ✅ done, axiom-free |
-| Linearization-error bound, `ε`–`δ` form | `HasFDerivAt.exists_linearization_error_bound` | `Analysis/FrechetDerivative.lean` | ✅ done |
+| Linearization-error bound, `ε`–`δ` form | Mathlib: `HasFDerivAt.isLittleO.bound` | — | ✅ done (the wrapper was removed) |
 | Remainder absorption shared by both branches | `exists_abs_fderiv_centeredQuadraticForm_remainder_le` | `MatrixAlgebra/QuadraticForm.lean` | ✅ done |
 | Hurwitz Jacobian gives local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `Continuous/Linearization.lean` | ✅ done |
 | Positive-real eigenpair gives a quadratic Chetaev certificate | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `LinearSystems/Stability/Continuous/InstabilityCertificate.lean` | ✅ done, axiom-free |
@@ -290,6 +290,69 @@ What is open is readability, in descending value:
 4. **Argument order.** `Tbar_fn` takes `η r`, `W_fn` takes `r η` — opposite orders on adjacent
    functions, invisible because neither name says which slot is which. Fixing it lets partial
    application feed the abstraction with no lambda.
+
+### Gaps against Khalil in the converse, ISS and linearization results
+
+Each is documented in its docstring's *Differences* list; collected here so they are fixed together.
+
+1. **The estimate-only notions do not assert that solutions exist.** Khalil's uniform asymptotic
+   stability (Definition 4.4), exponential stability (Definition 4.5) and input-to-state
+   stability (Definition 4.7) say the solution *exists* for all `t ≥ t₀` and satisfies the
+   estimate.  `UniformlyAsymptoticallyStable`, `GloballyUniformlyAsymptoticallyStable`,
+   `LocallyExponentiallyStable`, `GloballyExponentiallyStable` (`Continuous/Defs.lean`) and
+   `InputToStateStable` (`Continuous/ISS.lean`) only bound trajectory segments `[t₀, t₁]`; the
+   theorems producing them (4.19, Lemma 4.6, Lemma 4.7, the Lyapunov theorems) never prove
+   existence.  Two consequences: finite escape is not excluded by the definition, and an
+   ill-posed system with no classical solutions — e.g. under a discontinuous input — satisfies
+   the estimate vacuously.
+
+   *Decision (2026-10-24): keep the definitions estimate-only* — every result is an
+   estimate-to-estimate implication and composes as is, and changing only ISS would split it from
+   GUAS, which it feeds.  *Fix:* prove the **extension theorem** — a solution of a locally
+   Lipschitz, continuous field that stays bounded on `[t₀, t₁)` extends past `t₁`
+   (`ODEs/PicardLindelof.lean` has global existence only for globally Lipschitz fields) — and
+   then one lemma per estimate-only notion: *estimate + well-posed ⇒ forward complete*
+   (`IsForwardComplete`).  That closes the gap with Khalil for all of them at once.
+
+   Related design question: the library is split on this.  `LocallyAsymptoticallyStable`,
+   `GloballyAsymptoticallyStable` and the ultimate-boundedness notions *do* carry
+   `IsForwardCompleteOn`; the uniform and exponential notions and ISS do not, and Lemma 4.5 has
+   separate `…_of_isForwardComplete` variants.  Even `IsForwardCompleteOn` asserts only that
+   existing segments extend, not that a solution exists from every initial state.
+2. **Hypotheses on `f` for all `t ∈ ℝ`, not `t ≥ 0`.** The converse theorems 4.14 (local and
+   global) and 4.16 (`Continuous/Converse.lean`), linearization 4.13 and both directions of 4.15
+   (`Continuous/Linearization.lean`), and Lemma 4.6 (`Continuous/ISS.lean`) ask `f` to be `C¹`,
+   Lipschitz and to vanish at `x_eq` for every `t ∈ ℝ`.  Cause: differentiability of `V` at
+   `t = 0` goes through solutions from slightly negative initial times (the time-augmented
+   system and the sensitivity lemmas of `ODEs/Sensitivity.lean` work on open sets).  Fix:
+   one-sided derivatives on `[0, ∞) × D` throughout the sensitivity lemmas.
+3. **Lyapunov functions are differentiable, not `C¹`.** Khalil's converse theorems 4.14 and 4.16
+   assert continuously differentiable `V`; the Lyapunov structures
+   (`Continuous/LyapunovFunctions.lean`) and the converse theorems give only differentiability.
+   Fix: continuity of the derivative — one more dominated-convergence argument in each converse
+   construction.
+
+### The ISS-branch audit is unfinished
+
+The declarations added on the `ISS` branch are being reviewed one by one against a local checklist,
+`AUDIT.md` at the repository root (gitignored; regenerate it with the declaration diff against
+`main` if lost).  Systems, Analysis, Comparison, the state transition map and the norm lemmas are
+done; matrix algebra, ODEs, LTV, the stability definitions, boundedness, ISS, cascades,
+linearization and the converse theorems remain, together with the list of breaking changes to
+declarations that exist on `main`.
+
+### The L²/L∞ bridge in Theorem 4.13
+
+The LTV results (4.11, 4.12) live on `Fin n → ℝ` with the sup norm; systems live on
+`EuclideanSpace ℝ (Fin n)` with the 2-norm.  Theorem 4.13 translates estimates between the two with
+explicit-constant norm comparisons (`MatrixAlgebra/NormComparison.lean`: `norm_ofLp_le`,
+`norm_le_sqrt_card_mul_norm_ofLp`, `sq_norm_le_dotProduct_self`, `norm_toEuclideanCLM_le`,
+`norm_toEuclideanCLM_symm_le`, `abs_dotProduct_le`, `dotProduct_mulVec_le`).  Every use only needs
+*some* constant, so all of them are finite-dimensional norm equivalence, which Mathlib provides
+with unspecified constants.  Two fixes: locally, replace them by Mathlib's norm equivalence; at the
+root, settle one state space for linear and nonlinear systems, after which the bridge disappears.
+Decide the root question first (it is the L²/L∞ question of the Stability/Continuous rewrite), so
+the local fix is not thrown away.
 
 ### `ClassKLGlobal.continuous_r` concludes on the wrong set
 

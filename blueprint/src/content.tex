@@ -26,6 +26,10 @@ open region. First sphere crossing is the open-ball specialization of the genera
 
 \inputleannode{thm:exists-first-sphere-hit}
 
+A field cut off outside a set stays Lipschitz.
+
+\inputleannode{lem:lipschitzWith-smul-of-lipschitzOnWith}
+
 \section{Limits superior}
 
 Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
@@ -73,6 +77,8 @@ makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as
 
 \inputleannode{lem:le-diniDerivRight-of-upper-bound}
 
+\inputleannode{lem:le-max-of-hasDerivWithinAt-nonpos-above}
+
 \section{Interval integrals}
 
 Estimates and integrability side conditions for the interval integral, used wherever a
@@ -93,6 +99,10 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:hasDerivAt-integral}
 
+\inputleannode{lem:continuous-hasDerivAt-integral-comp}
+
+\inputleannode{lem:setIntegral-Ioi-comp-add-right}
+
 \inputleannode{lem:continuousOn-integral-Icc}
 
 \inputleannode{lem:continuousOn-integral-endpoints}
@@ -101,6 +111,12 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:tendsto-integral-average-atTop-zero}
 
+\section{Norm inequalities}
+
+\inputleannode{lem:abs-norm-sq-sub-norm-sq-le}
+
+\inputleannode{lem:prod-norm-le-norm-fst-add-norm-snd}
+
 \section{Positive definite functions}
 
 Positive definiteness in the sense of functions, not matrices: a function that vanishes at a
@@ -108,6 +124,10 @@ point and is positive elsewhere.  It is the shape every Lyapunov function and ev
 bound takes.
 
 \inputleannode{def:isPositiveDefiniteOn}
+
+\inputleannode{lem:isPositiveDefiniteOn-comp}
+
+\inputleannode{lem:isPositiveDefiniteOn-norm-sub}
 
 \chapter{Ordinary differential equations}
 
@@ -173,6 +193,8 @@ $0$.
 
 \inputleannode{lem:eqOn-of-isIntegralCurveOn-Icc}
 
+\inputleannode{lem:isIntegralCurveOn-norm-sub-le}
+
 \inputleannode{thm:exists-isIntegralCurveOn-Ici}
 
 \inputleannode{thm:exists-isIntegralSolution-Icc-of-lipschitz}
@@ -186,7 +208,27 @@ solutions to agree initially and the perturbation to vanish, which collapses the
 
 \inputleannode{thm:continuous-dependence-ODE}
 
+The same mechanism bounds a single solution from below: an equilibrium cannot be approached
+faster than exponentially.
+
+\inputleannode{thm:isIntegralCurveOn-norm-sub-mul-exp-le}
+
 \inputleannode{thm:continuous-dependence-parameters}
+
+\section{Differentiability in the initial state}
+
+For a $C^1$ vector field the solution at a fixed time depends differentiably on its initial state,
+with derivative the solution of the variational equation along it.  Appending time to the state
+turns a time-varying system into an autonomous one, so this also gives differentiability in the
+initial time.
+
+\inputleannode{lem:isIntegralCurveOn-exists-dist-le-of-contDiff}
+
+\inputleannode{lem:isIntegralCurveOn-exists-variational}
+
+\inputleannode{thm:isIntegralCurveOn-exists-norm-sub-sub-variational-le}
+
+\inputleannode{thm:hasFDerivAt-of-isIntegralCurveOn}
 
 \section{Comparison lemma}
 
@@ -212,6 +254,12 @@ and invariance argument differentiates.
 \inputleannode{lem:lieDerivative-add-mul}
 
 \inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
+
+\inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-hasDerivWithinAt}
+
+\inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-eq-add-integral}
+
+\inputleannode{lem:lieDerivative-eq-add-fderiv-sub}
 
 \inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
 
@@ -272,9 +320,17 @@ for time invariance instead.
 
 \inputleannode{lem:continuousSystem-isAutonomous-exists}
 
+\inputleannode{def:continuousSystem-constInput}
+
 \inputleannode{def:continuousSystem-zeroInput}
 
 \inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
+
+\inputleannode{def:continuousSystem-cascade}
+
+\inputleannode{lem:continuousSystem-cascade-isTrajectoryOn-iff}
+
+\inputleannode{lem:continuousSystem-cascade-isRightTrajectoryOn-iff}
 
 Well-posedness is kept apart from stability. The stability notions quantify over every solution,
 so they need no uniqueness; forward completeness enters only where a limit as $t \to \infty$ is
@@ -290,6 +346,24 @@ taken. Theorems that need either property assume it.
 
 \inputleannode{thm:continuousSystem-isForwardComplete-of-lipschitz}
 
+\subsection{The state transition map}
+
+The state transition map $\varphi(t; t_0, x_0)$ is the solution from $x_0$ at time $t_0$,
+evaluated at time $t$, on its maximal interval of existence.  The state transition matrix of a
+linear system is its linear case.
+
+\inputleannode{def:continuousSystem-existenceInterval}
+
+\inputleannode{def:continuousSystem-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-existenceInterval-eq-Ici}
+
+\inputleannode{lem:continuousSystem-eq-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-stateTransitionMap-semigroup}
+
 \inputleannode{def:continuousSystem-vectorField}
 
 \inputleannode{def:continuousSystem-outputMap}
@@ -301,6 +375,15 @@ taken. Theorems that need either property assume it.
 \inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
 
 \inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+Inputs that switch — steps, sample-and-hold, bang-bang — produce solutions with corners at the
+switching times.  With the input taken right-continuous, such a solution still has a right
+derivative everywhere, given by the new value of the input; these right trajectories are the
+solution concept for input-to-state stability, and every trajectory is one.
+
+\inputleannode{def:continuousSystem-isRightTrajectoryOn}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-isRightTrajectoryOn}
 
 A set is forward invariant when trajectories that start in it stay in it.
 
@@ -525,6 +608,19 @@ value problem must agree, and each identity below is an instance of that.
 \inputleannode{lem:stateTransitionMatrix-comp-base}
 
 \inputleannode{lem:continuousOn-stateTransitionMatrix-snd}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd}
+
+\inputleannode{lem:norm-stateTransitionMatrix-le}
+
+When $A$ is bounded on all of $\mathbb{R}$, the transition matrix is defined and differentiable
+everywhere, and the composition law and both derivatives hold with no ordering of the times.
+
+\inputleannode{thm:stateTransitionMatrix-mul}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-of-bound}
+
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd-of-bound}
 
 \subsection{Variation of constants}
 
@@ -757,6 +853,8 @@ functions as the standard examples, and the restriction back to class $\mathcal{
 
 \inputleannode{lem:classKInfty-toClassK}
 
+\inputleannode{def:classKInfty-integral}
+
 \inputleannode{lem:exists-classKInfty-upper-bound}
 
 \section{Inverses of antitone functions}
@@ -789,6 +887,8 @@ mean-value bound and its inverse supplies the decay rate.
 \inputleannode{def:isClassKL}
 
 \inputleannode{def:isClassKLGlobal}
+
+\inputleannode{lem:classKLGlobal-exists-le-radiallyUnbounded}
 
 \subsection{Building class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
@@ -867,6 +967,16 @@ Lyapunov function along a trajectory is a subsolution of it.
 
 \inputleannode{thm:classK-dini-bound}
 
+\inputleannode{thm:classK-bound-above-level}
+
+\section{Massera's lemma}
+
+A class $\mathcal{K}$ function with class $\mathcal{K}$ derivative can flatten any decay rate
+enough to make a Lyapunov integral along the solutions converge, together with its derivative
+in the initial state.
+
+\inputleannode{lem:classKInfty-massera}
+
 \chapter{Stability of continuous-time systems}
 
 Stability notions for an equilibrium of an autonomous continuous-time system $\dot x = f(t, x)$
@@ -904,6 +1014,17 @@ $[t_0, \infty)$.
 
 \inputleannode{def:continuousSystem-globallyExponentiallyStable}
 
+Boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories stay, or end up and stay, within a prescribed distance of it.
+
+\inputleannode{def:continuousSystem-uniformlyBounded}
+
+\inputleannode{def:continuousSystem-globallyUniformlyBounded}
+
+\inputleannode{def:continuousSystem-uniformlyUltimatelyBounded}
+
+\inputleannode{def:continuousSystem-globallyUniformlyUltimatelyBounded}
+
 \section{Implications}
 
 \inputleannode{lem:continuousSystem-unstable-of-escape}
@@ -923,6 +1044,8 @@ $[t_0, \infty)$.
 \inputleannode{lem:continuousSystem-globallyExponentiallyStable-local}
 
 \inputleannode{lem:continuousSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-of-semiconj}
 
 \section{Comparison-function characterizations}
 
@@ -1010,6 +1133,57 @@ they follow from radial unboundedness.
 
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable}
 
+\section{Converse Lyapunov theorems}
+
+Exponential stability has a quadratic Lyapunov function, built by integrating the squared distance
+along solutions over a fixed horizon.  Its gradient is of the order of the distance to the
+equilibrium, which is what lets it absorb perturbations of the vector field.
+
+\inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable}
+
+\inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate}
+
+\inputleannode{thm:continuousSystem-exists-lyapunov-of-KLBounded}
+
+\section{Ultimate boundedness}
+
+A Lyapunov-like function whose derivative is negative only outside a ball does not certify
+stability, but it does bound the trajectories: they decay like a class $\mathcal{KL}$ function
+until they reach a neighbourhood of the ball, and stay there.
+
+\inputleannode{thm:continuousSystem-exists-classKL-ultimateBound-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-uniformlyBounded-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-uniformlyUltimatelyBounded-of-lyapunov}
+
+\inputleannode{thm:continuousSystem-exists-classKLGlobal-ultimateBound-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-globallyUniformlyBounded-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-globallyUniformlyUltimatelyBounded-of-lyapunov}
+
+\section{Input-to-state stability}
+
+Input-to-state stability bounds the state by a decaying function of the initial condition plus a
+gain of the size of the input.  An ISS-Lyapunov function certifies it through the global
+ultimate boundedness theorem, applied once per input: its class $\mathcal{KL}$ function does not
+depend on the input.
+
+\inputleannode{def:continuousSystem-inputToStateStable}
+
+\inputleannode{thm:continuousSystem-inputToStateStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{thm:continuousSystem-norm-le-of-isISSLyapunov}
+
+\inputleannode{thm:continuousSystem-inputToStateStable-of-isISSLyapunov}
+
+\inputleannode{lem:continuousSystem-inputToStateStable-of-globallyExponentiallyStable}
+
+\inputleannode{lem:continuousSystem-cascade-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-cascade-inputToStateStable}
+
 \section{LaSalle's invariance principle}
 
 When $\nabla V \cdot f \le 0$ only, $V$ may stall, and Lyapunov's theorems give stability but not
@@ -1077,8 +1251,12 @@ geometric, $\rho^{k - k_0}$ with $0 \le \rho < 1$, in place of $e^{-\gamma(t - t
 
 \inputleannode{def:discreteSystem-globallyExponentiallyStable}
 
-Ultimate boundedness is a property of the system near a point that need not be an equilibrium:
-trajectories end up, and stay, within a prescribed distance of it.
+Boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories stay, or end up and stay, within a prescribed distance of it.
+
+\inputleannode{def:discreteSystem-uniformlyBounded}
+
+\inputleannode{def:discreteSystem-globallyUniformlyBounded}
 
 \inputleannode{def:discreteSystem-uniformlyUltimatelyBounded}
 
@@ -1163,6 +1341,22 @@ region of attraction, recorded as
 \inputleannode{thm:continuousLTV-locallyExponentiallyStable-iff-decayingStateTransition}
 
 \inputleannode{cor:continuousLTV-locallyExponentiallyStable-iff-globallyExponentiallyStable}
+
+For a linear system, uniform asymptotic stability already forces exponential decay of the state
+transition matrix: splitting time into windows of a uniform convergence time, each window
+contracts by a fixed factor.
+
+\inputleannode{thm:continuousLTV-uniformlyAsymptoticallyStable-iff-decayingStateTransition}
+
+\inputleannode{cor:continuousLTV-globallyUniformlyAsymptoticallyStable-iff-decayingStateTransition}
+
+The time-varying form of the Lyapunov equation.
+
+\inputleannode{def:differentialLyapunovEquation}
+
+\inputleannode{lem:differentialLyapunovEquation-const-iff}
+
+\inputleannode{thm:continuousLTV-exists-differentialLyapunovEquation}
 
 \inputleannode{thm:continuousLTV-unstable-iff-unboundedHomogeneousResponse}
 
@@ -1413,7 +1607,9 @@ as well, once the linearization error is absorbed near the equilibrium.
 
 \section{The linearization error}
 
-\inputleannode{thm:frechet-linearization-error-bound}
+\inputleannode{thm:contDiff-exists-uniform-linearization-error-bound}
+
+\inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
 
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 
@@ -1424,6 +1620,19 @@ forward solution segment, without silently excluding solutions that are not
 globally defined.
 
 \inputleannode{thm:hurwitz-linearization-locally-exponentially-stable}
+
+\section{Time-varying systems}
+
+For a time-varying system the linearization is itself time-varying, and exponential stability
+transfers between the two in both directions.  The converse Lyapunov function of the nonlinear
+system serves for its linearization; conversely, the solution of the differential Lyapunov
+equation of the linearization serves for the nonlinear system.
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-linearization}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-of-linearization}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-iff-linearization}
 
 \section{The unstable branch}
 

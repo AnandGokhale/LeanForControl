@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Calculus.Deriv.Slope
 import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Topology.Order.Basic
 import Mathlib.Order.Filter.ENNReal
@@ -472,5 +473,43 @@ lemma HasDerivWithinAt.le_diniDerivRight_of_upper_bound {v z : ℝ → ℝ} {a b
     _ ≤ limsup q_v (𝓝[>] 0) :=
           Filter.limsup_le_limsup h_eventual_le hz_lim.isCoboundedUnder_le hv_bdd
     _ = D⁺ v a              := rfl
+
+/-- **A level that is only approached from above.**  If `v` is continuous on `[a, b]` with right
+derivative `v'`, and `v' ≤ 0` wherever `v > η`, then `v` never exceeds `max (v a) η` on `[a, b]`.
+
+The derivative condition holds only above the level `η`, so `v` may oscillate below it; above
+it, `v` can only fall. -/
+@[blueprint "lem:le-max-of-hasDerivWithinAt-nonpos-above"
+  (title := "Nonincreasing above a level")
+  (latexEnv := "lemma")
+  (statement := /-- Let $v$ be continuous on $[a, b]$ with right derivative $v'(t)$ at every
+    $t \in [a, b)$, and suppose $v'(t) \le 0$ whenever $v(t) > \eta$.  Then
+    $v(t) \le \max\{v(a), \eta\}$ for all $t \in [a, b]$. -/)
+  (proof := /-- Let $m = \max\{v(a), \eta\}$ and $\varepsilon > 0$.  The barrier
+    $B(t) = m + \varepsilon\,(1 + t - a)$ starts above $v$, and wherever $v$ touches it,
+    $v > \eta$, so $v' \le 0 < \varepsilon = B'$.  The barrier comparison theorem gives
+    $v \le B$ on $[a, b]$; let $\varepsilon \to 0$. -/)]
+theorem le_max_of_hasDerivWithinAt_nonpos_above {v v' : ℝ → ℝ} {a b η : ℝ}
+    (hv : ContinuousOn v (Icc a b))
+    (hv' : ∀ t ∈ Ico a b, HasDerivWithinAt v (v' t) (Ici t) t)
+    (h_nonpos : ∀ t ∈ Ico a b, η < v t → v' t ≤ 0) :
+    ∀ t ∈ Icc a b, v t ≤ max (v a) η := by
+  intro t ht
+  refine le_of_forall_pos_le_add fun δ hδ => ?_
+  have h_len : 0 < 1 + (t - a) := by linarith [ht.1]
+  set ε := δ / (1 + (t - a))
+  have hε : 0 < ε := div_pos hδ h_len
+  have h_barrier := image_le_of_deriv_right_lt_deriv_boundary' (B := fun x => max (v a) η +
+      ε * (1 + (x - a))) (B' := fun _ => ε) hv hv' (by simp; linarith [le_max_left (v a) η])
+    (by fun_prop)
+    (fun x _ => ((hasDerivAt_id x).sub_const a |>.const_add 1 |>.const_mul ε |>.const_add _
+      |>.hasDerivWithinAt).congr_deriv (by ring))
+    (fun x hx h_eq => by
+      have h_above : η < v x := by
+        rw [h_eq]
+        nlinarith [le_max_right (v a) η, hx.1]
+      linarith [h_nonpos x hx h_above]) ht
+  calc v t ≤ max (v a) η + ε * (1 + (t - a)) := h_barrier
+    _ = max (v a) η + δ := by rw [div_mul_cancel₀ δ h_len.ne']
 
 end

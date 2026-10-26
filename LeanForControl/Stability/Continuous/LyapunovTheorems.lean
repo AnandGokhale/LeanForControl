@@ -58,16 +58,19 @@ private lemma le_rpow_inv_mul {u w C a : ℝ} (hu : 0 ≤ u) (hw : 0 ≤ w) (hC 
 that stays in its region `D`: `‖x(t) - x_eq‖ ≤ K ‖x(t₀) - x_eq‖ e^{-γ(t - t₀)}` with
 `K = (k₂/k₁)^{1/a}` and `γ = k₃/(a k₂)`. -/
 private lemma IsExponentialLyapunovFunction.exists_estimate {s : ContinuousSystem E Unit Y}
-    {V : ℝ → E → ℝ} {x_eq : E} {D : Set E} (hV : s.IsExponentialLyapunovFunction V x_eq D) :
+    {V : ℝ → E → ℝ} {x_eq : E} {D : Set E} {a : ℝ}
+    (hV : s.IsExponentialLyapunovFunction V x_eq D a) :
     ∃ K > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
       s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → (∀ τ ∈ Icc t₀ t₁, x τ ∈ D) →
         ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ K * ‖x t₀ - x_eq‖ * Real.exp (-γ * (t - t₀)) := by
-  obtain ⟨k₁, hk₁, k₂, hk₂, k₃, hk₃, a, ha, hb⟩ := hV.bounds
+  obtain ⟨k₁, hk₁, k₂, hk₂, k₃, hk₃, hb⟩ := hV.bounds
+  have ha := hV.exponent_pos
   refine ⟨(k₂ / k₁) ^ (1 / a), Real.rpow_pos_of_pos (div_pos hk₂ hk₁) _, k₃ / k₂ / a,
     div_pos (div_pos hk₃ hk₂) ha, fun t₀ ht₀ t₁ x hx h_in t ht => ?_⟩
   set c := k₃ / k₂
   -- `V ≤ k₂ ‖x - x_eq‖ᵃ` turns `V̇ ≤ -k₃ ‖x - x_eq‖ᵃ` into `V̇ ≤ -(k₃/k₂) V`.
-  have h_decay := IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le (c := c) hx hV.differentiable
+  have h_decay := IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le (c := c) hx
+    (fun τ hτ => hV.differentiableAt τ (ht₀.trans hτ.1) _ (h_in τ hτ))
     (fun τ hτ => by
       change s.lieDerivative V τ (x τ) () ≤ -c * V τ (x τ)
       obtain ⟨-, h_up, h_lie⟩ := hb τ (ht₀.trans hτ.1.le) (x τ) (h_in τ (Ioo_subset_Icc_self hτ))
@@ -120,7 +123,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10. -/
     and $K = (k_2/k_1)^{1/a}$: at the first time the trajectory reached the sphere of radius $r$
     the estimate would put it strictly inside. -/)]
 theorem IsExponentialLyapunovFunction.locallyExponentiallyStable {s : ContinuousSystem E Unit Y}
-    {V : ℝ → E → ℝ} {x_eq : E} {D : Set E} (hV : s.IsExponentialLyapunovFunction V x_eq D) :
+    {V : ℝ → E → ℝ} {x_eq : E} {D : Set E} {a : ℝ}
+    (hV : s.IsExponentialLyapunovFunction V x_eq D a) :
     s.LocallyExponentiallyStable x_eq := by
   obtain ⟨K, hK, γ, hγ, h_est⟩ := hV.exists_estimate
   obtain ⟨r, hr, hrD⟩ := Metric.nhds_basis_closedBall.mem_iff.mp hV.nhds
@@ -168,7 +172,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10, global case. -/
     \cref{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable} holds on
     every trajectory segment, since every segment stays in $D = E$. -/)]
 theorem IsExponentialLyapunovFunction.globallyExponentiallyStable {s : ContinuousSystem E Unit Y}
-    {V : ℝ → E → ℝ} {x_eq : E} (hV : s.IsExponentialLyapunovFunction V x_eq univ) :
+    {V : ℝ → E → ℝ} {x_eq : E} {a : ℝ} (hV : s.IsExponentialLyapunovFunction V x_eq univ a) :
     s.GloballyExponentiallyStable x_eq := by
   obtain ⟨K, hK, γ, hγ, h_est⟩ := hV.exists_estimate
   exact ⟨K, hK, γ, hγ, fun t₀ ht₀ t₁ x hx => h_est t₀ ht₀ t₁ x hx fun _ _ => mem_univ _⟩
@@ -198,14 +202,47 @@ private lemma exists_sandwich_level {r b₁ b₂ : ℝ} (hb₁ : 0 < b₁) (α�
 
 /-! ## Trapping -/
 
+/-- **Trapping by a level set.**  Let `x` be a trajectory on `[t₀, t₁]` starting strictly inside
+the `ρ`-sphere about `x_c`, on which `V ≥ d`.  If `V̇ ≤ 0` wherever the trajectory is inside the
+sphere and above a level `η`, and `V(t₀, x(t₀))` and `η` are both below `d`, the trajectory never
+reaches the sphere.
+
+At the first time it did, `V` would be at least `d`; but up to then `V` can only fall while above
+`η`, so it is at most `max (V(t₀, x(t₀))) η < d`. -/
+lemma norm_lt_of_level_lt {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ}
+    {ρ d η t₀ t₁ : ℝ} {x : ℝ → ℝⁿ} (hx : s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
+    (hV : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ ≤ ρ → DifferentiableAt ℝ (Function.uncurry V) (τ, x τ))
+    (h_start : ‖x t₀ - x_c‖ < ρ)
+    (h_level : max (V t₀ (x t₀)) η < d)
+    (h_sphere : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ = ρ → d ≤ V τ (x τ))
+    (h_dec : ∀ τ ∈ Ico t₀ t₁, ‖x τ - x_c‖ ≤ ρ → η < V τ (x τ) →
+      s.lieDerivative V τ (x τ) () ≤ 0) :
+    ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ < ρ := by
+  intro t ht
+  by_contra h_out
+  -- The first time `τ ∈ [t₀, t]` at which `x` reaches the `ρ`-sphere.
+  obtain ⟨τ, hτ, hτ_norm, h_before⟩ := exists_first_sphere_hit
+    (hx.1.mono (Icc_subset_Icc_right ht.2)) h_start ⟨ht.1, le_rfl⟩ (not_lt.mp h_out)
+  have hτ_mem : τ ∈ Icc t₀ t₁ := ⟨hτ.1, hτ.2.trans ht.2⟩
+  -- Up to `τ`, `V` falls whenever it is above `η`, so it stays below `d`.
+  have hx_τ := hx.mono (Icc_subset_Icc_right hτ_mem.2)
+  have hV_τ : ∀ u ∈ Icc t₀ τ, DifferentiableAt ℝ (Function.uncurry V) (u, x u) := fun u hu =>
+    hV u ⟨hu.1, hu.2.trans hτ_mem.2⟩ (h_before u hu)
+  have h_le := le_max_of_hasDerivWithinAt_nonpos_above
+    (hx_τ.1.comp_uncurry_of_differentiableAt hV_τ)
+    (fun u hu => (hx_τ.hasDerivWithinAt_Ici hu).hasDerivWithinAt_lieDerivative
+      (hV_τ u (Ico_subset_Icc_self hu)))
+    (fun u hu => h_dec u ⟨hu.1, hu.2.trans_le hτ_mem.2⟩ (h_before u (Ico_subset_Icc_self hu)))
+    τ ⟨hτ.1, le_rfl⟩
+  exact (h_le.trans_lt h_level).not_ge (h_sphere τ hτ_mem hτ_norm)
+
 /-- **Trapping.**  Let `V` be a Lyapunov function on `D`, with `W₁(x) ≤ V(t, x)` on `D` and
 `α₁(‖x - x_eq‖) ≤ W₁(x)` on a closed `r`-ball inside `D`, and pick a level `d` with
 `α₁⁻¹(d) < r`.  A trajectory on `[t₀, t₁]` that starts inside the ball with
 `V(t₀, x(t₀)) < d` stays inside the ball.
 
-To leave the ball, `x` would first have to reach a sphere `‖x - x_eq‖ = ρ` with
-`α₁⁻¹(d) < ρ < r`.  Up to that time it is inside the ball, so `V` has not increased and is still
-below `d`; but on that sphere `V ≥ W₁ ≥ α₁(ρ) > d`. -/
+On a sphere `‖x - x_eq‖ = ρ` with `α₁⁻¹(d) < ρ < r`, `V ≥ W₁ ≥ α₁(ρ) > d`, and `V̇ ≤ 0` inside
+it, so `norm_lt_of_level_lt` keeps the trajectory inside that sphere. -/
 private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ}
     {W₁ : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} (hV : s.IsLyapunovFunction V x_eq D)
     (hV_lb : ∀ t : ℝ, 0 ≤ t → ∀ y ∈ D, W₁ y ≤ V t y)
@@ -215,9 +252,6 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ �
     (ht₀ : 0 ≤ t₀) (h_start : ‖x t₀ - x_eq‖ < r) (hV_start : V t₀ (x t₀) < d) :
     ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ < r := by
   have hD : ∀ y : ℝⁿ, ‖y - x_eq‖ ≤ r → y ∈ D := fun y hy => hrD (mem_closedBall_iff_norm.mpr hy)
-  intro t ht
-  by_contra h_out
-  push Not at h_out
   -- Step 1. An intermediate radius `ρ`, strictly between `α₁⁻¹(d)` and `r`.
   have hd_inv_mem : α₁.invFun d ∈ Ico 0 r := α₁.inv_maps_to hd
   obtain ⟨ρ, hρ_gt, hρ_lt⟩ := exists_between hd_inv_mem.2
@@ -227,28 +261,20 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ �
     exact (hW₁ _ h_start).trans_lt ((hV_lb t₀ ht₀ _ (hD _ h_start.le)).trans_lt hV_start)
   have h_start_ρ : ‖x t₀ - x_eq‖ < ρ :=
     ((α₁.strict_mono_iff ⟨norm_nonneg _, h_start⟩ hd_inv_mem).mp h_α₁_start).trans hρ_gt
-  -- Step 3. The first time `τ ∈ [t₀, t]` at which `x` reaches the `ρ`-sphere.
-  obtain ⟨τ, hτ, hτ_norm, h_before⟩ := exists_first_sphere_hit
-    ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)) h_start_ρ
-    ⟨ht.1, le_rfl⟩ (hρ_lt.le.trans h_out)
-  have hτ_lt_r : ‖x τ - x_eq‖ < r := hτ_norm ▸ hρ_lt
-  -- Step 4. On `[t₀, τ]` the trajectory is inside the `r`-ball, so `V` has not increased.
-  have hV_τ_lt_d : V τ (x τ) < d := by
-    have h_anti := IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos
-      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right (hτ.2.trans ht.2))) (convex_Icc _ _)
-      hV.differentiable fun u hu => by
-        rw [interior_Icc] at hu
-        exact hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
-          (hD _ ((h_before u ⟨hu.1.le, hu.2.le⟩).trans hρ_lt.le))
-    exact (h_anti ⟨le_rfl, hτ.1⟩ ⟨hτ.1, le_rfl⟩ hτ.1).trans_lt hV_start
-  -- Step 5. But on the `ρ`-sphere `V ≥ W₁ ≥ α₁(ρ) > α₁(α₁⁻¹(d)) = d`.
-  have hV_τ_gt_d : d < V τ (x τ) :=
+  -- Step 3. On the `ρ`-sphere `V ≥ W₁ ≥ α₁(ρ) > α₁(α₁⁻¹(d)) = d`, and inside it `V̇ ≤ 0`.
+  have h_sphere : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_eq‖ = ρ → d ≤ V τ (x τ) := fun τ hτ hτ_norm => by
+    have hτ_lt_r : ‖x τ - x_eq‖ < r := hτ_norm ▸ hρ_lt
     calc d = α₁.toFun (α₁.invFun d) := (α₁.right_inv hd).symm
-      _ < α₁.toFun ‖x τ - x_eq‖ :=
-          α₁.strict_mono hd_inv_mem ⟨norm_nonneg _, hτ_lt_r⟩ (hτ_norm ▸ hρ_gt)
+      _ ≤ α₁.toFun ‖x τ - x_eq‖ :=
+          (α₁.strict_mono hd_inv_mem ⟨norm_nonneg _, hτ_lt_r⟩ (hτ_norm ▸ hρ_gt)).le
       _ ≤ W₁ (x τ) := hW₁ _ hτ_lt_r
       _ ≤ V τ (x τ) := hV_lb τ (ht₀.trans hτ.1) _ (hD _ hτ_lt_r.le)
-  exact lt_asymm hV_τ_lt_d hV_τ_gt_d
+  intro t ht
+  exact (norm_lt_of_level_lt (η := V t₀ (x t₀)) hx.isRightTrajectoryOn
+    (fun τ hτ hτ_norm => hV.differentiableAt τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
+    h_start_ρ (by rwa [max_self]) h_sphere
+    (fun τ hτ hτ_norm _ => hV.lie_nonpos τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
+    t ht).trans hρ_lt
 
 /-- The bound `V(t, y) < d = α₂(c)` from the `c`-ball: `V ≤ W₂ ≤ α₂(‖y - x_eq‖) < α₂(c)`. -/
 private lemma lt_level_of_norm_lt {V : ℝ → ℝⁿ → ℝ} {W₂ : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ}
@@ -324,7 +350,6 @@ subsolution of the decay system of `α`, so `V(t, x(t)) ≤ σ(V(t₀, x(t₀)),
 This only checks the side conditions: `v` is continuous, its Dini derivative is the derivative
 along the system, and its difference quotients are bounded. -/
 private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V : ℝ → ℝⁿ → ℝ}
-    (hV : Differentiable ℝ (Function.uncurry V))
     {d e : ℝ} {α : ClassK d e} {σ : ClassKL d}
     (hσ : ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Icc t₀ t) →
         v t₀ ∈ Ico 0 d →
@@ -334,6 +359,7 @@ private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V
             IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (s + h) - v s) / h)) →
         v t ≤ σ.toFun (v t₀) (t - t₀))
     {x : ℝ → ℝⁿ} {t₀ t₁ t : ℝ} (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
+    (hV : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, x τ))
     (ht : t ∈ Icc t₀ t₁)
     (hv_range : ∀ τ ∈ Icc t₀ t, V τ (x τ) ∈ Ico 0 d)
     (hlie : ∀ τ ∈ Ico t₀ t, s.lieDerivative V τ (x τ) () ≤ -α.toFun (V τ (x τ))) :
@@ -345,8 +371,8 @@ private lemma comp_trajectory_le_classKL {s : ContinuousSystem ℝⁿ Unit Y} {V
       ⟨hτ.1, hτ.2.le.trans ht.2⟩).mono_of_mem_nhdsWithin
         (Icc_mem_nhdsGE_of_mem ⟨hτ.1, hτ.2.trans_le ht.2⟩)
   have hv_cont : ContinuousOn (fun u => V u (x u)) (Icc t₀ t) :=
-    hV.continuous.comp_continuousOn (continuousOn_id.prodMk
-      ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)))
+    ((IsIntegralCurveOn.continuousOn hx).comp_uncurry_of_differentiableAt hV).mono
+      (Icc_subset_Icc_right ht.2)
   exact hσ ht.1 (fun u => V u (x u)) hv_cont (hv_range t₀ ⟨le_rfl, ht.1⟩)
     (fun τ hτ => hv_range τ (Ico_subset_Icc_self hτ))
     (fun τ hτ => by rw [diniDerivRight_of_hasDerivWithinAt (hderiv τ hτ)]; exact hlie τ hτ)
@@ -424,7 +450,8 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [NeZero n]
         ∀ t ∈ Icc t₀ t₁, V t (x t) ∈ Ico 0 d := fun t₀ ht₀ t₁ x hx h_init t ht => by
     have h_ball := h_in_ball t₀ ht₀ t₁ x hx h_init
     have h_anti := IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos hx (convex_Icc _ _)
-      hV.differentiable fun u hu => by
+      (fun u hu => hV.differentiableAt u (ht₀.trans hu.1) _ (hD _ (h_ball u hu).le))
+      fun u hu => by
         rw [interior_Icc] at hu
         exact hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
           (hD _ (h_ball u (Ioo_subset_Icc_self hu)).le)
@@ -461,7 +488,8 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [NeZero n]
   have ht₀_mem : t₀ ∈ Icc t₀ t₁ := ⟨le_rfl, ht.1.trans ht.2⟩
   -- `V(t, x(t)) ≤ σ(V(t₀, x(t₀)), t - t₀)`, by the comparison lemma.
   have h_σ_bound : V t (x t) ≤ σ.toFun (V t₀ (x t₀)) (t - t₀) :=
-    comp_trajectory_le_classKL hV.differentiable hσ hx ht
+    comp_trajectory_le_classKL hσ hx
+      (fun u hu => hV.differentiableAt u (ht₀.trans hu.1) _ (hD _ (h_ball u hu).le)) ht
       (fun τ hτ => h_range τ ⟨hτ.1, hτ.2.trans ht.2⟩)
       (fun τ hτ => hlie_comp τ (ht₀.trans hτ.1) _ (h_ball τ ⟨hτ.1, hτ.2.le.trans ht.2⟩)
         (h_range τ ⟨hτ.1, hτ.2.le.trans ht.2⟩))
@@ -511,7 +539,8 @@ private lemma add_mul_le_of_lie_le {s : ContinuousSystem ℝⁿ Unit Y} {f : ℝ
     (hlie : ∀ t ∈ Ioo a b, fderiv ℝ V (x t) (f (x t)) ≤ -c) :
     V (x b) + c * b ≤ V (x a) + c * a :=
   IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos (V := fun t y => V y + c * t) hx
-    (convex_Icc a b) ((hV.comp differentiable_snd).add (differentiable_fst.const_mul c))
+    (convex_Icc a b) (fun t _ => ((hV.comp differentiable_snd).add
+      (differentiable_fst.const_mul c) : Differentiable ℝ fun p : ℝ × ℝⁿ => V p.2 + c * p.1) _)
     (fun t ht => by
       rw [interior_Icc] at ht
       rw [lieDerivative_add_mul c (hV _)]

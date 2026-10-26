@@ -262,6 +262,54 @@ lemma IsTrajectory.isTrajectoryOn {s : ContinuousSystem E U Y} {u : ℝ → U} {
     (h : s.IsTrajectory u x) (I : Set ℝ) : s.IsTrajectoryOn u x I :=
   IsIntegralCurve.isIntegralCurveOn h I
 
+/-- `x` is a **right trajectory** of `s` under the input `u` on `I`: continuous on `I`, with right
+derivative `ẋ(t⁺) = F(t, x(t), u(t))` at every `t ∈ I` (taken within `I ∩ [t, ∞)`).
+
+This is the solution concept for piecewise continuous inputs, taken right-continuous: between
+switching times the input is continuous and the solution classical, and at a switching time the
+solution has a corner — no two-sided derivative — but its right derivative uses the input's new
+value.  Sample-and-hold, step and switching signals are of this kind.  Every trajectory is a right
+trajectory (`IsTrajectoryOn.isRightTrajectoryOn`), and the Lyapunov comparison arguments only use
+right derivatives, so they hold along right trajectories unchanged. -/
+@[blueprint "def:continuousSystem-isRightTrajectoryOn"
+  (title := "Right trajectory of a continuous-time system")
+  (statement := /-- A map $x : \mathbb{R} \to E$ is a \emph{right trajectory} of $s$ under the
+    input $u$ on $I \subseteq \mathbb{R}$ when it is continuous on $I$ and has right derivative
+    \[
+      \dot x(t^+) = F(t, x(t), u(t)), \qquad \forall\, t \in I,
+    \]
+    taken within $I \cap [t, \infty)$.  It is the solution concept for piecewise continuous,
+    right-continuous inputs: at a switching time the solution has a corner, but its right
+    derivative is given by the new value of the input.  Every trajectory
+    (\cref{def:continuousSystem-isTrajectoryOn}) is one. -/)]
+def IsRightTrajectoryOn (s : ContinuousSystem E U Y) (u : ℝ → U) (x : ℝ → E) (I : Set ℝ) :
+    Prop :=
+  ContinuousOn x I ∧ ∀ t ∈ I, HasDerivWithinAt x (s.vectorField u t (x t)) (I ∩ Set.Ici t) t
+
+/-- Every trajectory is a right trajectory. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-isRightTrajectoryOn"
+  (title := "Trajectories are right trajectories")
+  (latexEnv := "lemma")
+  (statement := /-- A trajectory on $I$ (\cref{def:continuousSystem-isTrajectoryOn}) is a right
+    trajectory on $I$ (\cref{def:continuousSystem-isRightTrajectoryOn}). -/)]
+lemma IsTrajectoryOn.isRightTrajectoryOn {s : ContinuousSystem E U Y} {u : ℝ → U} {x : ℝ → E}
+    {I : Set ℝ} (h : s.IsTrajectoryOn u x I) : s.IsRightTrajectoryOn u x I :=
+  ⟨IsIntegralCurveOn.continuousOn h, fun t ht => (h t ht).mono Set.inter_subset_left⟩
+
+/-- A right trajectory on `I` is one on every subset of `I`. -/
+lemma IsRightTrajectoryOn.mono {s : ContinuousSystem E U Y} {u : ℝ → U} {x : ℝ → E}
+    {I J : Set ℝ} (h : s.IsRightTrajectoryOn u x I) (hJI : J ⊆ I) :
+    s.IsRightTrajectoryOn u x J :=
+  ⟨h.1.mono hJI, fun t ht => (h.2 t (hJI ht)).mono (Set.inter_subset_inter_left _ hJI)⟩
+
+/-- On a segment, a right trajectory has right derivative `F(t, x(t), u(t))` at every `t` before
+the right end, within `[t, ∞)`. -/
+lemma IsRightTrajectoryOn.hasDerivWithinAt_Ici {s : ContinuousSystem E U Y} {u : ℝ → U}
+    {x : ℝ → E} {t₀ t₁ : ℝ} (h : s.IsRightTrajectoryOn u x (Set.Icc t₀ t₁)) {t : ℝ}
+    (ht : t ∈ Set.Ico t₀ t₁) : HasDerivWithinAt x (s.vectorField u t (x t)) (Set.Ici t) t :=
+  (h.2 t (Set.Ico_subset_Icc_self ht)).mono_of_mem_nhdsWithin
+    (Filter.inter_mem (Icc_mem_nhdsGE_of_mem ht) self_mem_nhdsWithin)
+
 /-! ### The derivative of a function along the system -/
 
 /-- The derivative of `V(t, x)` along the system at the input value `u`,
@@ -370,6 +418,175 @@ theorem isForwardComplete_of_lipschitz [CompleteSpace E] {s : ContinuousSystem E
   exact ⟨y, hy, hasUniqueSolutions_of_lipschitz hL t₀ t₁ y x
     (IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self) hx hy₀⟩
 
+/-! ### The state transition map -/
+
+/-- The **existence interval** of the trajectory from `x₀` at time `t₀`: the times `t ≥ t₀` up to
+which a trajectory from `x₀` exists, that is, the maximal interval of existence `[t₀, T)`. -/
+@[blueprint "def:continuousSystem-existenceInterval"
+  (title := "Existence interval")
+  (statement := /-- The \emph{existence interval} of the trajectory of $s$ under $u$ from $x_0$
+    at time $t_0$ is the set of $t \ge t_0$ for which a trajectory on $[t_0, t]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) with $x(t_0) = x_0$ exists: the maximal interval
+    of existence. -/)]
+def existenceInterval (s : ContinuousSystem E U Y) (u : ℝ → U) (t₀ : ℝ) (x₀ : E) : Set ℝ :=
+  {t | t₀ ≤ t ∧ ∃ x : ℝ → E, x t₀ = x₀ ∧ s.IsTrajectoryOn u x (Set.Icc t₀ t)}
+
+open scoped Classical in
+/-- The **state transition map** `φ(t; t₀, x₀)`: the value at `t` of a trajectory from `x₀` at
+time `t₀` that exists up to `t`, and `x₀` outside the existence interval.  With unique solutions
+(`HasUniqueSolutions`) the choice of trajectory does not matter. -/
+@[blueprint "def:continuousSystem-stateTransitionMap"
+  (title := "State transition map")
+  (statement := /-- The \emph{state transition map} $\varphi(t; t_0, x_0)$ of $s$ under $u$ is
+    the value at time $t$ of a trajectory from $x_0$ at time $t_0$, for $t$ in the existence
+    interval (\cref{def:continuousSystem-existenceInterval}); with unique solutions
+    (\cref{def:continuousSystem-hasUniqueSolutions}) it does not depend on the trajectory chosen.
+    Outside the existence interval it is $x_0$, by convention. -/)]
+noncomputable def stateTransitionMap (s : ContinuousSystem E U Y) (u : ℝ → U)
+    (t t₀ : ℝ) (x₀ : E) : E :=
+  if h : t ∈ s.existenceInterval u t₀ x₀ then h.2.choose t else x₀
+
+variable {s : ContinuousSystem E U Y} {u : ℝ → U}
+
+/-- The initial time is in the existence interval: a trajectory on `[t₀, t₀]` is trivial. -/
+lemma mem_existenceInterval_self (t₀ : ℝ) (x₀ : E) : t₀ ∈ s.existenceInterval u t₀ x₀ :=
+  ⟨le_rfl, fun _ => x₀, rfl,
+    fun _ _ => HasFDerivWithinAt.of_subsingleton (Set.subsingleton_Icc_of_ge le_rfl)⟩
+
+/-- The existence interval is an interval: with `t`, it contains every time between `t₀` and
+`t`. -/
+lemma mem_existenceInterval_of_le {t₀ t τ : ℝ} {x₀ : E} (ht : t ∈ s.existenceInterval u t₀ x₀)
+    (h₀ : t₀ ≤ τ) (h₁ : τ ≤ t) : τ ∈ s.existenceInterval u t₀ x₀ :=
+  ⟨h₀, ht.2.choose, ht.2.choose_spec.1,
+    IsIntegralCurveOn.mono ht.2.choose_spec.2 (Set.Icc_subset_Icc_right h₁)⟩
+
+/-- `φ(t₀; t₀, x₀) = x₀`. -/
+@[simp]
+lemma stateTransitionMap_self (t₀ : ℝ) (x₀ : E) : s.stateTransitionMap u t₀ t₀ x₀ = x₀ := by
+  have h := mem_existenceInterval_self (s := s) (u := u) t₀ x₀
+  rw [stateTransitionMap, dif_pos h]
+  exact h.2.choose_spec.1
+
+/-- **Forward completeness means global existence**: if every trajectory extends to `[t₀, ∞)`,
+the existence interval is all of `[t₀, ∞)`. -/
+@[blueprint "lem:continuousSystem-existenceInterval-eq-Ici"
+  (title := "Existence intervals of a forward complete system")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ is forward complete under $u$
+    (\cref{def:continuousSystem-isForwardComplete}), the existence interval
+    (\cref{def:continuousSystem-existenceInterval}) from every $(t_0, x_0)$ is $[t_0, \infty)$. -/)
+  (proof := /-- The trajectory on $[t_0, t_0]$ is trivial; forward completeness extends it to
+    $[t_0, \infty)$. -/)]
+lemma existenceInterval_eq_Ici (hfc : s.IsForwardComplete u) (t₀ : ℝ) (x₀ : E) :
+    s.existenceInterval u t₀ x₀ = Set.Ici t₀ := by
+  refine Set.Subset.antisymm (fun t ht => ht.1) fun t ht => ⟨ht, ?_⟩
+  obtain ⟨y, hy, hy_eq⟩ := hfc t₀ t₀ (fun _ => x₀) le_rfl
+    (fun _ _ => HasFDerivWithinAt.of_subsingleton (Set.subsingleton_Icc_of_ge le_rfl))
+    (Set.mem_univ _)
+  exact ⟨y, hy_eq ⟨le_rfl, le_rfl⟩, IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self⟩
+
+/-- **Every trajectory is given by the state transition map**: with unique solutions, a
+trajectory on `[t₀, t₁]` is `t ↦ φ(t; t₀, x(t₀))` there. -/
+@[blueprint "lem:continuousSystem-eq-stateTransitionMap"
+  (title := "Trajectories are given by the state transition map")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ has unique solutions under $u$
+    (\cref{def:continuousSystem-hasUniqueSolutions}), every trajectory $x$ on $[t_0, t_1]$
+    satisfies $x(t) = \varphi(t; t_0, x(t_0))$ there
+    (\cref{def:continuousSystem-stateTransitionMap}). -/)
+  (proof := /-- $x$ itself witnesses that $t$ is in the existence interval, and the trajectory
+    chosen by $\varphi$ agrees with $x$ on $[t_0, t]$ by uniqueness. -/)]
+lemma eq_stateTransitionMap (hu : s.HasUniqueSolutions u) {t₀ t₁ : ℝ} {x : ℝ → E}
+    (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁)) :
+    ∀ t ∈ Set.Icc t₀ t₁, x t = s.stateTransitionMap u t t₀ (x t₀) := by
+  intro t ht
+  have hx_t : s.IsTrajectoryOn u x (Set.Icc t₀ t) :=
+    IsIntegralCurveOn.mono hx (Set.Icc_subset_Icc_right ht.2)
+  have hmem : t ∈ s.existenceInterval u t₀ (x t₀) := ⟨ht.1, x, rfl, hx_t⟩
+  rw [stateTransitionMap, dif_pos hmem]
+  obtain ⟨hy₀, hy⟩ := hmem.2.choose_spec
+  exact (hu t₀ t _ x hy hx_t hy₀ ⟨ht.1, le_rfl⟩).symm
+
+/-- **The state transition map is a trajectory**: with unique solutions,
+`t ↦ φ(t; t₀, x₀)` is a trajectory on the existence interval. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-stateTransitionMap"
+  (title := "The state transition map is a trajectory")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ has unique solutions under $u$
+    (\cref{def:continuousSystem-hasUniqueSolutions}), $t \mapsto \varphi(t; t_0, x_0)$
+    (\cref{def:continuousSystem-stateTransitionMap}) is a trajectory on the existence interval
+    (\cref{def:continuousSystem-existenceInterval}). -/)
+  (proof := /-- Near each time $t$ of the existence interval, $\varphi$ agrees with a trajectory on
+    a segment $[t_0, t']$ containing a neighbourhood of $t$ in the interval
+    (\cref{lem:continuousSystem-eq-stateTransitionMap}), so it has that trajectory's
+    derivative. -/)]
+lemma isTrajectoryOn_stateTransitionMap (hu : s.HasUniqueSolutions u) (t₀ : ℝ) (x₀ : E) :
+    s.IsTrajectoryOn u (fun t => s.stateTransitionMap u t t₀ x₀)
+      (s.existenceInterval u t₀ x₀) := by
+  intro t ht
+  -- A segment `[t₀, t']` of the existence interval containing a neighbourhood of `t` in it.
+  obtain ⟨t', ht', htt', h_nhds⟩ : ∃ t' ∈ s.existenceInterval u t₀ x₀, t ≤ t' ∧
+      Set.Icc t₀ t' ∈ nhdsWithin t (s.existenceInterval u t₀ x₀) := by
+    by_cases h : ∃ t' ∈ s.existenceInterval u t₀ x₀, t < t'
+    · obtain ⟨t', ht', htt'⟩ := h
+      exact ⟨t', ht', htt'.le, mem_nhdsWithin.2 ⟨Set.Iio t', isOpen_Iio, htt',
+        fun τ hτ => ⟨hτ.2.1, hτ.1.le⟩⟩⟩
+    · simp only [not_exists, not_and, not_lt] at h
+      exact ⟨t, ht, le_rfl, Filter.mem_of_superset self_mem_nhdsWithin
+        fun τ hτ => ⟨hτ.1, h τ hτ⟩⟩
+  -- There `φ` is a trajectory `x` from `x₀`.
+  obtain ⟨x, hx₀, hx⟩ := ht'.2
+  have h_eq := eq_stateTransitionMap hu hx
+  rw [hx₀] at h_eq
+  have htI : t ∈ Set.Icc t₀ t' := ⟨ht.1, htt'⟩
+  have h_ev : (fun τ => s.stateTransitionMap u τ t₀ x₀) =ᶠ[nhdsWithin t
+      (s.existenceInterval u t₀ x₀)] x := by
+    filter_upwards [h_nhds] with τ hτ using (h_eq τ hτ).symm
+  have hd := ((hx t htI).mono_of_mem_nhdsWithin h_nhds).congr_of_eventuallyEq h_ev
+    (h_eq t htI).symm
+  rwa [h_eq t htI] at hd
+
+/-- With forward completeness and unique solutions, `t ↦ φ(t; t₀, x₀)` is a trajectory on
+`[t₀, ∞)`. -/
+lemma isTrajectoryOn_stateTransitionMap_Ici (hfc : s.IsForwardComplete u)
+    (hu : s.HasUniqueSolutions u) (t₀ : ℝ) (x₀ : E) :
+    s.IsTrajectoryOn u (fun t => s.stateTransitionMap u t t₀ x₀) (Set.Ici t₀) := by
+  simpa [existenceInterval_eq_Ici hfc] using isTrajectoryOn_stateTransitionMap hu t₀ x₀
+
+/-- **The semigroup property**: `φ(t; τ, φ(τ; t₀, x₀)) = φ(t; t₀, x₀)` for `t₀ ≤ τ ≤ t` in the
+existence interval.  The state transition matrix satisfies the linear case,
+`Φ(t, τ) Φ(τ, t₀) = Φ(t, t₀)`. -/
+@[blueprint "lem:continuousSystem-stateTransitionMap-semigroup"
+  (title := "The semigroup property")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ has unique solutions under $u$
+    (\cref{def:continuousSystem-hasUniqueSolutions}), then for $t_0 \le \tau \le t$ with $t$ in
+    the existence interval from $(t_0, x_0)$,
+    \[
+      \varphi(t; \tau, \varphi(\tau; t_0, x_0)) = \varphi(t; t_0, x_0).
+    \] -/)
+  (proof := /-- $\varphi(\cdot; t_0, x_0)$ is a trajectory on $[\tau, t]$
+    (\cref{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}), so it is given by $\varphi$
+    from $(\tau, \varphi(\tau; t_0, x_0))$ (\cref{lem:continuousSystem-eq-stateTransitionMap}).
+    -/)]
+lemma stateTransitionMap_semigroup (hu : s.HasUniqueSolutions u) {t₀ τ t : ℝ} {x₀ : E}
+    (hτ : t₀ ≤ τ) (hτt : τ ≤ t) (ht : t ∈ s.existenceInterval u t₀ x₀) :
+    s.stateTransitionMap u t τ (s.stateTransitionMap u τ t₀ x₀) =
+      s.stateTransitionMap u t t₀ x₀ := by
+  have hy : s.IsTrajectoryOn u (fun r => s.stateTransitionMap u r t₀ x₀) (Set.Icc τ t) :=
+    IsIntegralCurveOn.mono (isTrajectoryOn_stateTransitionMap hu t₀ x₀)
+      fun r hr => mem_existenceInterval_of_le ht (hτ.trans hr.1) hr.2
+  exact (eq_stateTransitionMap hu hy t ⟨hτt, le_rfl⟩).symm
+
+/-- **An equilibrium stays put**: if `F(t, x_eq, u(t)) = 0` for all `t`, then
+`φ(t; t₀, x_eq) = x_eq` for `t ≥ t₀`. -/
+lemma stateTransitionMap_of_equilibrium (hu : s.HasUniqueSolutions u) {x_eq : E}
+    (h_eq : ∀ t, s.vectorField u t x_eq = 0) {t₀ t : ℝ} (ht : t₀ ≤ t) :
+    s.stateTransitionMap u t t₀ x_eq = x_eq := by
+  have h_const : s.IsTrajectoryOn u (fun _ => x_eq) (Set.Icc t₀ t) := fun r _ =>
+    (hasDerivWithinAt_const r (Set.Icc t₀ t) x_eq).congr_deriv (h_eq r).symm
+  exact (eq_stateTransitionMap hu h_const t ⟨ht, le_rfl⟩).symm
+
 /-! ### Invariance -/
 
 /-- `S` is **forward invariant** (positively invariant) under the input `u`: every trajectory
@@ -392,22 +609,51 @@ def IsForwardInvariant (s : ContinuousSystem E U Y) (u : ℝ → U) (S : Set E) 
 
 end Trajectory
 
-/-! ### The unforced system -/
+/-! ### Holding the input constant -/
 
-section ZeroInput
+section ConstInput
+
+/-- The system with its input **held at `u₀`**: the autonomous system `ẋ = F(t, x, u₀)`,
+`y = h(t, x, u₀)`.  With `u₀ = 0` this is the unforced system (`zeroInput`); a general `u₀` is
+the operating point of a system whose equilibrium is not at the zero input. -/
+@[blueprint "def:continuousSystem-constInput"
+  (title := "The system with its input held constant")
+  (statement := /-- For $u_0$ in the input space, the autonomous system
+    (\cref{def:continuousSystem-autonomous}) $\dot x = F(t, x, u_0)$, $y = h(t, x, u_0)$ obtained
+    by holding the input at $u_0$. -/)]
+def constInput (s : ContinuousSystem E U Y) (u₀ : U) : ContinuousSystem E Unit Y :=
+  autonomous (fun t x => s.F t x u₀) (fun t x => s.h t x u₀)
+
+@[simp] lemma constInput_F (s : ContinuousSystem E U Y) (u₀ : U) (t : ℝ) (x : E) (v : Unit) :
+    (s.constInput u₀).F t x v = s.F t x u₀ := rfl
+
+@[simp] lemma constInput_h (s : ContinuousSystem E U Y) (u₀ : U) (t : ℝ) (x : E) (v : Unit) :
+    (s.constInput u₀).h t x v = s.h t x u₀ := rfl
+
+/-- The system with its input held constant is autonomous. -/
+lemma isAutonomous_constInput (s : ContinuousSystem E U Y) (u₀ : U) :
+    (s.constInput u₀).IsAutonomous :=
+  isAutonomous_autonomous _ _
+
+/-- The trajectories of the system with its input held at `u₀` are those of the system under the
+constant input `u₀`. -/
+lemma constInput_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (s : ContinuousSystem E U Y) (u₀ : U) {x : ℝ → E} {I : Set ℝ} :
+    (s.constInput u₀).IsTrajectoryOn (fun _ => ()) x I ↔ s.IsTrajectoryOn (fun _ => u₀) x I :=
+  Iff.rfl
 
 variable [Zero U]
 
-/-- The *unforced* system: the input held at `0`, as an autonomous system `ẋ = F(t, x, 0)`,
-`y = h(t, x, 0)`.  Stability of a system with input is stability of this system; input–output
-notions such as input-to-state stability are stated on the system itself. -/
+/-- The *unforced* system: the input held at `0` (`constInput`), as an autonomous system
+`ẋ = F(t, x, 0)`, `y = h(t, x, 0)`.  Stability of a system with input is stability of this system;
+input–output notions such as input-to-state stability are stated on the system itself. -/
 @[blueprint "def:continuousSystem-zeroInput"
   (title := "The unforced system")
-  (statement := /-- The autonomous system (\cref{def:continuousSystem-autonomous})
-    $\dot x = F(t, x, 0)$, $y = h(t, x, 0)$ obtained by holding the input at $0$.  Stability of a
-    system with input means stability of this system. -/)]
+  (statement := /-- The system with its input held at $0$
+    (\cref{def:continuousSystem-constInput}): $\dot x = F(t, x, 0)$, $y = h(t, x, 0)$.
+    Stability of a system with input means stability of this system. -/)]
 def zeroInput (s : ContinuousSystem E U Y) : ContinuousSystem E Unit Y :=
-  autonomous (fun t x => s.F t x 0) (fun t x => s.h t x 0)
+  s.constInput 0
 
 @[simp] lemma zeroInput_F (s : ContinuousSystem E U Y) (t : ℝ) (x : E) (v : Unit) :
     s.zeroInput.F t x v = s.F t x 0 := rfl
@@ -417,7 +663,7 @@ def zeroInput (s : ContinuousSystem E U Y) : ContinuousSystem E Unit Y :=
 
 /-- The unforced system is autonomous. -/
 lemma isAutonomous_zeroInput (s : ContinuousSystem E U Y) : s.zeroInput.IsAutonomous :=
-  isAutonomous_autonomous _ _
+  isAutonomous_constInput s 0
 
 /-- The trajectories of the unforced system are those of the system under the zero input. -/
 @[blueprint "lem:continuousSystem-zeroInput-isTrajectoryOn-iff"
@@ -431,7 +677,78 @@ lemma zeroInput_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
     s.zeroInput.IsTrajectoryOn (fun _ => ()) x I ↔ s.IsTrajectoryOn 0 x I :=
   Iff.rfl
 
-end ZeroInput
+end ConstInput
+
+/-! ### Cascades -/
+
+section Cascade
+
+variable {E₂ Y₂ W : Type*}
+
+/-- The **cascade** of `s₁`, driven by the state of `s₂`, with `s₂`, driven by the external input:
+`ẋ₁ = F₁(t, x₁, x₂)`, `ẋ₂ = F₂(t, x₂, w)`, with output `(h₁(t, x₁, x₂), h₂(t, x₂, w))`.  With
+`W = Unit` this is the cascade of `s₁` with an autonomous system. -/
+@[blueprint "def:continuousSystem-cascade"
+  (title := "Cascade of continuous-time systems")
+  (statement := /-- For a system $s_1$ whose input space is the state space of a system $s_2$
+    with input $w$, the \emph{cascade} is the system on pairs $(x_1, x_2)$ with input $w$
+    \[
+      \dot x_1 = F_1(t, x_1, x_2), \qquad \dot x_2 = F_2(t, x_2, w),
+    \]
+    with output $(h_1(t, x_1, x_2), h_2(t, x_2, w))$: the state of $s_2$ drives $s_1$. -/)]
+def cascade (s₁ : ContinuousSystem E E₂ Y) (s₂ : ContinuousSystem E₂ W Y₂) :
+    ContinuousSystem (E × E₂) W (Y × Y₂) where
+  F t x w := (s₁.F t x.1 x.2, s₂.F t x.2 w)
+  h t x w := (s₁.h t x.1 x.2, s₂.h t x.2 w)
+
+/-- A trajectory of the cascade is a pair of trajectories: of `s₁` under the input `x₂`, and of
+`s₂` under the external input. -/
+@[blueprint "lem:continuousSystem-cascade-isTrajectoryOn-iff"
+  (title := "Trajectories of a cascade")
+  (latexEnv := "lemma")
+  (statement := /-- A map $(x_1, x_2)$ is a trajectory of the cascade
+    (\cref{def:continuousSystem-cascade}) under the input $w$ on $I$ exactly when $x_1$ is a
+    trajectory of $s_1$ under the input $x_2$ on $I$ and $x_2$ is a trajectory of $s_2$ under
+    $w$ on $I$. -/)]
+lemma cascade_isTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup E₂]
+    [NormedSpace ℝ E₂] {s₁ : ContinuousSystem E E₂ Y} {s₂ : ContinuousSystem E₂ W Y₂}
+    {u : ℝ → W} {x : ℝ → E × E₂} {I : Set ℝ} :
+    (cascade s₁ s₂).IsTrajectoryOn u x I ↔
+      s₁.IsTrajectoryOn (fun τ => (x τ).2) (fun τ => (x τ).1) I ∧
+        s₂.IsTrajectoryOn u (fun τ => (x τ).2) I := by
+  constructor
+  · intro hx
+    exact ⟨fun t ht =>
+        (ContinuousLinearMap.fst ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht),
+      fun t ht => (ContinuousLinearMap.snd ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩
+  · rintro ⟨h₁, h₂⟩ t ht
+    exact (h₁ t ht).prodMk (h₂ t ht)
+
+/-- A right trajectory of the cascade is a pair of right trajectories, as for trajectories
+(`cascade_isTrajectoryOn_iff`). -/
+@[blueprint "lem:continuousSystem-cascade-isRightTrajectoryOn-iff"
+  (title := "Right trajectories of a cascade")
+  (latexEnv := "lemma")
+  (statement := /-- A map $(x_1, x_2)$ is a right trajectory of the cascade
+    (\cref{def:continuousSystem-isRightTrajectoryOn}, \cref{def:continuousSystem-cascade})
+    under $w$ on $I$ exactly when $x_1$ is a right trajectory of $s_1$ under the input $x_2$ and
+    $x_2$ is a right trajectory of $s_2$ under $w$, on $I$. -/)]
+lemma cascade_isRightTrajectoryOn_iff [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup E₂] [NormedSpace ℝ E₂] {s₁ : ContinuousSystem E E₂ Y}
+    {s₂ : ContinuousSystem E₂ W Y₂} {u : ℝ → W} {x : ℝ → E × E₂} {I : Set ℝ} :
+    (cascade s₁ s₂).IsRightTrajectoryOn u x I ↔
+      s₁.IsRightTrajectoryOn (fun τ => (x τ).2) (fun τ => (x τ).1) I ∧
+        s₂.IsRightTrajectoryOn u (fun τ => (x τ).2) I := by
+  constructor
+  · rintro ⟨hc, hx⟩
+    exact ⟨⟨continuous_fst.comp_continuousOn hc, fun t ht =>
+        (ContinuousLinearMap.fst ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩,
+      ⟨continuous_snd.comp_continuousOn hc, fun t ht =>
+        (ContinuousLinearMap.snd ℝ E E₂).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)⟩⟩
+  · rintro ⟨⟨hc₁, h₁⟩, ⟨hc₂, h₂⟩⟩
+    exact ⟨hc₁.prodMk hc₂, fun t ht => (h₁ t ht).prodMk (h₂ t ht)⟩
+
+end Cascade
 
 /-! ### Carathéodory trajectories -/
 

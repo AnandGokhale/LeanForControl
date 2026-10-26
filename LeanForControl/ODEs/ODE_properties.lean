@@ -10,6 +10,8 @@ import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.IntegralCurves
+import LeanForControl.Analysis.LieDerivative
+import Mathlib.Analysis.InnerProductSpace.Calculus
 import Architect
 
 open MeasureTheory Metric Set Filter TopologicalSpace
@@ -358,3 +360,64 @@ theorem continuous_dependence_parameters
     _ ≤ α * (1 + 1 / L) * Real.exp (L * (t₁ - t₀)) := by
           linarith [div_nonneg hα.le hL.le]
     _ ≤ ε := hαε
+
+section ExponentialLowerBound
+
+/-- **Solutions decay no faster than exponentially** (Khalil, Exercise 3.17): if `x_eq` is an
+equilibrium of `ẋ = v(t, x)` and `v(t, ·)` is `L`-Lipschitz on `(t, τ)`, then a solution on
+`[t, τ]` satisfies `‖γ(t) - x_eq‖ e^{-L(τ - t)} ≤ ‖γ(τ) - x_eq‖`.
+
+The integrating-factor bound `IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` for
+`W = -‖· - x_eq‖²`, whose Lie derivative `-2⟪γ - x_eq, v⟫` is at most `2L ‖γ - x_eq‖² = -2L W`. -/
+@[blueprint "thm:isIntegralCurveOn-norm-sub-mul-exp-le"
+  (title := "Solutions decay no faster than exponentially")
+  (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = v(t, x)$ on an inner
+    product space, with $v(\sigma, \cdot)$ $L$-Lipschitz for $\sigma \in (t, \tau)$.  A solution
+    $\gamma$ on $[t, \tau]$ satisfies
+    \[
+      \|\gamma(t) - x_{\mathrm{eq}}\|\, e^{-L(\tau - t)} \le \|\gamma(\tau) - x_{\mathrm{eq}}\|.
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Exercise 3.17. -/)
+  (proof := /-- $W = -\|x - x_{\mathrm{eq}}\|^2$ has
+    $\dot W = -2\langle x - x_{\mathrm{eq}}, v(t, x) \rangle
+      \le 2L\|x - x_{\mathrm{eq}}\|^2 = -2LW$,
+    so $W(\gamma(\tau)) \le e^{-2L(\tau - t)} W(\gamma(t))$; take square roots. -/)]
+theorem IsIntegralCurveOn.norm_sub_mul_exp_le {F : Type*} [NormedAddCommGroup F]
+    [InnerProductSpace ℝ F] {v : ℝ → F → F} {L : NNReal} {x_eq : F} {γ : ℝ → F} {t τ : ℝ}
+    (hγ : IsIntegralCurveOn γ v (Icc t τ)) (hτ : t ≤ τ) (h_eq : ∀ σ ∈ Ioo t τ, v σ x_eq = 0)
+    (h_lip : ∀ σ ∈ Ioo t τ, LipschitzWith L (v σ)) :
+    ‖γ t - x_eq‖ * Real.exp (-(L * (τ - t))) ≤ ‖γ τ - x_eq‖ := by
+  have hW : ∀ z : F, HasFDerivAt (fun z => -‖z - x_eq‖ ^ 2) (-(2 • innerSL ℝ (z - x_eq))) z :=
+    fun z => ((hasFDerivAt_id z).sub_const x_eq).norm_sq.neg.congr_fderiv (by simp)
+  have h_rate : ∀ σ ∈ Ioo t τ, lieDerivative (fun _ z => -‖z - x_eq‖ ^ 2) v σ (γ σ) ≤
+      -(2 * L) * -‖γ σ - x_eq‖ ^ 2 := by
+    intro σ hσ
+    have h_v : ‖v σ (γ σ)‖ ≤ L * ‖γ σ - x_eq‖ :=
+      calc ‖v σ (γ σ)‖
+          = dist (v σ (γ σ)) (v σ x_eq) := by rw [h_eq σ hσ, dist_zero_right]
+        _ ≤ L * dist (γ σ) x_eq := (h_lip σ hσ).dist_le_mul _ _
+        _ = L * ‖γ σ - x_eq‖ := by rw [dist_eq_norm]
+    rw [lieDerivative_const (hW (γ σ)).differentiableAt, (hW (γ σ)).fderiv]
+    calc -((2 • innerSL ℝ (γ σ - x_eq)) (v σ (γ σ)))
+        = -(2 * inner ℝ (γ σ - x_eq) (v σ (γ σ))) := by
+          simp only [ContinuousLinearMap.smul_apply, innerSL_apply_apply, nsmul_eq_mul,
+            Nat.cast_ofNat]
+      _ ≤ 2 * (‖γ σ - x_eq‖ * ‖v σ (γ σ)‖) := by
+          linarith [neg_le_of_abs_le (abs_real_inner_le_norm (γ σ - x_eq) (v σ (γ σ)))]
+      _ ≤ 2 * (‖γ σ - x_eq‖ * (L * ‖γ σ - x_eq‖)) := by gcongr
+      _ = -(2 * L) * -‖γ σ - x_eq‖ ^ 2 := by ring
+  have h_diff : ∀ σ ∈ Icc t τ, DifferentiableAt ℝ
+      (Function.uncurry fun (_ : ℝ) (z : F) => -‖z - x_eq‖ ^ 2) (σ, γ σ) := fun σ _ =>
+    (hW (γ σ)).differentiableAt.comp (g := fun z => -‖z - x_eq‖ ^ 2) (σ, γ σ) differentiableAt_snd
+  have h : -‖γ τ - x_eq‖ ^ 2 ≤ Real.exp (-(2 * L) * (τ - t)) * -‖γ t - x_eq‖ ^ 2 :=
+    hγ.le_exp_mul_of_lieDerivative_le h_diff h_rate τ ⟨hτ, le_rfl⟩
+  -- Take square roots.
+  refine (pow_le_pow_iff_left₀ (by positivity) (norm_nonneg _) two_ne_zero).1 ?_
+  calc (‖γ t - x_eq‖ * Real.exp (-(L * (τ - t)))) ^ 2
+      = ‖γ t - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (τ - t)) := by
+        rw [mul_pow, ← Real.exp_nat_mul]; ring_nf
+    _ ≤ ‖γ τ - x_eq‖ ^ 2 := by linarith
+
+end ExponentialLowerBound
+

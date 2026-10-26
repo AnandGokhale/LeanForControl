@@ -76,6 +76,13 @@ lemma quadraticForm_eq_toQuadraticMap' (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝ
   simp only [Matrix.ofLp_toEuclideanCLM, PiLp.inner_apply, dotProduct]
   exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
 
+/-- A matrix quadratic form is the dot product `yᵀ (P y)` of the underlying `Fin n → ℝ` data. -/
+lemma quadraticForm_eq_dotProduct (P : Matrix (Fin n) (Fin n) ℝ) (y : ℝⁿ) :
+    quadraticForm P y = WithLp.ofLp y ⬝ᵥ (P *ᵥ WithLp.ofLp y) := by
+  rw [quadraticForm]
+  simp only [Matrix.ofLp_toEuclideanCLM, PiLp.inner_apply, dotProduct]
+  exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+
 /-- A positive-definite matrix has a positive quadratic form away from zero.
 
 Reference: the defining property of a positive-definite matrix. -/
@@ -319,12 +326,13 @@ theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
   have hderiv : HasFDerivAt f
       (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A) x_eq := by
     simpa only [hJac] using (hf.differentiable (by norm_num) x_eq).hasFDerivAt
-  obtain ⟨r, hr, hrem⟩ := hderiv.exists_linearization_error_bound hη_pos
+  -- Near `x_eq`, the linearization error is at most `η ‖x - x_eq‖`.
+  obtain ⟨r, hr, hrem⟩ := Metric.eventually_nhds_iff.mp (hderiv.isLittleO.bound hη_pos)
   refine ⟨r, hr, ?_⟩
   intro x hx
   let y : ℝⁿ := x - x_eq
   let e : ℝⁿ := f x - f x_eq - Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
-  have he_norm : ‖e‖ ≤ η * ‖y‖ := hrem x (by simpa [y] using hx)
+  have he_norm : ‖e‖ ≤ η * ‖y‖ := hrem (by rwa [dist_eq_norm])
   have herror_abs :
       |fderiv ℝ (centeredQuadraticForm M x_eq) x e| ≤ 2 * ‖p‖ * ‖y‖ * ‖e‖ := by
     simpa [p, y] using abs_fderiv_centeredQuadraticForm_le M x_eq x e
