@@ -125,7 +125,9 @@ bound takes.
 
 \inputleannode{def:isPositiveDefiniteOn}
 
-\inputleannode{lem:isPositiveDefiniteOn-comp-norm-sub}
+\inputleannode{lem:isPositiveDefiniteOn-comp}
+
+\inputleannode{lem:isPositiveDefiniteOn-norm-sub}
 
 \chapter{Ordinary differential equations}
 
@@ -219,8 +221,6 @@ For a $C^1$ vector field the solution at a fixed time depends differentiably on 
 with derivative the solution of the variational equation along it.  Appending time to the state
 turns a time-varying system into an autonomous one, so this also gives differentiability in the
 initial time.
-
-\inputleannode{lem:contDiff-exists-norm-sub-sub-fderiv-le}
 
 \inputleannode{lem:isIntegralCurveOn-exists-dist-le-of-contDiff}
 
@@ -345,6 +345,24 @@ taken. Theorems that need either property assume it.
 \inputleannode{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}
 
 \inputleannode{thm:continuousSystem-isForwardComplete-of-lipschitz}
+
+\subsection{The state transition map}
+
+The state transition map $\varphi(t; t_0, x_0)$ is the solution from $x_0$ at time $t_0$,
+evaluated at time $t$, on its maximal interval of existence.  The state transition matrix of a
+linear system is its linear case.
+
+\inputleannode{def:continuousSystem-existenceInterval}
+
+\inputleannode{def:continuousSystem-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-existenceInterval-eq-Ici}
+
+\inputleannode{lem:continuousSystem-eq-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-stateTransitionMap-semigroup}
 
 \inputleannode{def:continuousSystem-vectorField}
 
@@ -835,6 +853,8 @@ functions as the standard examples, and the restriction back to class $\mathcal{
 
 \inputleannode{lem:classKInfty-toClassK}
 
+\inputleannode{def:classKInfty-integral}
+
 \inputleannode{lem:exists-classKInfty-upper-bound}
 
 \section{Inverses of antitone functions}
@@ -868,7 +888,7 @@ mean-value bound and its inverse supplies the decay rate.
 
 \inputleannode{def:isClassKLGlobal}
 
-\inputleannode{def:classKLGlobal-unboundedMajorant}
+\inputleannode{lem:classKLGlobal-exists-le-radiallyUnbounded}
 
 \subsection{Building class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
@@ -1587,7 +1607,7 @@ as well, once the linearization error is absorbed near the equilibrium.
 
 \section{The linearization error}
 
-\inputleannode{thm:frechet-linearization-error-bound}
+\inputleannode{thm:contDiff-exists-uniform-linearization-error-bound}
 
 \inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
 

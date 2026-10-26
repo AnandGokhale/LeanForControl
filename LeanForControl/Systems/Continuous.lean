@@ -418,6 +418,175 @@ theorem isForwardComplete_of_lipschitz [CompleteSpace E] {s : ContinuousSystem E
   exact ⟨y, hy, hasUniqueSolutions_of_lipschitz hL t₀ t₁ y x
     (IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self) hx hy₀⟩
 
+/-! ### The state transition map -/
+
+/-- The **existence interval** of the trajectory from `x₀` at time `t₀`: the times `t ≥ t₀` up to
+which a trajectory from `x₀` exists, that is, the maximal interval of existence `[t₀, T)`. -/
+@[blueprint "def:continuousSystem-existenceInterval"
+  (title := "Existence interval")
+  (statement := /-- The \emph{existence interval} of the trajectory of $s$ under $u$ from $x_0$
+    at time $t_0$ is the set of $t \ge t_0$ for which a trajectory on $[t_0, t]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) with $x(t_0) = x_0$ exists: the maximal interval
+    of existence. -/)]
+def existenceInterval (s : ContinuousSystem E U Y) (u : ℝ → U) (t₀ : ℝ) (x₀ : E) : Set ℝ :=
+  {t | t₀ ≤ t ∧ ∃ x : ℝ → E, x t₀ = x₀ ∧ s.IsTrajectoryOn u x (Set.Icc t₀ t)}
+
+open scoped Classical in
+/-- The **state transition map** `φ(t; t₀, x₀)`: the value at `t` of a trajectory from `x₀` at
+time `t₀` that exists up to `t`, and `x₀` outside the existence interval.  With unique solutions
+(`HasUniqueSolutions`) the choice of trajectory does not matter. -/
+@[blueprint "def:continuousSystem-stateTransitionMap"
+  (title := "State transition map")
+  (statement := /-- The \emph{state transition map} $\varphi(t; t_0, x_0)$ of $s$ under $u$ is
+    the value at time $t$ of a trajectory from $x_0$ at time $t_0$, for $t$ in the existence
+    interval (\cref{def:continuousSystem-existenceInterval}); with unique solutions
+    (\cref{def:continuousSystem-hasUniqueSolutions}) it does not depend on the trajectory chosen.
+    Outside the existence interval it is $x_0$, by convention. -/)]
+noncomputable def stateTransitionMap (s : ContinuousSystem E U Y) (u : ℝ → U)
+    (t t₀ : ℝ) (x₀ : E) : E :=
+  if h : t ∈ s.existenceInterval u t₀ x₀ then h.2.choose t else x₀
+
+variable {s : ContinuousSystem E U Y} {u : ℝ → U}
+
+/-- The initial time is in the existence interval: a trajectory on `[t₀, t₀]` is trivial. -/
+lemma mem_existenceInterval_self (t₀ : ℝ) (x₀ : E) : t₀ ∈ s.existenceInterval u t₀ x₀ :=
+  ⟨le_rfl, fun _ => x₀, rfl,
+    fun _ _ => HasFDerivWithinAt.of_subsingleton (Set.subsingleton_Icc_of_ge le_rfl)⟩
+
+/-- The existence interval is an interval: with `t`, it contains every time between `t₀` and
+`t`. -/
+lemma mem_existenceInterval_of_le {t₀ t τ : ℝ} {x₀ : E} (ht : t ∈ s.existenceInterval u t₀ x₀)
+    (h₀ : t₀ ≤ τ) (h₁ : τ ≤ t) : τ ∈ s.existenceInterval u t₀ x₀ :=
+  ⟨h₀, ht.2.choose, ht.2.choose_spec.1,
+    IsIntegralCurveOn.mono ht.2.choose_spec.2 (Set.Icc_subset_Icc_right h₁)⟩
+
+/-- `φ(t₀; t₀, x₀) = x₀`. -/
+@[simp]
+lemma stateTransitionMap_self (t₀ : ℝ) (x₀ : E) : s.stateTransitionMap u t₀ t₀ x₀ = x₀ := by
+  have h := mem_existenceInterval_self (s := s) (u := u) t₀ x₀
+  rw [stateTransitionMap, dif_pos h]
+  exact h.2.choose_spec.1
+
+/-- **Forward completeness means global existence**: if every trajectory extends to `[t₀, ∞)`,
+the existence interval is all of `[t₀, ∞)`. -/
+@[blueprint "lem:continuousSystem-existenceInterval-eq-Ici"
+  (title := "Existence intervals of a forward complete system")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ is forward complete under $u$
+    (\cref{def:continuousSystem-isForwardComplete}), the existence interval
+    (\cref{def:continuousSystem-existenceInterval}) from every $(t_0, x_0)$ is $[t_0, \infty)$. -/)
+  (proof := /-- The trajectory on $[t_0, t_0]$ is trivial; forward completeness extends it to
+    $[t_0, \infty)$. -/)]
+lemma existenceInterval_eq_Ici (hfc : s.IsForwardComplete u) (t₀ : ℝ) (x₀ : E) :
+    s.existenceInterval u t₀ x₀ = Set.Ici t₀ := by
+  refine Set.Subset.antisymm (fun t ht => ht.1) fun t ht => ⟨ht, ?_⟩
+  obtain ⟨y, hy, hy_eq⟩ := hfc t₀ t₀ (fun _ => x₀) le_rfl
+    (fun _ _ => HasFDerivWithinAt.of_subsingleton (Set.subsingleton_Icc_of_ge le_rfl))
+    (Set.mem_univ _)
+  exact ⟨y, hy_eq ⟨le_rfl, le_rfl⟩, IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self⟩
+
+/-- **Every trajectory is given by the state transition map**: with unique solutions, a
+trajectory on `[t₀, t₁]` is `t ↦ φ(t; t₀, x(t₀))` there. -/
+@[blueprint "lem:continuousSystem-eq-stateTransitionMap"
+  (title := "Trajectories are given by the state transition map")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ has unique solutions under $u$
+    (\cref{def:continuousSystem-hasUniqueSolutions}), every trajectory $x$ on $[t_0, t_1]$
+    satisfies $x(t) = \varphi(t; t_0, x(t_0))$ there
+    (\cref{def:continuousSystem-stateTransitionMap}). -/)
+  (proof := /-- $x$ itself witnesses that $t$ is in the existence interval, and the trajectory
+    chosen by $\varphi$ agrees with $x$ on $[t_0, t]$ by uniqueness. -/)]
+lemma eq_stateTransitionMap (hu : s.HasUniqueSolutions u) {t₀ t₁ : ℝ} {x : ℝ → E}
+    (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁)) :
+    ∀ t ∈ Set.Icc t₀ t₁, x t = s.stateTransitionMap u t t₀ (x t₀) := by
+  intro t ht
+  have hx_t : s.IsTrajectoryOn u x (Set.Icc t₀ t) :=
+    IsIntegralCurveOn.mono hx (Set.Icc_subset_Icc_right ht.2)
+  have hmem : t ∈ s.existenceInterval u t₀ (x t₀) := ⟨ht.1, x, rfl, hx_t⟩
+  rw [stateTransitionMap, dif_pos hmem]
+  obtain ⟨hy₀, hy⟩ := hmem.2.choose_spec
+  exact (hu t₀ t _ x hy hx_t hy₀ ⟨ht.1, le_rfl⟩).symm
+
+/-- **The state transition map is a trajectory**: with unique solutions,
+`t ↦ φ(t; t₀, x₀)` is a trajectory on the existence interval. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-stateTransitionMap"
+  (title := "The state transition map is a trajectory")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ has unique solutions under $u$
+    (\cref{def:continuousSystem-hasUniqueSolutions}), $t \mapsto \varphi(t; t_0, x_0)$
+    (\cref{def:continuousSystem-stateTransitionMap}) is a trajectory on the existence interval
+    (\cref{def:continuousSystem-existenceInterval}). -/)
+  (proof := /-- Near each time $t$ of the existence interval, $\varphi$ agrees with a trajectory on
+    a segment $[t_0, t']$ containing a neighbourhood of $t$ in the interval
+    (\cref{lem:continuousSystem-eq-stateTransitionMap}), so it has that trajectory's
+    derivative. -/)]
+lemma isTrajectoryOn_stateTransitionMap (hu : s.HasUniqueSolutions u) (t₀ : ℝ) (x₀ : E) :
+    s.IsTrajectoryOn u (fun t => s.stateTransitionMap u t t₀ x₀)
+      (s.existenceInterval u t₀ x₀) := by
+  intro t ht
+  -- A segment `[t₀, t']` of the existence interval containing a neighbourhood of `t` in it.
+  obtain ⟨t', ht', htt', h_nhds⟩ : ∃ t' ∈ s.existenceInterval u t₀ x₀, t ≤ t' ∧
+      Set.Icc t₀ t' ∈ nhdsWithin t (s.existenceInterval u t₀ x₀) := by
+    by_cases h : ∃ t' ∈ s.existenceInterval u t₀ x₀, t < t'
+    · obtain ⟨t', ht', htt'⟩ := h
+      exact ⟨t', ht', htt'.le, mem_nhdsWithin.2 ⟨Set.Iio t', isOpen_Iio, htt',
+        fun τ hτ => ⟨hτ.2.1, hτ.1.le⟩⟩⟩
+    · simp only [not_exists, not_and, not_lt] at h
+      exact ⟨t, ht, le_rfl, Filter.mem_of_superset self_mem_nhdsWithin
+        fun τ hτ => ⟨hτ.1, h τ hτ⟩⟩
+  -- There `φ` is a trajectory `x` from `x₀`.
+  obtain ⟨x, hx₀, hx⟩ := ht'.2
+  have h_eq := eq_stateTransitionMap hu hx
+  rw [hx₀] at h_eq
+  have htI : t ∈ Set.Icc t₀ t' := ⟨ht.1, htt'⟩
+  have h_ev : (fun τ => s.stateTransitionMap u τ t₀ x₀) =ᶠ[nhdsWithin t
+      (s.existenceInterval u t₀ x₀)] x := by
+    filter_upwards [h_nhds] with τ hτ using (h_eq τ hτ).symm
+  have hd := ((hx t htI).mono_of_mem_nhdsWithin h_nhds).congr_of_eventuallyEq h_ev
+    (h_eq t htI).symm
+  rwa [h_eq t htI] at hd
+
+/-- With forward completeness and unique solutions, `t ↦ φ(t; t₀, x₀)` is a trajectory on
+`[t₀, ∞)`. -/
+lemma isTrajectoryOn_stateTransitionMap_Ici (hfc : s.IsForwardComplete u)
+    (hu : s.HasUniqueSolutions u) (t₀ : ℝ) (x₀ : E) :
+    s.IsTrajectoryOn u (fun t => s.stateTransitionMap u t t₀ x₀) (Set.Ici t₀) := by
+  simpa [existenceInterval_eq_Ici hfc] using isTrajectoryOn_stateTransitionMap hu t₀ x₀
+
+/-- **The semigroup property**: `φ(t; τ, φ(τ; t₀, x₀)) = φ(t; t₀, x₀)` for `t₀ ≤ τ ≤ t` in the
+existence interval.  The state transition matrix satisfies the linear case,
+`Φ(t, τ) Φ(τ, t₀) = Φ(t, t₀)`. -/
+@[blueprint "lem:continuousSystem-stateTransitionMap-semigroup"
+  (title := "The semigroup property")
+  (latexEnv := "lemma")
+  (statement := /-- If $s$ has unique solutions under $u$
+    (\cref{def:continuousSystem-hasUniqueSolutions}), then for $t_0 \le \tau \le t$ with $t$ in
+    the existence interval from $(t_0, x_0)$,
+    \[
+      \varphi(t; \tau, \varphi(\tau; t_0, x_0)) = \varphi(t; t_0, x_0).
+    \] -/)
+  (proof := /-- $\varphi(\cdot; t_0, x_0)$ is a trajectory on $[\tau, t]$
+    (\cref{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}), so it is given by $\varphi$
+    from $(\tau, \varphi(\tau; t_0, x_0))$ (\cref{lem:continuousSystem-eq-stateTransitionMap}).
+    -/)]
+lemma stateTransitionMap_semigroup (hu : s.HasUniqueSolutions u) {t₀ τ t : ℝ} {x₀ : E}
+    (hτ : t₀ ≤ τ) (hτt : τ ≤ t) (ht : t ∈ s.existenceInterval u t₀ x₀) :
+    s.stateTransitionMap u t τ (s.stateTransitionMap u τ t₀ x₀) =
+      s.stateTransitionMap u t t₀ x₀ := by
+  have hy : s.IsTrajectoryOn u (fun r => s.stateTransitionMap u r t₀ x₀) (Set.Icc τ t) :=
+    IsIntegralCurveOn.mono (isTrajectoryOn_stateTransitionMap hu t₀ x₀)
+      fun r hr => mem_existenceInterval_of_le ht (hτ.trans hr.1) hr.2
+  exact (eq_stateTransitionMap hu hy t ⟨hτt, le_rfl⟩).symm
+
+/-- **An equilibrium stays put**: if `F(t, x_eq, u(t)) = 0` for all `t`, then
+`φ(t; t₀, x_eq) = x_eq` for `t ≥ t₀`. -/
+lemma stateTransitionMap_of_equilibrium (hu : s.HasUniqueSolutions u) {x_eq : E}
+    (h_eq : ∀ t, s.vectorField u t x_eq = 0) {t₀ t : ℝ} (ht : t₀ ≤ t) :
+    s.stateTransitionMap u t t₀ x_eq = x_eq := by
+  have h_const : s.IsTrajectoryOn u (fun _ => x_eq) (Set.Icc t₀ t) := fun r _ =>
+    (hasDerivWithinAt_const r (Set.Icc t₀ t) x_eq).congr_deriv (h_eq r).symm
+  exact (eq_stateTransitionMap hu h_const t ⟨ht, le_rfl⟩).symm
+
 /-! ### Invariance -/
 
 /-- `S` is **forward invariant** (positively invariant) under the input `u`: every trajectory

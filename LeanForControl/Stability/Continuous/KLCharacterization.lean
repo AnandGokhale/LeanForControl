@@ -926,8 +926,9 @@ uniformly asymptotically stable if and only if there is a global class `KL` boun
 trajectory, with no restriction on the initial state.
 
 The backward direction needs `β(·, 0)` unbounded, to invert it into the radius of global uniform
-stability; it replaces `β` by `ClassKLGlobal.unboundedMajorant`, so the statement asks only that
-`β` be class `KL`, as in Khalil.
+stability; it replaces `β` by a radially unbounded majorant
+(`ClassKLGlobal.exists_le_radiallyUnbounded`), so the statement asks only that `β` be class `KL`,
+as in Khalil.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL"
@@ -945,10 +946,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
     convergence times from every ball a family of decay envelopes
     (\cref{lem:continuousSystem-exists-decayBound-family}), and
     \cref{lem:classKLGlobal-of-KInfty-LSingular-family} combines them.  Backward: replace
-    $\beta$ by its radially unbounded majorant (\cref{def:classKLGlobal-unboundedMajorant});
-    then $\alpha = \beta(\cdot, 0)$ is class $\mathcal{K}_\infty$ and $\delta = \alpha^{-1}$
-    gives global uniform stability; from the $r$-ball every deviation is at most
-    $\beta(r, \cdot) \to 0$. -/)]
+    $\beta$ by a radially unbounded majorant
+    (\cref{lem:classKLGlobal-exists-le-radiallyUnbounded}); then $\alpha = \beta(\cdot, 0)$ is
+    class $\mathcal{K}_\infty$ and $\delta = \alpha^{-1}$ gives global uniform stability; from the
+    $r$-ball every deviation is at most $\beta(r, \cdot) \to 0$. -/)]
 theorem globallyUniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem E Unit Y)
     (x_eq : E) :
     s.GloballyUniformlyAsymptoticallyStable x_eq ↔ ∃ β : ClassKLGlobal,
@@ -979,16 +980,16 @@ theorem globallyUniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem 
         (hβ_at_pos _ (norm_nonneg _) _ h_sub_pos)
   · rintro ⟨β₀, hβ₀_bound⟩
     -- A radially unbounded majorant `β ≥ β₀`, so that `β(·, 0)` can be inverted.
-    set β := β₀.unboundedMajorant
+    obtain ⟨β, hβ_le, hβ_unbdd⟩ := β₀.exists_le_radiallyUnbounded
     have hβ_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
         s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
           ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) :=
       fun t₀ ht₀ t₁ x hx t ht => (hβ₀_bound t₀ ht₀ t₁ x hx t ht).trans
-        (β₀.le_unboundedMajorant (norm_nonneg _) _)
+        (hβ_le _ (norm_nonneg _) _)
     let α : ClassKInfty := ClassKInfty.of_strictMono (fun r => β.toFun r 0) (β.map_zero 0 le_rfl)
       ((β.continuous.comp (continuousOn_id.prodMk continuousOn_const)
         (fun r hr => mk_mem_prod hr (mem_Ici.mpr le_rfl))).congr (fun r _ => rfl))
-      (β.strict_mono_r 0 le_rfl) β₀.tendsto_unboundedMajorant_atTop
+      (β.strict_mono_r 0 le_rfl) hβ_unbdd
     refine ⟨⟨α.invFun, fun ε hε => (α.symm.pos_iff hε.le).mpr hε, α.symm.tendsto_atTop,
       fun ε hε t₀ ht₀ t₁ x hx h_init t ht => ?_⟩, fun r hr => ?_⟩
     · -- Global uniform stability, with `δ = α⁻¹` for `α = β(·, 0)`.

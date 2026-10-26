@@ -1331,9 +1331,12 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
         rw [add_sub_cancel_left] at h
         exact G.mono (sq_nonneg _) (pow_le_pow_left₀ (norm_nonneg _) h 2)
   have hW₁ : IsPositiveDefiniteOn W₁ x_eq (ball x_eq r₀) :=
-    G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_comp_norm_sub
-      (g := fun r => Real.exp (-(2 * L)) * r ^ 2) (by fun_prop) (by simp)
-      (fun r hr => by positivity) x_eq _)
+    G.isPositiveDefiniteOn.comp (IsPositiveDefiniteOn.comp
+      (g := fun r => Real.exp (-(2 * L)) * r ^ 2)
+      ⟨by fun_prop, by simp, fun r hr hne => by
+        have : 0 < r := lt_of_le_of_ne hr (Ne.symm hne)
+        positivity⟩
+      (isPositiveDefiniteOn_norm_sub x_eq _))
   have hW₂ : IsPositiveDefiniteOn W₂ x_eq (ball x_eq r₀) := by
     refine ⟨continuousOn_of_dominated (bound := fun σ => G (ĝ σ ^ 2))
       (fun x hx => (integrableOn_comp_classKL β hr₀ hr₀a hGg_int
@@ -1354,8 +1357,11 @@ private lemma exists_lyapunov_of_KLBoundedOn {f : ℝ → ℝⁿ → ℝⁿ}
       _root_.lieDerivative V f t x = -G (‖x - x_eq‖ ^ 2) := fun t ht x hx =>
     lieDerivative_integral_comp_flow hφ0 hφ hφ_uniq (hF_int t ht x hx) (hV_diff t ht x hx)
   exact ⟨V, hV_diff, hV_zero, W₁, W₂, fun x => G (‖x - x_eq‖ ^ 2), hW₁, hW₂,
-    G.isPositiveDefiniteOn_comp (isPositiveDefiniteOn_comp_norm_sub (g := fun r => r ^ 2)
-      (by fun_prop) (by simp) (fun r hr => by positivity) x_eq _),
+    G.isPositiveDefiniteOn.comp (IsPositiveDefiniteOn.comp (g := fun r => r ^ 2)
+      ⟨by fun_prop, by simp, fun r hr hne => by
+        have : 0 < r := lt_of_le_of_ne hr (Ne.symm hne)
+        positivity⟩
+      (isPositiveDefiniteOn_norm_sub x_eq _)),
     fun t ht x hx => ⟨h_lower t ht x hx, h_upper t ht x hx, (h_lie t ht x hx).le⟩, _, α₄,
     h_grad⟩
 

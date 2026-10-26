@@ -4,46 +4,62 @@ import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Normed.Module.Convex
+import Mathlib.Analysis.Calculus.ContDiff.Basic
+import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Topology.MetricSpace.Thickening
 import Architect
 
 /-!
 # The Fréchet derivative
 
-Facts about `HasFDerivAt` stated in the `ε`–`δ` form that nonlinear arguments consume, rather
-than the little-o form Mathlib states them in. The linearization error
-`f x - f x₀ - A (x - x₀)` is the object of interest: Lyapunov's indirect method works because
-it is `o (‖x - x₀‖)`, and what the proofs need is an explicit radius on which it is small.
+Bounds on the linearization error `f x - f x₀ - Df(x₀)(x - x₀)` beyond Mathlib's pointwise
+little-o (`HasFDerivAt.isLittleO`): uniform over a compact set for a `C¹` map, and quadratic for a
+Lipschitz derivative.  Also the partial derivative of a function of `(t, x)` in `x`.
 -/
 
 open Filter Asymptotics Set
 open scoped Topology
 
-variable {𝕜 E F : Type*}
-  [NontriviallyNormedField 𝕜]
-  [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+section Uniform
 
-/-- Differentiability, in `ε`–`δ` form: the linearization error is bounded by `ε ‖x - x₀‖` on
-an explicit ball around `x₀`. -/
-@[blueprint "thm:frechet-linearization-error-bound"
-  (title := "Quantitative linearization error bound")
-  (statement := /-- Let $A$ be the Fréchet derivative of $f$ at $x_0$. For every
-    $\varepsilon > 0$ there exists $\delta > 0$ such that
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+
+open Metric
+
+/-- **Uniform linearization error bound.**  On a compact set, a `C¹` map is uniformly close to its
+linearization: for every `η > 0` there is one `r > 0` with
+`‖g w - g z - Dg(z)(w - z)‖ ≤ η ‖w - z‖` whenever `z` is in the set and `‖w - z‖ < r`.  Unlike
+the pointwise bound of `HasFDerivAt.isLittleO`, the radius does not depend on the base point. -/
+@[blueprint "thm:contDiff-exists-uniform-linearization-error-bound"
+  (title := "Uniform linearization error bound")
+  (statement := /-- Let $g : E \to E$ be $C^1$ on a finite-dimensional space and $C \subseteq E$
+    compact.  For every $\eta > 0$ there is $r > 0$ with
     \[
-      \|x - x_0\| < \delta \;\Longrightarrow\;
-        \|f(x) - f(x_0) - A(x - x_0)\| \le \varepsilon\,\|x - x_0\|.
+      \|g(w) - g(z) - Dg(z)(w - z)\| \le \eta\,\|w - z\|
     \]
-    This is the $\varepsilon$--$\delta$ form of $f(x) - f(x_0) - A(x-x_0) = o(\|x-x_0\|)$. -/)]
-theorem HasFDerivAt.exists_linearization_error_bound
-    {f : E → F} {A : E →L[𝕜] F} {x₀ : E} (hf : HasFDerivAt f A x₀)
-    {ε : ℝ} (hε : 0 < ε) :
-    ∃ δ > 0, ∀ x, ‖x - x₀‖ < δ →
-      ‖f x - f x₀ - A (x - x₀)‖ ≤ ε * ‖x - x₀‖ := by
-  have hsmall := hf.isLittleO.bound hε
-  rw [Metric.eventually_nhds_iff] at hsmall
-  rcases hsmall with ⟨δ, hδ, hbound⟩
-  refine ⟨δ, hδ, fun x hx ↦ hbound ?_⟩
-  simpa [dist_eq_norm] using hx
+    for all $z \in C$ and $\|w - z\| < r$. -/)
+  (proof := /-- $Dg$ is uniformly continuous on the compact thickening of $C$ by $1$; take $r$
+    below its modulus for $\eta$ and below $1$.  On the ball of radius $r$ about $z$,
+    $\|Dg(u) - Dg(z)\| \le \eta$, and the mean value inequality bounds the remainder. -/)]
+theorem ContDiff.exists_uniform_linearization_error_bound {g : E → E} (hg : ContDiff ℝ 1 g)
+    {C : Set E} (hC : IsCompact C) {η : ℝ} (hη : 0 < η) :
+    ∃ r > 0, ∀ z ∈ C, ∀ w, ‖w - z‖ < r → ‖g w - g z - fderiv ℝ g z (w - z)‖ ≤ η * ‖w - z‖ := by
+  -- `Dg` is uniformly continuous on the compact thickening of `C` by `1`.
+  obtain ⟨r₀, hr₀, hunif⟩ := Metric.uniformContinuousOn_iff.mp
+    (hC.cthickening.uniformContinuousOn_of_continuous
+      (hg.continuous_fderiv one_ne_zero).continuousOn) η hη
+  have hr : 0 < min r₀ 1 := lt_min hr₀ one_pos
+  refine ⟨min r₀ 1, hr, fun z hz w hw => ?_⟩
+  -- On the ball of radius `min r₀ 1` about `z`, `‖Dg(u) - Dg(z)‖ ≤ η`: the mean value inequality.
+  refine (convex_ball z (min r₀ 1)).norm_image_sub_le_of_norm_fderiv_le'
+    (fun u _ => hg.differentiable one_ne_zero u) (fun u hu => ?_) (mem_ball_self hr)
+    (mem_ball_iff_norm.mpr hw)
+  rw [← dist_eq_norm]
+  exact (hunif u ((ball_subset_closedBall.trans ((closedBall_subset_closedBall
+    (min_le_right _ _)).trans (closedBall_subset_cthickening hz 1))) hu) z
+    (self_subset_cthickening C hz) ((Metric.mem_ball.mp hu).trans_le (min_le_left _ _))).le
+
+end Uniform
 
 section Quadratic
 

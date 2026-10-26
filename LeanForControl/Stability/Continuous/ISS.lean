@@ -310,8 +310,11 @@ theorem inputToStateStable_of_globallyExponentiallyStable [NeZero n]
   set ρ := (ClassKInfty.power 1 one_pos).smul k hk
   set W₃ : ℝⁿ → ℝ := fun x => c₃ / 2 * ‖x - x_c‖ ^ 2
   have hW₃ : IsPositiveDefiniteOn W₃ x_c univ :=
-    isPositiveDefiniteOn_comp_norm_sub (g := fun r => c₃ / 2 * r ^ 2) (by fun_prop) (by simp)
-      (fun r hr => by positivity) x_c univ
+    IsPositiveDefiniteOn.comp (g := fun r => c₃ / 2 * r ^ 2)
+      ⟨by fun_prop, by simp, fun r hr hne => by
+        have : 0 < r := lt_of_le_of_ne hr (Ne.symm hne)
+        positivity⟩
+      (isPositiveDefiniteOn_norm_sub x_c univ)
   refine inputToStateStable_of_isISSLyapunov α₁ α₂ ρ (W₃ := W₃)
     (fun t ht y => hV_diff t ht y (mem_univ y))
     (fun t ht y => ⟨(hV_bd t ht y (mem_univ y)).1, (hV_bd t ht y (mem_univ y)).2.1⟩) hW₃

@@ -111,53 +111,51 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
   have hh_ge : ∀ t, 0 ≤ t → h 0 ≤ h t := fun t ht =>
     hh_mono (mem_Ici.2 le_rfl) (mem_Ici.2 ht) ht
   -- Step 2. `G' = H`: Khalil's `e^{-θ(s)} / h(θ(s))`, plus `(s - g(0))⁺`, which vanishes where
-  -- the integrals look and makes `H` unbounded.
+  -- the integrals look and makes `H` unbounded.  Its key property is the bound `hH_le`.
   set H₀ : ℝ → ℝ := fun s => if 0 < s then Real.exp (-θ s) / h (θ s) else 0
   set H : ℝ → ℝ := fun s => H₀ s + max (s - g 0) 0
   have hH₀_pos : ∀ s, 0 < s → H₀ s = Real.exp (-θ s) / h (θ s) := fun s hs => if_pos hs
   have hH₀_zero : ∀ s, s ≤ 0 → H₀ s = 0 := fun s hs => if_neg (not_lt.2 hs)
   have hhθ : ∀ s, 0 < s → 0 < h (θ s) := fun s hs => hh_pos _ (hθ_pos s hs).le
-  have hH₀_nonneg : ∀ s, 0 ≤ H₀ s := fun s => by
-    rcases le_or_gt s 0 with hs | hs
-    · rw [hH₀_zero s hs]
-    · rw [hH₀_pos s hs]
-      exact div_nonneg (Real.exp_pos _).le (hhθ s hs).le
-  have hH₀_cont : Continuous H₀ := by
-    have h_on : ContinuousOn (fun s => Real.exp (-θ s) / h (θ s)) (Ioi 0) :=
-      (Real.continuous_exp.comp_continuousOn hθ_cont.neg).div
-        (hh_cont.comp hθ_cont fun s hs => mem_Ici.2 (hθ_pos s hs).le) fun s hs => (hhθ s hs).ne'
-    refine continuous_iff_continuousAt.2 fun s₀ => ?_
-    rcases lt_trichotomy s₀ 0 with hs₀ | rfl | hs₀
-    · refine (continuousAt_const (y := (0 : ℝ))).congr ?_
-      filter_upwards [Iio_mem_nhds hs₀] with s hs
-      exact (hH₀_zero s hs.le).symm
-    · -- At `0`: zero on the left; squeezed by `e^{-θ(s)} / h(0) → 0` on the right.
-      rw [ContinuousAt, hH₀_zero 0 le_rfl]
-      refine (tendsto_sup.2 ⟨(tendsto_const_nhds (x := (0 : ℝ))).congr' ?_, ?_⟩).mono_left
-        (nhdsLE_sup_nhdsGT (0 : ℝ)).ge
-      · filter_upwards [self_mem_nhdsWithin] with s (hs : s ≤ 0)
-        exact (hH₀_zero s hs).symm
-      have h_lim : Tendsto (fun s => Real.exp (-θ s) / h 0) (𝓝[>] 0) (𝓝 0) := by
-        simpa using (Real.tendsto_exp_neg_atTop_nhds_zero.comp hθ_top).div_const (h 0)
-      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h_lim
-        (Eventually.of_forall hH₀_nonneg) ?_
-      filter_upwards [self_mem_nhdsWithin] with s (hs : 0 < s)
-      rw [hH₀_pos s hs]
-      exact div_le_div_of_nonneg_left (Real.exp_pos _).le hh0 (hh_ge _ (hθ_pos s hs).le)
-    · refine (h_on.continuousAt (Ioi_mem_nhds hs₀)).congr ?_
-      filter_upwards [Ioi_mem_nhds hs₀] with s hs
-      exact (hH₀_pos s hs).symm
-  have hH_cont : Continuous H :=
-    hH₀_cont.add ((continuous_id.sub continuous_const).max continuous_const)
+  -- The key bound: below `g(t)`, `H ≤ e^{-t} / h(t)`.
+  have hH_le : ∀ t, 0 < t → ∀ s, 0 ≤ s → s ≤ g t → H s ≤ Real.exp (-t) / h t := by
+    intro t ht s hs hst
+    have h_max : max (s - g 0) 0 = 0 := max_eq_right (by linarith [hg_le t ht.le])
+    rcases hs.eq_or_lt with rfl | hs
+    · simpa only [H, hH₀_zero 0 le_rfl, h_max, add_zero] using
+        div_nonneg (Real.exp_pos _).le (hh_pos t ht.le).le
+    calc H s
+        = Real.exp (-θ s) / h (θ s) := by simp only [H, hH₀_pos s hs, h_max, add_zero]
+      _ ≤ Real.exp (-t) / h t :=
+          div_le_div₀ (Real.exp_pos _).le (Real.exp_le_exp.2 (by linarith [hθ_ge t ht s hs hst]))
+            (hh_pos t ht.le) (hh_mono (mem_Ici.2 ht.le) (mem_Ici.2 (hθ_pos s hs).le)
+              (hθ_ge t ht s hs hst))
+  -- Step 3. `H` is class `K∞` (continuous, zero at zero, strictly increasing, unbounded), and so
+  -- is its integral `G(r) = ∫_0^r H`, with `G' = H`.
+  have hH_cont : Continuous H := by
+    refine Continuous.add ?_ ((continuous_id.sub continuous_const).max continuous_const)
+    -- `H₀` is continuous: its two pieces meet continuously at `0`, the only boundary point.
+    rw [← continuousOn_univ]
+    refine ContinuousOn.if' (fun a ha => ?_) (fun a ha => ?_) ?_ continuousOn_const
+    · -- At `0⁺` the formula is squeezed to `0` by `e^{-θ(s)} / h(0) → 0`.
+      obtain rfl : a = 0 := by simpa [show {x : ℝ | 0 < x} = Ioi 0 from rfl] using ha.2
+      suffices h : Tendsto (fun s => Real.exp (-θ s) / h (θ s)) (𝓝[>] 0) (𝓝 0) by simpa using h
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+        (by simpa using (Real.tendsto_exp_neg_atTop_nhds_zero.comp hθ_top).div_const (h 0)) ?_ ?_
+      · filter_upwards [self_mem_nhdsWithin] with s (hs : 0 < s)
+        exact div_nonneg (Real.exp_pos _).le (hhθ s hs).le
+      · filter_upwards [self_mem_nhdsWithin] with s (hs : 0 < s)
+        exact div_le_div_of_nonneg_left (Real.exp_pos _).le hh0 (hh_ge _ (hθ_pos s hs).le)
+    · obtain rfl : a = 0 := by simpa [show {x : ℝ | 0 < x} = Ioi 0 from rfl] using ha.2
+      simpa using tendsto_const_nhds
+    · -- On `(0, ∞)`, by its formula.
+      exact ((Real.continuous_exp.comp_continuousOn hθ_cont.neg).div
+        (hh_cont.comp hθ_cont fun s hs => mem_Ici.2 (hθ_pos s hs).le)
+          fun s hs => (hhθ s hs).ne').mono fun s hs => hs.2
   have hH_zero : H 0 = 0 := by
     change H₀ 0 + max (0 - g 0) 0 = 0
     rw [hH₀_zero 0 le_rfl, max_eq_right (by linarith)]
     simp
-  have hH_pos : ∀ s, 0 < s → 0 < H s := fun s hs => by
-    have h₀ : 0 < H₀ s := by
-      rw [hH₀_pos s hs]
-      exact div_pos (Real.exp_pos _) (hhθ s hs)
-    exact add_pos_of_pos_of_nonneg h₀ (le_max_right _ _)
   have hH_mono : StrictMonoOn H (Ici 0) := by
     intro a (ha : 0 ≤ a) b (hb : 0 ≤ b) hab
     have hb_pos : 0 < b := ha.trans_lt hab
@@ -166,67 +164,27 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
       · rw [hH₀_zero 0 le_rfl, hH₀_pos b hb_pos]
         exact div_pos (Real.exp_pos _) (hhθ b hb_pos)
       rw [hH₀_pos a ha_pos, hH₀_pos b hb_pos]
-      have hθ_lt : θ b < θ a := hθ_anti ha_pos hb_pos hab
       calc Real.exp (-θ a) / h (θ a)
           < Real.exp (-θ b) / h (θ a) :=
-            div_lt_div_of_pos_right (Real.exp_lt_exp.2 (by linarith)) (hhθ a ha_pos)
+            div_lt_div_of_pos_right (Real.exp_lt_exp.2 (neg_lt_neg (hθ_anti ha_pos hb_pos hab)))
+              (hhθ a ha_pos)
         _ ≤ Real.exp (-θ b) / h (θ b) :=
             div_le_div_of_nonneg_left (Real.exp_pos _).le (hhθ b hb_pos)
-              (hh_mono (mem_Ici.2 (hθ_pos b hb_pos).le) (mem_Ici.2 (hθ_pos a ha_pos).le) hθ_lt.le)
+              (hh_mono (mem_Ici.2 (hθ_pos b hb_pos).le) (mem_Ici.2 (hθ_pos a ha_pos).le)
+                (hθ_anti ha_pos hb_pos hab).le)
     exact add_lt_add_of_lt_of_le h₀ (max_le_max (by linarith) le_rfl)
-  have hH_top : Tendsto H atTop atTop := by
+  set H' : ClassKInfty := ClassKInfty.of_strictMono H hH_zero hH_cont.continuousOn hH_mono (by
+    -- `H(s) ≥ s - g(0) → ∞`.
     refine tendsto_atTop_mono (fun s => ?_) (tendsto_atTop_add_const_right _ (-g 0) tendsto_id)
     calc id s + -g 0
         ≤ max (s - g 0) 0 := by rw [id, ← sub_eq_add_neg]; exact le_max_left _ _
-      _ ≤ H s := le_add_of_nonneg_left (hH₀_nonneg s)
-  -- The key bound: below `g(t)`, `H ≤ e^{-t} / h(t)`.
-  have hH_le : ∀ t, 0 < t → ∀ s, 0 ≤ s → s ≤ g t → H s ≤ Real.exp (-t) / h t := by
-    intro t ht s hs hst
-    have h_max : max (s - g 0) 0 = 0 := max_eq_right (by linarith [hg_le t ht.le])
-    have h_rhs : 0 ≤ Real.exp (-t) / h t := div_nonneg (Real.exp_pos _).le (hh_pos t ht.le).le
-    rcases hs.eq_or_lt with rfl | hs
-    · simpa only [H, hH₀_zero 0 le_rfl, h_max, add_zero] using h_rhs
-    calc H s
-        = Real.exp (-θ s) / h (θ s) := by simp only [H, hH₀_pos s hs, h_max, add_zero]
-      _ ≤ Real.exp (-t) / h t :=
-          div_le_div₀ (Real.exp_pos _).le (Real.exp_le_exp.2 (by linarith [hθ_ge t ht s hs hst]))
-            (hh_pos t ht.le) (hh_mono (mem_Ici.2 ht.le) (mem_Ici.2 (hθ_pos s hs).le)
-              (hθ_ge t ht s hs hst))
-  -- Step 3. `G(r) = ∫_0^r H`, class `K∞` because `G' = H > 0` and `H` is increasing.
-  set G : ℝ → ℝ := fun r => ∫ s in (0 : ℝ)..r, H s
-  have hG_deriv : ∀ r, HasDerivAt G (H r) r := fun r =>
-    (hH_cont.integral_hasStrictDerivAt 0 r).hasDerivAt
-  have hG_cont : Continuous G := continuous_iff_continuousAt.2 fun r => (hG_deriv r).continuousAt
-  have hG_zero : G 0 = 0 := intervalIntegral.integral_same
-  have hG_mono : StrictMonoOn G (Ici 0) :=
-    strictMonoOn_of_deriv_pos (convex_Ici 0) hG_cont.continuousOn fun r hr => by
-      rw [interior_Ici] at hr
-      rw [(hG_deriv r).deriv]
-      exact hH_pos r hr
-  have hG_top : Tendsto G atTop atTop := by
-    -- `G(r) ≥ G(1) + (r - 1) H(1)` for `r ≥ 1`, since `H` is increasing.
-    have h_lin : ∀ r, 1 ≤ r → G 1 + (r - 1) * H 1 ≤ G r := fun r hr => by
-      have h_split : G 1 + ∫ s in (1 : ℝ)..r, H s = G r :=
-        intervalIntegral.integral_add_adjacent_intervals (hH_cont.intervalIntegrable 0 1)
-          (hH_cont.intervalIntegrable 1 r)
-      have h_int : (r - 1) * H 1 ≤ ∫ s in (1 : ℝ)..r, H s :=
-        calc (r - 1) * H 1
-            = ∫ _s in (1 : ℝ)..r, H 1 := by simp
-          _ ≤ ∫ s in (1 : ℝ)..r, H s :=
-              intervalIntegral.integral_mono_on hr intervalIntegrable_const
-                (hH_cont.intervalIntegrable 1 r) fun s hs =>
-                  hH_mono.monotoneOn (mem_Ici.2 zero_le_one) (mem_Ici.2 (zero_le_one.trans hs.1))
-                    hs.1
-      linarith
-    have h_tendsto : Tendsto (fun r => G 1 + (r - 1) * H 1) atTop atTop :=
-      tendsto_atTop_add_const_left _ _
-        ((tendsto_atTop_add_const_right _ (-1) tendsto_id).atTop_mul_const (hH_pos 1 one_pos))
-    refine tendsto_atTop_mono' _ ?_ h_tendsto
-    filter_upwards [eventually_ge_atTop 1] with r hr
-    exact h_lin r hr
-  refine ⟨ClassKInfty.of_strictMono G hG_zero hG_cont.continuousOn hG_mono hG_top,
-    ClassKInfty.of_strictMono H hH_zero hH_cont.continuousOn hH_mono hH_top,
-    fun r _ => hG_deriv r, g 0 / h 0, div_pos hg0 hh0, 1, one_pos,
+      _ ≤ H s := le_add_of_nonneg_left (by
+          rcases le_or_gt s 0 with hs | hs
+          · rw [hH₀_zero s hs]
+          · rw [hH₀_pos s hs]
+            exact div_nonneg (Real.exp_pos _).le (hhθ s hs).le))
+  set G : ClassKInfty := H'.integral
+  refine ⟨G, H', fun r hr => H'.hasDerivAt_integral hr, g 0 / h 0, div_pos hg0 hh0, 1, one_pos,
     fun u hu_cont hu => ?_⟩
   -- Step 4. Along `u ≤ g`, both integrands are dominated by multiples of `e^{-t}`.
   have hu' : ContinuousOn u (Ioi 0) := hu_cont.mono Ioi_subset_Ici_self
@@ -236,7 +194,7 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
   have h_Gu : ∀ t, 0 < t → G (u t) ≤ g 0 / h 0 * Real.exp (-t) := fun t ht => by
     obtain ⟨hu0, hug⟩ := hu t ht.le
     calc G (u t)
-        = ∫ s in (0 : ℝ)..u t, H s := rfl
+        = ∫ s in (0 : ℝ)..u t, H s := H'.integral_apply hu0
       _ ≤ ∫ _s in (0 : ℝ)..u t, Real.exp (-t) / h t :=
           intervalIntegral.integral_mono_on hu0 (hH_cont.intervalIntegrable _ _)
             intervalIntegrable_const fun s hs => hH_le t ht s hs.1 (hs.2.trans hug)
@@ -246,23 +204,20 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
             (div_le_div_of_nonneg_left (Real.exp_pos _).le hh0 (hh_ge t ht.le))
             (div_nonneg (Real.exp_pos _).le (hh_pos t ht.le).le) hg0.le
       _ = g 0 / h 0 * Real.exp (-t) := by ring
-  have h_Gu_nonneg : ∀ t, 0 < t → 0 ≤ G (u t) := fun t ht =>
-    hG_zero ▸ hG_mono.monotoneOn (mem_Ici.2 le_rfl) (mem_Ici.2 (hu t ht.le).1) (hu t ht.le).1
-  have h_Hu_nonneg : ∀ t, 0 < t → 0 ≤ H (u t) * h t := fun t ht =>
-    mul_nonneg (hH_zero ▸ hH_mono.monotoneOn (mem_Ici.2 le_rfl) (mem_Ici.2 (hu t ht.le).1)
-      (hu t ht.le).1) (hh_pos t ht.le).le
   have h_int₁ : IntegrableOn (fun t => G (u t)) (Ioi 0) :=
     Integrable.mono' ((integrableOn_exp_neg_Ioi 0).const_mul (g 0 / h 0))
-      ((hG_cont.comp_continuousOn hu').aestronglyMeasurable measurableSet_Ioi)
+      ((G.continuous.comp hu' fun t ht => (hu t (le_of_lt ht)).1).aestronglyMeasurable
+        measurableSet_Ioi)
       (ae_restrict_of_forall_mem measurableSet_Ioi fun t ht => by
-        rw [Real.norm_of_nonneg (h_Gu_nonneg t ht)]
+        rw [Real.norm_of_nonneg (G.maps_to (hu t (le_of_lt ht)).1)]
         exact h_Gu t ht)
   have h_int₂ : IntegrableOn (fun t => H (u t) * h t) (Ioi 0) :=
     Integrable.mono' (integrableOn_exp_neg_Ioi 0)
       (((hH_cont.comp_continuousOn hu').mul (hh_cont.mono Ioi_subset_Ici_self)).aestronglyMeasurable
         measurableSet_Ioi)
       (ae_restrict_of_forall_mem measurableSet_Ioi fun t ht => by
-        rw [Real.norm_of_nonneg (h_Hu_nonneg t ht)]
+        rw [Real.norm_of_nonneg (show 0 ≤ H (u t) * h t from mul_nonneg
+          (H'.maps_to (hu t (le_of_lt ht)).1) (hh_pos t (le_of_lt ht)).le)]
         exact h_Hu t ht)
   refine ⟨h_int₁, ?_, h_int₂, ?_⟩
   · calc ∫ t in Ioi 0, G (u t)

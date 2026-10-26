@@ -38,18 +38,28 @@ lemma mono (hW : IsPositiveDefiniteOn W x₀ S) (hTS : T ⊆ S) : IsPositiveDefi
 
 end IsPositiveDefiniteOn
 
-/-- **A radial function is positive definite when its profile is**: if `g` is continuous on
-`[0, ∞)`, vanishes at `0` and is positive on `(0, ∞)`, then `x ↦ g(‖x - x₀‖)` is positive
-definite about `x₀` on every set. -/
-@[blueprint "lem:isPositiveDefiniteOn-comp-norm-sub"
-  (title := "Radial positive definite functions")
+/-- **A composition of positive definite functions is positive definite**: if `g` is positive
+definite about `0` on `[0, ∞)` and `W` is positive definite about `x₀` on `S`, so is `g ∘ W`.  `W`
+is nonnegative, so it lands where `g` is positive definite, and it vanishes only at `x₀`. -/
+@[blueprint "lem:isPositiveDefiniteOn-comp"
+  (title := "Compositions of positive definite functions")
   (latexEnv := "lemma")
-  (statement := /-- Let $g$ be continuous on $[0, \infty)$ with $g(0) = 0$ and $g(r) > 0$ for
-    $r > 0$.  Then $x \mapsto g(\|x - x_0\|)$ is positive definite about $x_0$ on every set
+  (statement := /-- If $g$ is positive definite about $0$ on $[0, \infty)$ and $W$ is positive
+    definite about $x_0$ on $S$ (\cref{def:isPositiveDefiniteOn}), then $g \circ W$ is positive
+    definite about $x_0$ on $S$. -/)]
+lemma IsPositiveDefiniteOn.comp {E : Type*} [TopologicalSpace E] {g : ℝ → ℝ} {W : E → ℝ}
+    {x₀ : E} {S : Set E} (hg : IsPositiveDefiniteOn g 0 (Set.Ici 0))
+    (hW : IsPositiveDefiniteOn W x₀ S) : IsPositiveDefiniteOn (g ∘ W) x₀ S :=
+  ⟨hg.1.comp hW.1 fun _ hx => hW.nonneg hx, by simp [hW.2.1, hg.2.1],
+    fun x hx hne => hg.2.2 _ (hW.nonneg hx) (hW.2.2 x hx hne).ne'⟩
+
+/-- The distance to `x₀`, `x ↦ ‖x - x₀‖`, is positive definite about `x₀`. -/
+@[blueprint "lem:isPositiveDefiniteOn-norm-sub"
+  (title := "The distance is positive definite")
+  (latexEnv := "lemma")
+  (statement := /-- $x \mapsto \|x - x_0\|$ is positive definite about $x_0$ on every set
     (\cref{def:isPositiveDefiniteOn}). -/)]
-lemma isPositiveDefiniteOn_comp_norm_sub {E : Type*} [NormedAddCommGroup E] {g : ℝ → ℝ}
-    (hg : ContinuousOn g (Set.Ici 0)) (hg0 : g 0 = 0) (hg_pos : ∀ r, 0 < r → 0 < g r)
-    (x₀ : E) (S : Set E) : IsPositiveDefiniteOn (fun x => g ‖x - x₀‖) x₀ S :=
-  ⟨(hg.comp_continuous (continuous_id.sub continuous_const).norm
-      fun _ => Set.mem_Ici.2 (norm_nonneg _)).continuousOn,
-    by simp [hg0], fun _ _ hx => hg_pos _ (norm_pos_iff.2 (sub_ne_zero.2 hx))⟩
+lemma isPositiveDefiniteOn_norm_sub {E : Type*} [NormedAddCommGroup E] (x₀ : E) (S : Set E) :
+    IsPositiveDefiniteOn (fun x => ‖x - x₀‖) x₀ S :=
+  ⟨(continuous_id.sub continuous_const).norm.continuousOn, by simp,
+    fun _ _ hx => norm_pos_iff.2 (sub_ne_zero.2 hx)⟩

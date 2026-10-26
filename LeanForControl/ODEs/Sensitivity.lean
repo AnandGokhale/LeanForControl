@@ -19,8 +19,6 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 3.3.
 
 ## Main results
 
-* `ContDiff.exists_norm_sub_sub_fderiv_le` — a `C¹` map has a first-order Taylor remainder that is
-  uniformly small on a compact set.
 * `IsIntegralCurveOn.exists_dist_le_of_contDiff` — near a solution, solutions separate at most
   exponentially: a local Lipschitz bound in the initial state.
 * `IsIntegralCurveOn.exists_variational` — the variational equation has a solution.
@@ -43,54 +41,6 @@ open Set Filter Topology Metric
 open scoped NNReal
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
-
-/-- The Gronwall bound with zero initial value is linear in the forcing term. -/
-private lemma gronwallBound_zero_eq_mul (K ε x : ℝ) :
-    gronwallBound 0 K ε x = ε * gronwallBound 0 K 1 x := by
-  unfold gronwallBound
-  split_ifs <;> ring
-
-/-- **Uniform first-order Taylor estimate.**  On a compact set, a `C¹` map is uniformly close to
-its linearization: for every `η > 0` there is `r > 0` with
-`‖g w - g z - Dg(z)(w - z)‖ ≤ η ‖w - z‖` whenever `z` is in the set and `‖w - z‖ < r`. -/
-@[blueprint "lem:contDiff-exists-norm-sub-sub-fderiv-le"
-  (title := "Uniform first-order Taylor estimate")
-  (latexEnv := "lemma")
-  (statement := /-- Let $g : E \to E$ be $C^1$ on a finite-dimensional space and $C \subseteq E$
-    compact.  For every $\eta > 0$ there is $r > 0$ with
-    \[
-      \|g(w) - g(z) - Dg(z)(w - z)\| \le \eta\,\|w - z\|
-    \]
-    for all $z \in C$ and $\|w - z\| < r$. -/)
-  (proof := /-- $Dg$ is uniformly continuous on the compact thickening of $C$ by $1$; take $r$
-    below its modulus for $\eta$ and below $1$.  On the ball of radius $r$ about $z$, the map
-    $u \mapsto g(u) - Dg(z)u$ has derivative $Dg(u) - Dg(z)$, of norm at most $\eta$; apply the
-    mean value inequality. -/)]
-theorem ContDiff.exists_norm_sub_sub_fderiv_le {g : E → E} (hg : ContDiff ℝ 1 g) {C : Set E}
-    (hC : IsCompact C) {η : ℝ} (hη : 0 < η) :
-    ∃ r > 0, ∀ z ∈ C, ∀ w, ‖w - z‖ < r → ‖g w - g z - fderiv ℝ g z (w - z)‖ ≤ η * ‖w - z‖ := by
-  have hC' : IsCompact (cthickening 1 C) := hC.cthickening
-  obtain ⟨r₀, hr₀, hunif⟩ := Metric.uniformContinuousOn_iff.mp
-    (hC'.uniformContinuousOn_of_continuous (hg.continuous_fderiv one_ne_zero).continuousOn) η hη
-  have hr : 0 < min r₀ 1 := lt_min hr₀ one_pos
-  refine ⟨min r₀ 1, hr, fun z hz w hw => ?_⟩
-  have hball : ball z (min r₀ 1) ⊆ cthickening 1 C :=
-    ball_subset_closedBall.trans ((closedBall_subset_closedBall (min_le_right _ _)).trans
-      (closedBall_subset_cthickening hz 1))
-  -- `u ↦ g u - Dg(z) u` has derivative `Dg(u) - Dg(z)`, of norm at most `η` on the ball.
-  have hdiff : ∀ u, HasFDerivAt (fun u => g u - fderiv ℝ g z u)
-      (fderiv ℝ g u - fderiv ℝ g z) u := fun u =>
-    (hg.differentiable one_ne_zero u).hasFDerivAt.sub (fderiv ℝ g z).hasFDerivAt
-  have h_mvt := (convex_ball z (min r₀ 1)).norm_image_sub_le_of_norm_fderiv_le
-    (f := fun u => g u - fderiv ℝ g z u) (fun u _ => (hdiff u).differentiableAt)
-    (fun u hu => by
-      rw [(hdiff u).fderiv, ← dist_eq_norm]
-      exact (hunif u (hball hu) z (self_subset_cthickening C hz)
-        ((mem_ball.mp hu).trans_le (min_le_left _ _))).le)
-    (mem_ball_self hr) (mem_ball_iff_norm.mpr hw)
-  calc ‖g w - g z - fderiv ℝ g z (w - z)‖
-      = ‖(g w - fderiv ℝ g z w) - (g z - fderiv ℝ g z z)‖ := by rw [map_sub]; congr 1; abel
-    _ ≤ η * ‖w - z‖ := h_mvt
 
 /-- **Local Lipschitz bound in the initial state.**  Near a solution `γ` of `ż = g(z)` on `[0, T]`,
 with `g` of class `C¹`, two solutions separate at most exponentially:
@@ -115,9 +65,8 @@ theorem IsIntegralCurveOn.exists_dist_le_of_contDiff {g : E → E} (hg : ContDif
         dist (β' 0) (γ 0) < ρ →
           ∀ s ∈ Icc 0 T, dist (β s) (β' s) ≤ dist (β 0) (β' 0) * Real.exp (K * s) := by
   -- Step 1. `g` is `K`-Lipschitz on the unit balls around the base solution.
-  have hC : IsCompact (cthickening 1 (γ '' Icc 0 T)) :=
-    (isCompact_Icc.image_of_continuousOn hγ.continuousOn).cthickening
-  obtain ⟨M, hM⟩ := hC.exists_bound_of_continuousOn (hg.continuous_fderiv one_ne_zero).continuousOn
+  obtain ⟨M, hM⟩ := (isCompact_Icc.image_of_continuousOn hγ.continuousOn).cthickening
+    (r := 1) |>.exists_bound_of_continuousOn (hg.continuous_fderiv one_ne_zero).continuousOn
   set K : ℝ≥0 := M.toNNReal
   have hlip : ∀ t ∈ Icc 0 T, LipschitzOnWith K g (closedBall (γ t) 1) := fun t ht =>
     (convex_closedBall _ _).lipschitzOnWith_of_nnnorm_fderiv_le
@@ -143,7 +92,6 @@ theorem IsIntegralCurveOn.exists_dist_le_of_contDiff {g : E → E} (hg : ContDif
   have h_trap : ∀ β : ℝ → E, IsIntegralCurveOn β (fun _ => g) (Icc 0 T) → dist (β 0) (γ 0) < ρ →
       ∀ s ∈ Icc 0 T, dist (β s) (γ s) < 1 := by
     intro β hβ hβ0 s hs
-    have hT : 0 ≤ T := hs.1.trans hs.2
     have hρ_half : ρ * Real.exp (K * T) = 1 / 2 := by
       have h_ne : Real.exp (K * T) ≠ 0 := (Real.exp_pos _).ne'
       simp only [ρ]
@@ -155,7 +103,7 @@ theorem IsIntegralCurveOn.exists_dist_le_of_contDiff {g : E → E} (hg : ContDif
         rw [sub_zero, ← dist_eq_norm]
         calc dist (β 0) (γ 0) < ρ := hβ0
           _ ≤ ρ * Real.exp (K * T) := le_mul_of_one_le_right hρ.le
-              (Real.one_le_exp (mul_nonneg K.coe_nonneg hT))
+              (Real.one_le_exp (mul_nonneg K.coe_nonneg (hs.1.trans hs.2)))
           _ < 1 := by rw [hρ_half]; norm_num)
       hs (by rw [sub_zero, ← dist_eq_norm]; exact not_lt.mp h_out)
     have h_dist := h_gronwall τ hτ β γ hβ hγ
@@ -204,12 +152,6 @@ theorem IsIntegralCurveOn.exists_variational {g : E → E} (hg : ContDiff ℝ 1 
       fun s => (projIcc 0 T hT s).2)
   obtain ⟨M, hM⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := T)).exists_bound_of_continuousOn
     hA.continuousOn
-  have hA_proj : ∀ s, A (projIcc 0 T hT s) = A s := fun s => by
-    simp only [A, projIcc_val]
-  have hA_bound : ∀ s, ‖A s‖ ≤ M := fun s =>
-    hA_proj s ▸ hM (projIcc 0 T hT s) (projIcc 0 T hT s).2
-  have h_cont : Continuous (Function.uncurry fun s (X : E →L[ℝ] E) => (A s).comp X) :=
-    (hA.comp continuous_fst).clm_comp continuous_snd
   have h_lip : ∀ s, LipschitzWith M.toNNReal (fun X : E →L[ℝ] E => (A s).comp X) := fun s =>
     LipschitzWith.of_dist_le_mul fun X Y => by
       rw [dist_eq_norm, dist_eq_norm, ← ContinuousLinearMap.comp_sub]
@@ -217,12 +159,16 @@ theorem IsIntegralCurveOn.exists_variational {g : E → E} (hg : ContDiff ℝ 1 
           ≤ ‖A s‖ * ‖X - Y‖ := ContinuousLinearMap.opNorm_comp_le _ _
         _ ≤ M.toNNReal * ‖X - Y‖ := by
             gcongr
-            exact (hA_bound s).trans (Real.le_coe_toNNReal M)
-  obtain ⟨Φ, hΦ0, hΦ⟩ := exists_isIntegralCurveOn_Icc h_cont h_lip 0 T (ContinuousLinearMap.id ℝ E)
+            -- `‖A s‖ = ‖A(π s)‖ ≤ M`, `π` the projection onto `[0, T]`
+            exact ((show A (projIcc 0 T hT s) = A s by simp only [A, projIcc_val]) ▸
+              hM (projIcc 0 T hT s) (projIcc 0 T hT s).2).trans (Real.le_coe_toNNReal M)
+  obtain ⟨Φ, hΦ0, hΦ⟩ := exists_isIntegralCurveOn_Icc
+    (show Continuous (Function.uncurry fun s (X : E →L[ℝ] E) => (A s).comp X) from
+      (hA.comp continuous_fst).clm_comp continuous_snd) h_lip 0 T (ContinuousLinearMap.id ℝ E)
   refine ⟨Φ, hΦ0, fun s hs => ?_⟩
-  have hA_s : A s = fderiv ℝ g (γ s) := by simp only [A, projIcc_of_mem hT hs]
-  have h_deriv : HasDerivWithinAt Φ ((A s).comp (Φ s)) (Icc 0 T) s := hΦ s hs
-  rwa [hA_s] at h_deriv
+  change HasDerivWithinAt Φ ((fderiv ℝ g (γ s)).comp (Φ s)) (Icc 0 T) s
+  rw [show fderiv ℝ g (γ s) = A s by simp only [A, projIcc_of_mem hT hs]]
+  exact hΦ s hs
 
 /-- **The linearization predicts the displacement.**  With `Φ` the variational solution along `γ`,
 every solution `β` starting close enough to `γ(0)` satisfies
@@ -245,8 +191,9 @@ every solution `β` starting close enough to `γ(0)` satisfies
       \dot e = Dg(\gamma)\,e + \bigl(g(\beta) - g(\gamma) - Dg(\gamma)(\beta - \gamma)\bigr).
     \]
     By \cref{lem:isIntegralCurveOn-exists-dist-le-of-contDiff}, $\|\beta - \gamma\| \le \|h\|
-    e^{KT}$, which is below the radius of \cref{lem:contDiff-exists-norm-sub-sub-fderiv-le} for a
-    small $\eta$; so the bracket is at most $\eta e^{KT}\|h\|$, and $\|Dg(\gamma)\| \le K'$.
+    e^{KT}$, which is below the radius of
+    \cref{thm:contDiff-exists-uniform-linearization-error-bound} for a small $\eta$; so the
+    bracket is at most $\eta e^{KT}\|h\|$, and $\|Dg(\gamma)\| \le K'$.
     Gronwall's inequality gives $\|e(s)\| \le \eta e^{KT}\|h\|\, G$ with $G$ depending only on
     $K'$ and $T$; choose $\eta$ with $\eta e^{KT} G \le \varepsilon$. -/)]
 theorem IsIntegralCurveOn.exists_norm_sub_sub_variational_le {g : E → E} (hg : ContDiff ℝ 1 g)
@@ -268,8 +215,8 @@ theorem IsIntegralCurveOn.exists_norm_sub_sub_variational_le {g : E → E} (hg :
   have hE₀ : 0 < E₀ := Real.exp_pos _
   -- Step 2. The Taylor tolerance `η`, with `η E₀ G < ε`, and its radius `r`.
   set η := ε / (E₀ * G + 1)
-  have hη : 0 < η := div_pos hε (by positivity)
-  obtain ⟨r, hr, h_taylor⟩ := hg.exists_norm_sub_sub_fderiv_le hγC hη
+  obtain ⟨r, hr, h_taylor⟩ :=
+    hg.exists_uniform_linearization_error_bound hγC (show 0 < η from div_pos hε (by positivity))
   refine ⟨min ρ₀ (r / E₀), lt_min hρ₀ (div_pos hr hE₀), fun β hβ hβ0 s hs => ?_⟩
   have hT : 0 ≤ T := hs.1.trans hs.2
   set h := β 0 - γ 0
@@ -281,8 +228,6 @@ theorem IsIntegralCurveOn.exists_norm_sub_sub_variational_le {g : E → E} (hg :
     calc ‖β u - γ u‖ ≤ ‖h‖ * Real.exp (K * u) := h_d
       _ ≤ ‖h‖ * E₀ := mul_le_mul_of_nonneg_left
           (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hu.2 K.coe_nonneg)) (norm_nonneg _)
-  have h_near_r : ∀ u ∈ Icc 0 T, ‖β u - γ u‖ < r := fun u hu =>
-    (h_near u hu).trans_lt ((lt_div_iff₀ hE₀).mp (hβ0.trans_le (min_le_right _ _)))
   -- Step 4. The error `e = β - γ - Φ h` and its right derivative.
   set e : ℝ → E := fun u => β u - γ u - Φ u h
   have he' : ∀ u ∈ Ico 0 T, HasDerivWithinAt e
@@ -290,9 +235,9 @@ theorem IsIntegralCurveOn.exists_norm_sub_sub_variational_le {g : E → E} (hg :
     intro u hu
     have hN : Icc 0 T ∈ 𝓝[≥] u := Icc_mem_nhdsGE_of_mem hu
     have hu' : u ∈ Icc 0 T := Ico_subset_Icc_self hu
-    have hΦu := ((hΦ u hu').mono_of_mem_nhdsWithin hN).clm_apply (hasDerivWithinAt_const u _ h)
     simpa using (((hβ u hu').mono_of_mem_nhdsWithin hN).sub
-      ((hγ u hu').mono_of_mem_nhdsWithin hN)).sub hΦu
+      ((hγ u hu').mono_of_mem_nhdsWithin hN)).sub
+        (((hΦ u hu').mono_of_mem_nhdsWithin hN).clm_apply (hasDerivWithinAt_const u _ h))
   -- Step 5. That derivative is `Dg(γ) e` plus a Taylor remainder.
   have h_bound : ∀ u ∈ Ico 0 T, ‖g (β u) - g (γ u) - fderiv ℝ g (γ u) (Φ u h)‖ ≤
       K'' * ‖e u‖ + η * (‖h‖ * E₀) := by
@@ -311,19 +256,21 @@ theorem IsIntegralCurveOn.exists_norm_sub_sub_variational_le {g : E → E} (hg :
           gcongr
           · exact (ContinuousLinearMap.le_opNorm _ _).trans
               (by gcongr; exact (hK' _ hγu).trans (le_max_left _ _))
-          · exact h_taylor (γ u) hγu (β u) (h_near_r u hu')
+          · exact h_taylor (γ u) hγu (β u)
+              ((h_near u hu').trans_lt ((lt_div_iff₀ hE₀).mp (hβ0.trans_le (min_le_right _ _))))
       _ ≤ K'' * ‖e u‖ + η * (‖h‖ * E₀) := by
           gcongr
           exact h_near u hu'
   -- Step 6. Gronwall's inequality, from `e(0) = 0`.
-  have he_cont : ContinuousOn e (Icc 0 T) :=
-    (hβ.continuousOn.sub hγ.continuousOn).sub (hΦ.continuousOn.clm_apply continuousOn_const)
-  have he0 : ‖e 0‖ ≤ 0 := by simp [e, h, hΦ0]
-  have h_gronwall := norm_le_gronwallBound_of_norm_deriv_right_le he_cont he' he0 h_bound s hs
   calc ‖β s - γ s - Φ s h‖
       = ‖e s‖ := rfl
-    _ ≤ gronwallBound 0 K'' (η * (‖h‖ * E₀)) (s - 0) := h_gronwall
-    _ = η * (‖h‖ * E₀) * gronwallBound 0 K'' 1 s := by rw [sub_zero, gronwallBound_zero_eq_mul]
+    _ ≤ gronwallBound 0 K'' (η * (‖h‖ * E₀)) (s - 0) :=
+        norm_le_gronwallBound_of_norm_deriv_right_le
+          ((hβ.continuousOn.sub hγ.continuousOn).sub (hΦ.continuousOn.clm_apply continuousOn_const))
+          he' (by simp [h, hΦ0]) h_bound s hs
+    _ = η * (‖h‖ * E₀) * gronwallBound 0 K'' 1 s := by
+        -- from a zero initial value, the Gronwall bound is linear in the forcing term
+        rw [sub_zero]; unfold gronwallBound; split_ifs <;> ring
     _ ≤ η * (‖h‖ * E₀) * G := by
         gcongr
         exact (gronwallBound_mono le_rfl zero_le_one (le_max_right _ _) hs.2).trans
