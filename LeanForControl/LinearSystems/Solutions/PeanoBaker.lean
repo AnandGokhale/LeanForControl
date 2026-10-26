@@ -262,7 +262,7 @@ theorem hasDerivAt_stateTransitionMatrix (hA : Continuous A) (t t₀ : ℝ) :
       (by simpa [mul_div_assoc] using
         ((Real.summable_pow_div_factorial (M * r)).mul_left ‖(1 : 𝔸)‖).mul_left M)
       Metric.isOpen_ball (convex_ball t₀ r).isPreconnected (fun k z _ => hderiv k z) hbound ht
-      ((summable_nat_add_iff 1).2 (hsummable t ht)) ht
+      ((summable_nat_add_iff 1 (f := fun k => peanoBakerTerm A k t t₀)).2 (hsummable t ht)) ht
   rw [(hsummable t ht).tsum_mul_left (A t)] at hshifted
   have hone_plus :
       HasDerivAt (fun z => (1 : 𝔸) + ∑' k, peanoBakerTerm A (k + 1) z t₀)
@@ -273,17 +273,6 @@ theorem hasDerivAt_stateTransitionMatrix (hA : Continuous A) (t t₀ : ℝ) :
   filter_upwards [Metric.isOpen_ball.mem_nhds ht] with z hz
   rw [stateTransitionMatrix, (hsummable z hz).tsum_eq_zero_add]
   simp [peanoBakerTerm]
-
-/-- The state transition matrix is continuous in its first argument, for `A` continuous. -/
-@[blueprint "lem:continuous-stateTransitionMatrix"
-  (title := "Continuity of the state transition matrix")
-  (latexEnv := "lemma")
-  (statement := /-- For $A$ continuous, $t \mapsto \Phi(t, t_0)$ is continuous. -/)
-  (proof := /-- It is differentiable everywhere
-    (\cref{thm:hasDerivAt-stateTransitionMatrix}). -/)]
-theorem continuous_stateTransitionMatrix (hA : Continuous A) (t₀ : ℝ) :
-    Continuous (fun t => stateTransitionMatrix A t t₀) :=
-  continuous_iff_continuousAt.2 fun t => (hasDerivAt_stateTransitionMatrix hA t t₀).continuousAt
 
 omit [CompleteSpace 𝔸] in
 /-- `Φ(t₀, t₀) = I`: the state transition matrix is the identity when evaluated at equal times,

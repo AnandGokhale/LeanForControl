@@ -1,4 +1,5 @@
-import Mathlib.Analysis.Matrix.Normed
+import LeanForControl.LinearSystems.Continuous
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Architect
 
@@ -15,15 +16,16 @@ normed algebra `𝔸`; its theory (`PeanoBaker.lean`) uses only the algebra stru
 time-invariant case is the constant map, specialized in `CtsLTI.lean` rather than given a
 separate definition.
 
-The response formulas are still stated for matrices, under the `L∞`-operator norm
-`Matrix.Norms.Operator`.
+For a real LTV system the coefficient is the state matrix read as an operator on Euclidean
+space, so `Φ` and the responses act on `EuclideanSpace ℝ X`.
 
 * `peanoBakerTerm` — the `k`-th iterated-integral term of the Peano-Baker series.
 * `stateTransitionMatrix` — the Peano-Baker series itself,
   `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
-* `forcedResponse` — the variation-of-constants formula for `ẋ = A(t)x + B(t)u(t)`.
-* `homogeneousResponse` — the forced response with the input switched off, which is what the
-  stability theory is stated about.
+* `ContinuousLTV.stateTransition` — `Φ` for a real LTV system, as an operator on Euclidean
+  states.
+* `ContinuousLTV.forcedResponse` — the variation-of-constants formula for
+  `ẋ = A(t)x + B(t)u(t)`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 -/
@@ -31,7 +33,6 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 namespace LinearSystems
 
 open Matrix
-open scoped Matrix.Norms.Operator
 
 section BanachAlgebra
 
@@ -78,14 +79,31 @@ noncomputable def stateTransitionMatrix (A : ℝ → 𝔸) (t t₀ : ℝ) : 𝔸
 
 end BanachAlgebra
 
-variable {X U : Type*} [Fintype X] [DecidableEq X] [Fintype U]
+namespace ContinuousLTV
 
-/-- The *forced response* of `ẋ = A(t) x + B(t) u(t)` from the state `x₀` at time `t₀`, given
+variable {X U Y : Type*} [Fintype X] [DecidableEq X]
+
+/-- The **state transition operator** of a real LTV system: the Peano-Baker series `Φ(t, t₀)`
+of the state matrix read as an operator `A(t)` on the Euclidean state space, in the Banach
+algebra of continuous linear operators on that space.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
+@[blueprint "def:continuousLTV-stateTransition"
+  (title := "State transition operator of an LTV system")
+  (statement := /-- The state transition matrix $\Phi(t, t_0)$ (\cref{def:stateTransitionMatrix})
+    of $A$, acting on the Euclidean state space $\mathbb{R}^X$. -/)]
+noncomputable def stateTransition (s : ContinuousLTV X U Y ℝ) (t t₀ : ℝ) :
+    EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X :=
+  stateTransitionMatrix (fun t => toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A t)) t t₀
+
+variable [Fintype U] [DecidableEq U]
+
+/-- The **forced response** of `ẋ = A(t) x + B(t) u(t)` from the state `x₀` at time `t₀`, given
 by the variation-of-constants formula
 `x(t) = Φ(t, t₀) x₀ + ∫ τ in t₀..t, Φ(t, τ) B(τ) u(τ) dτ`.
 
-The homogeneous response `Φ(·, t₀) x₀` is the special case `B = 0`; naming the forced one is
-what lets it be quantified over, rather than retyped in every statement about it.
+With `u = 0` it is the homogeneous response `Φ(·, t₀) x₀`, the object Lyapunov stability is
+stated about.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. -/
 @[blueprint "def:forcedResponse"
@@ -96,38 +114,14 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.2. 
       x(t) = \Phi(t, t_0)\, x_0 + \int_{t_0}^{t} \Phi(t, \tau)\, B(\tau)\, u(\tau)\,
         \mathrm{d}\tau,
     \]
-    with $\Phi$ the state transition matrix (\cref{def:stateTransitionMatrix}).
+    with $\Phi$ the state transition operator (\cref{def:continuousLTV-stateTransition}).
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
   -/)]
-noncomputable def forcedResponse (A : ℝ → Matrix X X ℝ) (B : ℝ → Matrix X U ℝ)
-    (u : ℝ → U → ℝ) (t₀ : ℝ) (x₀ : X → ℝ) : ℝ → X → ℝ :=
-  fun t => stateTransitionMatrix A t t₀ *ᵥ x₀ +
-    ∫ τ in t₀..t, stateTransitionMatrix A t τ *ᵥ (B τ *ᵥ u τ)
+noncomputable def forcedResponse (s : ContinuousLTV X U Y ℝ) (u : ℝ → EuclideanSpace ℝ U)
+    (t₀ : ℝ) (x₀ : EuclideanSpace ℝ X) (t : ℝ) : EuclideanSpace ℝ X :=
+  s.stateTransition t t₀ x₀ + ∫ τ in t₀..t, s.stateTransition t τ (toEuclideanLin (s.B τ) (u τ))
 
-/-- The *homogeneous response* of `ẋ = A(t) x` from the state `x₀` at time `t₀`, namely
-`x(t) = Φ(t, t₀) x₀`.
-
-Hespanha's "homogeneous state response": the forced response (`forcedResponse`) with the input
-switched off. It is named separately because the stability theory is stated about it — the
-input matrix plays no part in Lyapunov stability.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Definition 8.1. -/
-@[blueprint "def:homogeneousResponse"
-  (title := "Homogeneous response")
-  (statement := /-- The \emph{homogeneous response} of $\dot x = A(t)x$ from the state $x_0$ at
-    time $t_0$,
-    \[
-      x(t) = \Phi(t, t_0)\, x_0,
-    \]
-    with $\Phi$ the state transition matrix (\cref{def:stateTransitionMatrix}).  This is the
-    forced response (\cref{def:forcedResponse}) with the input switched off, and the object
-    Lyapunov stability is stated about.
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1.
-  -/)]
-noncomputable def homogeneousResponse (A : ℝ → Matrix X X ℝ) (t₀ : ℝ) (x₀ : X → ℝ) :
-    ℝ → X → ℝ :=
-  fun t => stateTransitionMatrix A t t₀ *ᵥ x₀
+end ContinuousLTV
 
 end LinearSystems

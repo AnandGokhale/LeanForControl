@@ -341,19 +341,6 @@ done; matrix algebra, ODEs, LTV, the stability definitions, boundedness, ISS, ca
 linearization and the converse theorems remain, together with the list of breaking changes to
 declarations that exist on `main`.
 
-### The L²/L∞ bridge in Theorem 4.13
-
-The LTV results (4.11, 4.12) live on `Fin n → ℝ` with the sup norm; systems live on
-`EuclideanSpace ℝ (Fin n)` with the 2-norm.  Theorem 4.13 translates estimates between the two with
-explicit-constant norm comparisons (`MatrixAlgebra/NormComparison.lean`: `norm_ofLp_le`,
-`norm_le_sqrt_card_mul_norm_ofLp`, `sq_norm_le_dotProduct_self`, `norm_toEuclideanCLM_le`,
-`norm_toEuclideanCLM_symm_le`, `abs_dotProduct_le`, `dotProduct_mulVec_le`).  Every use only needs
-*some* constant, so all of them are finite-dimensional norm equivalence, which Mathlib provides
-with unspecified constants.  Two fixes: locally, replace them by Mathlib's norm equivalence; at the
-root, settle one state space for linear and nonlinear systems, after which the bridge disappears.
-Decide the root question first (it is the L²/L∞ question of the Stability/Continuous rewrite), so
-the local fix is not thrown away.
-
 ### `comparison_lemma` asks for its comparison solutions
 
 The Dini derivative is now `EReal`-valued (as in Saks, Bruckner and Bullo), so `comparison_lemma`

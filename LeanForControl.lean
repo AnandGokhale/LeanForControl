@@ -54,7 +54,6 @@ import LeanForControl.LinearSystems.Stability.Discrete.Schur
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
-import LeanForControl.MatrixAlgebra.NormComparison
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
 import LeanForControl.ODEs.ComparisonLemma

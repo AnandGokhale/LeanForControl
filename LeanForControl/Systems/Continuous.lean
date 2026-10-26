@@ -1,3 +1,4 @@
+import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.IntegralCurves
 import LeanForControl.ODEs.PicardLindelof
@@ -417,6 +418,44 @@ theorem isForwardComplete_of_lipschitz [CompleteSpace E] {s : ContinuousSystem E
   obtain ⟨y, hy₀, hy, -⟩ := exists_isIntegralCurveOn_Ici hF hL t₀ (x t₀)
   exact ⟨y, hy, hasUniqueSolutions_of_lipschitz hL t₀ t₁ y x
     (IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self) hx hy₀⟩
+
+/-- **Exponential bounds on the norm of a trajectory** (Khalil, Exercise 3.17(b)): if
+`‖F(t, x(t), u(t))‖ ≤ L ‖x(t)‖` along a trajectory on `[t₀, t₁]`, then
+`‖x(t₀)‖ e^{-L(t - t₀)} ≤ ‖x(t)‖ ≤ ‖x(t₀)‖ e^{L(t - t₀)}` there.
+
+The bound is only needed along the trajectory, and the state space is any normed space. -/
+@[blueprint "thm:continuousSystem-isTrajectoryOn-norm-exp-bounds"
+  (title := "Exponential bounds on a trajectory")
+  (statement := /-- If $x$ is a trajectory on $[t_0, t_1]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) with $\|F(t, x(t), u(t))\| \le L\|x(t)\|$ for
+    $t \in [t_0, t_1)$, then for every $t \in [t_0, t_1]$
+    \[
+      \|x(t_0)\|\,e^{-L(t - t_0)} \le \|x(t)\| \le \|x(t_0)\|\,e^{L(t - t_0)}.
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Exercise 3.17(b). -/)
+  (proof := /-- $D^{+}\|x\| \le \|\dot x\| \le L\|x\|$ and
+    $D^{+}(-\|x\|) \le \|\dot x\| \le (-L)(-\|x\|)$
+    (\cref{lem:diniDerivRight-le-norm-of-hasDerivWithinAt}); apply Gr\"onwall
+    (\cref{thm:le-mul-exp-of-diniDerivRight-le}) to each. -/)]
+theorem IsTrajectoryOn.norm_exp_bounds {s : ContinuousSystem E U Y} {u : ℝ → U} {x : ℝ → E}
+    {t₀ t₁ L : ℝ} (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁))
+    (hL : ∀ t ∈ Set.Ico t₀ t₁, ‖s.vectorField u t (x t)‖ ≤ L * ‖x t‖) {t : ℝ}
+    (ht : t ∈ Set.Icc t₀ t₁) :
+    ‖x t₀‖ * Real.exp (-L * (t - t₀)) ≤ ‖x t‖ ∧ ‖x t‖ ≤ ‖x t₀‖ * Real.exp (L * (t - t₀)) := by
+  have hx_cont : ContinuousOn x (Set.Icc t₀ t₁) := IsIntegralCurveOn.continuousOn hx
+  -- At a point of `[t₀, t₁)`, a derivative within the segment is a right derivative.
+  have hx_right : ∀ r ∈ Set.Ico t₀ t₁,
+      HasDerivWithinAt x (s.vectorField u r (x r)) (Set.Ici r) r := fun r hr =>
+    (hx r (Set.Ico_subset_Icc_self hr)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hr)
+  refine ⟨?_, le_mul_exp_of_diniDerivRight_le hx_cont.norm (fun r hr =>
+    (diniDerivRight_le_norm_of_hasDerivWithinAt (hx_right r hr) fun _ => norm_sub_norm_le _ _
+      ).trans (EReal.coe_le_coe_iff.2 (hL r hr))) t ht⟩
+  have h := le_mul_exp_of_diniDerivRight_le (v := fun r => -‖x r‖) (K := -L) hx_cont.norm.neg
+    (fun r hr => (diniDerivRight_le_norm_of_hasDerivWithinAt (hx_right r hr) fun q => by
+      rw [norm_sub_rev]; linarith [norm_sub_norm_le (x r) (x q)]).trans
+        (EReal.coe_le_coe_iff.2 (by linarith [hL r hr]))) t ht
+  linarith
 
 /-- **No equilibrium is reached in finite time.**  For a field that is Lipschitz in the state, a
 trajectory on `[t₀, t₁]` that is at an equilibrium at time `t₁` was there all along: solutions are

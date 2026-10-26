@@ -138,7 +138,7 @@ private lemma bound_of_margin (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A
     have htraj := IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ y)
       (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)
     have hy' : ‖s.stateTransition t₀ t₀ y - 0‖ < δ := by simpa using hy
-    simpa [homogeneousResponse] using (hstab t _ htraj hy' t ⟨ht, le_rfl⟩).le
+    simpa using (hstab t _ htraj hy' t ⟨ht, le_rfl⟩).le
   -- On the shell `δ / 2 ≤ ‖y‖ < δ` that is a bound by `(2ε / δ) ‖y‖`, which scales everywhere.
   have hop := ContinuousLinearMap.opNorm_le_of_shell
     (f := s.stateTransition t t₀) hδ
@@ -202,7 +202,7 @@ because the bound on every state, not the per-initial-condition one, is what lat
     turns that into the bound with $C = 2/\delta$.
 
     ($\Leftarrow$) Given $\varepsilon$, take $\delta = \varepsilon/(C+1)$.  A trajectory is its
-    own response (\cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}), so
+    own response (\cref{thm:eq-homogeneousResponse-of-isTrajectoryOn}), so
     $\|\varphi(t)\| \le C\|\varphi(t_{0})\| < \varepsilon$. -/)]
 theorem stable_iff_boundedStateTransition (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
@@ -333,7 +333,7 @@ it is needed: a continuous response that converges is bounded. -/
     \cref{thm:continuousLTV-stable-iff-boundedHomogeneousResponse}.  For attractivity: an
     arbitrary $x_{0}$ is rescaled into the attractivity ball, and the limit scales back, since
     the response is linear in the initial state; conversely every trajectory is a response
-    (\cref{thm:eq-homogeneousResponse-of-isIntegralCurveOn}), so convergence of the responses is
+    (\cref{thm:eq-homogeneousResponse-of-isTrajectoryOn}), so convergence of the responses is
     convergence of the trajectories, from any radius. -/)]
 theorem locallyAsymptoticallyStable_iff_decayingHomogeneousResponse (s : ContinuousLTV X U Y ℝ)
     (hA : Continuous s.A) :
@@ -359,10 +359,10 @@ theorem locallyAsymptoticallyStable_iff_decayingHomogeneousResponse (s : Continu
       rw [norm_smul, Real.norm_eq_abs, abs_of_pos hr0, hr]; field_simp
     have htraj := isTrajectoryOn_homogeneousResponse s hA t₀ (r • x₀)
     have hlim := hconv _ htraj (by
-      simpa [homogeneousResponse, stateTransitionMatrix_self, hnorm] using
+      simpa [hnorm] using
         (by linarith : c / 2 < c))
     have h2 := hlim.const_smul r⁻¹
-    simpa [homogeneousResponse, Matrix.mulVec_smul, smul_smul,
+    simpa [smul_smul,
       inv_mul_cancel₀ hr0.ne'] using h2
   · rintro ⟨hbd, hconv⟩
     refine ⟨(stable_iff_boundedHomogeneousResponse s hA).2 hbd,
@@ -408,7 +408,7 @@ theorem globallyExponentiallyStable_iff_decayingStateTransition
   · rintro ⟨k, hk, γ, hγ, hbd⟩
     refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht x => ?_⟩
     have h1 : ‖s.stateTransition t t₀ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := by
-      simpa [homogeneousResponse, stateTransitionMatrix_self] using
+      simpa using
         hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x)
           Icc_subset_Ici_self) t ⟨ht, le_rfl⟩
     calc ‖s.stateTransition t t₀ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := h1

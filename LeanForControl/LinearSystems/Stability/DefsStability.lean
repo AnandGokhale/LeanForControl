@@ -3,6 +3,8 @@ import Mathlib.Data.Matrix.Mul
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Architect
 
 /-!
@@ -123,6 +125,46 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), equation (4.28). -/
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), equation (4.28). -/)]
 def DifferentialLyapunovEquation (A P Q : ℝ → Matrix X X ℝ) : Prop :=
   ∀ t : ℝ, 0 ≤ t → HasDerivAt P (-(P t * A t + (A t)ᵀ * P t + Q t)) t
+
+namespace ContinuousLTV
+
+variable [DecidableEq X] {U Y : Type*}
+
+/-- The integrand of Khalil's solution of the differential Lyapunov equation,
+`Φ(τ, t)ᵀ Q(τ) Φ(τ, t)`, as an operator on Euclidean states: the transpose is the adjoint.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "def:continuousLTV-lyapunovIntegrand"
+  (title := "Integrand of the Lyapunov integral")
+  (statement := /-- For a linear time-varying system with state transition operator $\Phi$
+    (\cref{def:continuousLTV-stateTransition}) and a matrix function $Q$,
+    \[
+      \Phi(\tau, t)^{\mathsf T} Q(\tau)\, \Phi(\tau, t).
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)]
+noncomputable def lyapunovIntegrand (s : ContinuousLTV X U Y ℝ) (Q : ℝ → Matrix X X ℝ)
+    (t τ : ℝ) : EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X :=
+  star (s.stateTransition τ t) * toEuclideanCLM (n := X) (𝕜 := ℝ) (Q τ) * s.stateTransition τ t
+
+/-- **Khalil's solution of the differential Lyapunov equation**,
+`P(t) = ∫_t^∞ Φ(τ, t)ᵀ Q(τ) Φ(τ, t) dτ`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "def:continuousLTV-lyapunovIntegral"
+  (title := "Lyapunov integral")
+  (statement := /-- For a linear time-varying system and a matrix function $Q$,
+    \[
+      P(t) = \int_t^\infty \Phi(\tau, t)^{\mathsf T} Q(\tau)\, \Phi(\tau, t)\, d\tau
+    \]
+    (\cref{def:continuousLTV-lyapunovIntegrand}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)]
+noncomputable def lyapunovIntegral (s : ContinuousLTV X U Y ℝ) (Q : ℝ → Matrix X X ℝ) (t : ℝ) :
+    EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X :=
+  ∫ τ in Set.Ioi t, s.lyapunovIntegrand Q t τ
+
+end ContinuousLTV
 
 end Differential
 

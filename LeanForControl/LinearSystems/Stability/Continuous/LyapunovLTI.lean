@@ -76,7 +76,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(2
     If the response converges then $A$ is Hurwitz
     (\cref{thm:isHurwitz-of-tendsto-exp-mulVec}).  Conversely a Hurwitz $A$ gives an
     exponentially decaying envelope for $\|e^{At}x_0\|$
-    (\cref{thm:isHurwitz-exists-norm-exp-mulVec-le}); the envelope is bounded by $k\|x_0\|$,
+    (\cref{thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le}); the envelope is bounded by $k\|x_0\|$,
     which supplies the stability half, and tends to zero
     (\cref{lem:tendsto-const-mul-exp-neg}), which supplies the attractivity half. -/)]
 theorem locallyAsymptoticallyStable_iff_isHurwitz
@@ -137,7 +137,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(3
     which already asks for an exponential envelope.  The forward direction squeezes
     $\|e^{At}x\|$ to zero under that envelope and applies
     \cref{thm:isHurwitz-of-tendsto-exp-mulVec}; the converse is
-    \cref{thm:isHurwitz-exists-norm-exp-mulVec-le} re-anchored from $0$ to $t_0$. -/)]
+    \cref{thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le} re-anchored from $0$ to $t_0$. -/)]
 theorem locallyExponentiallyStable_iff_isHurwitz
     (sys : ContinuousLTI X U Y ℝ) :
     sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : EuclideanSpace ℝ X) ↔

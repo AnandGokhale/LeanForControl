@@ -215,27 +215,6 @@ lemma isTrajectory_iff {s : ContinuousLTV X U Y ℝ} {u : ℝ → EuclideanSpace
     {x : ℝ → EuclideanSpace ℝ X} : s.IsTrajectory u x ↔ IsIntegralCurve x (s.vectorField u) :=
   Iff.rfl
 
-/-- **Coordinates of a trajectory.**  `x` is a trajectory of the Euclidean system exactly when
-its coordinate vector `ofLp ∘ x` solves the matrix equation `ż = A(t) z + B(t) u(t)`.  The solution
-theory is proved for that matrix equation; this transports it to the system. -/
-@[blueprint "lem:continuousLTV-isTrajectoryOn-iff-ofLp"
-  (title := "Trajectories in coordinates")
-  (latexEnv := "lemma")
-  (statement := /-- $x$ is a trajectory of $s$ on $I$ (\cref{def:continuousLTV-isTrajectoryOn})
-    if and only if its coordinate vector solves $\dot z = A(t) z + B(t) u(t)$ on $I$. -/)]
-lemma isTrajectoryOn_iff_ofLp {s : ContinuousLTV X U Y ℝ} {u : ℝ → EuclideanSpace ℝ U}
-    {x : ℝ → EuclideanSpace ℝ X} {I : Set ℝ} :
-    s.IsTrajectoryOn u x I ↔
-      IsIntegralCurveOn (fun t => (x t).ofLp) (fun t z => s.A t *ᵥ z + s.B t *ᵥ (u t).ofLp) I := by
-  let e := PiLp.continuousLinearEquiv 2 ℝ (fun _ : X => ℝ)
-  constructor
-  · intro hx t ht
-    simpa [e, Function.comp_def] using
-      (e : EuclideanSpace ℝ X →L[ℝ] (X → ℝ)).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)
-  · intro hx t ht
-    simpa [e, Function.comp_def] using
-      (e.symm : (X → ℝ) →L[ℝ] EuclideanSpace ℝ X).hasFDerivAt.comp_hasDerivWithinAt t (hx t ht)
-
 /-- `x` is a Carathéodory trajectory of `s` under the input `u` on the set `I`: the integral
 form, which admits discontinuous inputs. -/
 @[blueprint "def:continuousLTV-isCaratheodoryTrajectoryOn"

@@ -2,7 +2,8 @@ import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
 import LeanForControl.Stability.Continuous.LyapunovFunctions
 import LeanForControl.Analysis.LieDerivative
-import LeanForControl.MatrixAlgebra.NormComparison
+import Mathlib.Analysis.Calculus.Deriv.Star
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Architect
@@ -13,8 +14,9 @@ import Architect
 The time-varying Lyapunov equation `-Ṗ = PA + AᵀP + Q` (`DifferentialLyapunovEquation`) of a
 linear time-varying system `ẋ = A(t) x`.
 
-Derivatives of matrix-valued functions are taken for the `L∞` operator norm, as for the state
-transition matrix in `Solutions/CtsLTV.lean`.
+Derivatives of matrix-valued functions are taken for the `L∞` operator norm, as in
+`DifferentialLyapunovEquation`; the construction of Theorem 4.12 runs in the algebra of operators
+on Euclidean space, where the transpose is the adjoint.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.6.
 
@@ -45,6 +47,8 @@ variable {X : Type*} [Fintype X]
 
 open Set MeasureTheory
 
+local notation "𝔼" => EuclideanSpace ℝ X
+
 /-- **For constant matrices the differential Lyapunov equation is the algebraic one**: a
 constant `P` has zero derivative, so `-Ṗ = PA + AᵀP + Q` reads `PA + AᵀP = -Q`. -/
 @[blueprint "lem:differentialLyapunovEquation-const-iff"
@@ -69,31 +73,251 @@ theorem differentialLyapunovEquation_const_iff {A P Q : Matrix X X ℝ} :
     rw [h0]
     exact hasDerivAt_const t P
 
-/-- A quadratic form `x ↦ xᵀ P(t) x` with `P` differentiable at `t` is differentiable in `(t, x)`:
-its value is a polynomial in the entries of `P(t)` and the coordinates of `x`. -/
-private lemma differentiableAt_dotProduct_mulVec {P : ℝ → Matrix X X ℝ} {t : ℝ}
-    (hP : DifferentiableAt ℝ P t) (x : X → ℝ) :
-    DifferentiableAt ℝ (fun p : ℝ × (X → ℝ) => p.2 ⬝ᵥ (P p.1 *ᵥ p.2)) (t, x) := by
-  have h_entry : ∀ i j, DifferentiableAt ℝ (fun p : ℝ × (X → ℝ) => P p.1 i j) (t, x) :=
-    fun i j => by
-      let e : Matrix X X ℝ →L[ℝ] ℝ := LinearMap.toContinuousLinearMap (entryLinearMap ℝ ℝ i j)
-      exact (e.differentiableAt.comp t hP).comp (t, x)
-        (ContinuousLinearMap.fst ℝ ℝ (X → ℝ)).differentiableAt
-  have h_coord : ∀ i, DifferentiableAt ℝ (fun p : ℝ × (X → ℝ) => p.2 i) (t, x) := fun i => by
-    fun_prop
-  simp only [dotProduct, mulVec]
-  exact DifferentiableAt.fun_sum fun i _ => (h_coord i).mul
-    (DifferentiableAt.fun_sum fun j _ => (h_entry i j).mul (h_coord j))
+/-- The transpose of a matrix is the adjoint of the operator it defines on Euclidean space. -/
+theorem toEuclideanCLM_transpose [DecidableEq X] (M : Matrix X X ℝ) :
+    toEuclideanCLM (n := X) (𝕜 := ℝ) Mᵀ = star (toEuclideanCLM (n := X) (𝕜 := ℝ) M) := by
+  rw [← conjTranspose_eq_transpose_of_trivial, ← Matrix.star_eq_conjTranspose]
+  exact (toEuclideanCLM (n := X) (𝕜 := ℝ)).map_star' M
 
-/-! ## Khalil's Theorem 4.12 -/
+/-- `∫_t^∞ e^{-c(σ - t)} dσ = 1 / c` for `c > 0`, with the integrability that makes it
+meaningful. -/
+theorem integral_exp_neg_mul_sub_Ioi {c : ℝ} (hc : 0 < c) (t : ℝ) :
+    IntegrableOn (fun σ => Real.exp (-c * (σ - t))) (Ioi t) ∧
+      ∫ σ in Ioi t, Real.exp (-c * (σ - t)) = 1 / c := by
+  have h_split : (fun σ => Real.exp (-c * (σ - t))) =
+      fun σ => Real.exp (c * t) * Real.exp (-c * σ) := funext fun σ => by
+    rw [← Real.exp_add]; congr 1; ring
+  have h_one : Real.exp (c * t) * Real.exp (-c * t) = 1 := by
+    rw [← Real.exp_add, show c * t + -c * t = 0 by ring, Real.exp_zero]
+  rw [h_split]
+  refine ⟨(integrableOn_exp_mul_Ioi (by linarith) t).const_mul _, ?_⟩
+  rw [integral_const_mul, integral_exp_mul_Ioi (by linarith), neg_div_neg_eq, mul_div_assoc',
+    h_one]
 
-variable {U Y : Type*} [DecidableEq X] [Fintype U]
+/-! ## Khalil's Theorem 4.12
 
-/-- **Converse Lyapunov theorem for linear time-varying systems.**  If the origin of
-`ẋ = A(t) x` is exponentially stable, with `A` continuous and bounded, then for every continuous,
-bounded, uniformly positive definite, symmetric `Q(t)` there is a bounded symmetric `P(t)`
-solving the differential Lyapunov equation `-Ṗ = PA + AᵀP + Q`, and `V(t, x) = xᵀ P(t) x` is
-an exponential Lyapunov function with exponent `2`.
+`P(t) = ∫_t^∞ Φ(τ, t)ᵀ Q(τ) Φ(τ, t) dτ` (`ContinuousLTV.lyapunovIntegral`).  Since
+`Φ(τ, t) = Φ(τ, 0) Φ(0, t)`, `P(t) = Φ(0, t)ᵀ (∫_t^∞ G) Φ(0, t)` with
+`G(τ) = Φ(τ, 0)ᵀ Q(τ) Φ(τ, 0)`: all the dependence on `t` inside the integral is in its lower
+limit, so `Ṗ` is the product rule, with no differentiation under the integral sign. -/
+
+namespace ContinuousLTV
+
+variable {U Y : Type*} [DecidableEq X] {s : ContinuousLTV X U Y ℝ} {Q : ℝ → Matrix X X ℝ}
+
+/-- `Φ(τ, t)ᵀ Q(τ) Φ(τ, t) = Φ(0, t)ᵀ (Φ(τ, 0)ᵀ Q(τ) Φ(τ, 0)) Φ(0, t)`. -/
+lemma lyapunovIntegrand_eq (hA : Continuous s.A) (t τ : ℝ) :
+    s.lyapunovIntegrand Q t τ =
+      star (s.stateTransition 0 t) * s.lyapunovIntegrand Q 0 τ * s.stateTransition 0 t := by
+  simp only [lyapunovIntegrand, ← s.stateTransition_mul hA τ 0 t, StarMul.star_mul, mul_assoc]
+
+lemma continuous_lyapunovIntegrand (hA : Continuous s.A) (hQ : Continuous Q) (t : ℝ) :
+    Continuous (s.lyapunovIntegrand Q t) :=
+  ((continuous_star.comp (s.continuous_stateTransition hA t)).mul
+    (continuous_toEuclideanCLM.comp hQ)).mul (s.continuous_stateTransition hA t)
+
+/-- Under exponential decay of `Φ`, the integrand decays like `e^{-2γ(τ - t)}`. -/
+lemma norm_lyapunovIntegrand_le {k γ q : ℝ} (hk : 0 ≤ k)
+    (h_decay : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀, ∀ x : EuclideanSpace ℝ X,
+      ‖s.stateTransition t t₀ x‖ ≤ k * Real.exp (-γ * (t - t₀)) * ‖x‖)
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q) {t τ : ℝ} (ht : 0 ≤ t)
+    (hτ : t ≤ τ) :
+    ‖s.lyapunovIntegrand Q t τ‖ ≤ q * k ^ 2 * Real.exp (-(2 * γ) * (τ - t)) := by
+  have hq : 0 ≤ q := (norm_nonneg _).trans (hQ_bdd 0)
+  have hΦ : ‖s.stateTransition τ t‖ ≤ k * Real.exp (-γ * (τ - t)) :=
+    ContinuousLinearMap.opNorm_le_bound _ (by positivity) (h_decay t ht τ hτ)
+  unfold lyapunovIntegrand
+  calc ‖star (s.stateTransition τ t) * toEuclideanCLM (n := X) (𝕜 := ℝ) (Q τ) *
+        s.stateTransition τ t‖
+      ≤ ‖star (s.stateTransition τ t)‖ * ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q τ)‖ *
+          ‖s.stateTransition τ t‖ := (norm_mul_le _ _).trans (by gcongr; exact norm_mul_le _ _)
+    _ ≤ (k * Real.exp (-γ * (τ - t))) * q * (k * Real.exp (-γ * (τ - t))) := by
+        rw [norm_star]
+        exact mul_le_mul (mul_le_mul hΦ (hQ_bdd τ) (norm_nonneg _) (by positivity)) hΦ
+          (norm_nonneg _) (by positivity)
+    _ = q * k ^ 2 * Real.exp (-(2 * γ) * (τ - t)) := by
+        rw [show -(2 * γ) * (τ - t) = -γ * (τ - t) + -γ * (τ - t) by ring, Real.exp_add]
+        ring
+
+/-- **`P` is symmetric** when `Q` is. -/
+lemma star_lyapunovIntegral (hQ_symm : ∀ t, (Q t)ᵀ = Q t) (t : ℝ) :
+    star (s.lyapunovIntegral Q t) = s.lyapunovIntegral Q t := by
+  have h := (starL' ℝ : (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) ≃L[ℝ] _).integral_comp_comm
+    (μ := volume.restrict (Ioi t)) (s.lyapunovIntegrand Q t)
+  simp only [starL'_apply] at h
+  unfold lyapunovIntegral
+  rw [← h]
+  congr 1
+  funext τ
+  simp only [lyapunovIntegrand, StarMul.star_mul, star_star,
+    ← toEuclideanCLM_transpose, hQ_symm, mul_assoc]
+
+variable [Fintype U] [DecidableEq U]
+
+/-- For an exponentially stable system the integrand is integrable on every right ray, for every
+initial time. -/
+lemma integrableOn_lyapunovIntegrand (hA : Continuous s.A) (hQ : Continuous Q) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q)
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) (t a : ℝ) :
+    IntegrableOn (s.lyapunovIntegrand Q t) (Ioi a) := by
+  obtain ⟨k, hk, γ, hγ, h_decay⟩ :=
+    (locallyExponentiallyStable_iff_decayingStateTransition s hA).mp h_exp
+  have h₀ : IntegrableOn (s.lyapunovIntegrand Q 0) (Ioi 0) :=
+    Integrable.mono' ((integral_exp_neg_mul_sub_Ioi (by linarith : 0 < 2 * γ) 0).1.const_mul
+        (q * k ^ 2)) (continuous_lyapunovIntegrand hA hQ 0).aestronglyMeasurable
+      (ae_restrict_of_forall_mem measurableSet_Ioi fun τ hτ =>
+        norm_lyapunovIntegrand_le hk.le h_decay hQ_bdd le_rfl hτ.le)
+  have h₀a : IntegrableOn (s.lyapunovIntegrand Q 0) (Ioi a) :=
+    ((continuous_lyapunovIntegrand hA hQ 0).integrableOn_Ioc.union h₀).mono_set fun τ hτ => by
+      rcases le_or_gt τ 0 with h | h
+      exacts [Or.inl ⟨hτ, h⟩, Or.inr h]
+  exact ((ContinuousLinearMap.mulLeftRight ℝ _ (star (s.stateTransition 0 t))
+    (s.stateTransition 0 t)).integrable_comp h₀a).congr (ae_of_all _ fun τ => by
+      simp only [ContinuousLinearMap.mulLeftRight_apply]
+      exact (lyapunovIntegrand_eq hA t τ).symm)
+
+/-- `P(t) = Φ(0, t)ᵀ (∫_t^∞ G) Φ(0, t)` with `G(τ) = Φ(τ, 0)ᵀ Q(τ) Φ(τ, 0)`. -/
+lemma lyapunovIntegral_eq (hA : Continuous s.A) (hQ : Continuous Q) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q)
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) (t : ℝ) :
+    s.lyapunovIntegral Q t = star (s.stateTransition 0 t) *
+      (∫ τ in Ioi t, s.lyapunovIntegrand Q 0 τ) * s.stateTransition 0 t := by
+  let conj := ContinuousLinearMap.mulLeftRight ℝ (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X)
+    (star (s.stateTransition 0 t)) (s.stateTransition 0 t)
+  calc s.lyapunovIntegral Q t
+      = ∫ τ in Ioi t, conj (s.lyapunovIntegrand Q 0 τ) := by
+        unfold lyapunovIntegral
+        congr 1
+        funext τ
+        exact lyapunovIntegrand_eq hA t τ
+    _ = conj (∫ τ in Ioi t, s.lyapunovIntegrand Q 0 τ) :=
+        conj.integral_comp_comm (integrableOn_lyapunovIntegrand hA hQ hQ_bdd h_exp 0 t)
+
+/-- **`P` is bounded** on `[0, ∞)`, by `q k² / (2γ)` (Khalil's `c₂`, up to the norm of `x`). -/
+lemma exists_norm_lyapunovIntegral_le (hA : Continuous s.A) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q)
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) :
+    ∃ p, ∀ t, 0 ≤ t → ‖s.lyapunovIntegral Q t‖ ≤ p := by
+  obtain ⟨k, hk, γ, hγ, h_decay⟩ :=
+    (locallyExponentiallyStable_iff_decayingStateTransition s hA).mp h_exp
+  refine ⟨q * k ^ 2 * (1 / (2 * γ)), fun t ht => ?_⟩
+  obtain ⟨h_int, h_eq⟩ := integral_exp_neg_mul_sub_Ioi (by linarith : 0 < 2 * γ) t
+  rw [← h_eq, ← integral_const_mul]
+  exact norm_integral_le_of_norm_le (h_int.const_mul _)
+    (ae_restrict_of_forall_mem measurableSet_Ioi fun τ hτ =>
+      norm_lyapunovIntegrand_le hk.le h_decay hQ_bdd ht hτ.le)
+
+/-- **The quadratic form of `P` integrates `Q` along the solution** (Khalil):
+`xᵀ P(t) x = ∫_t^∞ φ(τ; t, x)ᵀ Q(τ) φ(τ; t, x) dτ` with `φ(τ; t, x) = Φ(τ, t) x`. -/
+lemma inner_lyapunovIntegral (hA : Continuous s.A) (hQ : Continuous Q) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q)
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) (t : ℝ)
+    (x : EuclideanSpace ℝ X) :
+    IntegrableOn (fun τ => inner ℝ (s.stateTransition τ t x)
+        (toEuclideanCLM (n := X) (𝕜 := ℝ) (Q τ) (s.stateTransition τ t x))) (Ioi t) ∧
+      inner ℝ x (s.lyapunovIntegral Q t x) = ∫ τ in Ioi t, inner ℝ (s.stateTransition τ t x)
+        (toEuclideanCLM (n := X) (𝕜 := ℝ) (Q τ) (s.stateTransition τ t x)) := by
+  let ℓ : (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) →L[ℝ] ℝ :=
+    (innerSL ℝ x).comp (ContinuousLinearMap.apply ℝ (EuclideanSpace ℝ X) x)
+  have hℓ : ∀ τ, ℓ (s.lyapunovIntegrand Q t τ) = inner ℝ (s.stateTransition τ t x)
+      (toEuclideanCLM (n := X) (𝕜 := ℝ) (Q τ) (s.stateTransition τ t x)) := fun τ => by
+    simp only [ℓ, lyapunovIntegrand, ContinuousLinearMap.comp_apply,
+      ContinuousLinearMap.apply_apply, innerSL_apply_apply, ContinuousLinearMap.mul_apply,
+      ContinuousLinearMap.star_eq_adjoint, ContinuousLinearMap.adjoint_inner_right]
+  have h_int := integrableOn_lyapunovIntegrand hA hQ hQ_bdd h_exp t t
+  rw [← funext hℓ]
+  refine ⟨ℓ.integrable_comp h_int, ?_⟩
+  calc inner ℝ x (s.lyapunovIntegral Q t x)
+      = ℓ (s.lyapunovIntegral Q t) := by simp [ℓ]
+    _ = ∫ τ in Ioi t, ℓ (s.lyapunovIntegrand Q t τ) := (ℓ.integral_comp_comm h_int).symm
+
+/-- **`P` is uniformly positive definite** (Khalil's `c₁ = c₃ / (2L)`): the solution from `x`
+loses norm at most at rate `L` (Exercise 3.17), so the integrand is at least
+`q₁ ‖x‖² e^{-2L(τ - t)}`. -/
+lemma exists_lower_bound_lyapunovIntegral (hA : Continuous s.A) {L : ℝ}
+    (hA_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A t)‖ ≤ L) (hQ : Continuous Q) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q) {q₁ : ℝ} (hq₁ : 0 < q₁)
+    (hQ_pos : ∀ t (x : EuclideanSpace ℝ X),
+      q₁ * ‖x‖ ^ 2 ≤ inner ℝ x (toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t) x))
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) :
+    ∃ c₁ > 0, ∀ t (x : EuclideanSpace ℝ X),
+      c₁ * ‖x‖ ^ 2 ≤ inner ℝ x (s.lyapunovIntegral Q t x) := by
+  set K := |L| + 1
+  have hK : 0 < K := by positivity
+  refine ⟨q₁ * (1 / (2 * K)), by positivity, fun t x => ?_⟩
+  obtain ⟨hψ_int, hψ_eq⟩ := inner_lyapunovIntegral hA hQ hQ_bdd h_exp t x
+  obtain ⟨h_exp_int, h_exp_eq⟩ := integral_exp_neg_mul_sub_Ioi (by linarith : 0 < 2 * K) t
+  -- Exercise 3.17 along the solution from `(t, x)`.
+  have h_ex317 : ∀ τ, t ≤ τ → ‖x‖ * Real.exp (-K * (τ - t)) ≤ ‖s.stateTransition τ t x‖ :=
+    fun τ hτ => by
+      have h := (ContinuousSystem.IsTrajectoryOn.norm_exp_bounds (L := K)
+        (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t x)
+          (Icc_subset_Ici_self : Icc t τ ⊆ Ici t)) (fun r _ => ?_) ⟨hτ, le_rfl⟩).1
+      · rwa [stateTransition_self] at h
+      simp only [ContinuousSystem.vectorField_apply, Pi.zero_apply, toContinuousSystem_F,
+        map_zero, add_zero]
+      calc ‖toEuclideanLin (s.A r) (s.stateTransition r t x)‖
+          = ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A r) (s.stateTransition r t x)‖ := rfl
+        _ ≤ ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A r)‖ * ‖s.stateTransition r t x‖ :=
+            ContinuousLinearMap.le_opNorm _ _
+        _ ≤ K * ‖s.stateTransition r t x‖ := by
+            gcongr
+            exact (hA_bdd r).trans (by linarith [le_abs_self L])
+  rw [hψ_eq, ← h_exp_eq, ← integral_const_mul, ← integral_mul_const]
+  refine setIntegral_mono_on ((h_exp_int.const_mul _).mul_const _) hψ_int measurableSet_Ioi
+    fun τ hτ => ?_
+  calc q₁ * Real.exp (-(2 * K) * (τ - t)) * ‖x‖ ^ 2
+      = q₁ * (‖x‖ * Real.exp (-K * (τ - t))) ^ 2 := by
+        rw [show -(2 * K) * (τ - t) = -K * (τ - t) + -K * (τ - t) by ring, Real.exp_add]
+        ring
+    _ ≤ q₁ * ‖s.stateTransition τ t x‖ ^ 2 := by
+        gcongr
+        exact h_ex317 τ (le_of_lt hτ)
+    _ ≤ _ := hQ_pos τ _
+
+/-- **`P` solves the differential Lyapunov equation** `-Ṗ = PA + AᵀP + Q`, at every time, in the
+algebra of operators (the transpose is the adjoint). -/
+lemma hasDerivAt_lyapunovIntegral (hA : Continuous s.A) (hQ : Continuous Q) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q)
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) (t : ℝ) :
+    HasDerivAt (s.lyapunovIntegral Q)
+      (-(s.lyapunovIntegral Q t * toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A t) +
+        star (toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A t)) * s.lyapunovIntegral Q t +
+        toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t))) t := by
+  have hG := continuous_lyapunovIntegrand hA hQ (s := s) 0
+  -- `R(σ) = ∫_σ^∞ G` has derivative `-G(t)`.
+  have hR : HasDerivAt (fun σ => ∫ τ in Ioi σ, s.lyapunovIntegrand Q 0 τ)
+      (-s.lyapunovIntegrand Q 0 t) t := by
+    refine (((hG.integral_hasStrictDerivAt (t - 1) t).hasDerivAt).const_sub
+      (∫ τ in Ioi (t - 1), s.lyapunovIntegrand Q 0 τ)).congr_of_eventuallyEq ?_
+    filter_upwards [Ioi_mem_nhds (by linarith : t - 1 < t)] with σ hσ
+    rw [← intervalIntegral.integral_Ioi_sub_Ioi
+      (integrableOn_lyapunovIntegrand hA hQ hQ_bdd h_exp 0 (t - 1)) (le_of_lt hσ), sub_sub_cancel]
+  have hΦ₀ := s.hasDerivAt_stateTransition_snd hA 0 t
+  have h_one : s.stateTransition t t = 1 := ContinuousLinearMap.ext (s.stateTransition_self t)
+  have h_Q : star (s.stateTransition 0 t) * s.lyapunovIntegrand Q 0 t * s.stateTransition 0 t =
+      toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t) := by
+    rw [← lyapunovIntegrand_eq hA t t, lyapunovIntegrand, h_one, star_one, one_mul, mul_one]
+  rw [show s.lyapunovIntegral Q = fun σ => star (s.stateTransition 0 σ) *
+      (∫ τ in Ioi σ, s.lyapunovIntegrand Q 0 τ) * s.stateTransition 0 σ from
+    funext (lyapunovIntegral_eq hA hQ hQ_bdd h_exp)]
+  convert (hΦ₀.star.mul hR).mul hΦ₀ using 1
+  rw [← h_Q]
+  simp only [Pi.mul_apply, star_neg, StarMul.star_mul]
+  noncomm_ring
+
+end ContinuousLTV
+
+variable {U Y : Type*} [DecidableEq X] [Fintype U] [DecidableEq U]
+
+/-- **Converse Lyapunov theorem for linear time-varying systems**, Khalil's Theorem 4.12: if the
+origin of `ẋ = A(t) x` is exponentially stable, with `A` continuous and bounded, then for every
+continuous, bounded, uniformly positive definite, symmetric `Q(t)` there is a bounded, uniformly
+positive definite, symmetric `P(t)` solving the differential Lyapunov equation
+`-Ṗ = PA + AᵀP + Q`.
+
+Norms of matrices are those of the operators they define on Euclidean space.  That
+`V(t, x) = xᵀ P(t) x` is then a Lyapunov function is a separate result (Khalil's Example 4.21).
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.12. -/
 @[blueprint "thm:continuousLTV-exists-differentialLyapunovEquation"
@@ -102,249 +326,129 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.12. -/
     the origin be exponentially stable
     (\cref{def:continuousSystem-locallyExponentiallyStable}).  Let $Q(t)$ be continuous,
     symmetric, with $\|Q(t)\| \le q$ and $x^{\mathsf T}Q(t)x \ge q_1\|x\|^2$, $q_1 > 0$.  Then
-    there is a bounded symmetric $P(t)$ satisfying the differential Lyapunov equation
-    (\cref{def:differentialLyapunovEquation}), and $V(t, x) = x^{\mathsf T}P(t)x$ is an
-    exponential Lyapunov function with exponent $2$
-    (\cref{def:continuousSystem-isExponentialLyapunovFunction}); in particular
-    $c_1\|x\|^2 \le x^{\mathsf T}P(t)x \le c_2\|x\|^2$.
+    there is a symmetric $P(t)$ satisfying the differential Lyapunov equation
+    (\cref{def:differentialLyapunovEquation}) with $\|P(t)\| \le p$ for $t \ge 0$ and
+    $x^{\mathsf T}P(t)x \ge c_1\|x\|^2$, $c_1 > 0$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.12.  Differences: the
-    state space carries the sup norm, as everywhere for linear time-varying systems here. -/)
-  (proof := /-- Let $P(t) = \int_t^\infty \Phi(\tau, t)^{\mathsf T}Q(\tau)\Phi(\tau, t)\,d\tau$,
-    written as $\Phi(0, t)^{\mathsf T}R(t)\Phi(0, t)$ with
-    $R(t) = \int_t^\infty \Phi(\tau, 0)^{\mathsf T}Q(\tau)\Phi(\tau, 0)\,d\tau$, which converges by
-    exponential decay of $\Phi$; the same decay bounds $P(t)$.  Then
-    $\dot R(t) = -\Phi(t, 0)^{\mathsf T}Q(t)\Phi(t, 0)$ and
-    $\partial_t\Phi(0, t) = -\Phi(0, t)A(t)$
-    (\cref{thm:hasDerivAt-stateTransitionMatrix-snd}), and the product rule gives
-    $-\dot P = PA + A^{\mathsf T}P + Q$.  Along a solution,
-    $x^{\mathsf T}P(t)x = \int_t^\infty (\Phi(\tau, t)x)^{\mathsf T}Q(\tau)\Phi(\tau, t)x\,d\tau$:
-    exponential decay bounds it above, the growth bound
-    (\cref{lem:norm-stateTransitionMatrix-le}) bounds it below on $[t, t + 1]$, and its
-    derivative along the solution is $-x^{\mathsf T}Q(t)x$. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.12. -/)
+  (proof := /-- Take Khalil's $P(t) = \int_t^\infty \Phi(\tau, t)^{\mathsf T}Q(\tau)\Phi(\tau, t)\,
+    d\tau$ (\cref{def:continuousLTV-lyapunovIntegral}).  It is bounded by exponential decay of
+    $\Phi$, uniformly positive definite by Exercise 3.17
+    (\cref{thm:continuousSystem-isTrajectoryOn-norm-exp-bounds}), symmetric because $Q$ is,
+    and solves the differential Lyapunov equation by the product rule after writing
+    $\Phi(\tau, t) = \Phi(\tau, 0)\Phi(0, t)$
+    (\cref{thm:hasDerivAt-stateTransitionMatrix-snd}). -/)]
 theorem exists_differentialLyapunovEquation (s : ContinuousLTV X U Y ℝ) (hA : Continuous s.A)
-    {L : ℝ} (hA_bdd : ∀ t, ‖s.A t‖ ≤ L) {Q : ℝ → Matrix X X ℝ} (hQ : Continuous Q)
-    {q : ℝ} (hQ_bdd : ∀ t, ‖Q t‖ ≤ q) (hQ_symm : ∀ t, (Q t)ᵀ = Q t) {q₁ : ℝ} (hq₁ : 0 < q₁)
-    (hQ_pos : ∀ t (x : X → ℝ), q₁ * ‖x‖ ^ 2 ≤ x ⬝ᵥ (Q t *ᵥ x))
-    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ)) :
+    {L : ℝ} (hA_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (s.A t)‖ ≤ L)
+    {Q : ℝ → Matrix X X ℝ} (hQ : Continuous Q) {q : ℝ}
+    (hQ_bdd : ∀ t, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t)‖ ≤ q) (hQ_symm : ∀ t, (Q t)ᵀ = Q t)
+    {q₁ : ℝ} (hq₁ : 0 < q₁) (hQ_pos : ∀ t (x : EuclideanSpace ℝ X),
+      q₁ * ‖x‖ ^ 2 ≤ inner ℝ x (toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t) x))
+    (h_exp : s.toContinuousSystem.zeroInput.LocallyExponentiallyStable 0) :
     ∃ P : ℝ → Matrix X X ℝ, DifferentialLyapunovEquation s.A P Q ∧ (∀ t, (P t)ᵀ = P t) ∧
-      (∃ p, ∀ t, 0 ≤ t → ‖P t‖ ≤ p) ∧
-      s.toContinuousSystem.zeroInput.IsExponentialLyapunovFunction
-        (fun t x => x ⬝ᵥ (P t *ᵥ x)) 0 univ 2 := by
-  set Φ : ℝ → ℝ → Matrix X X ℝ := stateTransitionMatrix s.A with hΦ_def
-  have hL : 0 ≤ L := (norm_nonneg _).trans (hA_bdd 0)
-  have hq : 0 ≤ q := (norm_nonneg _).trans (hQ_bdd 0)
-  have hΦ_mul : ∀ t r τ, Φ t r * Φ r τ = Φ t τ := stateTransitionMatrix_mul hA
-  have hΦ_self : ∀ t, Φ t t = 1 := stateTransitionMatrix_self
-  have hΦ_cont : ∀ τ, Continuous fun σ => Φ σ τ := fun τ => continuous_iff_continuousAt.mpr
-    fun σ => (hasDerivAt_stateTransitionMatrix hA σ τ).continuousAt
-  -- Transposition, as a continuous linear map.
-  let T : Matrix X X ℝ →L[ℝ] Matrix X X ℝ :=
-    LinearMap.toContinuousLinearMap (Matrix.transposeLinearEquiv X X ℝ ℝ).toLinearMap
-  -- Step 1. Exponential decay of `Φ` from `t₀ ≥ 0`, and a growth bound on `[t, t + 1]`.
-  obtain ⟨k, hk, γ, hγ, h_decay⟩ :=
-    (locallyExponentiallyStable_iff_decayingStateTransition s hA).mp h_exp
-  have h_decay_norm : ∀ t₀, 0 ≤ t₀ → ∀ t ≥ t₀, ‖Φ t t₀‖ ≤ k * Real.exp (-γ * (t - t₀)) :=
-    fun t₀ ht₀ t ht => MatrixAlgebra.norm_le_of_mulVec_le (by positivity) (h_decay t₀ ht₀ t ht)
-  set C := (‖(1 : Matrix X X ℝ)‖ + 1) * Real.exp L with hC_def
-  have hC : 0 < C := by positivity
-  have h_grow : ∀ t τ, τ ∈ Icc t (t + 1) → ∀ x, ‖x‖ ≤ C * ‖Φ τ t *ᵥ x‖ := by
-    intro t τ hτ x
-    have h_dist : |t - τ| ≤ 1 := by rw [abs_sub_comm, abs_of_nonneg] <;> linarith [hτ.1, hτ.2]
-    calc ‖x‖
-        = ‖Φ t τ *ᵥ (Φ τ t *ᵥ x)‖ := by rw [mulVec_mulVec, hΦ_mul, hΦ_self, one_mulVec]
-      _ ≤ ‖Φ t τ‖ * ‖Φ τ t *ᵥ x‖ := linfty_opNorm_mulVec _ _
-      _ ≤ C * ‖Φ τ t *ᵥ x‖ := by
-          gcongr
-          calc ‖Φ t τ‖
-              ≤ ‖(1 : Matrix X X ℝ)‖ * Real.exp (L * |t - τ|) :=
-                norm_stateTransitionMatrix_le fun r _ => hA_bdd r
-            _ ≤ C := by
-                rw [hC_def]
-                gcongr
-                · linarith
-                · exact mul_le_of_le_one_right hL h_dist
-  -- Step 2. `Φ(σ, t)ᵀ Q(σ) Φ(σ, t)` decays like `e^{-2γ(σ - t)}`, whose integral over
-  -- `(t, ∞)` is `1 / (2γ)`.
-  set K := ‖T‖ * q * k ^ 2
-  have hK : 0 ≤ K := by positivity
-  have h_conj_bound : ∀ t, 0 ≤ t → ∀ σ, t ≤ σ →
-      ‖(Φ σ t)ᵀ * Q σ * Φ σ t‖ ≤ K * Real.exp (-(2 * γ) * (σ - t)) := by
-    intro t ht σ hσ
-    have hΦσ := h_decay_norm t ht σ hσ
-    calc ‖(Φ σ t)ᵀ * Q σ * Φ σ t‖
-        ≤ ‖(Φ σ t)ᵀ‖ * ‖Q σ‖ * ‖Φ σ t‖ := (norm_mul_le _ _).trans (by gcongr; exact norm_mul_le _ _)
-      _ ≤ (‖T‖ * ‖Φ σ t‖) * q * ‖Φ σ t‖ := by
-          gcongr
-          · exact T.le_opNorm (Φ σ t)
-          · exact hQ_bdd σ
-      _ ≤ (‖T‖ * (k * Real.exp (-γ * (σ - t)))) * q * (k * Real.exp (-γ * (σ - t))) := by gcongr
-      _ = K * Real.exp (-(2 * γ) * (σ - t)) := by
-          rw [show -(2 * γ) * (σ - t) = -γ * (σ - t) + -γ * (σ - t) by ring, Real.exp_add]
-          ring
-  have h_exp_int : ∀ t, IntegrableOn (fun σ => K * Real.exp (-(2 * γ) * (σ - t))) (Ioi t) ∧
-      ∫ σ in Ioi t, K * Real.exp (-(2 * γ) * (σ - t)) = K / (2 * γ) := by
-    intro t
-    have h_split : (fun σ => K * Real.exp (-(2 * γ) * (σ - t))) =
-        fun σ => K * Real.exp (2 * γ * t) * Real.exp (-(2 * γ) * σ) := funext fun σ => by
-      rw [show -(2 * γ) * (σ - t) = 2 * γ * t + -(2 * γ) * σ by ring, Real.exp_add]
-      ring
-    have h_one : Real.exp (2 * γ * t) * Real.exp (-(2 * γ) * t) = 1 := by
-      rw [← Real.exp_add, show 2 * γ * t + -(2 * γ) * t = 0 by ring, Real.exp_zero]
-    rw [h_split]
-    refine ⟨(integrableOn_exp_mul_Ioi (by linarith) t).const_mul _, ?_⟩
-    rw [integral_const_mul, integral_exp_mul_Ioi (by linarith), mul_assoc, ← mul_div_assoc,
-      mul_neg, h_one, neg_div_neg_eq, mul_one_div]
-  -- `G(τ) = Φ(τ, 0)ᵀ Q(τ) Φ(τ, 0)` is integrable, so `R(t) = ∫_t^∞ G` converges; and
-  -- `P(t) = Φ(0, t)ᵀ R(t) Φ(0, t)`.
-  set G : ℝ → Matrix X X ℝ := fun τ => (Φ τ 0)ᵀ * Q τ * Φ τ 0
-  have hG_cont : Continuous G := ((T.continuous.comp (hΦ_cont 0)).mul hQ).mul (hΦ_cont 0)
-  have hG_int : IntegrableOn G (Ioi 0) :=
-    Integrable.mono' (by simpa using (h_exp_int 0).1) hG_cont.aestronglyMeasurable
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun τ hτ => by
-        simpa using h_conj_bound 0 le_rfl τ (le_of_lt hτ))
-  set R₀ := ∫ τ in Ioi 0, G τ
-  set R : ℝ → Matrix X X ℝ := fun t => R₀ - ∫ τ in (0 : ℝ)..t, G τ
-  have hR_Ioi : ∀ t, 0 ≤ t → R t = ∫ τ in Ioi t, G τ := fun t ht => by
-    simp only [R, R₀, ← intervalIntegral.integral_Ioi_sub_Ioi hG_int ht, sub_sub_cancel]
-  have hR_deriv : ∀ t, HasDerivAt R (-G t) t := fun t =>
-    ((hG_cont.integral_hasStrictDerivAt 0 t).hasDerivAt).const_sub R₀
-  set P : ℝ → Matrix X X ℝ := fun t => (Φ 0 t)ᵀ * R t * Φ 0 t
-  -- `P(t) = ∫_t^∞ Φ(σ, t)ᵀ Q(σ) Φ(σ, t) dσ` (Khalil's formula), so `‖P(t)‖ ≤ K / (2γ)`.
-  have hP_Ioi : ∀ t, 0 ≤ t → P t = ∫ σ in Ioi t, (Φ σ t)ᵀ * Q σ * Φ σ t := by
-    intro t ht
-    let conj := ContinuousLinearMap.mulLeftRight ℝ (Matrix X X ℝ) (Φ 0 t)ᵀ (Φ 0 t)
-    calc P t
-        = conj (∫ σ in Ioi t, G σ) := by rw [← hR_Ioi t ht]; rfl
-      _ = ∫ σ in Ioi t, conj (G σ) :=
-          (conj.integral_comp_comm (hG_int.mono_set (Ioi_subset_Ioi ht))).symm
-      _ = ∫ σ in Ioi t, (Φ σ t)ᵀ * Q σ * Φ σ t := by
-          congr 1
-          funext σ
-          simp only [conj, ContinuousLinearMap.mulLeftRight_apply, G, ← hΦ_mul σ 0 t,
-            transpose_mul, Matrix.mul_assoc]
-  set p := K / (2 * γ)
-  have hp : 0 ≤ p := by positivity
-  have hP_bdd : ∀ t, 0 ≤ t → ‖P t‖ ≤ p := by
-    intro t ht
-    rw [hP_Ioi t ht, ← (h_exp_int t).2]
-    exact norm_integral_le_of_norm_le (h_exp_int t).1
-      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ => h_conj_bound t ht σ (le_of_lt hσ))
-  -- Step 3. The differential Lyapunov equation, by the product rule.
-  have hP_deriv : ∀ t, HasDerivAt P (-(P t * s.A t + (s.A t)ᵀ * P t + Q t)) t := by
-    intro t
-    have hΦ₀ := hasDerivAt_stateTransitionMatrix_snd hA 0 t
-    have hΦ₀T : HasDerivAt (fun σ => (Φ 0 σ)ᵀ) (-(Φ 0 t * s.A t))ᵀ t :=
-      T.hasFDerivAt.comp_hasDerivAt t hΦ₀
-    have h_cancel : Φ t 0 * Φ 0 t = 1 := by rw [hΦ_mul, hΦ_self]
-    have h_cancelT : (Φ 0 t)ᵀ * (Φ t 0)ᵀ = 1 := by
-      rw [← transpose_mul, h_cancel, transpose_one]
-    have h_Q : (Φ 0 t)ᵀ * G t * Φ 0 t = Q t :=
-      calc (Φ 0 t)ᵀ * G t * Φ 0 t
-          = ((Φ 0 t)ᵀ * (Φ t 0)ᵀ) * Q t * (Φ t 0 * Φ 0 t) := by
-            simp only [G, Matrix.mul_assoc]
-        _ = Q t := by rw [h_cancelT, h_cancel, Matrix.one_mul, Matrix.mul_one]
-    convert (hΦ₀T.mul (hR_deriv t)).mul hΦ₀ using 1
-    rw [← h_Q]
-    simp only [P, Pi.mul_apply, transpose_neg, transpose_mul, ← hΦ_def]
-    noncomm_ring
-  -- Step 4. Along the solution from `(t, x)`, `xᵀ P(t) x = ∫_t^∞ ψ` with
-  -- `ψ(σ) = (Φ(σ, t) x)ᵀ Q(σ) Φ(σ, t) x`.
-  set ψ : ℝ → (X → ℝ) → ℝ → ℝ := fun t x σ => (Φ σ t *ᵥ x) ⬝ᵥ (Q σ *ᵥ (Φ σ t *ᵥ x))
-  have hψ_lin : ∀ t (x : X → ℝ), ∃ ℓ : Matrix X X ℝ →L[ℝ] ℝ,
-      (∀ M, ℓ M = (Φ 0 t *ᵥ x) ⬝ᵥ (M *ᵥ (Φ 0 t *ᵥ x))) ∧ ∀ σ, ψ t x σ = ℓ (G σ) := by
-    intro t x
-    set y := Φ 0 t *ᵥ x
-    refine ⟨LinearMap.toContinuousLinearMap
-      { toFun := fun M => y ⬝ᵥ (M *ᵥ y)
-        map_add' := fun M N => by simp [add_mulVec, dotProduct_add]
-        map_smul' := fun c M => by simp [smul_mulVec, dotProduct_smul] },
-      fun M => rfl, fun σ => ?_⟩
-    change _ = y ⬝ᵥ (G σ *ᵥ y)
-    rw [MatrixAlgebra.dotProduct_transpose_mul_mulVec, mulVec_mulVec, hΦ_mul]
-  have hψ_cont : ∀ t x, Continuous (ψ t x) := fun t x => by
-    obtain ⟨ℓ, -, hℓ⟩ := hψ_lin t x
-    rw [funext hℓ]
-    exact ℓ.continuous.comp hG_cont
-  have hψ_nonneg : ∀ t x σ, q₁ * ‖Φ σ t *ᵥ x‖ ^ 2 ≤ ψ t x σ := fun t x σ => hQ_pos σ _
-  have hψ_int : ∀ t, 0 ≤ t → ∀ x,
-      IntegrableOn (ψ t x) (Ioi t) ∧ x ⬝ᵥ (P t *ᵥ x) = ∫ σ in Ioi t, ψ t x σ := by
-    intro t ht x
-    obtain ⟨ℓ, hℓ_apply, hℓ⟩ := hψ_lin t x
-    have hG_int_t : IntegrableOn G (Ioi t) := hG_int.mono_set (Ioi_subset_Ioi ht)
-    rw [funext hℓ]
-    refine ⟨ℓ.integrable_comp hG_int_t, ?_⟩
-    calc x ⬝ᵥ (P t *ᵥ x)
-        = ℓ (R t) := by rw [hℓ_apply, ← MatrixAlgebra.dotProduct_transpose_mul_mulVec]
-      _ = ℓ (∫ σ in Ioi t, G σ) := by rw [hR_Ioi t ht]
-      _ = ∫ σ in Ioi t, ℓ (G σ) := (ℓ.integral_comp_comm hG_int_t).symm
-  -- Step 5. The quadratic bounds.
-  set c₁ := q₁ / C ^ 2
-  set c₂ := (Fintype.card X + 1) * (p + 1)
-  have h_lower : ∀ t, 0 ≤ t → ∀ x, c₁ * ‖x‖ ^ 2 ≤ x ⬝ᵥ (P t *ᵥ x) := by
-    intro t ht x
-    obtain ⟨hψ_i, hψ_eq⟩ := hψ_int t ht x
-    have h_split := intervalIntegral.integral_Ioi_sub_Ioi hψ_i (by linarith : t ≤ t + 1)
-    have h_tail : 0 ≤ ∫ σ in Ioi (t + 1), ψ t x σ := setIntegral_nonneg measurableSet_Ioi
-      fun σ _ => (mul_nonneg hq₁.le (sq_nonneg _)).trans (hψ_nonneg t x σ)
-    calc c₁ * ‖x‖ ^ 2
-        = ∫ _σ in t..t + 1, c₁ * ‖x‖ ^ 2 := by simp
-      _ ≤ ∫ σ in t..t + 1, ψ t x σ := by
-          refine intervalIntegral.integral_mono_on (by linarith) intervalIntegrable_const
-            ((hψ_cont t x).intervalIntegrable _ _) fun σ hσ => ?_
-          have h := h_grow t σ hσ x
-          calc c₁ * ‖x‖ ^ 2
-              = q₁ * (‖x‖ / C) ^ 2 := by simp only [c₁]; field_simp
-            _ ≤ q₁ * ‖Φ σ t *ᵥ x‖ ^ 2 := by
-                gcongr
-                rwa [div_le_iff₀ hC, mul_comm]
-            _ ≤ ψ t x σ := hψ_nonneg t x σ
-      _ ≤ x ⬝ᵥ (P t *ᵥ x) := by linarith
-  have h_upper : ∀ t, 0 ≤ t → ∀ x, x ⬝ᵥ (P t *ᵥ x) ≤ c₂ * ‖x‖ ^ 2 := fun t ht x =>
-    calc x ⬝ᵥ (P t *ᵥ x)
-        ≤ Fintype.card X * ‖P t‖ * ‖x‖ ^ 2 := MatrixAlgebra.dotProduct_mulVec_le _ _
-      _ ≤ c₂ * ‖x‖ ^ 2 := by
-          gcongr
-          exact mul_le_mul (by linarith) (by linarith [hP_bdd t ht]) (norm_nonneg _)
-            (by positivity)
-  -- Step 6. `V(t, x) = xᵀ P(t) x` is an exponential Lyapunov function.
-  set V : ℝ → (X → ℝ) → ℝ := fun t x => x ⬝ᵥ (P t *ᵥ x)
-  have hV_diff : ∀ t (x : X → ℝ), DifferentiableAt ℝ (Function.uncurry V) (t, x) :=
-    fun t x => differentiableAt_dotProduct_mulVec (hP_deriv t).differentiableAt x
-  refine ⟨P, fun t _ => hP_deriv t, fun t => ?_, ⟨p, hP_bdd⟩, ⟨Filter.univ_mem,
-    fun t _ x _ => hV_diff t x, two_pos, c₁, by positivity, c₂, mul_pos (by positivity)
-    (by linarith), q₁, hq₁, fun t ht x _ => ?_⟩⟩
-  · -- `P` is symmetric because `Q` is.
-    have hR_symm : (R t)ᵀ = R t := by
-      have hG_symm : ∀ τ, (G τ)ᵀ = G τ := fun τ => by
-        simp only [G, transpose_mul, transpose_transpose, hQ_symm, Matrix.mul_assoc]
-      have h_int_T : ∀ (f : ℝ → Matrix X X ℝ) (μ : Measure ℝ), Integrable f μ →
-          (∫ τ, f τ ∂μ)ᵀ = ∫ τ, (f τ)ᵀ ∂μ := fun f μ hf => (T.integral_comp_comm hf).symm
-      simp only [R, R₀, transpose_sub, intervalIntegral, h_int_T _ _ hG_int,
-        h_int_T _ _ hG_cont.integrableOn_Ioc, hG_symm]
-    simp only [P, transpose_mul, transpose_transpose, hR_symm, Matrix.mul_assoc]
-  -- The bounds, and the decrease computed along the solution from `(t, x)`.
+      (∃ p, ∀ t, 0 ≤ t → ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (P t)‖ ≤ p) ∧
+      ∃ c₁ > 0, ∀ t (x : EuclideanSpace ℝ X),
+        c₁ * ‖x‖ ^ 2 ≤ inner ℝ x (toEuclideanCLM (n := X) (𝕜 := ℝ) (P t) x) := by
+  set e := toEuclideanCLM (n := X) (𝕜 := ℝ)
+  -- `e⁻¹`, as a continuous linear map, carries the operator equation back to matrices.
+  let T : (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) →L[ℝ] Matrix X X ℝ :=
+    LinearMap.toContinuousLinearMap e.symm.toAlgEquiv.toLinearMap
+  have he : ∀ t, e (T (s.lyapunovIntegral Q t)) = s.lyapunovIntegral Q t := fun t =>
+    e.apply_symm_apply _
+  obtain ⟨p, hp⟩ := ContinuousLTV.exists_norm_lyapunovIntegral_le hA hQ_bdd h_exp
+  obtain ⟨c₁, hc₁, h_low⟩ :=
+    ContinuousLTV.exists_lower_bound_lyapunovIntegral hA hA_bdd hQ hQ_bdd hq₁ hQ_pos h_exp
+  refine ⟨fun t => T (s.lyapunovIntegral Q t), fun t _ => ?_, fun t => ?_,
+    ⟨p, fun t ht => by rw [he]; exact hp t ht⟩,
+    ⟨c₁, hc₁, fun t x => by rw [he]; exact h_low t x⟩⟩
+  · convert T.hasFDerivAt.comp_hasDerivAt t
+      (ContinuousLTV.hasDerivAt_lyapunovIntegral hA hQ hQ_bdd h_exp t) using 1
+    change _ = e.symm (-(s.lyapunovIntegral Q t * e (s.A t) + star (e (s.A t)) *
+      s.lyapunovIntegral Q t + e (Q t)))
+    rw [← toEuclideanCLM_transpose, map_neg, map_add, map_add, map_mul, map_mul,
+      StarAlgEquiv.symm_apply_apply, StarAlgEquiv.symm_apply_apply, StarAlgEquiv.symm_apply_apply]
+    rfl
+  · change (e.symm (s.lyapunovIntegral Q t))ᵀ = e.symm (s.lyapunovIntegral Q t)
+    rw [← e.symm_apply_apply (e.symm (s.lyapunovIntegral Q t))ᵀ, toEuclideanCLM_transpose,
+      StarAlgEquiv.apply_symm_apply, ContinuousLTV.star_lyapunovIntegral hQ_symm]
+
+/-- **A solution of the differential Lyapunov equation is a Lyapunov function** (Khalil,
+Example 4.21): if `P` solves `-Ṗ = PA + AᵀP + Q` with `c₁‖x‖² ≤ xᵀP(t)x`, `‖P(t)‖ ≤ p` and
+`xᵀQ(t)x ≥ q₁‖x‖²`, then `V(t, x) = xᵀ P(t) x` is an exponential Lyapunov function with exponent
+`2` for `ẋ = A(t) x`.
+
+Along the system, `V̇ = xᵀṖx + (Ax)ᵀPx + xᵀPAx = -xᵀQx`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Example 4.21. -/
+@[blueprint "thm:continuousLTV-isExponentialLyapunovFunction-of-differentialLyapunovEquation"
+  (title := "Quadratic Lyapunov functions from the differential Lyapunov equation")
+  (statement := /-- Let $P$ satisfy the differential Lyapunov equation
+    (\cref{def:differentialLyapunovEquation}) for $A$ with forcing $Q$, with
+    $c_1\|x\|^2 \le x^{\mathsf T}P(t)x$, $\|P(t)\| \le p$ and
+    $x^{\mathsf T}Q(t)x \ge q_1\|x\|^2$ for $t \ge 0$, $c_1, q_1 > 0$.  Then
+    $V(t, x) = x^{\mathsf T}P(t)x$ is an exponential Lyapunov function with exponent $2$
+    (\cref{def:continuousSystem-isExponentialLyapunovFunction}) for $\dot x = A(t)x$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Example 4.21. -/)
+  (proof := /-- The bounds are the hypotheses and Cauchy--Schwarz.  The derivative along the
+    system is $x^{\mathsf T}\dot P x + (Ax)^{\mathsf T}Px + x^{\mathsf T}PAx$, which the
+    differential Lyapunov equation turns into $-x^{\mathsf T}Qx \le -q_1\|x\|^2$. -/)]
+theorem isExponentialLyapunovFunction_of_differentialLyapunovEquation
+    (s : ContinuousLTV X U Y ℝ) {P Q : ℝ → Matrix X X ℝ}
+    (hP : DifferentialLyapunovEquation s.A P Q) {p : ℝ}
+    (hP_bdd : ∀ t, 0 ≤ t → ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (P t)‖ ≤ p) {c₁ : ℝ} (hc₁ : 0 < c₁)
+    (hP_low : ∀ t, 0 ≤ t → ∀ x : EuclideanSpace ℝ X,
+      c₁ * ‖x‖ ^ 2 ≤ inner ℝ x (toEuclideanCLM (n := X) (𝕜 := ℝ) (P t) x))
+    {q₁ : ℝ} (hq₁ : 0 < q₁) (hQ_pos : ∀ t, 0 ≤ t → ∀ x : EuclideanSpace ℝ X,
+      q₁ * ‖x‖ ^ 2 ≤ inner ℝ x (toEuclideanCLM (n := X) (𝕜 := ℝ) (Q t) x)) :
+    s.toContinuousSystem.zeroInput.IsExponentialLyapunovFunction
+      (fun t x => inner ℝ x (toEuclideanCLM (n := X) (𝕜 := ℝ) (P t) x)) 0 univ 2 := by
+  set e := toEuclideanCLM (n := X) (𝕜 := ℝ)
+  set V : ℝ → EuclideanSpace ℝ X → ℝ := fun t x => inner ℝ x (e (P t) x)
+  -- `e`, as a continuous linear map, carries `Ṗ` to the operators.
+  let E : Matrix X X ℝ →L[ℝ] (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
+    LinearMap.toContinuousLinearMap e.toAlgEquiv.toLinearMap
+  have hM : ∀ t, 0 ≤ t → HasDerivAt (fun τ => e (P τ))
+      (-(e (P t) * e (s.A t) + star (e (s.A t)) * e (P t) + e (Q t))) t := fun t ht => by
+    convert E.hasFDerivAt.comp_hasDerivAt t (hP t ht) using 1
+    change _ = e (-(P t * s.A t + (s.A t)ᵀ * P t + Q t))
+    rw [map_neg, map_add, map_add, map_mul, map_mul, toEuclideanCLM_transpose]
+  have hV_diff : ∀ t, 0 ≤ t → ∀ x, DifferentiableAt ℝ (Function.uncurry V) (t, x) :=
+    fun t ht x => differentiableAt_snd.inner ℝ
+      ((DifferentiableAt.comp (g := fun τ => e (P τ)) (t, x) (hM t ht).differentiableAt
+        differentiableAt_fst).clm_apply differentiableAt_snd)
+  have hp : 0 ≤ p := (norm_nonneg _).trans (hP_bdd 0 le_rfl)
+  refine ⟨Filter.univ_mem, fun t ht x _ => hV_diff t ht x, two_pos, c₁, hc₁, p + 1,
+    by positivity, q₁, hq₁, fun t ht x _ => ?_⟩
   simp only [sub_zero, Real.rpow_two]
-  refine ⟨h_lower t ht x, h_upper t ht x, ?_⟩
-  set φ := homogeneousResponse s.A t x
-  have hφ := ContinuousLTV.isTrajectoryOn_homogeneousResponse s hA t x
-  have hφ_t : homogeneousResponse s.A t x t = x := by simp
-  -- By uniqueness, `V(τ, φ(τ)) = ∫_τ^∞ ψ = ∫_t^∞ ψ - ∫_t^τ ψ`.
-  have h_along : ∀ τ ∈ Ici t, V τ (φ τ) =
-      (∫ σ in Ioi t, ψ t x σ) - ∫ σ in t..τ, ψ t x σ := by
-    intro τ hτ
-    have hτ' : t ≤ τ := hτ
-    have h_shift : ψ τ (φ τ) = ψ t x := funext fun σ => by
-      simp only [ψ, φ, homogeneousResponse, mulVec_mulVec, ← hΦ_def, Matrix.mul_assoc, hΦ_mul]
-    rw [show V τ (φ τ) = φ τ ⬝ᵥ (P τ *ᵥ φ τ) from rfl, (hψ_int τ (ht.trans hτ') (φ τ)).2,
-      h_shift, ← intervalIntegral.integral_Ioi_sub_Ioi (hψ_int t ht x).1 hτ', sub_sub_cancel]
-  have h_eq := hφ.lieDerivative_eq_of_eq_add_integral (hV_diff t (φ t))
-    (ψ := fun σ => -ψ t x σ) (by fun_prop) fun τ hτ => by
-      rw [h_along τ hτ, intervalIntegral.integral_neg, sub_eq_add_neg]
-  rw [hφ_t] at h_eq
-  calc s.toContinuousSystem.zeroInput.lieDerivative V t x ()
-      = -ψ t x t := h_eq
-    _ ≤ -(q₁ * ‖x‖ ^ 2) := by
-        simpa [ψ, hΦ_self] using neg_le_neg (hQ_pos t x)
+  refine ⟨hP_low t ht x, ?_, ?_⟩
+  · calc inner ℝ x (e (P t) x)
+        ≤ ‖x‖ * ‖e (P t) x‖ := real_inner_le_norm _ _
+      _ ≤ ‖x‖ * (‖e (P t)‖ * ‖x‖) := by gcongr; exact (e (P t)).le_opNorm x
+      _ ≤ (p + 1) * ‖x‖ ^ 2 := by nlinarith [hP_bdd t ht, norm_nonneg x, norm_nonneg (e (P t))]
+  -- The derivative along the system, read off the straight line through `x` with velocity `Ax`.
+  set w := e (s.A t) x
+  have hF : ∀ y, s.toContinuousSystem.zeroInput.F t y () = e (s.A t) y := fun y => by
+    change toEuclideanLin (s.A t) y + toEuclideanLin (s.B t) 0 = _
+    rw [map_zero, add_zero]
+    rfl
+  set γ : ℝ → EuclideanSpace ℝ X := fun τ => x + (τ - t) • w
+  have hγt : γ t = x := by simp [γ]
+  have hγ : HasDerivAt γ (s.toContinuousSystem.zeroInput.F t (γ t) ()) t := by
+    rw [hγt, hF]
+    have h := (((hasDerivAt_id t).sub_const t).smul_const w).const_add x
+    rwa [one_smul] at h
+  have h_lie := (hasDerivWithinAt_univ.mp (hγ.hasDerivWithinAt.hasDerivWithinAt_lieDerivative
+    (V := V) (v := fun t y => s.toContinuousSystem.zeroInput.F t y ())
+    (by rw [hγt]; exact hV_diff t ht x))).unique
+    (hγ.inner ℝ ((hM t ht).clm_apply hγ))
+  rw [hγt] at h_lie
+  change s.toContinuousSystem.zeroInput.lieDerivative V t x () ≤ _
+  rw [ContinuousSystem.lieDerivative, h_lie, hF]
+  have h_adj : inner ℝ x (star (e (s.A t)) (e (P t) x)) = inner ℝ w (e (P t) x) := by
+    rw [ContinuousLinearMap.star_eq_adjoint, ContinuousLinearMap.adjoint_inner_right]
+  simp only [ContinuousLinearMap.add_apply, ContinuousLinearMap.neg_apply,
+    ContinuousLinearMap.mul_apply, inner_add_right, inner_neg_right, h_adj]
+  linarith [hQ_pos t ht x]
 
 end LinearSystems

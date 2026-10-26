@@ -125,6 +125,30 @@ theorem diniDerivRight_le_iff {f : ℝ → ℝ} {t L : ℝ} :
       exact EReal.coe_lt_coe_iff.2 (by linarith [EReal.coe_lt_coe_iff.1 hy])
     | top => exact Eventually.of_forall fun _ => EReal.coe_lt_top _
 
+/-- **The norm grows no faster than the velocity.**  If `x` has right derivative `v` at `t` and
+`f` changes no faster than `‖x‖` does, `f s - f t ≤ ‖x s - x t‖`, then `D⁺ f t ≤ ‖v‖`.  Both
+`f = ‖x‖` and `f = -‖x‖` qualify. -/
+@[blueprint "lem:diniDerivRight-le-norm-of-hasDerivWithinAt"
+  (title := "Dini derivative of a norm")
+  (latexEnv := "lemma")
+  (statement := /-- If $x$ has right derivative $v$ at $t$ and $f(s) - f(t) \le \|x(s) - x(t)\|$
+    for all $s$, then $D^{+}f(t) \le \|v\|$; in particular for $f = \pm\|x\|$. -/)
+  (proof := /-- For $h > 0$ the forward quotient of $f$ is at most
+    $\|h^{-1}(x(t + h) - x(t))\|$, which tends to $\|v\|$. -/)]
+theorem diniDerivRight_le_norm_of_hasDerivWithinAt {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {f : ℝ → ℝ} {x : ℝ → E} {v : E} {t : ℝ}
+    (hx : HasDerivWithinAt x v (Ici t) t) (hf : ∀ s, f s - f t ≤ ‖x s - x t‖) :
+    D⁺ f t ≤ (‖v‖ : ℝ) := by
+  rw [diniDerivRight_le_iff]
+  intro ε hε
+  filter_upwards [hx.tendsto_slope_zero_right.norm.eventually
+      (gt_mem_nhds (lt_add_of_pos_right ‖v‖ hε)), self_mem_nhdsWithin] with h hh (hpos : 0 < h)
+  calc (f (t + h) - f t) / h
+      ≤ ‖x (t + h) - x t‖ / h := div_le_div_of_nonneg_right (hf _) hpos.le
+    _ = ‖h⁻¹ • (x (t + h) - x t)‖ := by
+        rw [norm_smul, norm_inv, Real.norm_of_nonneg hpos.le, inv_mul_eq_div]
+    _ ≤ ‖v‖ + ε := hh.le
+
 /-- **Monotonicity.**  If `f` and `g` agree at `a` and `f ≤ g` just to the right of `a`, then
 `D⁺ f a ≤ D⁺ g a`. -/
 @[blueprint "lem:diniDerivRight-mono"

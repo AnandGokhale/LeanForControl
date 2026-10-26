@@ -52,6 +52,8 @@ real number are characterized by the difference quotients themselves.
 
 \inputleannode{lem:diniDerivRight-le-iff}
 
+\inputleannode{lem:diniDerivRight-le-norm-of-hasDerivWithinAt}
+
 \inputleannode{lem:diniDerivRight-mono}
 
 \subsection{Gr\"onwall's inequality in Dini form}
@@ -353,6 +355,8 @@ taken. Theorems that need either property assume it.
 
 \inputleannode{thm:continuousSystem-isTrajectoryOn-eqOn-of-equilibrium}
 
+\inputleannode{thm:continuousSystem-isTrajectoryOn-norm-exp-bounds}
+
 \subsection{The state transition map}
 
 The state transition map $\varphi(t; t_0, x_0)$ is the solution from $x_0$ at time $t_0$,
@@ -577,25 +581,18 @@ results about $\Phi$ itself need none, since $A$ is bounded on every compact int
 
 \inputleannode{thm:hasDerivAt-stateTransitionMatrix}
 
-\inputleannode{lem:continuous-stateTransitionMatrix}
 
 \inputleannode{thm:stateTransitionMatrix-self}
 
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-mulVec}
 
-\inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mulVec}
 
-\inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mul}
 
 \subsection{Uniqueness}
 
 \inputleannode{thm:ODE-solution-unique-linear}
 
-\inputleannode{thm:stateTransitionMatrix-mulVec-unique}
 
-\inputleannode{thm:stateTransitionMatrix-col-unique}
 
-\inputleannode{thm:stateTransitionMatrix-mul-unique}
 
 \subsection{Semigroup, invertibility and composition}
 
@@ -613,17 +610,11 @@ value problem must agree, and each identity below is an instance of that.
 The matrix-level forms below, with the times ordered, predate the general results above and
 are being retired.
 
-\inputleannode{thm:stateTransitionMatrix-semigroup}
 
-\inputleannode{thm:stateTransitionMatrix-inv}
 
-\inputleannode{lem:stateTransitionMatrix-comp-of-mem}
 
-\inputleannode{thm:stateTransitionMatrix-comp}
 
-\inputleannode{lem:stateTransitionMatrix-comp-base}
 
-\inputleannode{lem:continuousOn-stateTransitionMatrix-snd}
 
 \subsection{Variation of constants}
 
@@ -632,11 +623,8 @@ difficulty is that the elapsed time appears both as the upper limit of integrati
 integrand; the proof factors the two apart rather than differentiating $\Phi$ in its second
 argument.
 
-\inputleannode{thm:hasDerivAt-forcedResponse}
 
-\inputleannode{lem:forcedResponse-self}
 
-\inputleannode{thm:variationOfConstants-unique}
 
 \subsection{The forced response as a trajectory}
 
@@ -648,17 +636,14 @@ quantifies over.
 
 \inputleannode{def:forcedResponse}
 
-\inputleannode{def:homogeneousResponse}
 
-\inputleannode{lem:homogeneousResponse-self}
 
-\inputleannode{lem:continuousOn-forcedResponse}
 
-\inputleannode{thm:isIntegralSolution-forcedResponse}
 
 \inputleannode{thm:isTrajectory-forcedResponse}
 
-\inputleannode{lem:forcedResponse-zero-input}
+\inputleannode{thm:eq-forcedResponse-of-isTrajectoryOn}
+
 
 \inputleannode{def:continuousLTV-stateTransition}
 
@@ -666,7 +651,6 @@ quantifies over.
 
 \inputleannode{thm:isTrajectory-homogeneousResponse}
 
-\inputleannode{thm:eq-homogeneousResponse-of-isIntegralCurveOn}
 
 \inputleannode{thm:isTrajectoryOn-homogeneousResponse}
 
@@ -693,9 +677,11 @@ $\exp$ and $A$ alone.
 
 \inputleannode{thm:stateTransitionMatrix-const}
 
-\inputleannode{thm:exp-mulVec-unique}
+\inputleannode{thm:continuousLTI-stateTransition-toLTV}
 
-\inputleannode{thm:exp-col-unique}
+\inputleannode{thm:continuousLTI-eq-exp-of-isTrajectoryOn}
+
+
 
 \subsection{The forced response of a time-invariant system}
 
@@ -706,7 +692,6 @@ variation-of-constants formula collapses to the closed form every textbook write
 
 \inputleannode{thm:isTrajectory-timeInvariant}
 
-\inputleannode{lem:forcedResponse-output}
 
 \section{The matrix exponential and complexification}
 
@@ -1367,7 +1352,13 @@ The time-varying form of the Lyapunov equation.
 
 \inputleannode{lem:differentialLyapunovEquation-const-iff}
 
+\inputleannode{def:continuousLTV-lyapunovIntegrand}
+
+\inputleannode{def:continuousLTV-lyapunovIntegral}
+
 \inputleannode{thm:continuousLTV-exists-differentialLyapunovEquation}
+
+\inputleannode{thm:continuousLTV-isExponentialLyapunovFunction-of-differentialLyapunovEquation}
 
 \inputleannode{thm:continuousLTV-unstable-iff-unboundedHomogeneousResponse}
 
