@@ -1,5 +1,8 @@
 import LeanForControl.LinearSystems.Observability.Defs
 import LeanForControl.MatrixAlgebra.Rank
+import Mathlib.Algebra.Module.Submodule.Invariant
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 import Architect
 
 /-!
@@ -153,5 +156,197 @@ theorem isObservable_iff_observabilityMatrix_rank_eq
   refine (MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols
     (observabilityMatrix A C)).trans ?_
   rw [Fintype.card_fin]
+
+/-- Membership in the unobservable subspace means that every finite-horizon
+output vanishes.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
+@[blueprint "lem:mem-unobservableSubspace-iff"
+  (statement := /-- A state $x$ belongs to $\mathcal N(A,C)$ if and only if
+    $CA^k x=0$ for every $k=0,\ldots,n-1$. -/)]
+lemma mem_unobservableSubspace_iff
+    {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
+    (v : Fin n → ℂ) :
+    v ∈ unobservableSubspace A C
+      ↔ ∀ k : Fin n, (C * A ^ (k : ℕ)) *ᵥ v = 0 := by
+  simp [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker]
+
+/-- The unobservable subspace is trivial exactly when the system is observable
+in the textbook sense `IsObservable`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
+@[blueprint "thm:unobservable-eq-bot-iff-observable"
+  (title := "Observability via the unobservable subspace")
+  (statement := /-- A finite-dimensional system $(A, C)$ is observable in the
+    sense of \cref{def:isObservable} if and only if its unobservable subspace
+    is trivial:
+    \[
+      \mathcal{N}(A, C) = \{0\} \iff \mathrm{IsObservable}(A, C).
+    \] -/)
+  (proof := /-- Both directions are membership unfoldings of
+    \cref{def:unobservableSubspace} against \cref{def:isObservable}. -/)]
+theorem unobservableSubspace_eq_bot_iff_isObservable
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    unobservableSubspace A C = ⊥ ↔ IsObservable A C := by
+  rw [Submodule.eq_bot_iff]
+  unfold IsObservable
+  refine ⟨fun h v hv => ?_, fun h v hv => ?_⟩
+  · exact h v ((mem_unobservableSubspace_iff v).mpr hv)
+  · exact h v ((mem_unobservableSubspace_iff v).mp hv)
+
+/-- Cayley-Hamilton consequence: a vector in the unobservable subspace is
+also annihilated by `C * A^n`, not just by `C * A^k` for `k < n`. The single
+extra power closes the gap that `A`-invariance needs. -/
+private lemma mulVec_aPowN_eq_zero_of_mem_unobservableSubspace
+    {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
+    {v : Fin n → ℂ} (hv : v ∈ unobservableSubspace A C) :
+    (C * A ^ n) *ᵥ v = 0 := by
+  rw [mem_unobservableSubspace_iff] at hv
+  have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
+    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    rwa [Fintype.card_fin] at h
+  have hlower : ∀ i ∈ Finset.range n, (C * A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
+    intro i hi
+    rw [Finset.mem_range] at hi
+    rw [Matrix.mul_smul, Matrix.smul_mulVec, hv ⟨i, hi⟩, smul_zero]
+  rw [hCH, Matrix.mul_neg, Matrix.neg_mulVec, Matrix.mul_sum, Matrix.sum_mulVec,
+    Finset.sum_eq_zero hlower, neg_zero]
+
+/-- The unobservable subspace is `A`-invariant: applying `A` to any
+unobservable state keeps it unobservable. The proof for the boundary case
+`k = n - 1` uses Cayley-Hamilton through
+`mulVec_aPowN_eq_zero_of_mem_unobservableSubspace`.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
+@[blueprint "lem:unobservableSubspace-invariant"
+  (title := "$A$-invariance of the unobservable subspace")
+  (latexEnv := "lemma")
+  (statement := /-- The unobservable subspace is closed under the action of
+    $A$: for every $v \in \mathcal{N}(A, C)$, also $A\, v \in \mathcal{N}(A, C)$. -/)
+  (proof := /-- For $k = 0, \dots, n-2$ this is direct from the definition.
+    For $k = n - 1$ we land at $C\, A^{n}\, v$, which Cayley-Hamilton
+    rewrites as a $\mathbb{C}$-linear combination of $C\, A^{i}\, v$ for
+    $i < n$. Each of those is zero, so the combination is zero. -/)]
+lemma A_mulVec_mem_unobservableSubspace_of_mem
+    {A : Matrix (Fin n) (Fin n) ℂ} {C : Matrix (Fin p) (Fin n) ℂ}
+    {v : Fin n → ℂ} (hv : v ∈ unobservableSubspace A C) :
+    A *ᵥ v ∈ unobservableSubspace A C := by
+  rw [mem_unobservableSubspace_iff]
+  intro k
+  -- Bridge `(C * A^k.val) *ᵥ (A *ᵥ v) = (C * A^(k.val + 1)) *ᵥ v`.
+  rw [Matrix.mulVec_mulVec, Matrix.mul_assoc, ← pow_succ]
+  by_cases hk : k.val + 1 < n
+  · exact (mem_unobservableSubspace_iff v).mp hv ⟨k.val + 1, hk⟩
+  · -- `k.val + 1 = n`, so use the Cayley-Hamilton helper.
+    push Not at hk
+    have heq : k.val + 1 = n := by omega
+    rw [heq]
+    exact mulVec_aPowN_eq_zero_of_mem_unobservableSubspace hv
+
+/-- The unobservable subspace is exactly the kernel of the observability
+matrix acting by matrix-vector multiplication.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence. -/
+@[blueprint "thm:unobservableSubspace-eq-ker-observabilityMatrix"
+  (statement := /-- The unobservable subspace is the kernel of the
+    observability matrix:
+    \[
+      \mathcal N(A,C)=\ker \mathcal O(A,C).
+    \] -/)]
+theorem unobservableSubspace_eq_ker_observabilityMatrix
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    unobservableSubspace A C =
+      LinearMap.ker (observabilityMatrix A C).mulVecLin := by
+  ext v
+  simp only [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker]
+  constructor
+  · intro h
+    funext ki
+    exact congrFun (h ki.1) ki.2
+  · intro h k
+    funext i
+    exact congrFun h (k, i)
+
+/-- The dimension of the unobservable subspace plus the rank of the
+observability matrix is the state dimension.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence.
+This is the rank-nullity consequence of the observability-matrix kernel description. -/
+@[blueprint "thm:unobservableSubspace-finrank-add-rank"
+  (statement := /-- The dimension of the unobservable subspace plus the rank
+    of the observability matrix is the state dimension:
+    \[
+      \dim \mathcal N(A,C)+\operatorname{rank}\mathcal O(A,C)=n.
+    \] -/)]
+theorem finrank_unobservableSubspace_add_rank_observabilityMatrix
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    Module.finrank ℂ (unobservableSubspace A C) +
+      Matrix.rank (observabilityMatrix A C) = n := by
+  rw [unobservableSubspace_eq_ker_observabilityMatrix]
+  have h :=
+    LinearMap.finrank_range_add_finrank_ker (observabilityMatrix A C).mulVecLin
+  rw [Module.finrank_pi, Fintype.card_fin] at h
+  unfold Matrix.rank
+  omega
+
+/-- The unobservable subspace is contained in the output kernel.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence.
+This follows from the zero-time output condition. -/
+@[blueprint "lem:unobservableSubspace-le-ker-C"
+  (statement := /-- The unobservable subspace is contained in the output
+    kernel: $\mathcal N(A,C)\subseteq\ker C$. -/)]
+lemma unobservableSubspace_le_ker_C
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ) :
+    unobservableSubspace A C ≤ LinearMap.ker C.mulVecLin := by
+  intro x hx
+  rw [LinearMap.mem_ker]
+  by_cases hn : n = 0
+  · subst n
+    have hx0 : x = 0 := Subsingleton.elim _ _
+    rw [hx0, map_zero]
+  · have h0 :=
+      (show ∀ k : Fin n, (C * A ^ (k : ℕ)) *ᵥ x = 0 from
+        by simpa [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker] using hx)
+        ⟨0, Nat.pos_of_ne_zero hn⟩
+    simpa using h0
+
+/-- Every `A`-invariant subspace contained in the output kernel is contained
+in the unobservable subspace.
+
+Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Theorem 15.7 (observability-matrix kernel);
+the algebraic characterization here is a derived consequence.
+This is a derived invariant-subspace characterization. -/
+@[blueprint "thm:unobservableSubspace-greatest-invariant"
+  (statement := /-- Every $A$-invariant subspace contained in $\ker C$ is
+    contained in the unobservable subspace. -/)]
+theorem le_unobservableSubspace_of_invariant_of_le_ker
+    (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
+    (S : Submodule ℂ (Fin n → ℂ))
+    (hA : S ∈ Module.End.invtSubmodule A.mulVecLin)
+    (hC : S ≤ LinearMap.ker C.mulVecLin) :
+    S ≤ unobservableSubspace A C := by
+  rw [Module.End.mem_invtSubmodule_iff_forall_mem_of_mem] at hA
+  intro x hx
+  simp only [unobservableSubspace, Submodule.mem_iInf, LinearMap.mem_ker]
+  intro k
+  have hpow : ∀ j : ℕ, A ^ j *ᵥ x ∈ S := by
+    intro j
+    induction j with
+    | zero => simpa using hx
+    | succ j ih =>
+        rw [pow_succ', ← Matrix.mulVec_mulVec]
+        exact hA _ ih
+  have hzero := hC (hpow k)
+  rw [LinearMap.mem_ker] at hzero
+  change (C * A ^ (k : ℕ)) *ᵥ x = 0
+  rw [← Matrix.mulVec_mulVec]
+  exact hzero
 
 end LinearSystems
