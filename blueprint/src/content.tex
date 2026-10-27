@@ -55,6 +55,7 @@ real number are characterized by the difference quotients themselves.
 \inputleannode{lem:diniDerivRight-le-norm-of-hasDerivWithinAt}
 
 \inputleannode{lem:diniDerivRight-mono}
+\inputleannode{lem:hasDerivWithinAt-le-of-le-of-eq}
 
 \subsection{Gr\"onwall's inequality in Dini form}
 
@@ -103,6 +104,7 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 \inputleannode{lem:abs-norm-sq-sub-norm-sq-le}
 
 \inputleannode{lem:prod-norm-le-norm-fst-add-norm-snd}
+\inputleannode{lem:hasDerivWithinAt-norm-add-smul}
 
 \section{Positive definite functions}
 
@@ -438,6 +440,35 @@ escapes in finite time, and nothing like forward completeness is ever needed.
 \inputleannode{def:discreteSystem-zeroInput}
 
 \inputleannode{lem:discreteSystem-zeroInput-isTrajectoryOn-iff}
+
+\chapter{Contraction theory}
+
+A \emph{pairing} replaces the inner product in contraction analysis for norms that come from no
+inner product.  Regular pairings are the pairings for which the norm of a curve can be
+differentiated through the pairing, which is what contraction arguments use.
+
+\section{Regular pairings}
+
+\inputleannode{def:regularPairing}
+\inputleannode{lem:regularPairing-abs-le-norm-mul-norm}
+\inputleannode{lem:regularPairing-abs-sub-le}
+\inputleannode{lem:regularPairing-add-smul-self}
+
+Every normed space carries a regular pairing, built from the norm alone; on an inner product space
+the inner product is another.
+
+\inputleannode{def:regularPairing-ofInner}
+\inputleannode{def:regularPairing-ofNorm}
+
+\section{What a regular pairing says about the norm}
+
+Every regular pairing lies between the left and right derivatives of the norm, and so it computes
+the derivative of the norm along any curve.  This is what makes $\frac12 \|x\|^2$ usable as a
+Lyapunov function for every norm.
+
+\inputleannode{thm:regularPairing-le-ofNorm}
+\inputleannode{lem:hasDerivWithinAt-norm-sq}
+\inputleannode{thm:hasDerivAt-norm-sq}
 
 \chapter{Linear systems}
 
