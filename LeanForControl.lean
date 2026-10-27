@@ -19,6 +19,7 @@ import LeanForControl.Comparison.DecaySystem
 import LeanForControl.Comparison.Massera
 import LeanForControl.Comparison.PositiveDefiniteBounds
 import LeanForControl.Contraction.Norms.Defs
+import LeanForControl.Contraction.Norms.LogNorm
 import LeanForControl.Contraction.Norms.CurveNormDerivative
 import LeanForControl.Contraction.Norms.RegularPairing
 import LeanForControl.LinearSystems.Continuous

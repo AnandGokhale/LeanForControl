@@ -39,6 +39,15 @@ theorem Prod.norm_le_norm_fst_add_norm_snd {E₁ E₂ : Type*} [SeminormedAddGro
   rw [Prod.norm_def]
   exact max_le_add_of_nonneg (norm_nonneg _) (norm_nonneg _)
 
+section RightDeriv
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+private lemma convexOn_norm_add_smul (x y : E) :
+    ConvexOn ℝ Set.univ (fun h : ℝ => ‖y + h • x‖) := by
+  simpa [Function.comp_def, AffineMap.lineMap_apply, add_comm] using
+    (convexOn_univ_norm (E := E)).comp_affineMap (AffineMap.lineMap y (y + x))
+
 /-- **The norm has a right derivative in every direction**: `h ↦ ‖y + h x‖` is convex. -/
 @[blueprint "lem:hasDerivWithinAt-norm-add-smul"
   (title := "Right derivative of a norm along a line")
@@ -47,11 +56,23 @@ theorem Prod.norm_le_norm_fst_add_norm_snd {E₁ E₂ : Type*} [SeminormedAddGro
     $h = 0$, for all $x, y$. -/)
   (proof := /-- The function is convex, and a convex function on $\mathbb{R}$ has a right
     derivative at every point. -/)]
-theorem hasDerivWithinAt_norm_add_smul {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    (x y : E) :
+theorem hasDerivWithinAt_norm_add_smul (x y : E) :
     HasDerivWithinAt (fun h : ℝ => ‖y + h • x‖)
-      (derivWithin (fun h : ℝ => ‖y + h • x‖) (Set.Ioi 0) 0) (Set.Ioi 0) 0 := by
-  have hc : ConvexOn ℝ Set.univ (fun h : ℝ => ‖y + h • x‖) := by
-    simpa [Function.comp_def, AffineMap.lineMap_apply, add_comm] using
-      (convexOn_univ_norm (E := E)).comp_affineMap (AffineMap.lineMap y (y + x))
-  exact hc.hasDerivWithinAt_rightDeriv_of_mem_interior (by simp)
+      (derivWithin (fun h : ℝ => ‖y + h • x‖) (Set.Ioi 0) 0) (Set.Ioi 0) 0 :=
+  (convexOn_norm_add_smul x y).hasDerivWithinAt_rightDeriv_of_mem_interior (by simp)
+
+/-- **The right derivative of a norm along a line is at most every forward difference
+quotient**: `h ↦ ‖y + h x‖` is convex. -/
+@[blueprint "lem:derivWithin-norm-add-smul-le"
+  (title := "Right derivative of a norm below its difference quotients")
+  (latexEnv := "lemma")
+  (statement := /-- In a real normed space, for all $x, y$ and $h > 0$, the right derivative of
+    $s \mapsto \|y + s x\|$ at $0$ is at most $(\|y + h x\| - \|y\|)/h$. -/)
+  (proof := /-- The function is convex, and the slopes of a convex function are nondecreasing.
+    -/)]
+theorem derivWithin_norm_add_smul_le (x y : E) {h : ℝ} (hh : 0 < h) :
+    derivWithin (fun h : ℝ => ‖y + h • x‖) (Set.Ioi 0) 0 ≤ (‖y + h • x‖ - ‖y‖) / h := by
+  simpa [slope_def_field] using
+    (convexOn_norm_add_smul x y).rightDeriv_le_slope_of_mem_interior (by simp) (Set.mem_univ h) hh
+
+end RightDeriv
