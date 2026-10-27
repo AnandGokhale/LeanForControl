@@ -33,8 +33,6 @@ import LeanForControl.LinearSystems.Observability.Observability
 import LeanForControl.LinearSystems.Solutions.CtsLTI
 import LeanForControl.LinearSystems.Solutions.CtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
-import LeanForControl.ODEs.DefsPeanoBaker
-import LeanForControl.ODEs.PeanoBaker
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Stability.Continuous.DifferentialLyapunovEquation
@@ -54,8 +52,10 @@ import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
 import LeanForControl.ODEs.ComparisonLemma
+import LeanForControl.ODEs.DefsPeanoBaker
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties
+import LeanForControl.ODEs.PeanoBaker
 import LeanForControl.ODEs.PicardLindelof
 import LeanForControl.Stability.Continuous.Boundedness
 import LeanForControl.Stability.Continuous.Cascade
