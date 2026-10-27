@@ -1,3 +1,4 @@
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.Complex
@@ -302,45 +303,14 @@ private lemma exists_norm_exp_le_on_Icc (b : ℝ) :
   obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hcont
   exact ⟨max C 1, le_max_right _ _, fun r hr => (hC r hr).trans (le_max_left _ _)⟩
 
-/-- **Hurwitz implies uniform exponential decay.**
-If every eigenvalue of `A` has strictly negative real part then `‖e^{At}‖` decays
-exponentially.
+/-- **Hurwitz implies uniform exponential decay, in the `L∞` operator norm.**  A proof device:
+the norm-free statements below are derived from it.
 
 The contractive block `‖e^{Am}‖ ≤ c < 1` decays geometrically along the arithmetic progression
 `0, m, 2m, …`; writing `t = qm + r` with `r ∈ [0, m)` and bounding `‖e^{Ar}‖` by its maximum
 `M` over the compact `[0, m]` spreads that into decay in `t`, at rate `γ = -log c / m` and
-with constant `M / c`.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1. -/
-@[blueprint "thm:isHurwitz-exists-norm-exp-le"
-  (title := "A Hurwitz matrix has an exponentially decaying exponential")
-  (statement := /-- If $A$ is Hurwitz (\cref{def:stability-isHurwitz}) then there are
-    $k > 0$ and $\gamma > 0$ with
-    \[
-      \|e^{At}\| \le k\,e^{-\gamma t}, \qquad \forall\, t \ge 0.
-    \] -/)
-  (proof := /-- \emph{A contracting block.}  The spectral radius of $e^{A_{\mathbb C}}$ is
-    below $1$ (\cref{lem:spectralRadius-exp-complexify-lt-one}), so by Gelfand's formula
-    (\cref{lem:exists-pow-norm-lt-one}) some integer time $p > 0$ has
-    $\|e^{Ap}\| < 1$.  Fix $c$ with $\|e^{Ap}\| \le c < 1$, kept away from $0$ so that
-    $\log c$ exists.
-
-    \emph{One block.}  $\|e^{Ar}\|$ is continuous, hence bounded by some $M \ge 1$ on the
-    compact interval $[0, p]$.
-
-    \emph{Spreading.}  Write $t = qp + r$ with $q \in \mathbb{N}$ and $r \in [0, p)$.  The
-    exponents commute, so $e^{At} = e^{Ar}(e^{Ap})^{q}$, and submultiplicativity gives
-    $\|e^{At}\| \le M c^{q}$ by induction on $q$.  Setting $\gamma = -\log c / p$ turns
-    $c^{q}$ into $e^{-\gamma q p}$, and $qp \ge t - p$ costs one further factor $c^{-1}$.  The
-    bound is $\|e^{At}\| \le (M/c)\,e^{-\gamma t}$.
-
-    The contraction is taken in the $L^{\infty}$ operator norm, which is what makes it usable
-    against $\|Ax\|_{\infty} \le \|A\|_{\infty}\|x\|_{\infty}$ in
-    \cref{thm:isHurwitz-exists-norm-exp-mulVec-le}.
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Theorem 8.1.
-  -/)]
-theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
+with constant `M / c`. -/
+private theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
     ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t →
       ‖exp (t • A)‖ ≤ k * Real.exp (-γ * t) := by
   -- A contracting block of length `p`.
@@ -421,30 +391,40 @@ theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
         exact Real.exp_le_exp.2 (by linarith)
     _ = M / c * Real.exp (-γ * t) := by field_simp
 
-/-- The decay estimate applied to a state, which is the form Lyapunov stability consumes.
+/-- The matrices' Euclidean operators are bounded by their `L∞` norms, up to a constant: a linear
+map between finite-dimensional spaces is continuous.  No explicit constant is needed. -/
+private lemma exists_norm_toEuclideanCLM_le :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ M : Matrix X X ℝ, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) M‖ ≤ C * ‖M‖ := by
+  let T : Matrix X X ℝ →L[ℝ] (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
+    LinearMap.toContinuousLinearMap
+      (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearEquiv.toLinearMap
+  exact ⟨‖T‖, norm_nonneg _, fun M => T.le_opNorm M⟩
 
-Separated from `IsHurwitz.exists_norm_exp_le` because the bound on the matrix is the real
-content; this is one application of `Matrix.linfty_opNorm_mulVec`, and it is the step where
-the choice of the `L∞` operator norm earns its keep. -/
-@[blueprint "thm:isHurwitz-exists-norm-exp-mulVec-le"
+/-- **Exponential decay of the state under a Hurwitz matrix**, in the Euclidean norm: the operator
+`e^{At}` on `ℝ^X` has norm at most `k e^{-γt}`. -/
+@[blueprint "thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le"
   (title := "Exponential decay of the state under a Hurwitz matrix")
   (statement := /-- If $A$ is Hurwitz (\cref{def:stability-isHurwitz}) then there are
     $k > 0$ and $\gamma > 0$ with
     \[
-      \|e^{At}x\| \le k\,e^{-\gamma t}\,\|x\|, \qquad \forall\, t \ge 0,\ \forall\, x.
+      \|e^{At}x\| \le k\,e^{-\gamma t}\,\|x\|,
+        \qquad \forall\, t \ge 0,\ \forall\, x \in \mathbb{R}^X,
     \]
-
-    This is the form the Lyapunov stability predicates consume. -/)
-  (proof := /-- \cref{thm:isHurwitz-exists-norm-exp-le} bounds the matrix; one application of
-    $\|Ax\|_{\infty} \le \|A\|_{\infty}\|x\|_{\infty}$ transfers it to the state.  This is the
-    step at which the choice of the $L^{\infty}$ operator norm earns its keep. -/)]
-theorem IsHurwitz.exists_norm_exp_mulVec_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
-    ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t → ∀ x : X → ℝ,
-      ‖exp (t • A) *ᵥ x‖ ≤ k * Real.exp (-γ * t) * ‖x‖ := by
+    in the Euclidean norm.  This is the form the Lyapunov stability predicates consume. -/)
+  (proof := /-- An exponential envelope for $e^{At}$ in any matrix norm, transported to the
+    Euclidean operator norm by continuity of the linear map from matrices to operators. -/)]
+theorem IsHurwitz.exists_norm_toEuclideanCLM_exp_le {A : Matrix X X ℝ} (hA : IsHurwitz A) :
+    ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t →
+      ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (exp (t • A))‖ ≤ k * Real.exp (-γ * t) := by
   obtain ⟨k, hk, γ, hγ, hbd⟩ := hA.exists_norm_exp_le
-  exact ⟨k, hk, γ, hγ, fun t ht x =>
-    (Matrix.linfty_opNorm_mulVec _ _).trans
-      (mul_le_mul_of_nonneg_right (hbd t ht) (norm_nonneg x))⟩
+  obtain ⟨C, hC, hT⟩ := exists_norm_toEuclideanCLM_le (X := X)
+  refine ⟨(C + 1) * k, by positivity, γ, hγ, fun t ht => ?_⟩
+  calc ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (exp (t • A))‖ ≤ C * ‖exp (t • A)‖ := hT _
+    _ ≤ (C + 1) * (k * Real.exp (-γ * t)) := by
+        gcongr
+        · linarith
+        · exact hbd t ht
+    _ = (C + 1) * k * Real.exp (-γ * t) := by ring
 
 /-- Pointwise decay of `e^{At}` on real states upgrades to decay of the matrix itself.
 
@@ -566,8 +546,8 @@ private lemma tendsto_exp_of_norm_exp_le {k γ : ℝ} (hγ : 0 < γ)
   (title := "Hurwitz is decay of the matrix exponential")
   (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
     only if $e^{At} \to 0$ as $t \to \infty$. -/)
-  (proof := /-- Forwards, \cref{thm:isHurwitz-exists-norm-exp-le} supplies an exponentially
-    decaying envelope and \cref{lem:tendsto-zero-of-norm-le-envelope} squeezes;
+  (proof := /-- Forwards, an exponentially decaying envelope in some matrix norm and
+    \cref{lem:tendsto-zero-of-norm-le-envelope} squeeze;
     backwards is \cref{thm:isHurwitz-of-tendsto-exp}. -/)]
 theorem isHurwitz_iff_tendsto_exp :
     IsHurwitz A ↔ Tendsto (fun t : ℝ => exp (t • A)) atTop (𝓝 0) := by
@@ -575,25 +555,41 @@ theorem isHurwitz_iff_tendsto_exp :
   obtain ⟨k, -, γ, hγ, hbd⟩ := hA.exists_norm_exp_le
   exact tendsto_exp_of_norm_exp_le A hγ hbd
 
-/-- `A` is Hurwitz exactly when `‖e^{At}‖` admits an exponentially decaying envelope. -/
-@[blueprint "thm:isHurwitz-iff-exists-norm-exp-le"
-  (title := "Hurwitz is an exponential envelope for the matrix exponential")
+/-- `A` is Hurwitz exactly when `e^{At}` decays exponentially: `e^{γt} e^{At} → 0` for some
+`γ > 0`.  Norm-free: convergence in the matrix topology, which every matrix norm induces. -/
+@[blueprint "thm:isHurwitz-iff-exists-tendsto-exp"
+  (title := "Hurwitz is exponential decay of the matrix exponential")
   (statement := /-- A real square matrix $A$ is Hurwitz (\cref{def:stability-isHurwitz}) if and
-    only if there are $k > 0$ and $\gamma > 0$ with
-    $\|e^{At}\| \le k\,e^{-\gamma t}$ for all $t \ge 0$.
+    only if $e^{\gamma t} e^{At} \to 0$ as $t \to \infty$ for some $\gamma > 0$.
 
     Recorded separately from \cref{thm:isHurwitz-iff-tendsto-exp} because the two are what
     clauses (2) and (3) of Theorem 8.1 respectively need: bare convergence for asymptotic
-    stability, an explicit rate for exponential stability. -/)
-  (proof := /-- Forwards is \cref{thm:isHurwitz-exists-norm-exp-le}.  Backwards, the envelope
-    forces $e^{At} \to 0$ (\cref{lem:tendsto-zero-of-norm-le-envelope}), so
+    stability, a rate for exponential stability.  No norm appears: the convergence is in the
+    matrix topology, which all matrix norms induce. -/)
+  (proof := /-- Forwards, an exponential envelope $\|e^{At}\| \le k e^{-\gamma t}$ in some
+    matrix norm gives $e^{(\gamma/2) t} e^{At} \to 0$.  Backwards,
+    $e^{At} = e^{-\gamma t} \cdot e^{\gamma t} e^{At} \to 0$, so
     \cref{thm:isHurwitz-iff-tendsto-exp} applies. -/)]
-theorem isHurwitz_iff_exists_norm_exp_le :
-    IsHurwitz A ↔ ∃ k > (0 : ℝ), ∃ γ > (0 : ℝ), ∀ t : ℝ, 0 ≤ t →
-      ‖exp (t • A)‖ ≤ k * Real.exp (-γ * t) := by
-  refine ⟨fun hA => hA.exists_norm_exp_le, ?_⟩
-  rintro ⟨k, -, γ, hγ, hbd⟩
-  exact (isHurwitz_iff_tendsto_exp A).2 (tendsto_exp_of_norm_exp_le A hγ hbd)
+theorem isHurwitz_iff_exists_tendsto_exp :
+    IsHurwitz A ↔ ∃ γ > (0 : ℝ),
+      Tendsto (fun t : ℝ => Real.exp (γ * t) • exp (t • A)) atTop (𝓝 0) := by
+  constructor
+  · intro hA
+    obtain ⟨k, -, γ, hγ, hbd⟩ := hA.exists_norm_exp_le
+    refine ⟨γ / 2, by positivity, tendsto_zero_of_norm_le_envelope k 1 0 (half_pos hγ) ?_⟩
+    filter_upwards [eventually_ge_atTop (0 : ℝ)] with t ht
+    rw [norm_smul, Real.norm_of_nonneg (Real.exp_pos _).le]
+    calc Real.exp (γ / 2 * t) * ‖exp (t • A)‖
+        ≤ Real.exp (γ / 2 * t) * (k * Real.exp (-γ * t)) := by gcongr; exact hbd t ht
+      _ = k * Real.exp (-(γ / 2) * (t - 0)) * 1 := by
+          rw [mul_left_comm, ← Real.exp_add]; ring_nf
+  · rintro ⟨γ, hγ, h⟩
+    refine (isHurwitz_iff_tendsto_exp A).2 ?_
+    have hdecay : Tendsto (fun t : ℝ => Real.exp (-γ * t)) atTop (𝓝 0) := by
+      simpa using tendsto_const_mul_exp_neg 1 0 hγ
+    refine (hdecay.smul h).congr' (Eventually.of_forall fun t => ?_) |>.trans (by simp)
+    rw [smul_smul, ← Real.exp_add]
+    simp
 
 end Matrices
 

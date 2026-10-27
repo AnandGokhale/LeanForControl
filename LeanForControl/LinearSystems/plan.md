@@ -41,8 +41,9 @@ LeanForControl/
       DecompositionExamples.lean
 
     Solutions/
-      DefsCtsLTV.lean           Peano-Baker series, state transition matrix
-      CtsLTV.lean               Phi solves the matrix ODE; variation of constants
+      DefsCtsLTV.lean           state transition operator; forced response (Peano-Baker series
+                                and its theory: ODEs/DefsPeanoBaker.lean, ODEs/PeanoBaker.lean)
+      CtsLTV.lean               trajectories of LTV systems; variation of constants
       CtsLTI.lean               the LTI case: e^{At}
       DefsDiscLTV.lean          discrete state transition matrix (ordered product)
       DiscLTV.lean              discrete variation of constants
@@ -183,11 +184,11 @@ visible gap rather than an unstated assumption that this library is continuous-t
 
 | Result | Lean name | File | Status |
 |---|---|---|---|
-| Peano–Baker series, state transition matrix | `peanoBakerTerm`, `stateTransitionMatrix` | `Solutions/DefsCtsLTV.lean` | ✅ done |
-| `Φ` solves `Φ̇ = A(t)Φ`, `Φ(t₀,t₀) = I`, and is unique | `hasDerivAt_stateTransitionMatrix`, `stateTransitionMatrix_mul_unique` | `Solutions/CtsLTV.lean` | ✅ done |
-| Semigroup, invertibility, composition | `stateTransitionMatrix_semigroup`, `_inv`, `_comp` | `Solutions/CtsLTV.lean` | ✅ done |
-| Variation of constants (continuous) | `hasDerivAt_variationOfConstants`, `variationOfConstants_unique` | `Solutions/CtsLTV.lean` | ✅ done |
-| The LTI case: `e^{At}` | — | `Solutions/CtsLTI.lean` | ✅ done |
+| Peano–Baker series, in any Banach algebra | `peanoBakerTerm`, `stateTransitionMatrix` | `Solutions/DefsCtsLTV.lean` | ✅ done |
+| `Φ` solves `Φ̇ = A(t)Φ`; uniqueness; semigroup; inverse; `∂_τΦ`; growth bound | `hasDerivAt_stateTransitionMatrix`, `ODE_solution_unique_linear`, `stateTransitionMatrix_mul`, `_mul_swap`, `hasDerivAt_stateTransitionMatrix_snd`, `norm_stateTransitionMatrix_le` | `ODEs/PeanoBaker.lean` | ✅ done |
+| Trajectories of an LTV system: existence, uniqueness, `φ = Φ` | `ContinuousLTV.isTrajectory_homogeneousResponse`, `eq_homogeneousResponse_of_isTrajectoryOn`, `hasUniqueSolutions_zero`, `stateTransitionMap_zero` | `Solutions/CtsLTV.lean` | ✅ done |
+| Variation of constants (continuous) | `ContinuousLTV.isTrajectory_forcedResponse`, `eq_forcedResponse_of_isTrajectoryOn` | `Solutions/CtsLTV.lean` | ✅ done |
+| The LTI case: `e^{At}` | `stateTransitionMatrix_const`, `ContinuousLTI.stateTransition_toLTV`, `eq_exp_of_isTrajectoryOn` | `Solutions/CtsLTI.lean` | ✅ done |
 | Discrete state transition matrix (ordered product) | `discStateTransitionMatrix` | `Solutions/DefsDiscLTV.lean` | ✅ done |
 | Discrete variation of constants | `discVariationOfConstants_unique` | `Solutions/DiscLTV.lean` | ✅ done |
 | State-space system object, `ẋ = A x + B u` | — | `Defs.lean` | planned — see open questions |
@@ -226,6 +227,17 @@ stability used in `LinearSystems/` — Hespanha's Definition 8.1, stated on `Φ(
 definition already in `Stability/Continuous/Defs.lean`, applied to the unforced system
 `s.toContinuousSystem.zeroInput`, not a second one.  That is why `LinearSystems/Stability/` needs
 no stability predicate of its own.
+
+Two further connections between `Φ` and the nonlinear state transition map `φ`:
+
+- **On linear systems they agree** — done: `ContinuousLTV.stateTransitionMap_zero` says
+  `φ(t; t₀, x₀) = Φ(t, t₀) x₀` for `t ≥ t₀` under zero input, from
+  `ContinuousLTV.hasUniqueSolutions_zero`.
+- **`Φ` is the derivative of the flow** — not planned as a public result. Differentiability
+  of solutions in the initial state (autonomous form, applied to the time-augmented system) is
+  proved privately in `Stability/Continuous/Converse.lean`, its only user.  Contraction and
+  Coppel's inequality will go through Dini derivatives and one-sided Lipschitz bounds (work in
+  progress on the `convex-analysis` branch), which need no derivative of the flow.
 
 ## Status: blueprint coverage
 
@@ -337,6 +349,38 @@ in the directory tree above marked `(planned)`.
 ## Known tech debt
 
 Not blocking anything; recorded so it is not rediscovered.
+
+### Linear systems should eventually be built on linear maps, not matrices
+
+Decided 2026-10-26.  The library states theorems over an abstract normed space wherever it can
+(the nonlinear stability theory already does).  The linear objects (`ContinuousLTV`,
+`ContinuousLTI` and the discrete ones) are matrix-based; for now their states live in
+`EuclideanSpace ℝ X` with matrices under the L² operator norm, which makes the Lyapunov bounds
+exact and the linearization bridge exact (`toEuclideanCLM` is an isometry).
+
+The eventual target is systems on linear maps: `A : ℝ → E →L[ℝ] E` on a normed space `E`, with
+an inner product only where needed (the Lyapunov equation becomes `A† P + P A = -Q`).  What that
+conversion involves, file by file:
+
+* objects: fields become continuous linear maps; an `ofMatrix` constructor for coordinates;
+* solutions: done for the continuous-time core: Peano–Baker is proved in any Banach algebra
+  (`ODEs/PeanoBaker.lean`) and the LTV system uses it at `E →L[ℝ] E`; what remains is the
+  object itself (its fields are still matrices) and Cayley–Hamilton via `minpoly` / `aeval`;
+* stability: Hurwitz/Schur through the spectrum of the complexified map (complexification of
+  real linear maps is the hard part in Mathlib); Gelfand's formula already holds in any Banach
+  algebra;
+* controllability/observability: reachable subspace `⨆ k, range (A ^ k ∘L B)`, Hautus via
+  eigenvectors of `A†`; Kalman decomposition as an invariant-subspace decomposition;
+* linearization: `fderiv f x_eq` directly, with no conversion at all.
+* the discrete-time side (`DiscLTV`, `Schur`, discrete Lyapunov) has not been moved to Euclidean
+  states yet.
+
+`Φ` as the derivative of the nonlinear flow is not planned as a public result; see "bridge to
+nonlinear stability".
+
+Rough size: most of `LinearSystems/` and `MatrixAlgebra/` (~10k lines), with new design in the
+spectral and Kalman parts.  Worth doing when infinite-dimensional linear systems or a
+Mathlib-style linear-systems API are needed.
 
 ### Clean-interfaces pass on `MatrixAlgebra/Spectrum.lean`
 

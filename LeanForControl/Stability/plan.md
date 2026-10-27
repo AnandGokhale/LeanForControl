@@ -324,7 +324,7 @@ Each is documented in its docstring's *Differences* list; collected here so they
    (`Continuous/Linearization.lean`), and Lemma 4.6 (`Continuous/ISS.lean`) ask `f` to be `C¹`,
    Lipschitz and to vanish at `x_eq` for every `t ∈ ℝ`.  Cause: differentiability of `V` at
    `t = 0` goes through solutions from slightly negative initial times (the time-augmented
-   system and the sensitivity lemmas of `ODEs/Sensitivity.lean` work on open sets).  Fix:
+   system and the private sensitivity lemmas in `Continuous/Converse.lean` work on open sets).  Fix:
    one-sided derivatives on `[0, ∞) × D` throughout the sensitivity lemmas.
 3. **Lyapunov functions are differentiable, not `C¹`.** Khalil's converse theorems 4.14 and 4.16
    assert continuously differentiable `V`; the Lyapunov structures
@@ -341,18 +341,33 @@ done; matrix algebra, ODEs, LTV, the stability definitions, boundedness, ISS, ca
 linearization and the converse theorems remain, together with the list of breaking changes to
 declarations that exist on `main`.
 
-### The L²/L∞ bridge in Theorem 4.13
+### Coordinate changes for systems
 
-The LTV results (4.11, 4.12) live on `Fin n → ℝ` with the sup norm; systems live on
-`EuclideanSpace ℝ (Fin n)` with the 2-norm.  Theorem 4.13 translates estimates between the two with
-explicit-constant norm comparisons (`MatrixAlgebra/NormComparison.lean`: `norm_ofLp_le`,
-`norm_le_sqrt_card_mul_norm_ofLp`, `sq_norm_le_dotProduct_self`, `norm_toEuclideanCLM_le`,
-`norm_toEuclideanCLM_symm_le`, `abs_dotProduct_le`, `dotProduct_mulVec_le`).  Every use only needs
-*some* constant, so all of them are finite-dimensional norm equivalence, which Mathlib provides
-with unspecified constants.  Two fixes: locally, replace them by Mathlib's norm equivalence; at the
-root, settle one state space for linear and nonlinear systems, after which the bridge disappears.
-Decide the root question first (it is the L²/L∞ question of the Stability/Continuous rewrite), so
-the local fix is not thrown away.
+Khalil, Hespanha and the linear-systems theory change coordinates constantly: shifting an
+equilibrium to the origin ("without loss of generality `x = 0`"), similarity transforms `z = Tx`
+(`A' = TAT⁻¹`, `B' = TB`, `C' = CT⁻¹`; modal and Kalman forms), and later Lyapunov
+transformations `z = T(t)x` and diffeomorphisms.  Today each use is done by hand: Theorem 4.13 is
+stated at the origin and generalized to `x_eq` with an inline shifted system and
+`LocallyExponentiallyStable.of_semiconj`.
+
+Plan, after the audit backlog is down: an affine coordinate change `s.map φ`,
+`φ(x) = Lx + b` with `L : E ≃L[ℝ] E'`, `F'(t, z, u) = L F(t, φ⁻¹ z, u)`; trajectories and
+equilibria correspond; every stability notion transfers both ways (norms distort by at most
+`‖L‖`, `‖L⁻¹‖`), with `of_semiconj` a special case.  Similarity transforms of `ContinuousLTV` and
+`ContinuousLTI` as instances.  Put it in leaf files (`Systems/CoordinateChange.lean`,
+`Stability/Continuous/CoordinateChange.lean`), not in `Systems/Continuous.lean`.  Nonlinear and
+time-varying changes only when a theorem needs them.
+
+### `comparison_lemma` asks for its comparison solutions
+
+The Dini derivative is now `EReal`-valued (as in Saks, Bruckner and Bullo), so `comparison_lemma`
+no longer carries boundedness hypotheses on the difference quotients.  It still asks the caller
+for the perturbed solutions `z_λ` of `ż = f(t, z) + λ` (`hz_exists`), which every caller
+discharges with `exists_isIntegralSolution_Icc_of_lipschitz`; build them inside the proof instead.
+For the linear case, `le_mul_exp_of_diniDerivRight_le` (a wrapper of Mathlib's Grönwall) is
+already the lighter tool.  (`IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` is *not* a
+corollary of it: the Lie-derivative version needs its rate bound only on the open interval, the
+Dini one on `[t₀, t₁)`.)
 
 ### `ClassKLGlobal.continuous_r` concludes on the wrong set
 

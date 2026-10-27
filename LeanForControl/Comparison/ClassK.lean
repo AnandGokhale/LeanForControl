@@ -25,9 +25,6 @@ Each structure stores both `toFun` and its inverse `invFun` so that `symm` and `
 never require re-proving the inverse properties.
 -/
 
-variable {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
-
 -- ─── Class K ──────────────────────────────────────────────────────────────────
 
 /-! ### Class K
@@ -451,12 +448,61 @@ theorem ClassK.toFun_mem_Ico {a b c d : ℝ} (α : ClassK a b) (hc_lt : c < a)
   have hc_in : c ∈ Set.Ico 0 a := ⟨hρ.1.trans hρ.2.le, hc_lt⟩
   exact ⟨(α.maps_to hρ_in).1, h_eq ▸ α.strict_mono hρ_in hc_in hρ.2⟩
 
+/-- **The inverse is an order adjoint**: `x ≤ α⁻¹(y) ↔ α(x) ≤ y`.  Applying `α⁻¹` to both sides
+of an inequality. -/
+@[blueprint "lem:classK-le-invFun-iff"
+  (title := "Applying the inverse of a class $\\mathcal{K}$ function")
+  (latexEnv := "lemma")
+  (statement := /-- If $\alpha$ is class $\mathcal{K}$ on $[0, a) \to [0, b)$, $x \in [0, a)$
+    and $y \in [0, b)$, then $x \le \alpha^{-1}(y)$ if and only if $\alpha(x) \le y$. -/)]
+theorem ClassK.le_invFun_iff {a b : ℝ} (α : ClassK a b) {x y : ℝ} (hx : x ∈ Set.Ico 0 a)
+    (hy : y ∈ Set.Ico 0 b) : x ≤ α.invFun y ↔ α.toFun x ≤ y := by
+  rw [← α.mono_iff hx (α.inv_maps_to hy), α.right_inv hy]
+
+/-- `α⁻¹(y) ≤ x ↔ y ≤ α(x)`: the other half of `ClassK.le_invFun_iff`. -/
+theorem ClassK.invFun_le_iff {a b : ℝ} (α : ClassK a b) {x y : ℝ} (hx : x ∈ Set.Ico 0 a)
+    (hy : y ∈ Set.Ico 0 b) : α.invFun y ≤ x ↔ y ≤ α.toFun x := by
+  rw [← α.mono_iff (α.inv_maps_to hy) hx, α.right_inv hy]
+
+/-- The inverse of a class `K` function commutes with `max`. -/
+theorem ClassK.invFun_max {a b : ℝ} (α : ClassK a b) {y z : ℝ} (hy : y ∈ Set.Ico 0 b)
+    (hz : z ∈ Set.Ico 0 b) : α.invFun (max y z) = max (α.invFun y) (α.invFun z) :=
+  α.symm.strict_mono.monotoneOn.map_max hy hz
+
+/-- **A value sandwiched between two class `K` functions is in range**: if
+`α₁(ρ) ≤ v ≤ α₂(ρ)` then `v ∈ [0, b₂)`. -/
+theorem ClassK.mem_Ico_of_sandwich {r b₁ b₂ : ℝ} (α₁ : ClassK r b₁) (α₂ : ClassK r b₂)
+    {ρ v : ℝ} (hρ : ρ ∈ Set.Ico 0 r) (h₁ : α₁.toFun ρ ≤ v) (h₂ : v ≤ α₂.toFun ρ) :
+    v ∈ Set.Ico 0 b₂ :=
+  ⟨(α₁.maps_to hρ).1.trans h₁, h₂.trans_lt (α₂.maps_to hρ).2⟩
+
+/-- **Khalil's composite `α₃ ∘ α₂⁻¹`** on `[0, α₂(c))`, with values in `[0, α₃(c))`: the rate
+function of the comparison argument in Khalil's Theorems 4.9 and 4.18. -/
+@[blueprint "def:classK-compSymm"
+  (title := "The composite $\\alpha_3 \\circ \\alpha_2^{-1}$")
+  (statement := /-- If $\alpha_2, \alpha_3$ are class $\mathcal{K}$ on $[0, r)$ and
+    $0 < c < r$, then $\alpha_3 \circ \alpha_2^{-1}$ is class $\mathcal{K}$ on
+    $[0, \alpha_2(c)) \to [0, \alpha_3(c))$.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proofs of Theorems 4.9 and 4.18. -/)]
+noncomputable def ClassK.compSymm {r b₂ b₃ : ℝ} (α₃ : ClassK r b₃) (α₂ : ClassK r b₂) {c : ℝ}
+    (hc_pos : 0 < c) (hcr : c < r) : ClassK (α₂.toFun c) (α₃.toFun c) :=
+  (α₃.restrictTo (c := α₂.symm.toFun (α₂.toFun c))
+    (show 0 < α₂.invFun (α₂.toFun c) by rw [α₂.left_inv ⟨hc_pos.le, hcr⟩]; exact hc_pos)
+    (show α₂.invFun (α₂.toFun c) < r by rw [α₂.left_inv ⟨hc_pos.le, hcr⟩]; exact hcr)
+    (by change α₃.toFun (α₂.invFun (α₂.toFun c)) = _; rw [α₂.left_inv ⟨hc_pos.le, hcr⟩])).comp
+    (α₂.symm.restrict ((α₂.pos_iff ⟨hc_pos.le, hcr⟩).mpr hc_pos)
+      (α₂.maps_to ⟨hc_pos.le, hcr⟩).2)
+
+@[simp] theorem ClassK.compSymm_toFun {r b₂ b₃ : ℝ} (α₃ : ClassK r b₃) (α₂ : ClassK r b₂)
+    {c : ℝ} (hc_pos : 0 < c) (hcr : c < r) (y : ℝ) :
+    (α₃.compSymm α₂ hc_pos hcr).toFun y = α₃.toFun (α₂.invFun y) := by
+  change (α₃.restrictTo _ _ _).toFun _ = _
+  rw [ClassK.restrictTo_toFun]
+  rfl
+
 /-- If `v ≤ α₂(ρ)` then `α₃(α₂⁻¹(v)) ≤ α₃(ρ)`, since both `α₂⁻¹` and `α₃` are increasing. -/
 theorem ClassK.toFun_invFun_le {r b₂ b₃ : ℝ} (α₂ : ClassK r b₂) (α₃ : ClassK r b₃)
     {ρ v : ℝ} (hρ : ρ ∈ Set.Ico 0 r) (hv : v ∈ Set.Ico 0 b₂) (hv_le : v ≤ α₂.toFun ρ) :
-    α₃.toFun (α₂.invFun v) ≤ α₃.toFun ρ := by
-  have h_inv_le : α₂.invFun v ≤ ρ :=
-    calc α₂.invFun v
-        ≤ α₂.invFun (α₂.toFun ρ) := (α₂.inv_mono_iff hv (α₂.maps_to hρ)).mpr hv_le
-      _ = ρ                      := α₂.left_inv hρ
-  exact α₃.strict_mono.monotoneOn (α₂.inv_maps_to hv) hρ h_inv_le
+    α₃.toFun (α₂.invFun v) ≤ α₃.toFun ρ :=
+  α₃.strict_mono.monotoneOn (α₂.inv_maps_to hv) hρ ((α₂.invFun_le_iff hρ hv).mpr hv_le)

@@ -42,85 +42,19 @@ namespace ContinuousSystem
 `β(r, s) = β₁(c(β₁(r, s/2) + γ₁(cβ₂(r, 0))), s/2) + γ₁(cβ₂(r, s/2)) + β₂(r, s)`. -/
 private noncomputable def cascadeKL (β₁ : ClassKLGlobal) (γ₁ : ClassKInfty) (β₂ : ClassKLGlobal)
     {c : ℝ} (hc : 0 < c) : ClassKLGlobal :=
-  -- `a(r, σ)` bounds the driven state at the midpoint.
-  have ha_nonneg : ∀ r, 0 ≤ r → ∀ σ, 0 ≤ σ →
-      0 ≤ c * (β₁.toFun r (σ / 2) + γ₁.toFun (c * β₂.toFun r 0)) := fun r hr σ hσ =>
-    mul_nonneg hc.le (add_nonneg (β₁.nonneg r hr _ (by positivity))
-      (γ₁.maps_to (mul_nonneg hc.le (β₂.nonneg r hr 0 le_rfl))))
-  have ha_le_s : ∀ r, 0 ≤ r → ∀ σ σ', 0 ≤ σ → σ ≤ σ' →
-      c * (β₁.toFun r (σ' / 2) + γ₁.toFun (c * β₂.toFun r 0)) ≤
-        c * (β₁.toFun r (σ / 2) + γ₁.toFun (c * β₂.toFun r 0)) := fun r hr σ σ' hσ h =>
-    mul_le_mul_of_nonneg_left (add_le_add (β₁.anti_s_mono hr (by positivity) (by linarith))
-      le_rfl) hc.le
-  { toFun := fun r σ => β₁.toFun (c * (β₁.toFun r (σ / 2) + γ₁.toFun (c * β₂.toFun r 0))) (σ / 2) +
-      γ₁.toFun (c * β₂.toFun r (σ / 2)) + β₂.toFun r σ
-    map_zero := fun σ hσ => by
-      simp only [β₂.map_zero 0 le_rfl, β₂.map_zero _ (by positivity : (0 : ℝ) ≤ σ / 2),
-        β₂.map_zero σ hσ, mul_zero, γ₁.map_zero, β₁.map_zero _ (by positivity : (0 : ℝ) ≤ σ / 2),
-        add_zero]
-    continuous := by
-      have h_half : ContinuousOn (fun p : ℝ × ℝ => p.2 / 2) (Ici 0 ×ˢ Ici 0) :=
-        continuousOn_snd.div_const 2
-      have h_mem : ∀ p ∈ Ici (0 : ℝ) ×ˢ Ici 0, p.2 / 2 ∈ Ici (0 : ℝ) := fun p hp =>
-        mem_Ici.2 (by have := mem_Ici.1 hp.2; positivity)
-      have h_β₂ : ContinuousOn (fun p : ℝ × ℝ => β₂.toFun p.1 (p.2 / 2)) (Ici 0 ×ˢ Ici 0) :=
-        β₂.continuous.comp (continuousOn_fst.prodMk h_half) fun p hp => ⟨hp.1, h_mem p hp⟩
-      have h_β₂0 : ContinuousOn (fun p : ℝ × ℝ => β₂.toFun p.1 0) (Ici 0 ×ˢ Ici 0) :=
-        β₂.continuous.comp (continuousOn_fst.prodMk continuousOn_const)
-          fun p hp => ⟨hp.1, mem_Ici.2 le_rfl⟩
-      have h_a : ContinuousOn (fun p : ℝ × ℝ =>
-          c * (β₁.toFun p.1 (p.2 / 2) + γ₁.toFun (c * β₂.toFun p.1 0))) (Ici 0 ×ˢ Ici 0) :=
-        continuousOn_const.mul ((β₁.continuous.comp (continuousOn_fst.prodMk h_half)
-          fun p hp => ⟨hp.1, h_mem p hp⟩).add (γ₁.continuous.comp (continuousOn_const.mul h_β₂0)
-            fun p hp => mem_Ici.2 (mul_nonneg hc.le (β₂.nonneg _ hp.1 0 le_rfl))))
-      exact ((β₁.continuous.comp (h_a.prodMk h_half) fun p hp =>
-        ⟨mem_Ici.2 (ha_nonneg _ hp.1 _ hp.2), h_mem p hp⟩).add
-        (γ₁.continuous.comp (continuousOn_const.mul h_β₂) fun p hp =>
-          mem_Ici.2 (mul_nonneg hc.le (β₂.nonneg _ hp.1 _ (h_mem p hp))))).add β₂.continuous
-    strict_mono_r := fun σ hσ r hr r' hr' h => by
-      have hr₀ : (0 : ℝ) ≤ r := hr
-      exact add_lt_add_of_le_of_lt (add_le_add
-        (β₁.mono_r (ha_nonneg r hr₀ σ hσ) (by positivity) (mul_le_mul_of_nonneg_left
-          (add_le_add (β₁.mono_r hr₀ (by positivity) h.le)
-            (γ₁.mono (mul_nonneg hc.le (β₂.nonneg r hr₀ 0 le_rfl))
-              (mul_le_mul_of_nonneg_left (β₂.mono_r hr₀ le_rfl h.le) hc.le))) hc.le))
-        (γ₁.mono (mul_nonneg hc.le (β₂.nonneg r hr₀ _ (by positivity)))
-          (mul_le_mul_of_nonneg_left (β₂.mono_r hr₀ (by positivity) h.le) hc.le)))
-        (β₂.strict_mono_r σ hσ hr hr' h)
-    nonneg := fun r hr σ hσ =>
-      add_nonneg (add_nonneg (β₁.nonneg _ (ha_nonneg r hr σ hσ) _ (by positivity))
-        (γ₁.maps_to (mul_nonneg hc.le (β₂.nonneg r hr _ (by positivity))))) (β₂.nonneg r hr σ hσ)
-    anti_s := fun r hr σ hσ σ' hσ' h => by
-      have hσ₀ : (0 : ℝ) ≤ σ := hσ
-      exact add_le_add (add_le_add
-        ((β₁.mono_r (ha_nonneg r hr σ' (hσ₀.trans h)) (by linarith)
-          (ha_le_s r hr σ σ' hσ₀ h)).trans
-          (β₁.anti_s_mono (ha_nonneg r hr σ hσ₀) (by positivity) (by linarith)))
-        (γ₁.mono (mul_nonneg hc.le (β₂.nonneg r hr _ (by linarith)))
-          (mul_le_mul_of_nonneg_left (β₂.anti_s_mono hr (by positivity) (by linarith)) hc.le)))
-        (β₂.anti_s_mono hr hσ₀ h)
-    tendsto_zero := fun r hr => by
-      have h_half : Tendsto (fun σ : ℝ => σ / 2) atTop atTop :=
-        tendsto_id.atTop_div_const two_pos
-      -- The first term: its first argument is at most its value at `σ = 0`.
-      have h₁ : Tendsto (fun σ => β₁.toFun
-          (c * (β₁.toFun r (σ / 2) + γ₁.toFun (c * β₂.toFun r 0))) (σ / 2)) atTop (nhds 0) := by
-        refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
-          ((β₁.tendsto_zero _ (ha_nonneg r hr 0 le_rfl)).comp h_half) ?_ ?_
-        · filter_upwards [eventually_ge_atTop 0] with σ hσ
-          exact β₁.nonneg _ (ha_nonneg r hr σ hσ) _ (by positivity)
-        · filter_upwards [eventually_ge_atTop 0] with σ hσ
-          simpa using β₁.mono_r (ha_nonneg r hr σ hσ) (by positivity)
-            (ha_le_s r hr 0 σ le_rfl hσ)
-      -- The second term: `γ₁` is continuous at `0`.
-      have h₂ : Tendsto (fun σ => γ₁.toFun (c * β₂.toFun r (σ / 2))) atTop (nhds 0) := by
-        have h_in : Tendsto (fun σ => c * β₂.toFun r (σ / 2)) atTop (𝓝[Ici 0] 0) :=
-          tendsto_nhdsWithin_iff.2 ⟨by simpa using ((β₂.tendsto_zero r hr).comp h_half).const_mul c,
-            by
-              filter_upwards [eventually_ge_atTop 0] with σ hσ
-              exact mul_nonneg hc.le (β₂.nonneg r hr _ (by positivity))⟩
-        simpa [γ₁.map_zero] using (γ₁.continuous 0 (mem_Ici.2 le_rfl)).tendsto.comp h_in
-      simpa using (h₁.add h₂).add (β₂.tendsto_zero r hr) }
+  -- `κ(r, s) = γ₁(cβ₂(r, s))`, and `a(r, σ) = c(β₁(r, σ/2) + κ(r, 0))` bounds the driven state
+  -- at the midpoint.
+  let κ := (β₂.smul c hc).comp_left γ₁
+  let β₁' := β₁.timeScale 2 two_pos
+  (β₁'.comp_antitone (fun r σ => c * (β₁'.toFun r σ + κ.toFun r 0))
+    (fun σ hσ => by simp [β₁'.map_zero σ hσ, κ.map_zero 0 le_rfl])
+    (continuousOn_const.mul (β₁'.continuous.add (κ.continuous.comp
+      (continuousOn_fst.prodMk continuousOn_const) fun p hp => ⟨hp.1, mem_Ici.2 le_rfl⟩)))
+    (fun σ hσ r hr r' hr' h => mul_lt_mul_of_pos_left (add_lt_add_of_lt_of_le
+      (β₁'.strict_mono_r σ hσ hr hr' h) (κ.mono_r hr le_rfl h.le)) hc)
+    (fun r hr σ hσ σ' hσ' h => mul_le_mul_of_nonneg_left
+      (add_le_add (β₁'.anti_s r hr hσ hσ' h) le_rfl) hc.le)).add
+    ((β₂.timeScale 2 two_pos).smul c hc |>.comp_left γ₁) |>.add β₂
 
 /-- **The driven state of a cascade.**  Let `s₁` be input-to-state stable about `(x_c, x_e)` with
 data `β₁, γ₁`, and let the driving state obey
@@ -207,7 +141,9 @@ theorem cascade_globallyUniformlyAsymptoticallyStable {s₁ : ContinuousSystem E
   set β := cascadeKL β₁ γ₁ β₂ one_pos
   have hβ : ∀ r σ, β.toFun r σ =
       β₁.toFun (β₁.toFun r (σ / 2) + γ₁.toFun (β₂.toFun r 0)) (σ / 2) +
-        γ₁.toFun (β₂.toFun r (σ / 2)) + β₂.toFun r σ := fun r σ => by simp [β, cascadeKL]
+        γ₁.toFun (β₂.toFun r (σ / 2)) + β₂.toFun r σ := fun r σ => by
+      simp [β, cascadeKL, ClassKLGlobal.add, ClassKLGlobal.smul, ClassKLGlobal.timeScale,
+        ClassKLGlobal.comp_left, ClassKLGlobal.comp_antitone]
   refine (globallyUniformlyAsymptoticallyStable_iff_classKL _ _).2 ⟨β, ?_⟩
   -- The estimate along a trajectory.
   intro t₀ ht₀ t₁ x hx t ht
@@ -235,7 +171,8 @@ input-to-state stable about `(x_e, w_eq)`, the cascade is input-to-state stable 
 `((x_c, x_e), w_eq)`.
 
 The proof is that of `cascade_globallyUniformlyAsymptoticallyStable`, with the input's
-contribution `g = γ₂(M)` carried through and split off by `f(a + b) ≤ f(2a) + f(2b)`.
+contribution `g = γ₂(M)` carried through and split off by `f(a + b) ≤ f(2a) + f(2b)`
+(`MonotoneOn.weak_triangle`).
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Lemma 4.7; Sontag (2008). -/
 @[blueprint "lem:continuousSystem-cascade-inputToStateStable"
@@ -250,73 +187,41 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Lemma 4.7; 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Section 4.9; Sontag (2008). -/)
   (proof := /-- As in \cref{lem:continuousSystem-cascade-globallyUniformlyAsymptoticallyStable},
     with $\|x_2(\tau) - x_e\| \le \beta_2(r, \tau - t_0) + g$, $g = \gamma_2(M)$, carried
-    through.  Splitting with $f(a + b) \le f(2a) + f(2b)$ for nondecreasing $f \ge 0$ gives
+    through.  Splitting with $f(a + b) \le f(2a) + f(2b)$ for nondecreasing $f \ge 0$
+    (\cref{lem:monotoneOn-weak-triangle}) gives
     $\|x(t) - (x_c, x_e)\| \le \beta(r, t - t_0) + \gamma(M)$, with $\beta$ the cascade bound for
     $c = 2$ and
     $\gamma(M) = \beta_1(2\gamma_1(2\gamma_2(M)), 0) + \gamma_1(2\gamma_2(M)) + \gamma_2(M)$,
-    class $\mathcal{K}_\infty$. -/)]
+    class $\mathcal{K}_\infty$ by \cref{lem:classKInfty-addMonotone}. -/)]
 theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
     {s₁ : ContinuousSystem E₁ E₂ Y₁} {s₂ : ContinuousSystem E₂ W Y₂} {x_c : E₁} {x_e : E₂}
     {w_eq : W} (h₁ : s₁.InputToStateStable x_c x_e) (h₂ : s₂.InputToStateStable x_e w_eq) :
     (cascade s₁ s₂).InputToStateStable (x_c, x_e) w_eq := by
   obtain ⟨β₁, γ₁, hISS₁⟩ := h₁
   obtain ⟨β₂, γ₂, hISS₂⟩ := h₂
-  -- `f(a + b) ≤ f(2a) + f(2b)` for nondecreasing nonnegative `f`.
-  have h_split : ∀ f : ℝ → ℝ, MonotoneOn f (Ici 0) → (∀ y, 0 ≤ y → 0 ≤ f y) →
-      ∀ a b, 0 ≤ a → 0 ≤ b → f (a + b) ≤ f (2 * a) + f (2 * b) := by
-    intro f hf hf0 a b ha hb
-    rcases le_total a b with h | h
-    · exact (hf (mem_Ici.2 (add_nonneg ha hb)) (mem_Ici.2 (by positivity)) (by linarith)).trans
-        (le_add_of_nonneg_left (hf0 _ (by positivity)))
-    · exact (hf (mem_Ici.2 (add_nonneg ha hb)) (mem_Ici.2 (by positivity)) (by linarith)).trans
-        (le_add_of_nonneg_right (hf0 _ (by positivity)))
-  have h_split_γ₁ := h_split γ₁.toFun γ₁.strict_mono.monotoneOn fun y hy => γ₁.maps_to hy
-  have h_split_β₁ : ∀ σ, 0 ≤ σ → ∀ a b, 0 ≤ a → 0 ≤ b →
-      β₁.toFun (a + b) σ ≤ β₁.toFun (2 * a) σ + β₁.toFun (2 * b) σ := fun σ hσ =>
-    h_split (fun y => β₁.toFun y σ) (β₁.strict_mono_r σ hσ).monotoneOn
-      fun y hy => β₁.nonneg y hy σ hσ
-  -- The bound of the cascade and its gain.
-  set β := cascadeKL β₁ γ₁ β₂ two_pos
-  set γf : ℝ → ℝ := fun M => β₁.toFun (2 * γ₁.toFun (2 * γ₂.toFun M)) 0 +
-    γ₁.toFun (2 * γ₂.toFun M) + γ₂.toFun M
-  have hγ₂_nonneg : ∀ M, 0 ≤ M → 0 ≤ γ₂.toFun M := fun M hM => γ₂.maps_to hM
-  have hγ₂₁ : ∀ M, 0 ≤ M → 0 ≤ 2 * γ₁.toFun (2 * γ₂.toFun M) := fun M hM =>
-    mul_nonneg two_pos.le (γ₁.maps_to (mul_nonneg two_pos.le (hγ₂_nonneg M hM)))
-  let γ : ClassKInfty := ClassKInfty.of_strictMono γf
-    (by simp [γf, γ₂.map_zero, γ₁.map_zero, β₁.map_zero 0 le_rfl])
-    (((β₁.continuous.comp ((continuousOn_const.mul (γ₁.continuous.comp
-      (continuousOn_const.mul γ₂.continuous) fun M hM => mem_Ici.2 (mul_nonneg two_pos.le
-        (hγ₂_nonneg M hM)))).prodMk continuousOn_const) fun M hM =>
-          ⟨mem_Ici.2 (hγ₂₁ M hM), mem_Ici.2 le_rfl⟩).add (γ₁.continuous.comp
-            (continuousOn_const.mul γ₂.continuous) fun M hM => mem_Ici.2 (mul_nonneg two_pos.le
-              (hγ₂_nonneg M hM)))).add γ₂.continuous)
-    (fun M hM M' hM' h => by
-      have hγ₂ := (γ₂.strict_mono hM hM' h)
-      have hM₀ : (0 : ℝ) ≤ M := hM
-      exact add_lt_add_of_le_of_lt (add_le_add
-        (β₁.mono_r (hγ₂₁ M hM₀) le_rfl (mul_le_mul_of_nonneg_left (γ₁.mono
-          (mul_nonneg two_pos.le (hγ₂_nonneg M hM₀)) (by linarith)) two_pos.le))
-        (γ₁.mono (mul_nonneg two_pos.le (hγ₂_nonneg M hM₀)) (by linarith))) hγ₂)
-    (by
-      refine tendsto_atTop_mono' _ ?_ γ₂.tendsto_atTop
-      filter_upwards [eventually_ge_atTop 0] with M hM
-      exact le_add_of_nonneg_left (add_nonneg (β₁.nonneg _ (hγ₂₁ M hM) 0 le_rfl)
-        (γ₁.maps_to (mul_nonneg two_pos.le (hγ₂_nonneg M hM)))))
-  refine ⟨β, γ, fun t₀ ht₀ t₁ w x hx t ht M hM => ?_⟩
+  -- The gain `γ(M) = γ₂(M) + γ₁(2γ₂(M)) + β₁(δ(M), 0)`, with `δ(M) = 2γ₁(2γ₂(M))`.
+  let δ := (γ₁.comp (γ₂.smul 2 two_pos)).smul 2 two_pos
+  let γ := (γ₂.add (γ₁.comp (γ₂.smul 2 two_pos))).addMonotone (fun M => β₁.toFun (δ M) 0)
+    (by simp [δ.map_zero, β₁.map_zero 0 le_rfl])
+    (β₁.continuous.comp (δ.continuous.prodMk continuousOn_const) fun M hM =>
+      ⟨δ.maps_to hM, mem_Ici.2 le_rfl⟩)
+    (fun a ha b hb h => β₁.mono_r (δ.maps_to ha) le_rfl (δ.strict_mono.monotoneOn ha hb h))
+  have h_split : ∀ a b, 0 ≤ a → 0 ≤ b → γ₁.toFun (a + b) ≤ γ₁.toFun (2 * a) + γ₁.toFun (2 * b) :=
+    fun _ _ => γ₁.strict_mono.monotoneOn.weak_triangle fun y hy => γ₁.maps_to hy
+  refine ⟨cascadeKL β₁ γ₁ β₂ two_pos, γ, fun t₀ ht₀ t₁ w x hx t ht M hM => ?_⟩
   obtain ⟨hx₁, hx₂⟩ := cascade_isRightTrajectoryOn_iff.1 hx
   set r := ‖x t₀ - (x_c, x_e)‖
   have hr : 0 ≤ r := norm_nonneg _
-  have hr₁ : ‖(x t₀).1 - x_c‖ ≤ r := norm_fst_le (x t₀ - (x_c, x_e))
   have hr₂ : ‖(x t₀).2 - x_e‖ ≤ r := norm_snd_le (x t₀ - (x_c, x_e))
   have hM₀ : 0 ≤ M := (norm_nonneg _).trans (hM t₀ ⟨le_rfl, ht.1⟩)
   set g := γ₂.toFun M
-  have hg : 0 ≤ g := hγ₂_nonneg M hM₀
+  have hg : 0 ≤ g := γ₂.maps_to hM₀
   -- The driving state, from its own input-to-state stability.
   have h_x₂ : ∀ τ ∈ Icc t₀ t, ‖(x τ).2 - x_e‖ ≤ β₂.toFun r (τ - t₀) + g := fun τ hτ =>
     (hISS₂ t₀ ht₀ t₁ w (fun τ => (x τ).2) hx₂ τ ⟨hτ.1, hτ.2.trans ht.2⟩ M
       fun σ hσ => hM σ ⟨hσ.1, hσ.2.trans hτ.2⟩).trans
       (add_le_add (β₂.mono_r (norm_nonneg _) (by linarith [hτ.1]) hr₂) le_rfl)
-  have h_x₁ := norm_fst_sub_le_of_cascade hISS₁ ht₀ ht hx₁ hr₁ h_x₂
+  have h_x₁ := norm_fst_sub_le_of_cascade hISS₁ ht₀ ht hx₁ (norm_fst_le (x t₀ - (x_c, x_e))) h_x₂
   -- Split off the input's contribution.
   set s := (t - t₀) / 2
   have hs : 0 ≤ s := by simp only [s]; linarith [ht.1]
@@ -324,10 +229,7 @@ theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
   have h_inner : β₁.toFun r s + γ₁.toFun (β₂.toFun r 0 + g) ≤
       (β₁.toFun r s + γ₁.toFun (2 * β₂.toFun r 0)) + γ₁.toFun (2 * g) := by
     rw [add_assoc]
-    exact add_le_add le_rfl (h_split_γ₁ _ _ (hβ₂r 0 le_rfl) hg)
-  have hA : 0 ≤ β₁.toFun r s + γ₁.toFun (2 * β₂.toFun r 0) :=
-    add_nonneg (β₁.nonneg r hr s hs) (γ₁.maps_to (mul_nonneg two_pos.le (hβ₂r 0 le_rfl)))
-  have hC : 0 ≤ γ₁.toFun (2 * g) := γ₁.maps_to (mul_nonneg two_pos.le hg)
+    exact add_le_add le_rfl (h_split _ _ (hβ₂r 0 le_rfl) hg)
   have h_term₁ : β₁.toFun (β₁.toFun r s + γ₁.toFun (β₂.toFun r 0 + g)) s ≤
       β₁.toFun (2 * (β₁.toFun r s + γ₁.toFun (2 * β₂.toFun r 0))) s +
         β₁.toFun (2 * γ₁.toFun (2 * g)) 0 :=
@@ -336,12 +238,14 @@ theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
           β₁.mono_r (add_nonneg (β₁.nonneg r hr s hs) (γ₁.maps_to (add_nonneg (hβ₂r 0 le_rfl) hg)))
             hs h_inner
       _ ≤ β₁.toFun (2 * (β₁.toFun r s + γ₁.toFun (2 * β₂.toFun r 0))) s +
-            β₁.toFun (2 * γ₁.toFun (2 * g)) s := h_split_β₁ s hs _ _ hA hC
+            β₁.toFun (2 * γ₁.toFun (2 * g)) s :=
+          (β₁.strict_mono_r s hs).monotoneOn.weak_triangle (fun y hy => β₁.nonneg y hy s hs)
+            (add_nonneg (β₁.nonneg r hr s hs) (γ₁.maps_to (mul_nonneg two_pos.le (hβ₂r 0 le_rfl))))
+            (γ₁.maps_to (mul_nonneg two_pos.le hg))
       _ ≤ β₁.toFun (2 * (β₁.toFun r s + γ₁.toFun (2 * β₂.toFun r 0))) s +
             β₁.toFun (2 * γ₁.toFun (2 * g)) 0 :=
-          add_le_add le_rfl (β₁.anti_s_mono (by positivity) le_rfl hs)
-  have h_term₂ : γ₁.toFun (β₂.toFun r s + g) ≤ γ₁.toFun (2 * β₂.toFun r s) + γ₁.toFun (2 * g) :=
-    h_split_γ₁ _ _ (hβ₂r s hs) hg
+          add_le_add le_rfl (β₁.anti_s_mono
+            (mul_nonneg two_pos.le (γ₁.maps_to (mul_nonneg two_pos.le hg))) le_rfl hs)
   calc ‖x t - (x_c, x_e)‖
       ≤ ‖(x t).1 - x_c‖ + ‖(x t).2 - x_e‖ := Prod.norm_le_norm_fst_add_norm_snd _
     _ ≤ (β₁.toFun (β₁.toFun r s + γ₁.toFun (β₂.toFun r 0 + g)) s +
@@ -349,9 +253,13 @@ theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
         add_le_add h_x₁ (h_x₂ t ⟨ht.1, le_rfl⟩)
     _ ≤ (β₁.toFun (2 * (β₁.toFun r s + γ₁.toFun (2 * β₂.toFun r 0))) s +
           β₁.toFun (2 * γ₁.toFun (2 * g)) 0 + (γ₁.toFun (2 * β₂.toFun r s) +
-            γ₁.toFun (2 * g))) + (β₂.toFun r (t - t₀) + g) := by gcongr
-    _ = β.toFun r (t - t₀) + γ.toFun M := by
-        simp only [β, γ, γf, cascadeKL, ClassKInfty.of_strictMono, s, g]
+            γ₁.toFun (2 * g))) + (β₂.toFun r (t - t₀) + g) :=
+        add_le_add (add_le_add h_term₁ (h_split _ _ (hβ₂r s hs) hg)) le_rfl
+    _ = (cascadeKL β₁ γ₁ β₂ two_pos).toFun r (t - t₀) + γ.toFun M := by
+        simp only [γ, δ, cascadeKL, ClassKLGlobal.add, ClassKLGlobal.smul,
+          ClassKLGlobal.timeScale, ClassKLGlobal.comp_left, ClassKLGlobal.comp_antitone,
+          ClassKInfty.addMonotone_apply, ClassKInfty.add,
+          ClassKInfty.comp, ClassKInfty.smul, ClassKInfty.of_strictMono, Function.comp_apply, s, g]
         ring
 
 end ContinuousSystem

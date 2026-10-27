@@ -3,6 +3,9 @@ import Mathlib.Data.Matrix.Mul
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Architect
 
 /-!
@@ -97,32 +100,73 @@ def ContinuousLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
 
 section Differential
 
-open scoped Matrix.Norms.Operator
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
 /-- `P` satisfies the **differential Lyapunov equation** for `A` with forcing `Q` when, at every
 `t ≥ 0`,
 
-    -Ṗ(t) = P(t) A(t) + A(t)ᵀ P(t) + Q(t).
+    -Ṗ(t) = P(t) A(t) + A(t)* P(t) + Q(t),
 
-The time-varying form of `ContinuousLyapunovEquation`: for `P` positive definite, `x ↦ xᵀ P(t) x`
-decreases along `ẋ = A(t) x` at the rate set by `Q(t)`.  Derivatives of matrix-valued functions
-are taken for the `L∞` operator norm, as for the state transition matrix.
+with `A(t)*` the adjoint (the transpose, for matrices on Euclidean space).  The time-varying form
+of `ContinuousLyapunovEquation`: for `P` positive definite, `x ↦ ⟪x, P(t) x⟫` decreases along
+`ẋ = A(t) x` at the rate set by `Q(t)`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), equation (4.28). -/
 @[blueprint "def:differentialLyapunovEquation"
   (title := "Differential Lyapunov equation")
-  (statement := /-- For matrix-valued functions $A$, $P$ and $Q$ of time, $P$ satisfies the
-    \emph{differential Lyapunov equation} for $A$ with forcing $Q$ when, for every $t \ge 0$,
-    $P$ is differentiable at $t$ and
+  (statement := /-- For operator-valued functions $A$, $P$ and $Q$ of time on a real Hilbert
+    space, $P$ satisfies the \emph{differential Lyapunov equation} for $A$ with forcing $Q$ when,
+    for every $t \ge 0$, $P$ is differentiable at $t$ and
     \[
-      -\dot P(t) = P(t)A(t) + A(t)^{\mathsf T}P(t) + Q(t).
+      -\dot P(t) = P(t)A(t) + A(t)^{*}P(t) + Q(t).
     \]
     For constant matrices it is the continuous Lyapunov equation
     (\cref{def:continuousLyapunovEquation}).
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), equation (4.28). -/)]
-def DifferentialLyapunovEquation (A P Q : ℝ → Matrix X X ℝ) : Prop :=
-  ∀ t : ℝ, 0 ≤ t → HasDerivAt P (-(P t * A t + (A t)ᵀ * P t + Q t)) t
+def DifferentialLyapunovEquation (A P Q : ℝ → E →L[ℝ] E) : Prop :=
+  ∀ t : ℝ, 0 ≤ t → HasDerivAt P (-(P t * A t + star (A t) * P t + Q t)) t
+
+namespace ContinuousLTV
+
+variable {U Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup Y]
+  [NormedSpace ℝ Y]
+
+/-- The integrand of Khalil's solution of the differential Lyapunov equation,
+`Φ(τ, t)* Q(τ) Φ(τ, t)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "def:continuousLTV-lyapunovIntegrand"
+  (title := "Integrand of the Lyapunov integral")
+  (statement := /-- For a linear time-varying system with state transition operator $\Phi$
+    (\cref{def:continuousLTV-stateTransition}) and an operator function $Q$,
+    \[
+      \Phi(\tau, t)^{*} Q(\tau)\, \Phi(\tau, t).
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)]
+noncomputable def lyapunovIntegrand (s : ContinuousLTV E U Y) (Q : ℝ → E →L[ℝ] E) (t τ : ℝ) :
+    E →L[ℝ] E :=
+  star (s.stateTransition τ t) * Q τ * s.stateTransition τ t
+
+/-- **Khalil's solution of the differential Lyapunov equation**,
+`P(t) = ∫_t^∞ Φ(τ, t)* Q(τ) Φ(τ, t) dτ`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "def:continuousLTV-lyapunovIntegral"
+  (title := "Lyapunov integral")
+  (statement := /-- For a linear time-varying system and an operator function $Q$,
+    \[
+      P(t) = \int_t^\infty \Phi(\tau, t)^{*} Q(\tau)\, \Phi(\tau, t)\, d\tau
+    \]
+    (\cref{def:continuousLTV-lyapunovIntegrand}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)]
+noncomputable def lyapunovIntegral (s : ContinuousLTV E U Y) (Q : ℝ → E →L[ℝ] E) (t : ℝ) :
+    E →L[ℝ] E :=
+  ∫ τ in Set.Ioi t, s.lyapunovIntegrand Q t τ
+
+end ContinuousLTV
 
 end Differential
 

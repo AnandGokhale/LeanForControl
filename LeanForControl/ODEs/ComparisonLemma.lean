@@ -92,8 +92,7 @@ private lemma comparison_claim_1
     (hv_cont : ContinuousOn v (Icc t₀ t₁))
     (hz_cont : ContinuousOn z (Icc t₀ t₁))
     (hDv : ∀ t ∈ Ico t₀ t₁, D⁺ v t ≤ f t (v t))
-    (hv₀ : v t₀ ≤ u₀)
-    (hv_bdd : ∀ t ∈ Ico t₀ t₁, IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (t + h) - v t) / h)) :
+    (hv₀ : v t₀ ≤ u₀) :
     ∀ t ∈ Icc t₀ t₁, v t ≤ z t := by
   by_contra h_not
   push Not at h_not
@@ -114,13 +113,15 @@ private lemma comparison_claim_1
   have ha_strict_v : ∀ t ∈ Ioc a t_bad, z t < v t :=
     fun t ht_mem => sub_pos.mp (h_strict t ht_mem)
   have ha_Ico : a ∈ Ico t₀ t₁ := ⟨ha_mem.1, ha_mem.2.trans_le ht_bad_mem.2⟩
-  have h_dini_le := (hz_deriv a ha_Ico).le_diniDerivRight_of_upper_bound
-    ha_mem.2 h_eq_a ha_strict_v (hv_bdd a ha_Ico)
-  have h_chain := calc f a (z a) + lam
-      _ ≤ D⁺ v a    := h_dini_le
-      _ ≤ f a (v a) := hDv a ha_Ico
+  -- `z` touches `v` at `a` and stays below it to the right, so `ż(a) = D⁺z(a) ≤ D⁺v(a)`.
+  have h_chain : ((f a (z a) + lam : ℝ) : EReal) ≤ f a (v a) := calc
+    ((f a (z a) + lam : ℝ) : EReal) = D⁺ z a :=
+      (diniDerivRight_of_hasDerivWithinAt (hz_deriv a ha_Ico)).symm
+    _ ≤ D⁺ v a := diniDerivRight_mono h_eq_a <| Filter.mem_of_superset
+      (Ioc_mem_nhdsGT ha_mem.2) fun t ht => (ha_strict_v t ht).le
+    _ ≤ f a (v a) := hDv a ha_Ico
   rw [h_eq_a] at h_chain
-  linarith
+  linarith [EReal.coe_le_coe_iff.1 h_chain]
 
 /-- **Comparison lemma.**  If `u` solves `u̇ = f(t, u)` with `u(t₀) = u₀`, and `v` is
 continuous with `D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤ u(t)` on `[t₀, t₁]`.
@@ -128,7 +129,7 @@ continuous with `D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤
 Hypotheses:
 * `f` is jointly continuous and globally Lipschitz in the state variable on `[t₀, t₁]`.
 * `u` solves the ODE classically (pointwise derivative).
-* `v` satisfies the Dini subsolution inequality and has bounded difference quotients.
+* `v` satisfies the Dini subsolution inequality.
 * For each `λ > 0`, a perturbed solution `z_λ` of `ż = f(t, z) + λ` exists on `[t₀, t₁]`
   (the existence hypothesis `hz_exists`, kept for generality; it is always discharged by
   `exists_isIntegralSolution_Icc_of_lipschitz`).
@@ -146,8 +147,7 @@ his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE
     \begin{enumerate}
       \item $u$ is continuous on $[t_0,t_1]$ and solves $\dot u = f(t,u)$ with $u(t_0) = u_0$;
       \item $v$ is continuous on $[t_0,t_1]$ with $v(t_0) \le u_0$, satisfies the Dini
-        subsolution inequality $D^{+}v(t) \le f(t, v(t))$, and has forward difference quotients
-        bounded above at each $t$;
+        subsolution inequality $D^{+}v(t) \le f(t, v(t))$;
       \item for every $\lambda > 0$ the perturbed equation
         $\dot z = f(t,z) + \lambda$, $z(t_0) = u_0$, has a solution on $[t_0,t_1]$.
     \end{enumerate}
@@ -185,8 +185,6 @@ theorem comparison_lemma
     (hu₀      : u t₀ = u₀)
     (hv_cont  : ContinuousOn v (Icc t₀ t₁))
     (hDv      : ∀ t ∈ Ico t₀ t₁, D⁺ v t ≤ f t (v t))
-    (hv_bdd   : ∀ t ∈ Ico t₀ t₁,
-        IsBoundedUnder (· ≤ ·) (𝓝[>] 0) (fun h => (v (t+h) - v t) / h))
     (hv₀      : v t₀ ≤ u₀)
     (hz_exists : ∀ (lam : ℝ), 0 < lam →
         ∃ z : ℝ → ℝ, IsIntegralSolution t₀ t₁ z u₀ (fun s x => f s x + lam) ∧
@@ -207,7 +205,7 @@ theorem comparison_lemma
   obtain ⟨z, hz_sol, hz_cont, hz_deriv⟩ := hz_exists lam hlam_pos
   have hv_le_z : v t ≤ z t :=
     comparison_claim_1 hlam_pos hz_sol hz_deriv hv_cont hz_cont
-      hDv hv₀ hv_bdd t ht_mem
+      hDv hv₀ t ht_mem
   have hz_close : ‖u t - z t‖ ≤ ε / 2 := by
     have hu_sol : IsIntegralSolution t₀ t₁ u u₀ f :=
       isIntegralSolution_of_hasDerivAt ht.le hu_deriv hu_cont hf_cont hu₀

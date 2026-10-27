@@ -1,230 +1,101 @@
-import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import LeanForControl.LinearSystems.Solutions.CtsLTV
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
-import Mathlib.Data.Nat.Factorial.Basic
 import Architect
 
 /-!
 # Continuous-time LTI solutions: the matrix exponential
 
-Theorems specializing the LTV Peano-Baker series (`CtsLTV.lean`) to a *constant* state matrix
-`A`, building up to Theorem 6.1: for LTI systems `ẋ = Ax`, the state transition matrix collapses
-to the classical closed form `Φ(t,t₀) = e^{A(t-t₀)}` (6.2). This is what lets every LTV property
-already proved in `CtsLTV.lean` (existence, uniqueness, semigroup, invertibility, variation of
-constants) be reused directly for LTI by specialization, rather than re-derived from scratch.
+The LTV solution theory (`CtsLTV.lean`) specialized to a *constant* state matrix `A`: the state
+transition operator is the matrix exponential `Φ(t,t₀) = e^{A(t-t₀)}` (6.2), so every LTV
+property (existence, uniqueness, semigroup, variation of constants) holds for LTI by
+specialization. The collapse of the Peano-Baker series itself, `stateTransitionMatrix_const`, is
+proved in any Banach algebra in `PeanoBaker.lean`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6.
 -/
 
 namespace LinearSystems
 
-open scoped Matrix.Norms.Operator Nat
-open Matrix MeasureTheory intervalIntegral
+open Matrix
 
-variable {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℝ)
+variable {X U Y : Type*} [Fintype X] [Fintype U] [Fintype Y] [DecidableEq X] [DecidableEq U]
 
-/-- **Peano-Baker term for constant `A`** (Hespanha, equation (6.1)).
-For a *constant* state matrix `A`, the `k`-th Peano-Baker term
-collapses to the closed form `((t-t₀)^k / k!) • A^k`.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1). -/
-@[blueprint "lem:peanoBakerTerm-const"
-  (title := "Peano--Baker terms for a constant matrix")
-  (latexEnv := "lemma")
-  (statement := /-- For a constant state matrix $A$, the $k$-th Peano--Baker term collapses to
-    \[
-      \Phi_k(t, t_0) = \frac{(t-t_0)^k}{k!}\,A^k .
-    \]
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.1).
-  -/)
-  (proof := /-- Induction on $k$.  The $k = 0$ term is the identity.  For the step,
-    $\Phi_{k+1}(t,t_0) = \int_{t_0}^{t} A\,\Phi_k(s,t_0)\,ds$; substituting the inductive
-    hypothesis pulls $A^{k+1}$ out of the integral and leaves
-    $\int_{t_0}^{t}(s-t_0)^k ds = (t-t_0)^{k+1}/(k+1)$, which combines with $1/k!$ to give
-    $1/(k+1)!$. -/)]
-theorem peanoBakerTerm_const (k : ℕ) (t t₀ : ℝ) :
-    peanoBakerTerm (fun _ => A) k t t₀ = ((t - t₀) ^ k / (k)! : ℝ) • A ^ k := by
-  induction k generalizing t with
-  | zero =>
-    change (1 : Matrix X X ℝ) = _
-    norm_num
-  | succ k ih =>
-    change (∫ s in t₀..t, A * peanoBakerTerm (fun _ => A) k s t₀) = _
-    simp_rw [ih, Algebra.mul_smul_comm, ← pow_succ']
-    rw [intervalIntegral.integral_smul_const]
-    congr 1
-    have hk_fac_ne : ((k)! : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero k)
-    simp_rw [div_eq_inv_mul, intervalIntegral.integral_const_mul, integral_sub_pow,
-      Nat.factorial_succ]
-    push_cast
-    field_simp
-
-/-- **Peano-Baker series for constant `A`** (Hespanha, equation (6.1)).
-For a *constant* state matrix `A`, the continuous-time state transition matrix
-is given by the power series `Φ(t,t₀) = Σ_{k=0}^∞ ((t-t₀)^k / k!) A^k` — summing
-`peanoBakerTerm_const` termwise.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1). -/
-@[blueprint "lem:stateTransitionMatrix-const-eq-tsum"
-  (title := "The LTI state transition matrix as a series")
-  (latexEnv := "lemma")
-  (statement := /-- For a constant state matrix $A$, the state transition matrix is the power
-    series
-    \[
-      \Phi(t, t_0) = \sum_{k=0}^{\infty} \frac{(t-t_0)^k}{k!}\,A^k .
-    \]
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.1).
-  -/)
-  (proof := /-- Sum \cref{lem:peanoBakerTerm-const} termwise; the Peano--Baker series converges
-    for any continuous state matrix, a constant one included. -/)]
-theorem stateTransitionMatrix_const_eq_tsum (t t₀ : ℝ) :
-    stateTransitionMatrix (fun _ => A) t t₀ = ∑' k, ((t - t₀) ^ k / (k)! : ℝ) • A ^ k := by
-  unfold stateTransitionMatrix
-  exact tsum_congr fun k => peanoBakerTerm_const A k t t₀
-
-/-- **The matrix exponential as state transition matrix** (Hespanha, equation (6.2)).
-For a *constant* state matrix `A`, the continuous-time state transition matrix
-collapses to the matrix exponential `Φ(t,t₀) = e^{A(t-t₀)}`. This is what lets every LTV
-property already proved for `stateTransitionMatrix` (existence, uniqueness, semigroup,
-invertibility, variation of constants) be reused directly for LTI by specialization.
-
-Proof: sum `peanoBakerTerm_const` termwise and match against Mathlib's own series
-characterization of `exp` (`NormedSpace.exp_eq_tsum`).
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.2). -/
-@[blueprint "thm:stateTransitionMatrix-const"
-  (title := "The LTI state transition matrix is $e^{A(t-t_{0})}$")
-  (statement := /-- For a constant state matrix $A$, the state transition matrix is the matrix
-    exponential:
-    \[
-      \Phi(t, t_0) = e^{A(t-t_0)} .
-    \]
-    This is the bridge that lets every property already proved for $\Phi$ in the time-varying
-    setting — existence, uniqueness, the semigroup law, invertibility, variation of constants —
-    be reused for LTI systems by specialization rather than reproved.
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.2).
-  -/)
-  (proof := /-- Both sides are power series in $A$: \cref{lem:stateTransitionMatrix-const-eq-tsum}
-    for the left, the defining series of $\exp$ for the right.  Match them termwise. -/)]
-theorem stateTransitionMatrix_const (t t₀ : ℝ) :
-    stateTransitionMatrix (fun _ => A) t t₀ = NormedSpace.exp ((t - t₀) • A) := by
-  unfold stateTransitionMatrix
-  simp only [NormedSpace.exp_eq_tsum (𝕂 := ℝ)]
-  refine tsum_congr fun k => ?_
-  rw [peanoBakerTerm_const, smul_pow, smul_smul, div_eq_inv_mul]
-
-/-- **LTI uniqueness** (Hespanha, P6.1).
-`e^{A(t-t₀)} *ᵥ x₀` is the *unique* solution of `ẋ = Ax`,
-`x(t₀) = x₀`, for a *constant* state matrix `A` — a direct corollary of the LTV uniqueness
-theorem `stateTransitionMatrix_mulVec_unique`, specialized at `A := fun _ => A` and rewritten
-via the bridge lemma `stateTransitionMatrix_const`. No new ODE-theoretic content: uniqueness
-for LTI systems is just uniqueness for LTV systems at a constant state matrix.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.1. -/
-@[blueprint "thm:exp-mulVec-unique"
-  (title := "Uniqueness of the LTI state response")
-  (statement := /-- Let $A$ be constant and let $z$ be a continuous integral solution of
-    $\dot x = Ax$, $x(t_0) = x_0$, on $[t_0, t_1]$.  Then
-    $z(t) = e^{A(t-t_0)}x_0$ for every $t$ in that interval.
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, Property P6.1.
-  -/)
-  (proof := /-- The time-varying uniqueness theorem applied at the constant state matrix
-    $A(\cdot) \equiv A$, whose bound $\|A(t)\| \le \|A\|$ is immediate, then rewritten through
-    \cref{thm:stateTransitionMatrix-const}.  There is no new ODE content: uniqueness for LTI is
-    uniqueness for LTV at a constant matrix. -/)]
-theorem exp_mulVec_unique {t₀ t₁ : ℝ} (x₀ : X → ℝ)
-    {z : ℝ → X → ℝ} (hz : IsIntegralSolution t₀ t₁ z x₀ (fun _ v => A *ᵥ v))
-    (hz_cont : ContinuousOn z (Set.uIcc t₀ t₁)) :
-    ∀ t ∈ Set.uIcc t₀ t₁, z t = NormedSpace.exp ((t - t₀) • A) *ᵥ x₀ := by
-  intro t ht
-  have := stateTransitionMatrix_mulVec_unique (A := fun _ => A) continuous_const
-    (M := ‖A‖) (fun _ _ => le_refl _) x₀ hz hz_cont t ht
-  rwa [stateTransitionMatrix_const] at this
-
-/-- **Columns of the matrix exponential** (Hespanha, P6.2).
-For every fixed `t₀`, the `i`-th column of `e^{A(t-t₀)}` is the unique solution to
-`ẋ = Ax`, `x(t₀) = eᵢ`, where `eᵢ` is the `i`-th standard basis vector — the column-restatement
-of `exp_mulVec_unique`, a direct corollary of the LTV theorem `stateTransitionMatrix_col_unique`.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, Property P6.2. -/
-@[blueprint "thm:exp-col-unique"
-  (title := "Columns of the LTI state transition matrix")
-  (statement := /-- Let $A$ be constant.  For each $i$, the $i$-th column of $e^{A(t-t_0)}$ is
-    the unique continuous integral solution of $\dot x = Ax$ with $x(t_0) = e_i$, the $i$-th
-    standard basis vector.  Equivalently, the columns of the matrix exponential are the
-    solutions from the standard basis.
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, Property P6.2.
-  -/)
-  (proof := /-- \cref{thm:exp-mulVec-unique} at $x_0 = e_i$, in the column form supplied by the
-    time-varying column-uniqueness theorem. -/)]
-theorem exp_col_unique {t₀ t₁ : ℝ} (i : X)
-    {z : ℝ → X → ℝ} (hz : IsIntegralSolution t₀ t₁ z (Pi.single i 1) (fun _ v => A *ᵥ v))
-    (hz_cont : ContinuousOn z (Set.uIcc t₀ t₁)) :
-    ∀ t ∈ Set.uIcc t₀ t₁, z t = (NormedSpace.exp ((t - t₀) • A)).col i := by
-  intro t ht
-  have := stateTransitionMatrix_col_unique (A := fun _ => A) continuous_const
-    (M := ‖A‖) (fun _ _ => le_refl _) i hz hz_cont t ht
-  rwa [stateTransitionMatrix_const] at this
+omit [Fintype U] [Fintype Y] [DecidableEq U] in
+/-- `toEuclideanCLM`, which reads a matrix as an operator on Euclidean space, is continuous: it is
+linear on a finite-dimensional space. -/
+private theorem continuous_toEuclideanCLM : Continuous (toEuclideanCLM (n := X) (𝕜 := ℝ)) :=
+  LinearMap.continuous_of_finiteDimensional
+    (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearMap
 
 /-!
 ## P6.3 and P6.5 are proved elsewhere
 
 `MatrixAlgebra/Exponential.lean` carries the semigroup property `e^{At} e^{Aτ} = e^{A(t+τ)}`
 (P6.3) and the finite-polynomial form `e^{At} = Σ αᵢ(t) Aⁱ` (P6.5, via Cayley-Hamilton (6.6)).
-Both are statements about `exp` and `A` alone — no trajectory, no initial time, no state
-transition matrix — so neither needs the LTV solution theory this file is built on.
-
-What stays here is what genuinely specializes LTV to a constant `A`: the Peano-Baker collapse
-(6.1), the closed form (6.2), and uniqueness (P6.1, P6.2).
+Both are statements about `exp` and `A` alone, so neither needs the solution theory.
 -/
 
-/-! ## The time-invariant forced response
+namespace ContinuousLTI
 
-For a time-invariant system the state transition matrix is the matrix exponential
-(`stateTransitionMatrix_const`), so the variation-of-constants formula collapses to the closed
-form every textbook writes. -/
+-- `map_exp` needs some norm on matrices; `exp` itself does not depend on which.
+open scoped Matrix.Norms.Operator in
+/-- For an LTI system the state transition operator is the matrix exponential:
+`Φ(t, t₀) = e^{A (t - t₀)}`, acting on Euclidean states (Hespanha, (6.2)). -/
+@[blueprint "thm:continuousLTI-stateTransition-toLTV"
+  (title := "The LTI state transition operator is $e^{A(t-t_{0})}$")
+  (statement := /-- For an LTI system, $\Phi(t, t_0) = e^{A(t-t_0)}$, acting on Euclidean states.
 
-section TimeInvariant
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, equation (6.2). -/)
+  (proof := /-- \cref{thm:stateTransitionMatrix-const} in the algebra of operators, and
+    $\exp$ commutes with the continuous algebra map from matrices to operators. -/)]
+theorem stateTransition_toLTV (sys : ContinuousLTI X U Y ℝ) (t t₀ : ℝ) :
+    sys.toLTV.stateTransition t t₀ =
+      toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) := by
+  rw [ContinuousLTV.stateTransition,
+    show sys.toLTV.A = fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) sys.A from funext sys.toLTV_A,
+    stateTransitionMatrix_const,
+    NormedSpace.map_exp _ continuous_toEuclideanCLM, map_smul]
 
-variable {U Y : Type*} [Fintype U] {u : ℝ → U → ℝ}
+/-- **LTI uniqueness** (Hespanha, P6.1): every trajectory of the unforced LTI system is
+`e^{A(t-t₀)} x(t₀)`. -/
+@[blueprint "thm:continuousLTI-eq-exp-of-isTrajectoryOn"
+  (title := "Uniqueness of the LTI state response")
+  (statement := /-- Let $x$ be a trajectory of the unforced LTI system on $[t_0, t_1]$.  Then
+    $x(t) = e^{A(t-t_0)}x(t_0)$ for every $t$ in that interval.
 
-/-- **Variation of constants, time-invariant case.** For constant `A` and `B` the forced
-response is the closed form
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6, Property P6.1. -/)
+  (proof := /-- \cref{thm:eq-homogeneousResponse-of-isTrajectoryOn} at the constant state
+    matrix, rewritten by \cref{thm:continuousLTI-stateTransition-toLTV}. -/)]
+theorem eq_exp_of_isTrajectoryOn (sys : ContinuousLTI X U Y ℝ) {x : ℝ → EuclideanSpace ℝ X}
+    {t₀ t₁ : ℝ} (hx : sys.IsTrajectoryOn 0 x (Set.Icc t₀ t₁)) {t : ℝ} (ht : t ∈ Set.Icc t₀ t₁) :
+    x t = toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) (x t₀) := by
+  rw [← stateTransition_toLTV]
+  exact sys.toLTV.eq_homogeneousResponse_of_isTrajectoryOn continuous_const hx ht
 
-    x(t) = e^{A(t-t₀)} x₀ + ∫ τ in t₀..t, e^{A(t-τ)} B u(τ) dτ.
+/-- **Variation of constants, time-invariant case.** For an LTI system the forced response is the
+closed form `x(t) = e^{A(t-t₀)} x₀ + ∫ τ in t₀..t, e^{A(t-τ)} B u(τ) dτ`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6. -/
 @[blueprint "lem:forcedResponse-timeInvariant"
   (title := "Forced response of a time-invariant system")
   (latexEnv := "lemma")
-  (statement := /-- For constant $A$ and $B$ the forced response (\cref{def:forcedResponse})
-    is
+  (statement := /-- For an LTI system the forced response (\cref{def:forcedResponse}) is
     \[
       x(t) = e^{A(t-t_0)}x_0 + \int_{t_0}^{t} e^{A(t-\tau)}\,B\,u(\tau)\,\mathrm{d}\tau .
     \]
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 6.
   -/)
-  (proof := /-- \cref{thm:stateTransitionMatrix-const} identifies $\Phi$ with the matrix
-    exponential, applied once to the homogeneous term and once under the integral sign. -/)]
-theorem forcedResponse_timeInvariant (B : Matrix X U ℝ) (u : ℝ → U → ℝ) (t₀ : ℝ)
-    (x₀ : X → ℝ) (t : ℝ) :
-    forcedResponse (fun _ => A) (fun _ => B) u t₀ x₀ t
-      = NormedSpace.exp ((t - t₀) • A) *ᵥ x₀
-        + ∫ τ in t₀..t, NormedSpace.exp ((t - τ) • A) *ᵥ (B *ᵥ u τ) := by
-  change stateTransitionMatrix (fun _ => A) t t₀ *ᵥ x₀ +
-      (∫ τ in t₀..t, stateTransitionMatrix (fun _ => A) t τ *ᵥ (B *ᵥ u τ)) = _
-  rw [stateTransitionMatrix_const]
-  congr 1
-  exact intervalIntegral.integral_congr fun τ _ => by rw [stateTransitionMatrix_const]
-
-namespace ContinuousLTI
+  (proof := /-- \cref{thm:continuousLTI-stateTransition-toLTV}, applied once to the homogeneous
+    term and once under the integral sign. -/)]
+theorem forcedResponse_toLTV (sys : ContinuousLTI X U Y ℝ) (u : ℝ → EuclideanSpace ℝ U)
+    (t₀ : ℝ) (x₀ : EuclideanSpace ℝ X) (t : ℝ) :
+    sys.toLTV.forcedResponse u t₀ x₀ t =
+      toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) x₀ +
+        ∫ τ in t₀..t, toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - τ) • sys.A))
+          (toEuclideanLin sys.B (u τ)) := by
+  simp only [ContinuousLTV.forcedResponse, stateTransition_toLTV]
+  rfl
 
 /-- The closed-form response of an LTI system is a trajectory of that system. -/
 @[blueprint "thm:isTrajectory-timeInvariant"
@@ -238,16 +109,16 @@ namespace ContinuousLTI
   (proof := /-- \cref{thm:isTrajectory-forcedResponse} at the LTV system of the LTI system
     (\cref{def:continuousLTI-toLTV}), whose coefficient maps are constant and so continuous,
     rewritten by \cref{lem:forcedResponse-timeInvariant}. -/)]
-theorem isTrajectory (sys : ContinuousLTI X U Y ℝ) (hu : Continuous u) (t₀ : ℝ) (x₀ : X → ℝ) :
-    sys.IsTrajectory u
-      (fun t => NormedSpace.exp ((t - t₀) • sys.A) *ᵥ x₀
-        + ∫ τ in t₀..t, NormedSpace.exp ((t - τ) • sys.A) *ᵥ (sys.B *ᵥ u τ)) := by
-  have h : sys.toLTV.IsTrajectory u (forcedResponse (fun _ => sys.A) (fun _ => sys.B) u t₀ x₀) :=
-    ContinuousLTV.isTrajectory_forcedResponse sys.toLTV continuous_const continuous_const hu t₀ x₀
-  rwa [funext fun t => forcedResponse_timeInvariant sys.A sys.B u t₀ x₀ t] at h
+theorem isTrajectory (sys : ContinuousLTI X U Y ℝ) {u : ℝ → EuclideanSpace ℝ U}
+    (hu : Continuous u) (t₀ : ℝ) (x₀ : EuclideanSpace ℝ X) :
+    sys.IsTrajectory u (fun t =>
+      toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) x₀ +
+        ∫ τ in t₀..t, toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - τ) • sys.A))
+          (toEuclideanLin sys.B (u τ))) := by
+  convert sys.toLTV.isTrajectory_forcedResponse continuous_const continuous_const hu t₀ x₀
+    using 1
+  exact funext fun t => (forcedResponse_toLTV sys u t₀ x₀ t).symm
 
 end ContinuousLTI
-
-end TimeInvariant
 
 end LinearSystems

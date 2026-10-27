@@ -243,9 +243,6 @@ theorem IsStrictUniformLyapunovFunction.of_timeInvariant_of_neg {s : ContinuousS
 
 section Chetaev
 
-variable {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
-
 /-- A globally `C¹` state-only certificate, positive in an open region within a fixed ball,
 zero on the region's boundary there, and with strictly positive Lie derivative for `t ≥ 0`.
 The base point lies on the boundary. With a time-independent state equation this certifies
@@ -262,8 +259,8 @@ for the positive-region escape argument. -/
     is strictly positive for every $t\ge0$.
 
     Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed., Theorem 4.3, p. 125. -/)]
-structure IsChetaevFunction (s : ContinuousSystem ℝⁿ Unit Y) (V : ℝⁿ → ℝ)
-    (x_eq : ℝⁿ) (D : Set ℝⁿ) (ρ : ℝ) : Prop where
+structure IsChetaevFunction (s : ContinuousSystem E Unit Y) (V : E → ℝ)
+    (x_eq : E) (D : Set E) (ρ : ℝ) : Prop where
   /-- The certificate radius is positive. -/
   hradius : 0 < ρ
   /-- The positive region is open. -/

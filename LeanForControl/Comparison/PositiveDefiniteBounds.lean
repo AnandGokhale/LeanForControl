@@ -2,6 +2,8 @@ import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.PositiveDefinite
 import LeanForControl.Comparison.ClassK
 import Mathlib.Topology.MetricSpace.Basic
+import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Analysis.Normed.Module.RCLike.Real
 import Architect
 
 open Set Filter Topology Metric
@@ -15,7 +17,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Appendix C.
 
 ## Main result
 
-**Class K sandwich bounds** (`IsPositiveDefiniteOn.exists_classK_bounds`): Let `W : ℝⁿ → ℝ`
+**Class K sandwich bounds** (`IsPositiveDefiniteOn.exists_classK_bounds`): Let `W : E → ℝ`
 be positive definite about `x_eq` (`IsPositiveDefiniteOn`) on a set containing
 `closedBall x_eq r`.  Then there exist class K functions `α₁, α₂` on `[0, r)` (i.e.
 `ClassK r b₁`, `ClassK r b₂`) such that `α₁(‖x - x_eq‖) ≤ W(x) ≤ α₂(‖x - x_eq‖)` for all `x` with
@@ -38,32 +40,32 @@ on `[0, r)`.
    `V ≤ φ ≤ α₂`.
 -/
 
-variable {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 -- ─── 1. Core Definitions ──────────────────────────────────────────────────────
 
 /-- The annulus `{x | s ≤ ‖x‖ ≤ r}`, implemented as the set difference of two balls. -/
-private def annulus (s r : ℝ) : Set ℝⁿ :=
+private def annulus (s r : ℝ) : Set E :=
   Metric.closedBall 0 r \ Metric.ball 0 s
 
 /-- `ψ(s) = inf_{x ∈ annulus s r} V(x)`.
     Tracks the minimum of `V` on the shell `{s ≤ ‖x‖ ≤ r}`; serves as the
     lower comparison function before smoothing. -/
-private noncomputable def psi_fn (r : ℝ) (V : ℝⁿ → ℝ) (s : ℝ) : ℝ :=
+private noncomputable def psi_fn (r : ℝ) (V : E → ℝ) (s : ℝ) : ℝ :=
   sInf (V '' annulus s r)
 
 /-- `φ(s) = sup_{‖x‖ ≤ s} V(x)`.
     Tracks the maximum of `V` on the closed ball of radius `s`; serves as the
     upper comparison function before smoothing. -/
-private noncomputable def phi_fn (V : ℝⁿ → ℝ) (s : ℝ) : ℝ :=
+private noncomputable def phi_fn (V : E → ℝ) (s : ℝ) : ℝ :=
   sSup (V '' Metric.closedBall 0 s)
 
 -- ─── 2. Properties of the Lower Comparison Function ψ ─────────────────────────
 
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- `ψ(0) = 0`: the annulus degenerates to `{0}`, so the infimum is `V(0) = 0`. -/
-private lemma psi_fn_zero {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r) (hV_zero : V 0 = 0)
-    (hV_nonneg : ∀ x ∈ closedBall (0 : ℝⁿ) r, 0 ≤ V x) : psi_fn r V 0 = 0 := by
+private lemma psi_fn_zero {r : ℝ} {V : E → ℝ} (hr : 0 < r) (hV_zero : V 0 = 0)
+    (hV_nonneg : ∀ x ∈ closedBall (0 : E) r, 0 ≤ V x) : psi_fn r V 0 = 0 := by
   unfold psi_fn
   apply le_antisymm
   · -- sInf ≤ 0: exhibit V(0) = 0 as a member of the image
@@ -82,21 +84,19 @@ private lemma psi_fn_zero {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r) (hV_zero :
 
 /-- `ψ(s) > 0` for `0 < s ≤ r`: the Extreme Value Theorem gives a minimizer `x` in
     the compact annulus; since `‖x‖ ≥ s > 0` we have `x ≠ 0`, hence `V(x) > 0`. -/
-private lemma psi_fn_pos {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
-    (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
-    (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall (0 : ℝⁿ) r → x ≠ 0 → 0 < V x)
+private lemma psi_fn_pos {r : ℝ} {V : E → ℝ} [Nontrivial E]
+    (hV_cont : ContinuousOn V (closedBall (0 : E) r))
+    (hV_pos : ∀ x : E, x ∈ closedBall (0 : E) r → x ≠ 0 → 0 < V x)
     {s : ℝ} (hs_pos : 0 < s) (hs_le : s ≤ r) : 0 < psi_fn r V s := by
   unfold psi_fn
   have h_comp : IsCompact (annulus s r) :=
-    IsCompact.diff (isCompact_closedBall (0 : ℝⁿ) r) isOpen_ball
-  have h_sub : annulus s r ⊆ closedBall (0 : ℝⁿ) r := Set.diff_subset
+    IsCompact.diff (isCompact_closedBall (0 : E) r) isOpen_ball
+  have h_sub : annulus s r ⊆ closedBall (0 : E) r := Set.diff_subset
   have hV_contA : ContinuousOn V (annulus s r) := hV_cont.mono h_sub
-  -- The annulus is non-empty: the unit-vector coordinate scaled to radius s lies in it
-  have h_nonempty : (annulus s r : Set ℝⁿ).Nonempty := by
-    let x : ℝⁿ := PiLp.single 2 (0 : Fin n) s
+  -- The annulus is non-empty: E is nontrivial, so it has a vector of norm s
+  have h_nonempty : (annulus s r : Set E).Nonempty := by
+    obtain ⟨x, hx_norm⟩ := exists_norm_eq E hs_pos.le
     use x
-    have hx_norm : ‖x‖ = s := by
-      rw [PiLp.norm_single, Real.norm_eq_abs, abs_of_pos hs_pos]
     simp only [annulus, Set.mem_diff, Metric.mem_closedBall, Metric.mem_ball, dist_zero_right,
       hx_norm]
     exact ⟨hs_le, not_lt_of_ge le_rfl⟩
@@ -110,7 +110,7 @@ private lemma psi_fn_pos {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
         rintro _ ⟨y, hy, rfl⟩
         by_cases hy0 : y = 0
         · subst hy0
-          have h_norm : s ≤ ‖(0 : ℝⁿ)‖ :=
+          have h_norm : s ≤ ‖(0 : E)‖ :=
             not_lt.mp fun h => hy.2 (mem_ball_zero_iff.mpr h)
           rw [norm_zero] at h_norm; linarith
         · exact (hV_pos y (h_sub hy) hy0).le
@@ -123,27 +123,25 @@ private lemma psi_fn_pos {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
   -- x ∈ annulus so ‖x‖ ≥ s > 0, hence x ≠ 0, hence V(x) > 0
   have hx_ne : x ≠ 0 := by
     rintro rfl
-    have h_norm : s ≤ ‖(0 : ℝⁿ)‖ :=
+    have h_norm : s ≤ ‖(0 : E)‖ :=
       not_lt.mp fun h => hx_mem.2 (mem_ball_zero_iff.mpr h)
     rw [norm_zero] at h_norm; linarith
   exact hV_pos x (h_sub hx_mem) hx_ne
 
 /-- `ψ` is monotone: enlarging the annulus (decreasing the inner radius) can only
     decrease the infimum, since we are taking inf over a larger set. -/
-private lemma psi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
-    (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
+private lemma psi_fn_mono {r : ℝ} {V : E → ℝ} [Nontrivial E]
+    (hV_cont : ContinuousOn V (closedBall (0 : E) r))
     {s₁ s₂ : ℝ} (h_le : s₁ ≤ s₂) (h_bound : s₂ ≤ r) (hs1_nonneg : 0 ≤ s₁) :
     psi_fn r V s₁ ≤ psi_fn r V s₂ := by
   unfold psi_fn
   apply csInf_le_csInf
   · -- The image over the full closed ball (a superset) is bounded below
-    have h_comp : IsCompact (closedBall (0 : ℝⁿ) r) := isCompact_closedBall _ _
+    have h_comp : IsCompact (closedBall (0 : E) r) := isCompact_closedBall _ _
     have h_bdd := (h_comp.image_of_continuousOn hV_cont).bddBelow
     exact h_bdd.mono (Set.image_mono Set.diff_subset)
   · -- annulus s₁ r is non-empty: exhibit a point at radius s₂ ≥ s₁
-    let x : ℝⁿ := PiLp.single 2 (0 : Fin n) s₂
-    have hx_norm : ‖x‖ = s₂ := by
-      rw [PiLp.norm_single, Real.norm_eq_abs, abs_of_nonneg (hs1_nonneg.trans h_le)]
+    obtain ⟨x, hx_norm⟩ := exists_norm_eq E (hs1_nonneg.trans h_le)
     refine ⟨V x, x, ?_, rfl⟩
     simp only [annulus, Set.mem_diff, Metric.mem_closedBall, Metric.mem_ball, dist_zero_right,
       hx_norm]
@@ -157,12 +155,13 @@ private lemma psi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} [NeZero n]
 
 -- ─── 3. Lower Sandwich: ψ(‖x‖) ≤ V(x) ───────────────────────────────────────
 
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- `V(x) ≥ ψ(‖x‖)`: since `x` belongs to the annulus `{y | ‖x‖ ≤ ‖y‖ ≤ r}`,
     `V(x)` is an element of the set whose infimum defines `ψ(‖x‖)`. -/
-private lemma V_ge_psi {r : ℝ} {V : ℝⁿ → ℝ}
+private lemma V_ge_psi {r : ℝ} {V : E → ℝ}
     (hV_zero : V 0 = 0)
-    (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x)
-    {x : ℝⁿ} (hx : ‖x‖ ≤ r) : psi_fn r V ‖x‖ ≤ V x := by
+    (hV_pos : ∀ x : E, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x)
+    {x : E} (hx : ‖x‖ ≤ r) : psi_fn r V ‖x‖ ≤ V x := by
   unfold psi_fn
   apply csInf_le
   · -- 0 is a lower bound: V ≥ 0 on the annulus (positive-definiteness + V(0) = 0)
@@ -178,8 +177,9 @@ private lemma V_ge_psi {r : ℝ} {V : ℝⁿ → ℝ}
 
 -- ─── 4. Properties of the Upper Comparison Function φ ─────────────────────────
 
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- `φ(0) = 0`: the closed ball of radius 0 contains only `0`, so the supremum is `V(0) = 0`. -/
-private lemma phi_fn_zero {V : ℝⁿ → ℝ} (hV_zero : V 0 = 0) : phi_fn V 0 = 0 := by
+private lemma phi_fn_zero {V : E → ℝ} (hV_zero : V 0 = 0) : phi_fn V 0 = 0 := by
   unfold phi_fn
   apply le_antisymm
   · apply csSup_le
@@ -196,14 +196,14 @@ private lemma phi_fn_zero {V : ℝⁿ → ℝ} (hV_zero : V 0 = 0) : phi_fn V 0 
     · exact ⟨0, Metric.mem_closedBall_self le_rfl, hV_zero⟩
 
 /-- `φ` is monotone: a larger ball contains more of `V`, so its supremum is no smaller. -/
-private lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r))
+private lemma phi_fn_mono {r : ℝ} {V : E → ℝ} (hV_cont : ContinuousOn V (closedBall (0 : E) r))
     {s₁ s₂ : ℝ} (h_le : s₁ ≤ s₂) (h_bound : s₂ ≤ r) (hs1_nonneg : 0 ≤ s₁) :
     phi_fn V s₁ ≤ phi_fn V s₂ := by
   unfold phi_fn
   apply csSup_le_csSup
   · -- The image over the larger ball is bounded above (compact + continuous)
-    have h_comp : IsCompact (closedBall (0 : ℝⁿ) s₂) := isCompact_closedBall (0 : ℝⁿ) s₂
-    have h_sub : closedBall (0 : ℝⁿ) s₂ ⊆ closedBall (0 : ℝⁿ) r :=
+    have h_comp : IsCompact (closedBall (0 : E) s₂) := isCompact_closedBall (0 : E) s₂
+    have h_sub : closedBall (0 : E) s₂ ⊆ closedBall (0 : E) r :=
       Metric.closedBall_subset_closedBall h_bound
     exact (h_comp.image_of_continuousOn (hV_cont.mono h_sub)).bddAbove
   · -- The smaller ball's image is non-empty: V(0) ∈ V '' closedBall 0 s₁
@@ -214,8 +214,8 @@ private lemma phi_fn_mono {r : ℝ} {V : ℝⁿ → ℝ} (hV_cont : ContinuousOn
 
 /-- `φ` is continuous at `0` from the right: on a small ball `V` is close to `V(0) = 0`, so
     its supremum there is too. -/
-private lemma phi_fn_continuousWithinAt {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 < r)
-    (hV_cont : ContinuousOn V (closedBall (0 : ℝⁿ) r)) (hV_zero : V 0 = 0) :
+private lemma phi_fn_continuousWithinAt {r : ℝ} {V : E → ℝ} (hr : 0 < r)
+    (hV_cont : ContinuousOn V (closedBall (0 : E) r)) (hV_zero : V 0 = 0) :
     ContinuousWithinAt (phi_fn V) (Set.Icc 0 r) 0 := by
   refine Metric.continuousWithinAt_iff.mpr fun ε hε => ?_
   obtain ⟨δ, hδ, hV⟩ := Metric.continuousWithinAt_iff.mp
@@ -238,15 +238,15 @@ private lemma phi_fn_continuousWithinAt {r : ℝ} {V : ℝⁿ → ℝ} (hr : 0 <
 
 /-- `V(x) ≤ φ(‖x‖)`: since `x ∈ closedBall 0 ‖x‖`, `V(x)` is an element of the
     set whose supremum defines `φ(‖x‖)`. -/
-private lemma V_le_phi {r : ℝ} {V : ℝⁿ → ℝ}
+private lemma V_le_phi {r : ℝ} {V : E → ℝ}
     (hV_cont : ContinuousOn V (closedBall 0 r))
-    {x : ℝⁿ} (hx : ‖x‖ ≤ r) : V x ≤ phi_fn V ‖x‖ := by
+    {x : E} (hx : ‖x‖ ≤ r) : V x ≤ phi_fn V ‖x‖ := by
   unfold phi_fn
   apply le_csSup
   · -- The image over closedBall 0 ‖x‖ is bounded above (compact + continuous)
-    have h_sub : closedBall (0 : ℝⁿ) ‖x‖ ⊆ closedBall (0 : ℝⁿ) r :=
+    have h_sub : closedBall (0 : E) ‖x‖ ⊆ closedBall (0 : E) r :=
       Metric.closedBall_subset_closedBall hx
-    have h_comp : IsCompact (closedBall (0 : ℝⁿ) ‖x‖) := isCompact_closedBall (0 : ℝⁿ) ‖x‖
+    have h_comp : IsCompact (closedBall (0 : E) ‖x‖) := isCompact_closedBall (0 : E) ‖x‖
     have h_cont : ContinuousOn V (closedBall 0 ‖x‖) := hV_cont.mono h_sub
     exact (h_comp.image_of_continuousOn h_cont).bddAbove
   · -- x ∈ closedBall 0 ‖x‖
@@ -264,13 +264,15 @@ bounds follow by transitivity: `α₁ ≤ ψ ≤ V ≤ φ ≤ α₂`. -/
     `α₁(s) ≤ ψ(s)` for every `s ∈ [0, r]`. The comparison includes the endpoint `s = r`, where
     `α₁.toFun` is still defined although it lies outside the class-K domain.
     Combined with `V_ge_psi`, this gives `α₁(‖x‖) ≤ V(x)` for `‖x‖ ≤ r`. -/
-private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
+private lemma exists_classK_lower_bound [Nontrivial E] {r : ℝ} {V : E → ℝ} (hr : 0 < r)
     (hV_cont : ContinuousOn V (closedBall 0 r))
-    (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
+    (hV_zero : V 0 = 0) (hV_pos : ∀ x : E, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ : ℝ) (α₁ : ClassK r b₁), ∀ s, 0 ≤ s → s ≤ r → α₁.toFun s ≤ psi_fn r V s := by
   -- Derive non-negativity from V(0) = 0 and strict positivity away from 0
-  have hV_nonneg : ∀ x ∈ closedBall (0 : ℝⁿ) r, 0 ≤ V x := fun x hx =>
-    if h : x = 0 then by simp [h, hV_zero] else (hV_pos x hx h).le
+  have hV_nonneg : ∀ x ∈ closedBall (0 : E) r, 0 ≤ V x := fun x hx => by
+    by_cases h : x = 0
+    · simp [h, hV_zero]
+    · exact (hV_pos x hx h).le
   -- Verify the three hypotheses of the lower smoothing lemma for ψ
   have hψ_zero : psi_fn r V 0 = 0 := psi_fn_zero hr hV_zero hV_nonneg
   have hψ_pos : ∀ s, 0 < s → s ≤ r → 0 < psi_fn r V s := fun s hs hs_le =>
@@ -286,7 +288,8 @@ private lemma exists_classK_lower_bound [NeZero n] (hr : 0 < r)
     `φ(s) ≤ α₂(s)` for every `s ∈ [0, r]`. The comparison includes the endpoint `s = r`, where
     `α₂.toFun` is still defined although it lies outside the class-K domain.
     Combined with `V_le_phi`, this gives `V(x) ≤ α₂(‖x‖)` for `‖x‖ ≤ r`. -/
-private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (closedBall 0 r))
+private lemma exists_classK_upper_bound {r : ℝ} {V : E → ℝ} (hr : 0 < r)
+    (hV_cont : ContinuousOn V (closedBall 0 r))
     (hV_zero : V 0 = 0) :
     ∃ (b₂ : ℝ) (α₂ : ClassK r b₂), ∀ s, 0 ≤ s → s ≤ r → phi_fn V s ≤ α₂.toFun s := by
   -- Verify the three hypotheses of the upper smoothing lemma for φ
@@ -304,11 +307,11 @@ private lemma exists_classK_upper_bound (hr : 0 < r) (hV_cont : ContinuousOn V (
 
 /-- The sandwich bounds about the origin, from the three conditions of positive definiteness
 spelled out.  `IsPositiveDefiniteOn.exists_classK_bounds` translates them to any point. -/
-private theorem classKBounds_origin [NeZero n] (hr : 0 < r)
+private theorem classKBounds_origin [Nontrivial E] {r : ℝ} {V : E → ℝ} (hr : 0 < r)
     (hV_cont : ContinuousOn V (closedBall 0 r))
-    (hV_zero : V 0 = 0) (hV_pos : ∀ x : ℝⁿ, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
+    (hV_zero : V 0 = 0) (hV_pos : ∀ x : E, x ∈ closedBall 0 r → x ≠ 0 → 0 < V x) :
     ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂),
-      ∀ x : ℝⁿ, ‖x‖ < r → α₁.toFun ‖x‖ ≤ V x ∧ V x ≤ α₂.toFun ‖x‖ := by
+      ∀ x : E, ‖x‖ < r → α₁.toFun ‖x‖ ≤ V x ∧ V x ≤ α₂.toFun ‖x‖ := by
   obtain ⟨b₁, α₁, hα₁_le_psi⟩ := exists_classK_lower_bound hr hV_cont hV_zero hV_pos
   obtain ⟨b₂, α₂, hphi_le_α₂⟩ := exists_classK_upper_bound hr hV_cont hV_zero
   refine ⟨b₁, b₂, α₁, α₂, ?_⟩
@@ -359,12 +362,12 @@ private theorem classKBounds_origin [NeZero n] (hr : 0 < r)
     \cref{lem:exists-strictMono-lower-bound} gives a class $\mathcal{K}$ minorant of $\psi$
     and \cref{lem:exists-strictMono-upper-bound} a class $\mathcal{K}$ majorant of $\phi$.
     Since $\psi(\|y\|) \le V(y) \le \phi(\|y\|)$ pointwise, these sandwich $V$. -/)]
-theorem IsPositiveDefiniteOn.exists_classK_bounds [NeZero n] {W : ℝⁿ → ℝ} {x_eq : ℝⁿ}
-    {D : Set ℝⁿ} {r : ℝ}
+theorem IsPositiveDefiniteOn.exists_classK_bounds [Nontrivial E] {W : E → ℝ} {x_eq : E}
+    {D : Set E} {r : ℝ}
     (hr : 0 < r) (hrD : closedBall x_eq r ⊆ D) (hW : IsPositiveDefiniteOn W x_eq D) :
-    ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂), ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
+    ∃ (b₁ b₂ : ℝ) (α₁ : ClassK r b₁) (α₂ : ClassK r b₂), ∀ x : E, ‖x - x_eq‖ < r →
       α₁.toFun ‖x - x_eq‖ ≤ W x ∧ W x ≤ α₂.toFun ‖x - x_eq‖ := by
-  have h_maps : MapsTo (· + x_eq) (closedBall (0 : ℝⁿ) r) D := fun y hy =>
+  have h_maps : MapsTo (· + x_eq) (closedBall (0 : E) r) D := fun y hy =>
     hrD (by simpa [mem_closedBall_iff_norm] using hy)
   obtain ⟨b₁, b₂, α₁, α₂, h⟩ := classKBounds_origin (V := fun y => W (y + x_eq)) hr
     (hW.1.comp (continuous_add_const x_eq).continuousOn h_maps) (by simpa using hW.2.1)

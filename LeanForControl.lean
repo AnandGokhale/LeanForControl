@@ -4,7 +4,6 @@ import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.Analysis.IntegralCurves
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.LieDerivative
-import LeanForControl.Analysis.Limsup
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.Norm
 import LeanForControl.Analysis.OmegaLimit
@@ -34,9 +33,11 @@ import LeanForControl.LinearSystems.Observability.Observability
 import LeanForControl.LinearSystems.Solutions.CtsLTI
 import LeanForControl.LinearSystems.Solutions.CtsLTV
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
+import LeanForControl.ODEs.DefsPeanoBaker
+import LeanForControl.ODEs.PeanoBaker
 import LeanForControl.LinearSystems.Solutions.DefsDiscLTV
 import LeanForControl.LinearSystems.Solutions.DiscLTV
-import LeanForControl.LinearSystems.Stability.Continuous.DifferentialLyapunov
+import LeanForControl.LinearSystems.Stability.Continuous.DifferentialLyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
@@ -50,14 +51,12 @@ import LeanForControl.LinearSystems.Stability.Discrete.Schur
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
-import LeanForControl.MatrixAlgebra.NormComparison
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.GronwallBellman
 import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
-import LeanForControl.ODEs.Sensitivity
 import LeanForControl.Stability.Continuous.Boundedness
 import LeanForControl.Stability.Continuous.Cascade
 import LeanForControl.Stability.Continuous.Chetaev

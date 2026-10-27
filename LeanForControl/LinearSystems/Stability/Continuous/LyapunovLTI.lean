@@ -39,15 +39,13 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1.
 namespace LinearSystems
 
 open Matrix Set Filter Topology NormedSpace ContinuousLTV
-open scoped Matrix.Norms.Operator
 
-variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U]
+variable {X U Y : Type*} [Fintype X] [DecidableEq X] [Fintype U] [DecidableEq U] [Fintype Y]
 
 namespace ContinuousLTI
 
 /-! ## Theorem 8.1(2): asymptotic stability -/
 
-omit [DecidableEq X] in
 /-- **Hespanha, Theorem 8.1(2).**
 The time-invariant system `ẋ = A x` is asymptotically stable if and only if every eigenvalue
 of `A` has strictly negative real part.
@@ -78,47 +76,42 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(2
     If the response converges then $A$ is Hurwitz
     (\cref{thm:isHurwitz-of-tendsto-exp-mulVec}).  Conversely a Hurwitz $A$ gives an
     exponentially decaying envelope for $\|e^{At}x_0\|$
-    (\cref{thm:isHurwitz-exists-norm-exp-mulVec-le}); the envelope is bounded by $k\|x_0\|$,
+    (\cref{thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le}); the envelope is bounded by $k\|x_0\|$,
     which supplies the stability half, and tends to zero
     (\cref{lem:tendsto-const-mul-exp-neg}), which supplies the attractivity half. -/)]
 theorem locallyAsymptoticallyStable_iff_isHurwitz
     (sys : ContinuousLTI X U Y ℝ) :
-    sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : X → ℝ) ↔
+    sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : EuclideanSpace ℝ X) ↔
       IsHurwitz sys.A := by
-  classical
-  obtain ⟨A, B, C, D⟩ := sys
-  have hcoeff : (⟨A, B, C, D⟩ : ContinuousLTI X U Y ℝ).toLTV.A = fun _ => A := rfl
-  have hhr : ∀ (t₀ : ℝ) (x₀ : X → ℝ), homogeneousResponse (fun _ => A) t₀ x₀
-      = fun t => exp ((t - t₀) • A) *ᵥ x₀ := by
-    intro t₀ x₀
-    funext t
-    simp [homogeneousResponse, stateTransitionMatrix_const]
   rw [locallyAsymptoticallyStable_iff_decayingHomogeneousResponse _
     (by simpa using continuous_const)]
-  simp only [hcoeff, hhr]
+  simp only [stateTransition_toLTV]
   constructor
   · rintro ⟨-, hconv⟩
-    refine isHurwitz_of_tendsto_exp_mulVec A fun x => ?_
-    simpa using hconv 0 le_rfl x
+    refine isHurwitz_of_tendsto_exp_mulVec sys.A fun x => ?_
+    simpa [ofLp_toEuclideanCLM] using
+      ((PiLp.continuous_ofLp 2 _).tendsto 0).comp (hconv 0 le_rfl (WithLp.toLp 2 x))
   · intro hA
-    obtain ⟨k, hk, γ, hγ, hbd⟩ := hA.exists_norm_exp_mulVec_le
+    obtain ⟨k, -, γ, hγ, hbd⟩ := hA.exists_norm_toEuclideanCLM_exp_le
+    have hbound : ∀ t₀ t : ℝ, t₀ ≤ t → ∀ x₀ : EuclideanSpace ℝ X,
+        ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (exp ((t - t₀) • sys.A)) x₀‖ ≤
+          k * Real.exp (-γ * (t - t₀)) * ‖x₀‖ := fun t₀ t ht x₀ =>
+      (ContinuousLinearMap.le_opNorm _ _).trans
+        (mul_le_mul_of_nonneg_right (hbd _ (sub_nonneg.2 ht)) (norm_nonneg _))
     refine ⟨fun t₀ _ x₀ => ⟨k * ‖x₀‖, fun t ht => ?_⟩, fun t₀ _ x₀ => ?_⟩
-    · calc ‖exp ((t - t₀) • A) *ᵥ x₀‖
-          ≤ k * Real.exp (-γ * (t - t₀)) * ‖x₀‖ := hbd (t - t₀) (by linarith) x₀
+    · calc ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (exp ((t - t₀) • sys.A)) x₀‖
+          ≤ k * Real.exp (-γ * (t - t₀)) * ‖x₀‖ := hbound t₀ t ht x₀
         _ ≤ k * 1 * ‖x₀‖ := by
+            have hk : 0 ≤ k := le_trans (norm_nonneg _) ((hbd 0 le_rfl).trans (by simp))
             gcongr
             exact Real.exp_le_one_iff.mpr
               (by simpa [neg_mul] using mul_nonneg hγ.le (sub_nonneg.2 ht))
         _ = k * ‖x₀‖ := by ring
-    · refine squeeze_zero_norm' ?_ (tendsto_const_mul_exp_neg (k * ‖x₀‖) t₀ hγ)
-      filter_upwards [eventually_ge_atTop t₀] with t ht
-      simpa [mul_comm, mul_assoc, mul_left_comm] using hbd (t - t₀) (by linarith) x₀
+    · exact tendsto_zero_of_norm_le_envelope k ‖x₀‖ t₀ hγ
+        ((eventually_ge_atTop t₀).mono fun t ht => hbound t₀ t ht x₀)
 
 /-! ## Theorem 8.1(3): exponential stability -/
 
--- `DecidableEq X` is needed only by the `L∞` operator norm inside the proof, not by the
--- statement, so it is reinstated there with `classical`.
-omit [DecidableEq X] in
 /-- **Hespanha, Theorem 8.1(3).**
 The time-invariant system `ẋ = A x` is exponentially stable if and only if every eigenvalue
 of `A` has strictly negative real part.
@@ -144,30 +137,28 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.1(3
     which already asks for an exponential envelope.  The forward direction squeezes
     $\|e^{At}x\|$ to zero under that envelope and applies
     \cref{thm:isHurwitz-of-tendsto-exp-mulVec}; the converse is
-    \cref{thm:isHurwitz-exists-norm-exp-mulVec-le} re-anchored from $0$ to $t_0$. -/)]
+    \cref{thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le} re-anchored from $0$ to $t_0$. -/)]
 theorem locallyExponentiallyStable_iff_isHurwitz
     (sys : ContinuousLTI X U Y ℝ) :
-    sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ) ↔
+    sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : EuclideanSpace ℝ X) ↔
       IsHurwitz sys.A := by
-  classical
-  obtain ⟨A, B, C, D⟩ := sys
-  have hcoeff : (⟨A, B, C, D⟩ : ContinuousLTI X U Y ℝ).toLTV.A = fun _ => A := rfl
   rw [locallyExponentiallyStable_iff_decayingStateTransition _ (by simpa using continuous_const)]
-  simp only [hcoeff, stateTransitionMatrix_const]
+  simp only [stateTransition_toLTV]
   constructor
   · rintro ⟨k, hk, γ, hγ, hbd⟩
-    refine isHurwitz_of_tendsto_exp_mulVec A fun x => ?_
-    refine squeeze_zero_norm' ?_ (by simpa using tendsto_const_mul_exp_neg (k * ‖x‖) 0 hγ)
-    filter_upwards [eventually_ge_atTop (0 : ℝ)] with t ht
-    simpa [mul_comm, mul_assoc, mul_left_comm] using hbd 0 le_rfl t ht x
-  · intro heig
-    obtain ⟨k, hk, γ, hγ, hbd⟩ := heig.exists_norm_exp_mulVec_le
-    exact ⟨k, hk, γ, hγ, fun t₀ _ t ht x => hbd (t - t₀) (by linarith) x⟩
+    refine isHurwitz_of_tendsto_exp_mulVec sys.A fun x => ?_
+    have h : Tendsto (fun t : ℝ => toEuclideanCLM (n := X) (𝕜 := ℝ)
+        (exp ((t - 0) • sys.A)) (WithLp.toLp 2 x)) atTop (𝓝 0) :=
+      tendsto_zero_of_norm_le_envelope k ‖WithLp.toLp 2 x‖ 0 hγ
+        ((eventually_ge_atTop 0).mono fun t ht => hbd 0 le_rfl t ht _)
+    simpa [ofLp_toEuclideanCLM] using ((PiLp.continuous_ofLp 2 _).tendsto 0).comp h
+  · intro hA
+    obtain ⟨k, hk, γ, hγ, hbd⟩ := hA.exists_norm_toEuclideanCLM_exp_le
+    exact ⟨k, hk, γ, hγ, fun t₀ _ t ht x => (ContinuousLinearMap.le_opNorm _ _).trans
+      (mul_le_mul_of_nonneg_right (hbd _ (sub_nonneg.2 ht)) (norm_nonneg _))⟩
 
 /-! ## Theorem 8.2: Lyapunov stability -/
 
--- `DecidableEq X` is needed by the clauses' proofs, not by the statement.
-set_option linter.unusedDecidableInType false in
 /-- **Hespanha, Theorem 8.2 (Lyapunov stability).**
 For the time-invariant system `ẋ = A x` the following are equivalent:
 
@@ -219,8 +210,8 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
     $3 \Leftrightarrow 6$ is \cref{thm:isHurwitz-iff-exists-posDef-lyapunovRate}. -/)]
 theorem lyapunovStability_tfae
     (sys : ContinuousLTI X U Y ℝ) :
-    [ sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : X → ℝ),
-      sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : X → ℝ),
+    [ sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : EuclideanSpace ℝ X),
+      sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : EuclideanSpace ℝ X),
       IsHurwitz sys.A,
       ∀ R : Matrix X X ℝ, R.PosDef →
         ∃ S : Matrix X X ℝ, S.PosDef ∧ ContinuousLyapunovEquation sys.A S R ∧

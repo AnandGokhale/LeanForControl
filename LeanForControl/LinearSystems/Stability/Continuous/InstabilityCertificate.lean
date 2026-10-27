@@ -1,4 +1,3 @@
-import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.Complex
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.Analysis.Complex.Polynomial.Basic

@@ -128,34 +128,57 @@ theorem InputToStateStable.globallyUniformlyAsymptoticallyStable {s : Continuous
     fun _ _ => by simp
   rwa [γ.map_zero, add_zero] at h
 
+/-- An **ISS-Lyapunov function** about `(x_c, u_eq)`: `V` is differentiable, sandwiched between
+`α₁(‖x - x_c‖)` and `α₂(‖x - x_c‖)` with `α₁, α₂` of class `K∞`, and decreases at least as fast as
+`W₃` wherever `‖x - x_c‖ ≥ ρ(‖u - u_eq‖)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19, (4.48)–(4.49); Sontag (2008). -/
+@[blueprint "def:continuousSystem-isISSLyapunovFunction"
+  (title := "ISS-Lyapunov function")
+  (statement := /-- Let $\alpha_1, \alpha_2$ be class $\mathcal{K}_{\infty}$, $W_3 : E \to
+    \mathbb{R}$ and $\rho : [0, \infty) \to \mathbb{R}$.  A function
+    $V : \mathbb{R} \times E \to \mathbb{R}$ is an \emph{ISS-Lyapunov function} for the system
+    about $(x_c, u_{\mathrm{eq}})$ if, for all $t \ge 0$, $x$ and $u$, $V$ is differentiable at
+    $(t, x)$ and
+    \[
+      \alpha_1(\|x - x_c\|) \le V(t, x) \le \alpha_2(\|x - x_c\|), \qquad
+      \dot V(t, x, u) \le -W_3(x) \quad
+        \text{for } \|x - x_c\| \ge \rho(\|u - u_{\mathrm{eq}}\|).
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.19, (4.48)--(4.49);
+    Sontag (2008). -/)]
+structure IsISSLyapunovFunction (s : ContinuousSystem E U Y) (V : ℝ → E → ℝ) (x_c : E) (u_eq : U)
+    (α₁ α₂ : ClassKInfty) (W₃ : E → ℝ) (ρ : ℝ → ℝ) : Prop where
+  /-- `V` is differentiable. -/
+  differentiableAt : ∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y)
+  /-- `V` is sandwiched between class `K∞` functions of `‖x - x_c‖`. -/
+  sandwich : ∀ t : ℝ, 0 ≤ t → ∀ y : E,
+    α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖
+  /-- `V̇ ≤ -W₃` wherever the state is large compared with the input. -/
+  decrease : ∀ t : ℝ, 0 ≤ t → ∀ (y : E) (w : U), ρ ‖w - u_eq‖ ≤ ‖y - x_c‖ →
+    s.lieDerivative V t y w ≤ -W₃ y
+
 section ISSLyapunov
 
 universe u
 
-variable {U' Y' : Type u} [NormedAddCommGroup U'] {n : ℕ}
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+variable {U' Y' : Type u} [NormedAddCommGroup U'] [FiniteDimensional ℝ E]
 
-/-- **The input-to-state estimate of an ISS-Lyapunov function.**  Let
-`α₁(‖x - x_c‖) ≤ V(t, x) ≤ α₂(‖x - x_c‖)` with `α₁, α₂` of class `K∞`, and `V̇ ≤ -W₃(x)`
-whenever `‖x - x_c‖ ≥ ρ(‖u - u_eq‖)`, with `W₃` positive definite and `ρ` nonnegative and
-monotone.  Then `‖x(t) - x_c‖ ≤ β(‖x(t₀) - x_c‖, t - t₀) + α₁⁻¹(α₂(ρ(M)))` whenever `M` bounds
-`‖u - u_eq‖` on
+/-- **The input-to-state estimate of an ISS-Lyapunov function.**  Let `V` be an ISS-Lyapunov
+function, with `W₃` positive definite and `ρ` nonnegative and monotone.  Then
+`‖x(t) - x_c‖ ≤ β(‖x(t₀) - x_c‖, t - t₀) + α₁⁻¹(α₂(ρ(M)))` whenever `M` bounds `‖u - u_eq‖` on
 `[t₀, t]`, for a single global class `KL` function `β`.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
 @[blueprint "thm:continuousSystem-norm-le-of-isISSLyapunov"
   (title := "Input-to-state estimate from an ISS-Lyapunov function")
-  (statement := /-- Let the state space be $\mathbb{R}^n$, $V$ differentiable at every $(t, x)$
-    with $t \ge 0$, $\alpha_1,
-    \alpha_2$ class $\mathcal{K}_{\infty}$, $W_3$ positive definite about $x_c$ on
-    $\mathbb{R}^n$ (\cref{def:isPositiveDefiniteOn}), and $\rho : [0, \infty) \to [0, \infty)$
-    nondecreasing, with
-    \[
-      \alpha_1(\|x - x_c\|) \le V(t, x) \le \alpha_2(\|x - x_c\|), \qquad
-      \dot V(t, x, u) \le -W_3(x) \quad
-        \text{for } \|x - x_c\| \ge \rho(\|u - u_{\mathrm{eq}}\|)
-    \]
-    for all $t \ge 0$, $x$ and $u$.  Then there is a global class $\mathcal{KL}$ function
+  (statement := /-- Let the state space be $\mathbb{R}^n$ and $V$ an ISS-Lyapunov function about
+    $(x_c, u_{\mathrm{eq}})$ with data $\alpha_1, \alpha_2, W_3, \rho$
+    (\cref{def:continuousSystem-isISSLyapunovFunction}), where $W_3$ is positive definite about
+    $x_c$ on $\mathbb{R}^n$ (\cref{def:isPositiveDefiniteOn}) and
+    $\rho : [0, \infty) \to [0, \infty)$ is nondecreasing.  Then there is a global class
+    $\mathcal{KL}$ function
     $\beta$ such that every right trajectory
     (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
     satisfies
@@ -174,17 +197,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
     \cref{thm:continuousSystem-exists-classKLGlobal-ultimateBound-of-lyapunov} with
     $\mu = \rho(M)$; its $\beta$ does not depend on the system or on $\mu$, so it is the same for
     every input.  Finally $\max\{a, b\} \le a + b$ for $a, b \ge 0$. -/)]
-theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {u_eq : U'} (α₁ α₂ : ClassKInfty) {W₃ : ℝⁿ → ℝ} {ρ : ℝ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
-      α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
+theorem norm_le_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
+    {V : ℝ → E → ℝ} {x_c : E} {u_eq : U'} (α₁ α₂ : ClassKInfty) {W₃ : E → ℝ} {ρ : ℝ → ℝ}
+    (hV : s.IsISSLyapunovFunction V x_c u_eq α₁ α₂ W₃ ρ)
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
-    (hρ_mono : MonotoneOn ρ (Ici 0)) (hρ_nonneg : ∀ r, 0 ≤ r → 0 ≤ ρ r)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : ℝⁿ) (w : U'), ρ ‖w - u_eq‖ ≤ ‖y - x_c‖ →
-      s.lieDerivative V t y w ≤ -W₃ y) :
+    (hρ_mono : MonotoneOn ρ (Ici 0)) (hρ_nonneg : ∀ r, 0 ≤ r → 0 ≤ ρ r) :
     ∃ β : ClassKLGlobal, ∀ t₀ : ℝ, 0 ≤ t₀ →
-      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → ℝⁿ), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
+      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → E), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
         ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ - u_eq‖ ≤ M) →
           ‖x t - x_c‖ ≤ β.toFun ‖x t₀ - x_c‖ (t - t₀) + α₁.invFun (α₂.toFun (ρ M)) := by
   -- `β` is chosen once, before the input.
@@ -197,7 +216,7 @@ theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
     ⟨le_max_left _ _, max_le ht.1 (min_le_right _ _)⟩
   have h_clamp_eq : ∀ τ ∈ Icc t₀ t, clamp τ = τ := fun τ hτ => by
     simp only [clamp, min_eq_left hτ.2, max_eq_right hτ.1]
-  let s' : ContinuousSystem ℝⁿ Unit Y' :=
+  let s' : ContinuousSystem E Unit Y' :=
     autonomous (fun τ y => s.F τ y (u (clamp τ))) (fun τ y => s.h τ y (u (clamp τ)))
   -- On `[t₀, t]` the frozen system has the same trajectories ...
   have hx' : s'.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t) :=
@@ -206,12 +225,13 @@ theorem norm_le_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
         (inter_subset_inter_left _ (Icc_subset_Icc_right ht.2))⟩
   -- ... and `V̇ ≤ -W₃` outside the ball of radius `ρ(M)`, as `ρ(‖u - u_eq‖) ≤ ρ(M)` at every
   -- time.
-  have hlie' : ∀ τ : ℝ, 0 ≤ τ → ∀ y : ℝⁿ, ρ M ≤ ‖y - x_c‖ →
+  have hlie' : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ρ M ≤ ‖y - x_c‖ →
       s'.lieDerivative V τ y () ≤ -W₃ y := fun τ hτ y hy =>
-    hlie τ hτ y (u (clamp τ)) ((hρ_mono (norm_nonneg _) hM_nonneg
+    hV.decrease τ hτ y (u (clamp τ)) ((hρ_mono (norm_nonneg _) hM_nonneg
       (hM _ (h_clamp_mem τ))).trans hy)
   -- Step 2. The global ultimate bound with `μ = ρ(M)`, and `max ≤ sum`.
-  have h := hβ hV hV_bd hlie' (hρ_nonneg M hM_nonneg) t₀ ht₀ t x hx' t ⟨ht.1, le_rfl⟩
+  have h := hβ ⟨hV.differentiableAt, hV.sandwich, hlie'⟩ (hρ_nonneg M hM_nonneg) t₀ ht₀ t x hx' t
+    ⟨ht.1, le_rfl⟩
   exact h.trans (max_le_add_of_nonneg (β.nonneg _ (norm_nonneg _) _ (sub_nonneg.mpr ht.1))
     (α₁.inv_maps_to (α₂.maps_to (hρ_nonneg M hM_nonneg))))
 
@@ -233,17 +253,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19. -/
   (proof := /-- \cref{thm:continuousSystem-norm-le-of-isISSLyapunov}, with
     $\alpha_1^{-1} \circ \alpha_2 \circ \rho$ class $\mathcal{K}_{\infty}$
     (\cref{lem:classKInfty-symm}, \cref{lem:classKInfty-comp}). -/)]
-theorem inputToStateStable_of_isISSLyapunov [NeZero n] {s : ContinuousSystem ℝⁿ U' Y'}
-    {V : ℝ → ℝⁿ → ℝ} {x_c : ℝⁿ} {u_eq : U'} (α₁ α₂ ρ : ClassKInfty) {W₃ : ℝⁿ → ℝ}
-    (hV : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ, DifferentiableAt ℝ (Function.uncurry V) (t, y))
-    (hV_bd : ∀ t : ℝ, 0 ≤ t → ∀ y : ℝⁿ,
-      α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖)
-    (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
-    (hlie : ∀ t : ℝ, 0 ≤ t → ∀ (y : ℝⁿ) (w : U'), ρ.toFun ‖w - u_eq‖ ≤ ‖y - x_c‖ →
-      s.lieDerivative V t y w ≤ -W₃ y) :
+theorem inputToStateStable_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
+    {V : ℝ → E → ℝ} {x_c : E} {u_eq : U'} (α₁ α₂ ρ : ClassKInfty) {W₃ : E → ℝ}
+    (hV : s.IsISSLyapunovFunction V x_c u_eq α₁ α₂ W₃ ρ.toFun)
+    (hW₃ : IsPositiveDefiniteOn W₃ x_c univ) :
     s.InputToStateStable x_c u_eq := by
-  obtain ⟨β, hβ⟩ := norm_le_of_isISSLyapunov α₁ α₂ hV hV_bd hW₃ ρ.strict_mono.monotoneOn
-    (fun r hr => ρ.maps_to hr) hlie
+  obtain ⟨β, hβ⟩ := norm_le_of_isISSLyapunov α₁ α₂ hV hW₃ ρ.strict_mono.monotoneOn
+    fun r hr => ρ.maps_to hr
   exact ⟨β, α₁.symm.comp (α₂.comp ρ), hβ⟩
 
 /-- **Global exponential stability of the unforced system gives input-to-state stability.**
@@ -289,11 +305,12 @@ used. -/
     \]
     so \cref{thm:continuousSystem-inputToStateStable-of-isISSLyapunov} applies with
     $\alpha_i(r) = c_i r^2$ and $\rho(r) = \tfrac{2c_4L}{c_3}r$. -/)]
-theorem inputToStateStable_of_globallyExponentiallyStable [NeZero n]
-    {s : ContinuousSystem ℝⁿ U' Y'} {x_c : ℝⁿ} {u_eq : U'} (h_eq : ∀ t : ℝ, s.F t x_c u_eq = 0)
-    (hf : ContDiff ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 u_eq))
+theorem inputToStateStable_of_globallyExponentiallyStable {H : Type*} [NormedAddCommGroup H]
+    [InnerProductSpace ℝ H] [FiniteDimensional ℝ H] [Nontrivial H]
+    {s : ContinuousSystem H U' Y'} {x_c : H} {u_eq : U'} (h_eq : ∀ t : ℝ, s.F t x_c u_eq = 0)
+    (hf : ContDiff ℝ 1 (fun p : ℝ × H => s.F p.1 p.2 u_eq))
     (h_lip : ∃ L : NNReal, ∀ t : ℝ, LipschitzWith L (fun x => s.F t x u_eq))
-    (h_input : ∃ L : ℝ, ∀ (t : ℝ) (x : ℝⁿ) (w : U'),
+    (h_input : ∃ L : ℝ, ∀ (t : ℝ) (x : H) (w : U'),
       ‖s.F t x w - s.F t x u_eq‖ ≤ L * ‖w - u_eq‖)
     (h_ges : (s.constInput u_eq).GloballyExponentiallyStable x_c) :
     s.InputToStateStable x_c u_eq := by
@@ -308,28 +325,23 @@ theorem inputToStateStable_of_globallyExponentiallyStable [NeZero n]
   set α₁ := (ClassKInfty.power 2 two_pos).smul c₁ hc₁
   set α₂ := (ClassKInfty.power 2 two_pos).smul c₂ hc₂
   set ρ := (ClassKInfty.power 1 one_pos).smul k hk
-  set W₃ : ℝⁿ → ℝ := fun x => c₃ / 2 * ‖x - x_c‖ ^ 2
+  set W₃ : H → ℝ := fun x => c₃ / 2 * ‖x - x_c‖ ^ 2
   have hW₃ : IsPositiveDefiniteOn W₃ x_c univ :=
-    IsPositiveDefiniteOn.comp (g := fun r => c₃ / 2 * r ^ 2)
-      ⟨by fun_prop, by simp, fun r hr hne => by
-        have : 0 < r := lt_of_le_of_ne hr (Ne.symm hne)
-        positivity⟩
-      (isPositiveDefiniteOn_norm_sub x_c univ)
+    isPositiveDefiniteOn_mul_norm_sub_sq (by positivity) x_c univ
   refine inputToStateStable_of_isISSLyapunov α₁ α₂ ρ (W₃ := W₃)
-    (fun t ht y => hV_diff t ht y (mem_univ y))
-    (fun t ht y => ⟨(hV_bd t ht y (mem_univ y)).1, (hV_bd t ht y (mem_univ y)).2.1⟩) hW₃
-    fun t ht y w hw => ?_
+    ⟨fun t ht y => hV_diff t ht y (mem_univ y),
+      fun t ht y => ⟨(hV_bd t ht y (mem_univ y)).1, (hV_bd t ht y (mem_univ y)).2.1⟩,
+      fun t ht y w hw => ?_⟩ hW₃
   -- Step 3. Along the forced system, `V̇` is `V̇` of `ẋ = f(t, x, u_eq)` plus `∂V/∂x · e`, with
   -- `e = f(t, y, w) - f(t, y, u_eq)`; the gain `ρ` makes the second term at most half the first.
   obtain ⟨-, -, h_lie⟩ := hV_bd t ht y (mem_univ y)
   rw [Real.rpow_two] at h_lie
   have hw' : k * ‖w - u_eq‖ ≤ ‖y - x_c‖ := by simpa [ρ, ClassKInfty.smul, ClassKInfty.power,
     ClassKInfty.of_strictMono, Real.rpow_one] using hw
-  have h_pert := lieDerivative_le_add_norm_fderiv_mul (V := V) (v := fun t y => s.F t y u_eq)
-    (w := fun t y => s.F t y w) (hV_diff t ht y (mem_univ y))
   calc _root_.lieDerivative V (fun t y => s.F t y w) t y
       ≤ (s.constInput u_eq).lieDerivative V t y () +
-          ‖fderiv ℝ (V t) y‖ * ‖s.F t y w - s.F t y u_eq‖ := h_pert
+          ‖fderiv ℝ (V t) y‖ * ‖s.F t y w - s.F t y u_eq‖ :=
+        lieDerivative_le_add_norm_fderiv_mul (hV_diff t ht y (mem_univ y))
     _ ≤ -(c₃ * ‖y - x_c‖ ^ 2) + (c₄ * ‖y - x_c‖) * ((|Lu| + 1) * ‖w - u_eq‖) :=
         add_le_add h_lie (mul_le_mul (h_grad t ht y)
           ((hLu t y w).trans (by gcongr; linarith [le_abs_self Lu])) (norm_nonneg _)

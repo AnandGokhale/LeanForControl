@@ -32,6 +32,8 @@ Along an integral curve `γ` of `v` it is the rate of change of `t ↦ V(t, γ(t
   from `v` to `w` changes the Lie derivative by `∂V/∂x · (w - v)`.
 * `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos` — a nonpositive Lie derivative along an
   integral curve on an interval makes `V` nonincreasing along it.
+* `IsIntegralCurveOn.add_integral_le_of_lieDerivative_le` — the integrated form: if `L_v V ≤ -W`,
+  then `V(t₁) + ∫_{t₀}^{t₁} W ≤ V(t₀)`, a dissipation inequality.
 * `continuous_lieDerivative` — the Lie derivative along a continuous field of a `C¹` function
   is continuous.
 -/
@@ -212,6 +214,31 @@ lemma IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos {V : ℝ → E → �
     (hγ.continuousOn.comp_uncurry_of_differentiableAt hV)
     (fun _ ht => (hγ.hasDerivWithinAt_lieDerivative hV (interior_subset ht)).mono interior_subset)
     h_nonpos
+
+/-- **Integrated Lyapunov inequality.**  If `L_v V ≤ -W` along an integral curve on `[t₀, t₁]`,
+then `V` drops by at least the integral of `W`: `V(t₁, γ(t₁)) + ∫_{t₀}^{t₁} W ≤ V(t₀, γ(t₀))`. -/
+@[blueprint "lem:isIntegralCurveOn-add-integral-le-of-lieDerivative-le"
+  (title := "Integrated Lyapunov inequality")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\gamma$ be an integral curve of $v$ on $[t_0, t_1]$, $V$ differentiable
+    at $(t, \gamma(t))$ for $t \in [t_0, t_1]$, $W$ continuous on $[t_0, t_1]$, and
+    $L_v V(t, \gamma(t)) \le -W(t)$ for $t \in (t_0, t_1)$.  Then
+    \[
+      V(t_1, \gamma(t_1)) + \int_{t_0}^{t_1} W(t)\, dt \le V(t_0, \gamma(t_0)).
+    \] -/)
+  (proof := /-- Integrate the derivative bound of
+    \cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}. -/)]
+lemma IsIntegralCurveOn.add_integral_le_of_lieDerivative_le {V : ℝ → E → ℝ} {v : ℝ → E → E}
+    {γ : ℝ → E} {W : ℝ → ℝ} {t₀ t₁ : ℝ} (hγ : IsIntegralCurveOn γ v (Icc t₀ t₁))
+    (hV : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ))
+    (hW : ContinuousOn W (Icc t₀ t₁)) (h_le : ∀ τ ∈ Ioo t₀ t₁, lieDerivative V v τ (γ τ) ≤ -W τ)
+    (h₀₁ : t₀ ≤ t₁) : V t₁ (γ t₁) + ∫ τ in t₀..t₁, W τ ≤ V t₀ (γ t₀) := by
+  have := intervalIntegral.integral_le_sub_of_hasDeriv_right_of_le h₀₁
+    (hγ.continuousOn.comp_uncurry_of_differentiableAt hV).neg
+    (fun τ hτ => ((hγ.hasDerivWithinAt_lieDerivative hV (Ioo_subset_Icc_self hτ)).neg
+      ).mono_of_mem_nhdsWithin (mem_nhdsWithin_of_mem_nhds (Icc_mem_nhds hτ.1 hτ.2)))
+    hW.integrableOn_Icc (fun τ hτ => le_neg_of_le_neg (h_le τ hτ))
+  linarith
 
 /-- **Integrating factor along an integral curve.**  If `L_v V ≤ -c V` along an integral curve on
 `[t₀, t₁]`, then `V` decays at least like `e^{-c(t - t₀)}`: `e^{c t} V(t, γ(t))` does not

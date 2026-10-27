@@ -1,7 +1,7 @@
 import LeanForControl.Analysis.Continuity
 import LeanForControl.Stability.Continuous.Defs
 import LeanForControl.Stability.Continuous.LyapunovFunctions
-import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import LeanForControl.ODEs.PicardLindelof
@@ -26,9 +26,7 @@ p. 125, for the positive-superlevel escape method.
 open Filter Function Metric Set Topology
 open scoped ContDiff NNReal Topology
 
-variable {n : ℕ}
-
-local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 namespace ContinuousSystem
 
@@ -40,8 +38,6 @@ For `T < 0` the specified interval is empty; the application below uses `T ≥ 0
 
 Reference: the smooth-cutoff proof of local continuation for ODEs. -/
 private theorem exists_cutoff_forward_segment
-    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-    [FiniteDimensional ℝ E]
     (f : E → E) (hf : ContDiff ℝ 1 f) (x_eq : E)
     {ρ T : ℝ} (hρ : 0 < ρ) (x₀ : E) :
     ∃ φ : ℝ → E, φ 0 = x₀ ∧ ContinuousOn φ (Icc 0 T) ∧
@@ -64,13 +60,14 @@ private theorem exists_cutoff_forward_segment
     simpa [Metric.mem_closedBall, dist_eq_norm] using hball
   simpa [g, hb_one] using hφg t ht
 
+omit [FiniteDimensional ℝ E] in
 /-- For an input-free system with `s.F t x () = f x`, cutoff curves starting arbitrarily
 close to the base point and reaching a fixed positive radius imply `s.Unstable x_eq`.
 
 Restrict to the first sphere hit to obtain a system trajectory on `[0, τ]`. -/
-private theorem unstable_of_cutoff_segment_escape {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
-    {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x) {x_eq : ℝⁿ} {ρ : ℝ} (hρ : 0 < ρ)
-    (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
+private theorem unstable_of_cutoff_segment_escape {Y : Type*} {s : ContinuousSystem E Unit Y}
+    {f : E → E} (hF : ∀ t x, s.F t x () = f x) {x_eq : E} {ρ : ℝ} (hρ : 0 < ρ)
+    (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → E) (t : ℝ),
       ‖φ 0 - x_eq‖ < min δ ρ ∧
       ContinuousOn φ (Icc (0 : ℝ) T) ∧
       (∀ s ∈ Icc (0 : ℝ) T, ‖φ s - x_eq‖ ≤ ρ →
@@ -139,7 +136,7 @@ Assume global `C¹` regularity of `f` and `V`, boundary vanishing in the ball,
 and strict positivity of the Lie derivative on `D` in the ball. The superlevel
 set is compact and excludes `∂D` because its certificate values are positive. -/
 private theorem exists_pos_lieDerivative_lower_bound_on_superlevel
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ} {D : Set ℝⁿ}
+    {f : E → E} {V : E → ℝ} {x_eq x₀ : E} {D : Set E}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
     {ρ : ℝ} (hx₀D : x₀ ∈ D) (hx₀ρ : ‖x₀ - x_eq‖ ≤ ρ)
     (hVx₀ : 0 < V x₀)
@@ -148,8 +145,8 @@ private theorem exists_pos_lieDerivative_lower_bound_on_superlevel
       0 < fderiv ℝ V x (f x)) :
     ∃ γ > 0, ∀ x ∈ closure D, ‖x - x_eq‖ ≤ ρ → V x₀ ≤ V x →
       γ ≤ fderiv ℝ V x (f x) := by
-  let lieDerivative : ℝⁿ → ℝ := fun x ↦ fderiv ℝ V x (f x)
-  let superlevel : Set ℝⁿ := closure D ∩ closedBall x_eq ρ ∩ {x | V x₀ ≤ V x}
+  let lieDerivative : E → ℝ := fun x ↦ fderiv ℝ V x (f x)
+  let superlevel : Set E := closure D ∩ closedBall x_eq ρ ∩ {x | V x₀ ≤ V x}
   have hsuperlevel_compact : IsCompact superlevel := by
     exact ((isCompact_closedBall x_eq ρ).inter_left isClosed_closure).inter_right
       (isClosed_le continuous_const hV.continuous)
@@ -184,13 +181,14 @@ private theorem exists_pos_lieDerivative_lower_bound_on_superlevel
   exact ⟨⟨hx_closure,
     by simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx_ball⟩, hx_value⟩
 
+omit [FiniteDimensional ℝ E] in
 /-- A solution segment of `ẋ = f(x)` starting in an open region `D` with positive
 certificate value stays in `D`, and its certificate never falls below its initial
 value, if the certificate vanishes at boundary points visited by the segment and
 has nonnegative Lie derivative in `D` along the segment. Assume `V` is globally `C¹`.
 Boundary retention is proved first, then the chain rule gives nondecrease. -/
 private theorem solution_stays_in_region_and_above_initial_certificate
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {D : Set ℝⁿ} {φ : ℝ → ℝⁿ} {T : ℝ}
+    {f : E → E} {V : E → ℝ} {D : Set E} {φ : ℝ → E} {T : ℝ}
     (hD : IsOpen D) (hV : ContDiff ℝ 1 V)
     (hφ : IsIntegralCurveOn φ (fun _ x ↦ f x) (Icc (0 : ℝ) T))
     (hstart : φ 0 ∈ D) (hVstart : 0 < V (φ 0))
@@ -238,14 +236,14 @@ and a certificate ceiling on the ball. If the cutoff curve stayed in the ball,
 boundary retention would keep it in that superlevel, and linear growth would
 exceed the ceiling on a sufficiently long finite interval. -/
 private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
-    {f : ℝⁿ → ℝⁿ} {V : ℝⁿ → ℝ} {x_eq x₀ : ℝⁿ} {D : Set ℝⁿ}
+    {f : E → E} {V : E → ℝ} {x_eq x₀ : E} {D : Set E}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V) (hD : IsOpen D)
     {ρ : ℝ} (hρ : 0 < ρ) (hx₀D : x₀ ∈ D) (hx₀ρ : ‖x₀ - x_eq‖ < ρ)
     (hVx₀ : 0 < V x₀)
     (hboundary : ∀ x ∈ frontier D, ‖x - x_eq‖ ≤ ρ → V x = 0)
     (hLie_pos : ∀ x ∈ D, ‖x - x_eq‖ ≤ ρ →
       0 < fderiv ℝ V x (f x)) :
-    ∃ (T : ℝ) (φ : ℝ → ℝⁿ) (t : ℝ),
+    ∃ (T : ℝ) (φ : ℝ → E) (t : ℝ),
       φ 0 = x₀ ∧ ContinuousOn φ (Icc (0 : ℝ) T) ∧
       (∀ s ∈ Icc (0 : ℝ) T, ‖φ s - x_eq‖ ≤ ρ →
         HasDerivWithinAt φ (f (φ s)) (Icc 0 T) s) ∧
@@ -327,9 +325,9 @@ positive-superlevel escape argument. -/
   (proof := /-- Choose a positive seed near the boundary point and continue a cutoff curve.
     Boundary vanishing retains it in the region. The Lie derivative has a positive minimum
     on its compact superlevel, forcing growth beyond the ball's certificate ceiling. -/)]
-theorem unstable_of_geometric_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
-    {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x)
-    {V : ℝⁿ → ℝ} {x_eq : ℝⁿ} {D : Set ℝⁿ} {ρ : ℝ}
+theorem unstable_of_geometric_chetaev {Y : Type*} {s : ContinuousSystem E Unit Y}
+    {f : E → E} (hF : ∀ t x, s.F t x () = f x)
+    {V : E → ℝ} {x_eq : E} {D : Set E} {ρ : ℝ}
     (hf : ContDiff ℝ 1 f) (hC : s.IsChetaevFunction V x_eq D ρ) :
     s.Unstable x_eq := by
   apply unstable_of_cutoff_segment_escape hF hC.hradius
@@ -379,8 +377,8 @@ Reference: Khalil, *Nonlinear Systems*, 3rd ed., Theorem 4.3, p. 125. -/
     the nearby positive seeds put $x_{\rm eq}$ in its closure. Continuity makes $V=0$
     on $\partial D$, and $\dot V\ge 2\alpha V>0$ in $D$ within the ball.
     Apply \cref{thm:continuousSystem-geometric-chetaev-unstable}. -/)]
-theorem unstable_of_exponential_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
-    {f : ℝⁿ → ℝⁿ} (hF : ∀ t x, s.F t x () = f x) {V : ℝⁿ → ℝ} {x_eq : ℝⁿ}
+theorem unstable_of_exponential_chetaev {Y : Type*} {s : ContinuousSystem E Unit Y}
+    {f : E → E} (hF : ∀ t x, s.F t x () = f x) {V : E → ℝ} {x_eq : E}
     (hf : ContDiff ℝ 1 f) (hV : ContDiff ℝ 1 V)
     {ρ α C : ℝ} (hρ : 0 < ρ) (hα : 0 < α) (hC : 0 ≤ C)
     (hbound : ∀ x, ‖x - x_eq‖ ≤ ρ →
@@ -389,7 +387,7 @@ theorem unstable_of_exponential_chetaev {Y : Type*} {s : ContinuousSystem ℝⁿ
       2 * α * V x ≤ fderiv ℝ V x (f x))
     (hseed : ∀ δ > 0, ∃ x, ‖x - x_eq‖ < min δ ρ ∧ 0 < V x) :
     s.Unstable x_eq := by
-  let D : Set ℝⁿ := {x | 0 < V x}
+  let D : Set E := {x | 0 < V x}
   have hD_open : IsOpen D := isOpen_lt continuous_const hV.continuous
   have hVzero : V x_eq = 0 := by
     apply abs_nonpos_iff.mp
