@@ -9,7 +9,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Architect
 
 /-!
-# `LinearSystems.Stability.Continuous.DifferentialLyapunov` — the differential Lyapunov equation
+# `LinearSystems.Stability.Continuous.DifferentialLyapunovEquation`
 
 The time-varying Lyapunov equation `-Ṗ = PA + A*P + Q` (`DifferentialLyapunovEquation`) of a
 linear time-varying system `ẋ = A(t) x` on a real Hilbert space; for matrices on Euclidean space
@@ -69,17 +69,22 @@ theorem differentialLyapunovEquation_const_iff {A P Q : Matrix X X ℝ} :
     DifferentialLyapunovEquation (fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) A)
       (fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) P) (fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) Q) ↔
       ContinuousLyapunovEquation A P Q := by
-  set e := toEuclideanCLM (n := X) (𝕜 := ℝ)
+  -- `toEuclideanCLM` as a ring isomorphism: `e.map_add`, `e.map_mul` and `e.map_zero` are then
+  -- direct lemmas, with no search through the star-algebra instances.
+  let e : Matrix X X ℝ ≃+* (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
+    (toEuclideanCLM (n := X) (𝕜 := ℝ)).toRingEquiv
+  change DifferentialLyapunovEquation (fun _ => e A) (fun _ => e P) (fun _ => e Q) ↔ _
   have h_sum : e P * e A + star (e A) * e P + e Q = e (P * A + Aᵀ * P + Q) := by
-    rw [map_add, map_add, map_mul, map_mul, toEuclideanCLM_transpose]
+    rw [e.map_add, e.map_add, e.map_mul, e.map_mul,
+      show e Aᵀ = star (e A) from toEuclideanCLM_transpose A]
   rw [ContinuousLyapunovEquation, ← add_eq_zero_iff_eq_neg]
   constructor
   · intro h
     have h0 : e P * e A + star (e A) * e P + e Q = 0 :=
       neg_eq_zero.mp ((hasDerivAt_const (0 : ℝ) (e P)).unique (h 0 le_rfl)).symm
-    rw [← e.symm_apply_apply (P * A + Aᵀ * P + Q), ← h_sum, h0, map_zero]
+    exact e.injective (by rw [e.map_zero, ← h_sum, h0])
   · intro h t _
-    rw [h_sum, h, map_zero, neg_zero]
+    rw [h_sum, h, e.map_zero, neg_zero]
     exact hasDerivAt_const t (e P)
 
 /-- `∫_t^∞ e^{-c(σ - t)} dσ = 1 / c` for `c > 0`, with the integrability that makes it
@@ -252,12 +257,12 @@ lemma exists_lower_bound_lyapunovIntegral (hA : Continuous s.A) {L : ℝ}
   -- Exercise 3.17 along the solution from `(t, x)`.
   have h_ex317 : ∀ τ, t ≤ τ → ‖x‖ * Real.exp (-K * (τ - t)) ≤ ‖s.stateTransition τ t x‖ :=
     fun τ hτ => by
-      have h := (ContinuousSystem.IsTrajectoryOn.norm_exp_bounds (L := K)
+      have h := (ContinuousSystem.IsTrajectoryOn.norm_exp_bounds (L := K) (x_c := 0)
         (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t x)
           (Icc_subset_Ici_self : Icc t τ ⊆ Ici t)) (fun r _ => ?_) ⟨hτ, le_rfl⟩).1
-      · rwa [stateTransition_self] at h
+      · simpa [stateTransition_self] using h
       simp only [ContinuousSystem.vectorField_apply, Pi.zero_apply, toContinuousSystem_F,
-        map_zero, add_zero]
+        map_zero, add_zero, sub_zero]
       calc ‖s.A r (s.stateTransition r t x)‖
           ≤ ‖s.A r‖ * ‖s.stateTransition r t x‖ := ContinuousLinearMap.le_opNorm _ _
         _ ≤ K * ‖s.stateTransition r t x‖ := by

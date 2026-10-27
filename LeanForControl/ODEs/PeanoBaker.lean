@@ -1,4 +1,4 @@
-import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
+import LeanForControl.ODEs.DefsPeanoBaker
 import Mathlib.Analysis.Calculus.SmoothSeries
 import Mathlib.Analysis.Normed.Algebra.Exponential
 import Mathlib.Analysis.ODE.Gronwall
@@ -9,7 +9,7 @@ import Architect
 /-!
 # The Peano-Baker series in a Banach algebra
 
-Theorems about `peanoBakerTerm` and `stateTransitionMatrix` (from `DefsCtsLTV.lean`) for a
+Theorems about `peanoBakerTerm` and `stateTransitionMatrix` (from `DefsPeanoBaker.lean`) for a
 continuous coefficient `A : ℝ → 𝔸` in a real Banach algebra `𝔸`: the factorial bound on the
 terms, summability, continuity, and the derivative `Φ̇(t, t₀) = A(t) Φ(t, t₀)` with
 `Φ(t₀, t₀) = 1`.
@@ -29,7 +29,7 @@ open MeasureTheory intervalIntegral
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸] {A : ℝ → 𝔸}
 
 omit [CompleteSpace 𝔸] in
-/-- Each term of the Peano-Baker series is continuous in `t`, for `A` continuous.
+/-- **Each Peano-Baker term is continuous** in `t`, for `A` continuous.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:continuous-peanoBakerTerm"
@@ -49,48 +49,16 @@ theorem continuous_peanoBakerTerm (hA : Continuous A) (k : ℕ) (t₀ : ℝ) :
   | zero => exact continuous_const
   | succ k ih => exact continuous_primitive (hA.mul ih).intervalIntegrable t₀
 
-/-- **Power rule, shifted to the base point.** `∫ s in a..b, (s - a)^k = (b - a)^(k+1) / (k+1)`,
-via the shift `s ↦ s - a`. This is the integral behind the factorial `1 / k!` in every term of
-the Peano-Baker series: here in `norm_peanoBakerTerm_le`, and in the closed form
-`peanoBakerTerm_const` for constant `A` (`CtsLTI.lean`). -/
+/-- **Power rule, shifted to the base point.** `∫ s in a..b, (s - a)^k = (b - a)^(k+1) / (k+1)`:
+the integral behind the factorial `1 / k!` in `peanoBakerTerm_const`. -/
 theorem integral_sub_pow (k : ℕ) (a b : ℝ) :
     ∫ s in a..b, (s - a) ^ k = (b - a) ^ (k + 1) / (k + 1) := by
   rw [intervalIntegral.integral_comp_sub_right (fun x : ℝ => x ^ k) a]
   simp [integral_pow]
 
-/-- The integrated majorant of the induction step in `norm_peanoBakerTerm_le`: integrating the
-`k`-th factorial bound `M * (C * (M * (s - a))^k / k!)` from `a` to `b` yields the `(k+1)`-st
-bound `C * (M * (b - a))^(k+1) / (k+1)!`. -/
-private lemma integral_peanoBakerMajorant (M C : ℝ) (k : ℕ) (a b : ℝ) :
-    ∫ s in a..b, M * (C * (M * (s - a)) ^ k / (k)!) =
-      C * (M * (b - a)) ^ (k + 1) / (k + 1)! := by
-  -- Pull the constant `M * C * M^k / k!` out of the integral, then apply the power rule.
-  have hfactor : ∀ s : ℝ,
-      M * (C * (M * (s - a)) ^ k / (k)!) = (M * C * M ^ k / (k)!) * (s - a) ^ k := by
-    intro s
-    rw [mul_pow]
-    ring
-  have hk_fac_ne : ((k)! : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero k)
-  simp_rw [hfactor, intervalIntegral.integral_const_mul, integral_sub_pow]
-  rw [mul_pow, Nat.factorial_succ]
-  push_cast
-  field_simp
-  ring
-
 omit [CompleteSpace 𝔸] in
-/-- The factorial bound on the Peano-Baker series, for `t` on *either side* of `t₀`: if
-`‖A s‖ ≤ M` on the segment between `t₀` and `t₁`, the `k`-th term is bounded by
-`‖1‖ * (M|t - t₀|)^k / k!` for every `t` on that same segment. This is what makes
-`∑' k, peanoBakerTerm A k t t₀` (absolutely) summable, by comparison with the exponential
-series, for `t` before or after `t₀`.
-
-Proof, by induction on `k`: the `k = 0` case is `‖1‖ ≤ ‖1‖`. For the inductive step, bound the
-integrand `A s * peanoBakerTerm A k s t₀` pointwise on the segment between `t₀` and `t`
-(submultiplicativity of the matrix norm, the bound on `A`, and the induction hypothesis), then
-split on whether `t₀ ≤ t` or `t ≤ t₀`: in the forward case, integrate the majorant directly via
-the power rule; in the backward case, flip the integral (`intervalIntegral.integral_symm`) to
-land back in the forward orientation, where the same power rule applies with `t₀ - s` in place
-of `s - t₀`.
+/-- **The factorial bound on the Peano-Baker terms**: if `‖A s‖ ≤ M` between `t₀` and `t₁`, then
+`‖P_k(t, t₀)‖ ≤ ‖1‖ (M|t - t₀|)^k / k!` for every `t` between them, before or after `t₀`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:norm-peanoBakerTerm-le"
@@ -104,74 +72,40 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5.
   -/)
-  (proof := /-- Induction on $k$: bound the integrand $A(s) P_k(s,t_0)$ pointwise on the segment
-    between $t_0$ and $t$, using submultiplicativity of the matrix norm and the induction
-    hypothesis. Split on whether $t_0 \le t$ or $t \le t_0$ and integrate the majorant via the
-    power rule, flipping the integral's orientation
-    (\texttt{intervalIntegral.integral\_symm}) in the backward case. -/)]
+  (proof := /-- Induction on $k$.  By submultiplicativity and the induction hypothesis the
+    integrand $A(s) P_k(s,t_0)$ is at most $M\|I\|M^k|s - t_0|^k/k!$, and
+    $\bigl|\int_{t_0}^t |s - t_0|^k\,ds\bigr| = |t - t_0|^{k+1}/(k+1)$ in either orientation. -/)]
 theorem norm_peanoBakerTerm_le {t₀ t₁ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t₀ t₁, ‖A s‖ ≤ M) (k : ℕ) :
     ∀ t ∈ Set.uIcc t₀ t₁,
       ‖peanoBakerTerm A k t t₀‖ ≤ ‖(1 : 𝔸)‖ * (M * |t - t₀|) ^ k / (k)! := by
+  have hM : 0 ≤ M := (norm_nonneg (A t₀)).trans (hA_le t₀ Set.left_mem_uIcc)
   induction k with
   | zero => intro t _; simp [peanoBakerTerm]
   | succ k ih =>
     intro t ht
-    set C1 : ℝ := ‖(1 : 𝔸)‖
-    -- `M` bounds a norm, hence is itself nonnegative.
-    have hM_nonneg : 0 ≤ M := (norm_nonneg (A t₀)).trans (hA_le t₀ Set.left_mem_uIcc)
     have hsub : Set.uIcc t₀ t ⊆ Set.uIcc t₀ t₁ := Set.uIcc_subset_uIcc_left ht
-    -- Pointwise bound on the integrand `A s * peanoBakerTerm A k s t₀`, for `s` between `t₀`
-    -- and `t` (in either order).
-    have hintegrand_le : ∀ s ∈ Set.uIcc t₀ t,
-        ‖A s * peanoBakerTerm A k s t₀‖ ≤ M * (C1 * (M * |s - t₀|) ^ k / (k)!) := by
-      intro s hs
-      have hs_t₁ : s ∈ Set.uIcc t₀ t₁ := hsub hs
-      calc ‖A s * peanoBakerTerm A k s t₀‖
-          ≤ ‖A s‖ * ‖peanoBakerTerm A k s t₀‖ := norm_mul_le _ _
-        _ ≤ M * (C1 * (M * |s - t₀|) ^ k / (k)!) :=
-            mul_le_mul (hA_le s hs_t₁) (ih s hs_t₁) (norm_nonneg _) hM_nonneg
-    rcases le_total t₀ t with hle | hle
-    · -- Forward case: `t₀ ≤ t`.
-      have hintegral_le :
-          ‖∫ s in t₀..t, A s * peanoBakerTerm A k s t₀‖ ≤
-            ∫ s in t₀..t, M * (C1 * (M * (s - t₀)) ^ k / (k)!) := by
-        refine intervalIntegral.norm_integral_le_of_norm_le hle
-          (ae_of_all _ fun s hs => ?_) (Continuous.intervalIntegrable (by fun_prop) t₀ t)
-        have hs' : s ∈ Set.uIcc t₀ t := by
-          rw [Set.uIcc_of_le hle]; exact Set.Ioc_subset_Icc_self hs
-        have hb' := hintegrand_le s hs'
-        rwa [abs_of_nonneg (sub_nonneg.mpr hs.1.le)] at hb'
-      rw [abs_of_nonneg (sub_nonneg.mpr hle)]
-      exact hintegral_le.trans_eq (integral_peanoBakerMajorant M C1 k t₀ t)
-    · -- Backward case: `t ≤ t₀`. Flip the integral to land back in the forward orientation.
-      have hpk : peanoBakerTerm A (k + 1) t t₀ = ∫ s in t₀..t, A s * peanoBakerTerm A k s t₀ :=
-        rfl
-      rw [hpk, intervalIntegral.integral_symm t t₀, norm_neg,
-        abs_of_nonpos (sub_nonpos.mpr hle), neg_sub]
-      have hintegral_le :
-          ‖∫ s in t..t₀, A s * peanoBakerTerm A k s t₀‖ ≤
-            ∫ s in t..t₀, M * (C1 * (M * (t₀ - s)) ^ k / (k)!) := by
-        refine intervalIntegral.norm_integral_le_of_norm_le hle
-          (ae_of_all _ fun s hs => ?_) (Continuous.intervalIntegrable (by fun_prop) t t₀)
-        have hs' : s ∈ Set.uIcc t₀ t := by
-          rw [Set.uIcc_comm, Set.uIcc_of_le hle]; exact Set.Ioc_subset_Icc_self hs
-        have hb' := hintegrand_le s hs'
-        rwa [abs_of_nonpos (sub_nonpos.mpr hs.2), neg_sub] at hb'
-      -- Mirror `s ↦ t₀ - s` to land in the forward majorant integral, anchored at `0`.
-      have hmajorant : ∫ s in t..t₀, M * (C1 * (M * (t₀ - s)) ^ k / (k)!) =
-          C1 * (M * (t₀ - t)) ^ (k + 1) / (k + 1)! := by
-        rw [intervalIntegral.integral_comp_sub_left
-          (fun x : ℝ => M * (C1 * (M * x) ^ k / (k)!)) t₀, sub_self]
-        simpa only [sub_zero] using integral_peanoBakerMajorant M C1 k 0 (t₀ - t)
-      exact hintegral_le.trans_eq hmajorant
+    set c := M * ‖(1 : 𝔸)‖ * M ^ k / (k)!
+    calc ‖peanoBakerTerm A (k + 1) t t₀‖
+        = ‖∫ s in t₀..t, A s * peanoBakerTerm A k s t₀‖ := rfl
+      _ ≤ |∫ s in t₀..t, c * |s - t₀| ^ k| :=
+          norm_integral_le_abs_of_norm_le (ae_restrict_of_forall_mem measurableSet_uIoc
+            fun s hs => ((norm_mul_le _ _).trans (mul_le_mul
+              (hA_le s (hsub (Set.uIoc_subset_uIcc hs))) (ih s (hsub (Set.uIoc_subset_uIcc hs)))
+              (norm_nonneg _) hM)).trans_eq (by rw [mul_pow]; ring))
+            (Continuous.intervalIntegrable (by fun_prop) _ _)
+      _ = c * (|t - t₀| ^ (k + 1) / (k + 1)) := by
+          rw [intervalIntegral.integral_const_mul, abs_mul, abs_of_nonneg (by positivity),
+            abs_integral_eq_abs_integral_uIoc, integral_pow_abs_sub_uIoc,
+            abs_of_nonneg (by positivity)]
+      _ = ‖(1 : 𝔸)‖ * (M * |t - t₀|) ^ (k + 1) / (k + 1)! := by
+          rw [Nat.factorial_succ, mul_pow]
+          simp only [c]
+          push_cast
+          field_simp
+          ring
 
-/-- The Peano-Baker series `∑' k, peanoBakerTerm A k t t₀` converges absolutely, for `t₀ ≤ t`
-and `A` bounded by `M` on `[t₀, t]`. This is what lets `stateTransitionMatrix` (defined as
-`∑' k, peanoBakerTerm A k t t₀`) actually equal the Peano-Baker series (5.3), rather than a
-sum of an eventually-meaningless (divergent) series.
-
-Proof: compare against the exponential series `∑ (M(t-t₀))^k / k!` (summable, by
-`Real.summable_pow_div_factorial`) via `norm_peanoBakerTerm_le` and the comparison test.
+/-- **The Peano-Baker series converges**: if `A` is bounded between `t₀` and `t`, in either order,
+`∑ k, P_k(t, t₀)` is summable, so `stateTransitionMatrix` is its sum.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:summable-peanoBakerTerm"
@@ -194,19 +128,8 @@ theorem summable_peanoBakerTerm {t t₀ M : ℝ} (hA_le : ∀ s ∈ Set.uIcc t�
       simpa [mul_div_assoc] using hexp.mul_left ‖(1 : 𝔸)‖)
     (fun k => norm_peanoBakerTerm_le hA_le k t Set.right_mem_uIcc)
 
-/-- The state transition matrix solves `Φ̇(t, t₀) = A(t) Φ(t, t₀)`, at every time `t`, for `A`
-continuous. This is the mathematical content of Theorem 5.1: the factorial bound and
-summability exist only to make differentiating the series term by term legitimate.
-
-Proof outline:
-1. On the ball of radius `r := |t - t₀| + 1` about `t₀`, `A` is bounded by some `M`
-   (compactness of the closed ball), so the factorial bound gives one summable bound per term,
-   valid across the whole ball.
-2. Differentiate the *shifted* series `∑' k, peanoBakerTerm A (k+1) z t₀` term by term
-   (`hasDerivAt_tsum_of_isPreconnected`); each term is an integral with variable upper limit,
-   whose derivative is its integrand.
-3. `Φ(z, t₀) = 1 + ∑' k, peanoBakerTerm A (k+1) z t₀` on the ball, and
-   `∑' k, A t * peanoBakerTerm A k t t₀ = A t * Φ(t, t₀)` by linearity of `tsum`.
+/-- **The state transition matrix solves `Φ̇(t, t₀) = A(t) Φ(t, t₀)`**, at every time `t`, for
+`A` continuous (Hespanha, Theorem 5.1).
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:hasDerivAt-stateTransitionMatrix"
@@ -275,9 +198,7 @@ theorem hasDerivAt_stateTransitionMatrix (hA : Continuous A) (t t₀ : ℝ) :
   simp [peanoBakerTerm]
 
 omit [CompleteSpace 𝔸] in
-/-- `Φ(t₀, t₀) = I`: the state transition matrix is the identity when evaluated at equal times,
-matching the initial condition in (5.2). Every term of the Peano-Baker series beyond `k = 0`
-integrates a function over the degenerate interval `[t₀, t₀]`, hence vanishes.
+/-- **`Φ(t₀, t₀) = 1`**, the initial condition in (5.2).
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "thm:stateTransitionMatrix-self"
@@ -300,10 +221,7 @@ theorem stateTransitionMatrix_self (t₀ : ℝ) :
     tsum_ite_eq 0 (fun _ => (1 : 𝔸))]
 
 /-- **Uniqueness for linear equations.** Two solutions of `ż = L(t) z` on the whole line, with
-`L` continuous, that agree at one time agree at every time.
-
-Grönwall, through Mathlib's `ODE_solution_unique_of_mem_Ioo`: on a bounded window containing both
-times, `L` is bounded (compactness), so the right-hand side is Lipschitz there. -/
+`L` continuous, that agree at one time agree at every time. -/
 @[blueprint "thm:ODE-solution-unique-linear"
   (title := "Uniqueness for linear equations")
   (statement := /-- Let $L : \mathbb{R} \to (F \to_L F)$ be continuous. If $z$ and $w$ both
@@ -328,9 +246,6 @@ theorem ODE_solution_unique_linear {F : Type*} [NormedAddCommGroup F] [NormedSpa
 
 /-- **The semigroup property** (Hespanha, P5.3): `Φ(t, s) Φ(s, τ) = Φ(t, τ)` for all times, in
 any order.
-
-Both sides solve `Ż = A(t) Z` in `t` and agree at `t = s`, so they agree everywhere by
-`ODE_solution_unique_linear`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Property P5.3. -/
 @[blueprint "thm:stateTransitionMatrix-mul"
@@ -371,9 +286,6 @@ theorem stateTransitionMatrix_mul_swap (hA : Continuous A) (t τ : ℝ) :
 
 /-- **The derivative in the initial time**: `∂Φ(t, τ)/∂τ = -Φ(t, τ) A(τ)`.
 
-`Φ(t, ·)` is the pointwise inverse of `Φ(·, t)` (`stateTransitionMatrix_mul_swap`); differentiate
-the inverse (`hasFDerivAt_ringInverse`).
-
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
 @[blueprint "thm:hasDerivAt-stateTransitionMatrix-snd"
   (title := "Derivative in the initial time")
@@ -403,7 +315,7 @@ theorem hasDerivAt_stateTransitionMatrix_snd (hA : Continuous A) (t τ : ℝ) :
 
 omit [CompleteSpace 𝔸] in
 /-- **Exponential growth of the state transition matrix**: if `‖A‖ ≤ M` between `t₀` and `t`,
-then `‖Φ(t, t₀)‖ ≤ ‖1‖ e^{M |t - t₀|}`, by summing the term bounds of the Peano–Baker series.
+then `‖Φ(t, t₀)‖ ≤ ‖1‖ e^{M |t - t₀|}`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5. -/
 @[blueprint "lem:norm-stateTransitionMatrix-le"
@@ -433,9 +345,8 @@ theorem norm_stateTransitionMatrix_le {t₀ t M : ℝ}
     _ = ‖(1 : 𝔸)‖ * Real.exp (M * |t - t₀|) := by
         rw [tsum_mul_left, Real.exp_eq_exp_ℝ, NormedSpace.exp_eq_tsum_div]
 
-/-- **Peano-Baker term for constant `A`** (Hespanha, equation (6.1)).
-For a *constant* state matrix `A`, the `k`-th Peano-Baker term
-collapses to the closed form `((t-t₀)^k / k!) • A^k`.
+/-- **Peano-Baker term for constant `A`** (Hespanha, equation (6.1)):
+`P_k(t, t₀) = ((t - t₀)^k / k!) A^k`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1). -/
 @[blueprint "lem:peanoBakerTerm-const"
@@ -470,10 +381,8 @@ theorem peanoBakerTerm_const (A : 𝔸) (k : ℕ) (t t₀ : ℝ) :
     push_cast
     field_simp
 
-/-- **Peano-Baker series for constant `A`** (Hespanha, equation (6.1)).
-For a *constant* state matrix `A`, the continuous-time state transition matrix
-is given by the power series `Φ(t,t₀) = Σ_{k=0}^∞ ((t-t₀)^k / k!) A^k` — summing
-`peanoBakerTerm_const` termwise.
+/-- **Peano-Baker series for constant `A`** (Hespanha, equation (6.1)):
+`Φ(t, t₀) = ∑ₖ ((t - t₀)^k / k!) A^k`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.1). -/
 @[blueprint "lem:stateTransitionMatrix-const-eq-tsum"
@@ -494,14 +403,9 @@ theorem stateTransitionMatrix_const_eq_tsum (A : 𝔸) (t t₀ : ℝ) :
   unfold stateTransitionMatrix
   exact tsum_congr fun k => peanoBakerTerm_const A k t t₀
 
-/-- **The exponential as state transition matrix** (Hespanha, equation (6.2)).
-For a *constant* state matrix `A`, the continuous-time state transition matrix
-collapses to the exponential `Φ(t,t₀) = e^{A(t-t₀)}`. This is what lets every LTV
-property already proved for `stateTransitionMatrix` (existence, uniqueness, semigroup,
-invertibility, variation of constants) be reused directly for LTI by specialization.
-
-Proof: sum `peanoBakerTerm_const` termwise and match against Mathlib's own series
-characterization of `exp` (`NormedSpace.exp_eq_tsum`).
+/-- **The exponential as state transition matrix** (Hespanha, equation (6.2)): for constant `A`,
+`Φ(t, t₀) = e^{(t - t₀) A}`, so every property of `stateTransitionMatrix` specializes to LTI
+systems.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6, equation (6.2). -/
 @[blueprint "thm:stateTransitionMatrix-const"

@@ -132,6 +132,8 @@ bound takes.
 
 \inputleannode{lem:isPositiveDefiniteOn-norm-sub}
 
+\inputleannode{lem:isPositiveDefiniteOn-mul-norm-sub-sq}
+
 \chapter{Ordinary differential equations}
 
 \section{Gronwall--Bellman inequality}
@@ -216,24 +218,7 @@ solutions to agree initially and the perturbation to vanish, which collapses the
 The same mechanism bounds a single solution from below: an equilibrium cannot be approached
 faster than exponentially.
 
-\inputleannode{thm:isIntegralCurveOn-norm-sub-mul-exp-le}
-
 \inputleannode{thm:continuous-dependence-parameters}
-
-\section{Differentiability in the initial state}
-
-For a $C^1$ vector field the solution at a fixed time depends differentiably on its initial state,
-with derivative the solution of the variational equation along it.  Appending time to the state
-turns a time-varying system into an autonomous one, so this also gives differentiability in the
-initial time.
-
-\inputleannode{lem:isIntegralCurveOn-exists-dist-le-of-contDiff}
-
-\inputleannode{lem:isIntegralCurveOn-exists-variational}
-
-\inputleannode{thm:isIntegralCurveOn-exists-norm-sub-sub-variational-le}
-
-\inputleannode{thm:hasFDerivAt-of-isIntegralCurveOn}
 
 \section{Comparison lemma}
 
@@ -374,6 +359,10 @@ linear system is its linear case.
 \inputleannode{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}
 
 \inputleannode{lem:continuousSystem-stateTransitionMap-semigroup}
+
+\inputleannode{thm:continuousSystem-dist-stateTransitionMap-le}
+
+\inputleannode{thm:continuousSystem-norm-stateTransitionMap-sub-le}
 
 \inputleannode{def:continuousSystem-vectorField}
 
@@ -822,6 +811,10 @@ they say nothing the definition above does not.
 
 \inputleannode{lem:classK-restrictTo}
 
+\inputleannode{lem:classK-le-invFun-iff}
+
+\inputleannode{def:classK-compSymm}
+
 \inputleannode{lem:classK-symm}
 
 \inputleannode{lem:classK-comp}
@@ -839,6 +832,10 @@ functions as the standard examples, and the restriction back to class $\mathcal{
 \inputleannode{lem:classKInfty-comp}
 
 \inputleannode{lem:classKInfty-add}
+
+\inputleannode{lem:classKInfty-addMonotone}
+
+\inputleannode{lem:monotoneOn-weak-triangle}
 
 \inputleannode{lem:classKInfty-smul}
 
@@ -914,6 +911,14 @@ of that particular expression is recorded first.
 
 \inputleannode{lem:classKLGlobal-comp-right}
 
+\inputleannode{lem:classKLGlobal-comp-antitone}
+
+\inputleannode{lem:classKLGlobal-add}
+
+\inputleannode{lem:classKLGlobal-smul}
+
+\inputleannode{lem:classKLGlobal-timeScale}
+
 \inputleannode{lem:classKL-min-classK}
 
 \inputleannode{lem:classKLGlobal-min-KInfty}
@@ -930,7 +935,7 @@ The first lemma below is the continuity criterion the construction rests on.
 
 \inputleannode{lem:exists-classKL-upper-bound}
 
-\inputleannode{lem:classKLGlobal-of-KInfty-LSingular-family}
+\inputleannode{lem:classKLGlobal-exists-ge-min-of-decay}
 
 \section{Class \texorpdfstring{$\mathcal{K}$}{K} bounds for positive definite functions}
 
@@ -1113,6 +1118,8 @@ flatten as $t \to \infty$. Sandwiching $V$ between two positive-definite functio
 alone is what restores uniformity. Only trajectories on segments $[t_0, t_1]$ are used, so no
 solution is assumed to exist for all time.
 
+\inputleannode{lem:continuousSystem-isRightTrajectoryOn-trapped-in-ball}
+
 \inputleannode{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}
 
 \inputleannode{thm:continuousSystem-isStrictUniformLyapunovFunction-uniformlyAsymptoticallyStable}
@@ -1125,6 +1132,8 @@ they follow from radial unboundedness.
 \inputleannode{thm:continuousSystem-globallyUniformlyAsymptoticallyStable-of-lyapunov}
 
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable}
+
+\inputleannode{lem:continuousSystem-isExponentialLyapunovFunction-of-norm-sub-le-sq}
 
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable}
 
@@ -1145,6 +1154,18 @@ equilibrium, which is what lets it absorb perturbations of the vector field.
 A Lyapunov-like function whose derivative is negative only outside a ball does not certify
 stability, but it does bound the trajectories: they decay like a class $\mathcal{KL}$ function
 until they reach a neighbourhood of the ball, and stay there.
+
+\inputleannode{def:continuousSystem-isUltimateBoundLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isGlobalUltimateBoundLyapunovFunction}
+
+\inputleannode{lem:continuousSystem-uniformlyBounded-of-classKL-bound}
+
+\inputleannode{lem:continuousSystem-uniformlyUltimatelyBounded-of-classKL-bound}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyBounded-of-classKL-bound}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyUltimatelyBounded-of-classKL-bound}
 
 \inputleannode{thm:continuousSystem-exists-classKL-ultimateBound-of-lyapunov}
 
@@ -1168,6 +1189,8 @@ depend on the input.
 \inputleannode{def:continuousSystem-inputToStateStable}
 
 \inputleannode{thm:continuousSystem-inputToStateStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-isISSLyapunovFunction}
 
 \inputleannode{thm:continuousSystem-norm-le-of-isISSLyapunov}
 
@@ -1611,6 +1634,8 @@ as well, once the linearization error is absorbed near the equilibrium.
 \inputleannode{thm:contDiff-exists-uniform-linearization-error-bound}
 
 \inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
+
+\inputleannode{lem:norm-fderiv-inner-apply-self-le}
 
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 

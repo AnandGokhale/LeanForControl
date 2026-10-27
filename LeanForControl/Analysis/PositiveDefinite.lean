@@ -63,3 +63,19 @@ lemma isPositiveDefiniteOn_norm_sub {E : Type*} [NormedAddCommGroup E] (x₀ : E
     IsPositiveDefiniteOn (fun x => ‖x - x₀‖) x₀ S :=
   ⟨(continuous_id.sub continuous_const).norm.continuousOn, by simp,
     fun _ _ hx => norm_pos_iff.2 (sub_ne_zero.2 hx)⟩
+
+/-- A positive multiple of the squared distance to `x₀`, `x ↦ c ‖x - x₀‖²`, is positive definite
+about `x₀`. -/
+@[blueprint "lem:isPositiveDefiniteOn-mul-norm-sub-sq"
+  (title := "The squared distance is positive definite")
+  (latexEnv := "lemma")
+  (statement := /-- For $c > 0$, $x \mapsto c\,\|x - x_0\|^2$ is positive definite about $x_0$
+    on every set (\cref{def:isPositiveDefiniteOn}). -/)]
+lemma isPositiveDefiniteOn_mul_norm_sub_sq {E : Type*} [NormedAddCommGroup E] {c : ℝ}
+    (hc : 0 < c) (x₀ : E) (S : Set E) :
+    IsPositiveDefiniteOn (fun x => c * ‖x - x₀‖ ^ 2) x₀ S :=
+  IsPositiveDefiniteOn.comp (g := fun r => c * r ^ 2)
+    ⟨by fun_prop, by simp, fun r hr hne => by
+      have : 0 < r := lt_of_le_of_ne hr (Ne.symm hne)
+      positivity⟩
+    (isPositiveDefiniteOn_norm_sub x₀ S)

@@ -41,8 +41,8 @@ LeanForControl/
       DecompositionExamples.lean
 
     Solutions/
-      DefsCtsLTV.lean           Peano-Baker series; state transition operator; forced response
-      PeanoBaker.lean           Phi in any Banach algebra: derivative, uniqueness, semigroup, exp
+      DefsCtsLTV.lean           state transition operator; forced response (Peano-Baker series
+                                and its theory: ODEs/DefsPeanoBaker.lean, ODEs/PeanoBaker.lean)
       CtsLTV.lean               trajectories of LTV systems; variation of constants
       CtsLTI.lean               the LTI case: e^{At}
       DefsDiscLTV.lean          discrete state transition matrix (ordered product)
@@ -185,7 +185,7 @@ visible gap rather than an unstated assumption that this library is continuous-t
 | Result | Lean name | File | Status |
 |---|---|---|---|
 | Peano–Baker series, in any Banach algebra | `peanoBakerTerm`, `stateTransitionMatrix` | `Solutions/DefsCtsLTV.lean` | ✅ done |
-| `Φ` solves `Φ̇ = A(t)Φ`; uniqueness; semigroup; inverse; `∂_τΦ`; growth bound | `hasDerivAt_stateTransitionMatrix`, `ODE_solution_unique_linear`, `stateTransitionMatrix_mul`, `_mul_swap`, `hasDerivAt_stateTransitionMatrix_snd`, `norm_stateTransitionMatrix_le` | `Solutions/PeanoBaker.lean` | ✅ done |
+| `Φ` solves `Φ̇ = A(t)Φ`; uniqueness; semigroup; inverse; `∂_τΦ`; growth bound | `hasDerivAt_stateTransitionMatrix`, `ODE_solution_unique_linear`, `stateTransitionMatrix_mul`, `_mul_swap`, `hasDerivAt_stateTransitionMatrix_snd`, `norm_stateTransitionMatrix_le` | `ODEs/PeanoBaker.lean` | ✅ done |
 | Trajectories of an LTV system: existence, uniqueness, `φ = Φ` | `ContinuousLTV.isTrajectory_homogeneousResponse`, `eq_homogeneousResponse_of_isTrajectoryOn`, `hasUniqueSolutions_zero`, `stateTransitionMap_zero` | `Solutions/CtsLTV.lean` | ✅ done |
 | Variation of constants (continuous) | `ContinuousLTV.isTrajectory_forcedResponse`, `eq_forcedResponse_of_isTrajectoryOn` | `Solutions/CtsLTV.lean` | ✅ done |
 | The LTI case: `e^{At}` | `stateTransitionMatrix_const`, `ContinuousLTI.stateTransition_toLTV`, `eq_exp_of_isTrajectoryOn` | `Solutions/CtsLTI.lean` | ✅ done |
@@ -233,14 +233,11 @@ Two further connections between `Φ` and the nonlinear state transition map `φ`
 - **On linear systems they agree** — done: `ContinuousLTV.stateTransitionMap_zero` says
   `φ(t; t₀, x₀) = Φ(t, t₀) x₀` for `t ≥ t₀` under zero input, from
   `ContinuousLTV.hasUniqueSolutions_zero`.
-- **`Φ` is the derivative of the flow** — future. For `ẋ = f(t, x)` with `f` `C¹` in `x`,
-  `∂φ(t; t₀, x₀)/∂x₀ = Φ_A(t, t₀)` with `A(t) = D_x f(t, x(t))` along the trajectory (the
-  variational equation). It is the mechanism behind linearization and behind contraction
-  (bounding `‖∂φ/∂x₀‖` through the log-norm of `A(t)`, Coppel's inequality). The
-  Peano-Baker core (`Solutions/PeanoBaker.lean`) already works in `E →L[ℝ] E`, which is
-  where `D_x f` lives, so no matrix layer is needed. The missing piece is differentiability of
-  the flow in the initial state: Mathlib has Lipschitz dependence (Grönwall) but not `C¹`
-  dependence.
+- **`Φ` is the derivative of the flow** — not planned as a public result. Differentiability
+  of solutions in the initial state (autonomous form, applied to the time-augmented system) is
+  proved privately in `Stability/Continuous/Converse.lean`, its only user.  Contraction and
+  Coppel's inequality go through Dini derivatives and one-sided Lipschitz bounds
+  (`Analysis/OneSidedLipschitz.lean`), which need no derivative of the flow.
 
 ## Status: blueprint coverage
 
@@ -367,7 +364,7 @@ conversion involves, file by file:
 
 * objects: fields become continuous linear maps; an `ofMatrix` constructor for coordinates;
 * solutions: done for the continuous-time core: Peano–Baker is proved in any Banach algebra
-  (`Solutions/PeanoBaker.lean`) and the LTV system uses it at `E →L[ℝ] E`; what remains is the
+  (`ODEs/PeanoBaker.lean`) and the LTV system uses it at `E →L[ℝ] E`; what remains is the
   object itself (its fields are still matrices) and Cayley–Hamilton via `minpoly` / `aeval`;
 * stability: Hurwitz/Schur through the spectrum of the complexified map (complexification of
   real linear maps is the hard part in Mathlib); Gelfand's formula already holds in any Banach
@@ -378,8 +375,8 @@ conversion involves, file by file:
 * the discrete-time side (`DiscLTV`, `Schur`, discrete Lyapunov) has not been moved to Euclidean
   states yet.
 
-A related future direction: `Φ` is the derivative of the nonlinear flow in the initial state
-(the variational equation), recorded under "bridge to nonlinear stability".
+`Φ` as the derivative of the nonlinear flow is not planned as a public result; see "bridge to
+nonlinear stability".
 
 Rough size: most of `LinearSystems/` and `MatrixAlgebra/` (~10k lines), with new design in the
 spectral and Kalman parts.  Worth doing when infinite-dimensional linear systems or a

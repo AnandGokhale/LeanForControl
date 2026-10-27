@@ -7,7 +7,6 @@ import Mathlib.Analysis.SpecialFunctions.Exp
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassL
-import LeanForControl.Analysis.MonotoneFunctions
 
 import Architect
 
@@ -716,3 +715,85 @@ def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGl
   nonneg r hr s hs := β.nonneg (α.toFun r) (α.maps_to hr) s hs
   anti_s r hr        := β.anti_s (α.toFun r) (α.maps_to hr)
   tendsto_zero r hr  := β.tendsto_zero (α.toFun r) (α.maps_to hr)
+
+/-- The sum of two global class KL functions is global class KL. -/
+@[blueprint "lem:classKLGlobal-add"
+  (title := "Sum of global class $\\mathcal{KL}$ functions")
+  (statement := /-- If $\beta$ and $\beta'$ are global class $\mathcal{KL}$, so is
+    $\beta + \beta'$. -/)]
+def ClassKLGlobal.add (β β' : ClassKLGlobal) : ClassKLGlobal where
+  toFun r s     := β.toFun r s + β'.toFun r s
+  map_zero s hs := by rw [β.map_zero s hs, β'.map_zero s hs, add_zero]
+  continuous    := β.continuous.add β'.continuous
+  strict_mono_r s hs := (β.strict_mono_r s hs).add (β'.strict_mono_r s hs)
+  nonneg r hr s hs := add_nonneg (β.nonneg r hr s hs) (β'.nonneg r hr s hs)
+  anti_s r hr   := (β.anti_s r hr).add (β'.anti_s r hr)
+  tendsto_zero r hr := by simpa using (β.tendsto_zero r hr).add (β'.tendsto_zero r hr)
+
+/-- A positive multiple of a global class KL function is global class KL. -/
+@[blueprint "lem:classKLGlobal-smul"
+  (title := "Positive multiple of a global class $\\mathcal{KL}$ function")
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $c > 0$, then $c\beta$ is
+    global class $\mathcal{KL}$. -/)]
+def ClassKLGlobal.smul (β : ClassKLGlobal) (c : ℝ) (hc : 0 < c) : ClassKLGlobal where
+  toFun r s     := c * β.toFun r s
+  map_zero s hs := by rw [β.map_zero s hs, mul_zero]
+  continuous    := continuousOn_const.mul β.continuous
+  strict_mono_r s hs x hx y hy hxy := mul_lt_mul_of_pos_left (β.strict_mono_r s hs hx hy hxy) hc
+  nonneg r hr s hs := mul_nonneg hc.le (β.nonneg r hr s hs)
+  anti_s r hr s₁ hs₁ s₂ hs₂ hs := mul_le_mul_of_nonneg_left (β.anti_s r hr hs₁ hs₂ hs) hc.le
+  tendsto_zero r hr := by simpa using (β.tendsto_zero r hr).const_mul c
+
+/-- Slowing the time argument of a global class KL function by a factor `c > 0` gives a global
+class KL function. -/
+@[blueprint "lem:classKLGlobal-timeScale"
+  (title := "Rescaling time in a global class $\\mathcal{KL}$ function")
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $c > 0$, then
+    $(r, s) \mapsto \beta(r, s/c)$ is global class $\mathcal{KL}$. -/)]
+noncomputable def ClassKLGlobal.timeScale (β : ClassKLGlobal) (c : ℝ) (hc : 0 < c) :
+    ClassKLGlobal where
+  toFun r s     := β.toFun r (s / c)
+  map_zero _ hs := β.map_zero _ (div_nonneg hs hc.le)
+  continuous    := β.continuous.comp (continuousOn_fst.prodMk (continuousOn_snd.div_const c))
+    fun _ hp => ⟨hp.1, mem_Ici.2 (div_nonneg hp.2 hc.le)⟩
+  strict_mono_r _ hs := β.strict_mono_r _ (div_nonneg hs hc.le)
+  nonneg r hr _ hs := β.nonneg r hr _ (div_nonneg hs hc.le)
+  anti_s r hr _ hs₁ _ hs₂ hs := β.anti_s r hr (div_nonneg hs₁ hc.le) (div_nonneg hs₂ hc.le)
+    (div_le_div_of_nonneg_right hs hc.le)
+  tendsto_zero r hr := (β.tendsto_zero r hr).comp (tendsto_id.atTop_div_const hc)
+
+/-- **Composition with a radius that may shrink in time.**  If `β` is global class KL and
+`a(r, s)` is continuous, vanishes at `r = 0`, is strictly increasing in `r` and nonincreasing in
+`s`, then `β(a(r, s), s)` is global class KL: it decays because `β(a(r, s), s) ≤ β(a(r, 0), s)`.
+This generalizes `comp_right`, where `a(r, s) = α(r)`. -/
+@[blueprint "lem:classKLGlobal-comp-antitone"
+  (title := "Composition with a nonincreasing radius")
+  (statement := /-- Let $\beta$ be global class $\mathcal{KL}$ and let
+    $a : [0, \infty)^2 \to \mathbb{R}$ be continuous, with $a(0, s) = 0$, strictly increasing
+    in $r$ and nonincreasing in $s$.  Then $(r, s) \mapsto \beta(a(r, s), s)$ is global class
+    $\mathcal{KL}$. -/)
+  (proof := /-- Each property of $\beta$ transfers, using $a \ge 0$; for the limit,
+    $0 \le \beta(a(r, s), s) \le \beta(a(r, 0), s) \to 0$. -/)]
+noncomputable def ClassKLGlobal.comp_antitone (β : ClassKLGlobal) (a : ℝ → ℝ → ℝ)
+    (ha_zero : ∀ s ≥ 0, a 0 s = 0) (ha_cont : ContinuousOn (Function.uncurry a) (Ici 0 ×ˢ Ici 0))
+    (ha_mono : ∀ s ≥ 0, StrictMonoOn (fun r => a r s) (Ici 0))
+    (ha_anti : ∀ r ≥ 0, AntitoneOn (fun s => a r s) (Ici 0)) : ClassKLGlobal :=
+  have ha_nonneg : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ a r s := fun r hr s hs =>
+    ha_zero s hs ▸ (ha_mono s hs).monotoneOn (mem_Ici.2 le_rfl) hr hr
+  { toFun r s     := β.toFun (a r s) s
+    map_zero s hs := by rw [ha_zero s hs, β.map_zero s hs]
+    continuous    := β.continuous.comp (ha_cont.prodMk continuousOn_snd)
+      fun p hp => ⟨ha_nonneg p.1 hp.1 p.2 hp.2, hp.2⟩
+    strict_mono_r s hs x hx y hy hxy := β.strict_mono_r s hs (ha_nonneg x hx s hs)
+      (ha_nonneg y hy s hs) (ha_mono s hs hx hy hxy)
+    nonneg r hr s hs := β.nonneg _ (ha_nonneg r hr s hs) s hs
+    anti_s r hr s₁ hs₁ s₂ hs₂ hs :=
+      (β.mono_r (ha_nonneg r hr s₂ hs₂) hs₂ (ha_anti r hr hs₁ hs₂ hs)).trans
+        (β.anti_s _ (ha_nonneg r hr s₁ hs₁) hs₁ hs₂ hs)
+    tendsto_zero r hr := by
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+        (β.tendsto_zero _ (ha_nonneg r hr 0 le_rfl)) ?_ ?_
+      · filter_upwards [eventually_ge_atTop 0] with s hs
+        exact β.nonneg _ (ha_nonneg r hr s hs) s hs
+      · filter_upwards [eventually_ge_atTop 0] with s hs
+        exact β.mono_r (ha_nonneg r hr s hs) hs (ha_anti r hr (mem_Ici.2 le_rfl) hs hs) }

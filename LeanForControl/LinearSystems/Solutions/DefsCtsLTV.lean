@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Continuous
+import LeanForControl.ODEs.DefsPeanoBaker
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Architect
 
@@ -10,17 +11,11 @@ lives here, apart from the theorems proved about them (`CtsLTV.lean`, `CtsLTI.le
 project convention: definitions live apart from theorems. The discrete-time definitions are in
 `DefsDiscLTV.lean`.
 
-The Peano-Baker series is defined for a time-varying coefficient `A : ℝ → 𝔸` in any real
-normed algebra `𝔸`; its theory (`PeanoBaker.lean`) uses only the algebra structure. The
-time-invariant case is the constant map, specialized in `CtsLTI.lean` rather than given a
-separate definition.
+The Peano-Baker series `stateTransitionMatrix` is defined for a coefficient in any real normed
+algebra, apart from systems (`ODEs/DefsPeanoBaker.lean`, theory in `ODEs/PeanoBaker.lean`).  For
+an LTV system the coefficient is the state operator `A(t)` itself, so `Φ` and the responses act on
+the state space.  The time-invariant case is the constant map, specialized in `CtsLTI.lean`.
 
-For an LTV system the coefficient is the state operator `A(t)` itself, so `Φ` and the responses
-act on the state space.
-
-* `peanoBakerTerm` — the `k`-th iterated-integral term of the Peano-Baker series.
-* `stateTransitionMatrix` — the Peano-Baker series itself,
-  `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
 * `ContinuousLTV.stateTransition` — `Φ` for an LTV system, an operator on its state space.
 * `ContinuousLTV.forcedResponse` — the variation-of-constants formula for
   `ẋ = A(t)x + B(t)u(t)`.
@@ -31,51 +26,6 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 namespace LinearSystems
 
 open Matrix
-
-section BanachAlgebra
-
-variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸]
-
-/-- The `k`-th term of the Peano-Baker series for a time-varying coefficient `A`:
-`peanoBakerTerm A 0 t t₀ = 1` and
-`peanoBakerTerm A (k+1) t t₀ = ∫ s in t₀..t, A s * peanoBakerTerm A k s t₀`.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5 (Peano-Baker series). -/
-@[blueprint "def:peanoBakerTerm"
-  (title := "Peano--Baker term")
-  (statement := /-- The $k$-th term of the Peano--Baker series for a time-varying state
-    coefficient $A(t)$:
-    \[
-      P_0(t,t_0) := 1, \qquad
-      P_{k+1}(t,t_0) := \int_{t_0}^{t} A(s)\, P_k(s,t_0)\,\mathrm{d}s.
-    \]
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5 (Peano-Baker series).
-  -/)]
-noncomputable def peanoBakerTerm (A : ℝ → 𝔸) : ℕ → ℝ → ℝ → 𝔸
-  | 0,     _, _  => 1
-  | k + 1, t, t₀ => ∫ s in t₀..t, A s * peanoBakerTerm A k s t₀
-
-/-- The *state transition matrix* of a time-varying linear system `ẋ = A(t) x`, given by the
-Peano-Baker series `Φ(t, t₀) := ∑' k, peanoBakerTerm A k t t₀`.
-
-Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5, Theorem 5.1
-(Peano-Baker series). -/
-@[blueprint "def:stateTransitionMatrix"
-  (title := "State transition matrix")
-  (statement := /-- The \emph{state transition matrix} $\Phi(t,t_0)$, given by the
-    Peano--Baker series
-    \[
-      \Phi(t,t_0) := \sum_{k=0}^{\infty} P_k(t,t_0).
-    \]
-
-    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.1 (Peano-Baker
-    series).
-  -/)]
-noncomputable def stateTransitionMatrix (A : ℝ → 𝔸) (t t₀ : ℝ) : 𝔸 :=
-  ∑' k, peanoBakerTerm A k t t₀
-
-end BanachAlgebra
 
 namespace ContinuousLTV
 

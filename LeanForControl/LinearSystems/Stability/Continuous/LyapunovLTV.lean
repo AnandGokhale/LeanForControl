@@ -6,78 +6,45 @@ import Architect
 /-!
 # `LinearSystems.Stability.Continuous.LyapunovLTV`
 
-Hespanha's Lyapunov-stability definition for a continuous-time linear time-varying system,
-read as *theorems* about the stability predicates of `Stability/Continuous/Defs.lean`, applied
-to the unforced system `s.toContinuousSystem.zeroInput`.
+Hespanha's four stability conditions for `ẋ = A(t) x` (Definition 8.1), stated on the homogeneous
+response `Φ(t, t₀) x₀`, proved *equivalent* to the stability predicates of
+`Stability/Continuous/Defs.lean` for the unforced system `s.toContinuousSystem.zeroInput`: nothing
+is re-defined, so a result proved on either side is available on the other.  The state space is
+any complete real normed space, and each result needs only `Continuous s.A`.
 
-The textbook states four conditions on the homogeneous state response `x(t) = Φ(t, t₀) x₀` of
-`ẋ = A(t) x` and calls them stability, asymptotic stability, exponential stability and
-instability. Nothing here re-defines any of those: each of the four is proved *equivalent*
-to the predicate the nonlinear track already has, so a result proved on either side is
-available on the other.
+## Main results
 
-## Contents
-
-Each result is stated about a `ContinuousLTV`, since these are properties of a system,
-and needs only `Continuous s.A` — the input and output matrices play no part in Lyapunov
-stability.
-
-* **Definition 8.1(1)** — `stable_iff_boundedHomogeneousResponse`: stability is
-  boundedness of every homogeneous response. Its workhorse
-  `stable_iff_boundedStateTransition` gives the equivalent bound on `Φ(t, t₀)`
-  itself, and `uniformlyStable_iff_uniformlyBoundedStateTransition` makes that bound
-  independent of `t₀`.
+* **Definition 8.1(1)** — `stable_iff_boundedHomogeneousResponse`, through
+  `stable_iff_boundedStateTransition` (a bound on `Φ(t, t₀)` itself);
+  `uniformlyStable_iff_uniformlyBoundedStateTransition` makes the bound independent of `t₀`.
 * **Definition 8.1(2)** — `locallyAsymptoticallyStable_iff_decayingHomogeneousResponse`.
-* **Definition 8.1(3)** — `locallyExponentiallyStable_iff_decayingStateTransition` and its
-  global twin `globallyExponentiallyStable_iff_decayingStateTransition`, with
-  `locallyExponentiallyStable_iff_globallyExponentiallyStable` recording that for a linear
-  system the two coincide.
+* **Definition 8.1(3)** — `locallyExponentiallyStable_iff_decayingStateTransition`,
+  `globallyExponentiallyStable_iff_decayingStateTransition`, and
+  `locallyExponentiallyStable_iff_globallyExponentiallyStable`.
 * **Definition 8.1(4)** — `unstable_iff_unboundedHomogeneousResponse`.
 * **Khalil, Theorem 4.11** — `uniformlyAsymptoticallyStable_iff_decayingStateTransition` and
   `globallyUniformlyAsymptoticallyStable_iff_decayingStateTransition`: for a linear system,
   uniform asymptotic stability is already exponential.
 
-Every one of them is the trajectory characterization plus homogeneity. The trajectory
-characterization itself is solution theory and lives in `Solutions/CtsLTV.lean`:
-`ContinuousLTV.isTrajectory_homogeneousResponse` for existence and
-`ContinuousLTV.eq_homogeneousResponse_of_isTrajectoryOn` for uniqueness.
+## The argument
 
-## One state space, one set of stability predicates
+Every equivalence is two facts.
 
-Everything here lives in the state space `E` of the system, any complete real normed space.
-`Stability/Continuous/Defs.lean` is stated over an arbitrary real normed space, so its
-predicates apply here directly: there is no second notion of stability for linear systems and
-no transport between state spaces.
+* **Trajectories are responses.**  The predicates quantify over trajectories, the textbook over
+  initial conditions; `Φ` solves the equation and is its only solution
+  (`ContinuousLTV.isTrajectoryOn_homogeneousResponse` and
+  `ContinuousLTV.eq_homogeneousResponse_of_isTrajectoryOn`, in `Solutions/CtsLTV.lean`).
+* **Homogeneity.**  The predicates bound the responses from a ball, the textbook from every state;
+  the response from `r x₀` is `r` times the response from `x₀`, so a bound on a ball scales to
+  every state (`ContinuousLinearMap.opNorm_le_of_ball`, `ContinuousLinearMap.opNorm_le_of_shell`).
+  This is why a linear system has no nontrivial region of attraction.
 
-The unforced system is `s.toContinuousSystem.zeroInput`, whose trajectories are those of `s`
-under the zero input, and `ContinuousLTV.vectorField_zero_input` reduces its vector field to
-`fun t z => s.A t z`. That reduction is what lets the left-hand sides speak about the system
-while the proofs work with the state matrix.
-
-The predicates quantify over trajectory segments `[t₀, t₁]`, so no solution is assumed to exist
-for all time; local asymptotic stability also asks for forward completeness, which a linear
-system has (`ContinuousLTV.isForwardComplete_zeroInput`).
-
-## Why the equivalences are not definitional
-
-Two things separate the textbook statements from the predicates:
-
-* The textbook quantifies over *initial conditions*, the predicates over *trajectories*. The
-  gap closes in both directions only because `Φ` both solves the equation
-  (`ContinuousLTV.isTrajectory_homogeneousResponse`) and is the unique solution
-  (`eq_homogeneousResponse_of_isIntegralCurveOn`) — the second is where Grönwall enters,
-  through `stateTransitionMatrix_mulVec_unique`.
-* The textbook's bounds are on the response from *every* initial state; the predicates'
-  bounds are on the response from a *ball*. Linearity is what makes these the same: the
-  response from `r x₀` is `r` times the response from `x₀`, so a bound on any ball scales to
-  a bound everywhere. This is why a linear system has no nontrivial region of attraction, and
-  the reason `locallyExponentiallyStable_iff_globallyExponentiallyStable` holds.
-
-The sign in `Real.exp (-γ * (t - t₀))` is the decaying one; the estimate as printed in some
-editions of Hespanha carries `e^{λ(t-t₀)}` with `λ > 0`, which is a typo for `e^{-λ(t-t₀)}`.
+The predicates quantify over trajectory segments; local asymptotic stability also asks for forward
+completeness, which a linear system has (`ContinuousLTV.isForwardComplete_zeroInput`).  Some
+printings of Hespanha write the estimate with `e^{λ(t-t₀)}`, a typo for `e^{-λ(t-t₀)}`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Definition 8.1; Khalil,
-*Nonlinear Systems* (3rd ed.), Definitions 4.4 and 4.5.
+*Nonlinear Systems* (3rd ed.), Definitions 4.4 and 4.5, Theorem 4.11.
 -/
 
 namespace LinearSystems
@@ -87,27 +54,6 @@ open scoped Matrix.Norms.Operator
 
 variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
   [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup Y] [NormedSpace ℝ Y]
-
-/-! ## Trajectories of a linear system
-
-"The solutions of `ẋ = A(t) x` from `t₀` are exactly the homogeneous responses `Φ(·, t₀) x₀`"
-is solution theory and lives in `Solutions/CtsLTV.lean`, stated on the system:
-`ContinuousLTV.isTrajectoryOn_homogeneousResponse` for existence and
-`ContinuousLTV.eq_homogeneousResponse_of_isTrajectoryOn` for uniqueness, on a segment. No
-bridging is needed here, because a trajectory of `s.toContinuousSystem.zeroInput` on `I` *is* a
-trajectory of `s` under the zero input on `I` — both unfold to
-`IsIntegralCurveOn φ (s.vectorField 0) I`.
-
-That the origin is an equilibrium is likewise a property of the system,
-`ContinuousLTV.vectorField_apply_zero`. Everything below is those facts plus
-homogeneity. -/
-
-/-! ## Homogeneity
-
-A bound on the response from a ball is a bound from every state, because the response is
-linear in the initial state: Mathlib's `ContinuousLinearMap.opNorm_le_of_ball` and
-`ContinuousLinearMap.opNorm_le_of_shell`, applied to `x ↦ Φ(t, t₀) x`.  This is the only place
-linearity is used beyond the trajectory characterization above. -/
 
 /-! ## Stability at a single initial time
 
@@ -444,8 +390,10 @@ definition carries no information for a linear system. -/
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 8, Definition 8.1(3).
   -/)
-  (proof := /-- As in the global case; the radius $c$ of the local definition is absorbed by
-    the scaling argument, and $c = 1$ serves in the converse. -/)]
+  (proof := /-- The radius $c$ of the local definition is absorbed by the scaling argument;
+    conversely the estimate is global exponential stability
+    (\cref{thm:continuousLTV-globallyExponentiallyStable-iff-decayingStateTransition}), which is
+    local. -/)]
 theorem locallyExponentiallyStable_iff_decayingStateTransition (s : ContinuousLTV E U Y)
     (hA : Continuous s.A) :
     s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : E) ↔
@@ -467,12 +415,9 @@ theorem locallyExponentiallyStable_iff_decayingStateTransition (s : ContinuousLT
       simpa [mul_right_comm] using h1
     simpa using ContinuousLinearMap.le_of_opNorm_le _
       (ContinuousLinearMap.opNorm_le_of_ball hc (by positivity) hball) x
-  · rintro ⟨k, hk, γ, hγ, hbd⟩
-    refine ⟨1, one_pos, k, hk, γ, hγ, fun t₀ ht₀ t₁ φ hφ _ t ht => ?_⟩
-    rw [sub_zero, sub_zero, eq_homogeneousResponse_of_isTrajectoryOn s hA hφ ht]
-    calc ‖s.stateTransition t t₀ (φ t₀)‖
-        ≤ k * Real.exp (-γ * (t - t₀)) * ‖φ t₀‖ := hbd t₀ ht₀ t ht.1 (φ t₀)
-      _ = k * ‖φ t₀‖ * Real.exp (-γ * (t - t₀)) := by ring
+  · intro h
+    exact ((globallyExponentiallyStable_iff_decayingStateTransition s hA).mpr h)
+      |>.locallyExponentiallyStable
 
 /-- For a linear system, exponential stability is automatically global.
 
@@ -497,9 +442,8 @@ radius, and the response is homogeneous, so the radius scales away. -/
 theorem locallyExponentiallyStable_iff_globallyExponentiallyStable (s : ContinuousLTV E U Y)
     (hA : Continuous s.A) :
     s.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : E) ↔
-      s.toContinuousSystem.zeroInput.GloballyExponentiallyStable (0 : E) := by
-  classical
-  exact (locallyExponentiallyStable_iff_decayingStateTransition s hA).trans
+      s.toContinuousSystem.zeroInput.GloballyExponentiallyStable (0 : E) :=
+  (locallyExponentiallyStable_iff_decayingStateTransition s hA).trans
     (globallyExponentiallyStable_iff_decayingStateTransition s hA).symm
 
 /-! ## Uniform asymptotic stability is exponential -/
@@ -568,30 +512,19 @@ theorem uniformlyAsymptoticallyStable_iff_decayingStateTransition (s : Continuou
     | succ N ih =>
       intro t₀ ht₀ t ht x
       push_cast at ht
-      have hs : t₀ + T ≤ t := by nlinarith [N.cast_nonneg (α := ℝ)]
-      rcases hs.lt_or_eq with hs | hs
-      · -- `Φ(t, t₀) = Φ(t, t₀ + T) Φ(t₀ + T, t₀)`: the first factor by induction, the second by
-        -- one window.
-        rw [← s.stateTransition_comp hA t (t₀ + T) t₀ x]
-        calc ‖s.stateTransition t (t₀ + T) (s.stateTransition (t₀ + T) t₀ x)‖
-            ≤ C' * Real.exp (-N) * ‖s.stateTransition (t₀ + T) t₀ x‖ :=
-              ih (t₀ + T) (by linarith) t (by linarith) _
-          _ ≤ C' * Real.exp (-N) * (Real.exp (-1) * ‖x‖) := by
-              gcongr
-              exact h_window t₀ ht₀ (t₀ + T) le_rfl x
-          _ = C' * Real.exp (-↑(N + 1)) * ‖x‖ := by
-              push_cast
-              rw [show -((N : ℝ) + 1) = -N + -1 by ring, Real.exp_add]
-              ring
-      · -- Exactly one window: `N = 0`.
-        have hN : (N : ℝ) = 0 := by nlinarith [N.cast_nonneg (α := ℝ)]
-        rw [← hs]
-        calc ‖s.stateTransition (t₀ + T) t₀ x‖
-            ≤ Real.exp (-1) * ‖x‖ := h_window t₀ ht₀ _ le_rfl x
-          _ ≤ C' * Real.exp (-↑(N + 1)) * ‖x‖ := by
-              push_cast
-              rw [hN, zero_add, mul_assoc]
-              exact le_mul_of_one_le_left (by positivity) (le_max_right C 1)
+      -- `Φ(t, t₀) = Φ(t, t₀ + T) Φ(t₀ + T, t₀)`: the first factor by induction, the second by one
+      -- window.
+      rw [← s.stateTransition_comp hA t (t₀ + T) t₀ x]
+      calc ‖s.stateTransition t (t₀ + T) (s.stateTransition (t₀ + T) t₀ x)‖
+          ≤ C' * Real.exp (-N) * ‖s.stateTransition (t₀ + T) t₀ x‖ :=
+            ih (t₀ + T) (by linarith) t (by linarith) _
+        _ ≤ C' * Real.exp (-N) * (Real.exp (-1) * ‖x‖) := by
+            gcongr
+            exact h_window t₀ ht₀ (t₀ + T) le_rfl x
+        _ = C' * Real.exp (-↑(N + 1)) * ‖x‖ := by
+            push_cast
+            rw [show -((N : ℝ) + 1) = -N + -1 by ring, Real.exp_add]
+            ring
   -- Step 4. With `N = ⌊(t - t₀)/T⌋`, `e^{-N} ≤ e · e^{-(t - t₀)/T}`.
   refine ⟨C' * Real.exp 1, by positivity, 1 / T, by positivity, fun t₀ ht₀ t ht x => ?_⟩
   set N := ⌊(t - t₀) / T⌋₊

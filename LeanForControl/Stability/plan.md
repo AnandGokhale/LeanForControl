@@ -324,7 +324,7 @@ Each is documented in its docstring's *Differences* list; collected here so they
    (`Continuous/Linearization.lean`), and Lemma 4.6 (`Continuous/ISS.lean`) ask `f` to be `C¹`,
    Lipschitz and to vanish at `x_eq` for every `t ∈ ℝ`.  Cause: differentiability of `V` at
    `t = 0` goes through solutions from slightly negative initial times (the time-augmented
-   system and the sensitivity lemmas of `ODEs/Sensitivity.lean` work on open sets).  Fix:
+   system and the private sensitivity lemmas in `Continuous/Converse.lean` work on open sets).  Fix:
    one-sided derivatives on `[0, ∞) × D` throughout the sensitivity lemmas.
 3. **Lyapunov functions are differentiable, not `C¹`.** Khalil's converse theorems 4.14 and 4.16
    assert continuously differentiable `V`; the Lyapunov structures

@@ -419,41 +419,49 @@ theorem isForwardComplete_of_lipschitz [CompleteSpace E] {s : ContinuousSystem E
   exact ⟨y, hy, hasUniqueSolutions_of_lipschitz hL t₀ t₁ y x
     (IsIntegralCurveOn.mono hy Set.Icc_subset_Ici_self) hx hy₀⟩
 
-/-- **Exponential bounds on the norm of a trajectory** (Khalil, Exercise 3.17(b)): if
-`‖F(t, x(t), u(t))‖ ≤ L ‖x(t)‖` along a trajectory on `[t₀, t₁]`, then
-`‖x(t₀)‖ e^{-L(t - t₀)} ≤ ‖x(t)‖ ≤ ‖x(t₀)‖ e^{L(t - t₀)}` there.
+/-- **Exponential bounds on the distance of a trajectory to a point** (Khalil, Exercise 3.17(b)):
+if `‖F(t, x(t), u(t))‖ ≤ L ‖x(t) - x_c‖` along a trajectory on `[t₀, t₁]`, then
+`‖x(t₀) - x_c‖ e^{-L(t - t₀)} ≤ ‖x(t) - x_c‖ ≤ ‖x(t₀) - x_c‖ e^{L(t - t₀)}` there.  For a field
+`L`-Lipschitz in the state with an equilibrium at `x_c`, the hypothesis holds everywhere.
 
 The bound is only needed along the trajectory, and the state space is any normed space. -/
 @[blueprint "thm:continuousSystem-isTrajectoryOn-norm-exp-bounds"
   (title := "Exponential bounds on a trajectory")
   (statement := /-- If $x$ is a trajectory on $[t_0, t_1]$
-    (\cref{def:continuousSystem-isTrajectoryOn}) with $\|F(t, x(t), u(t))\| \le L\|x(t)\|$ for
-    $t \in [t_0, t_1)$, then for every $t \in [t_0, t_1]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) with
+    $\|F(t, x(t), u(t))\| \le L\|x(t) - x_c\|$ for $t \in [t_0, t_1)$, then for every
+    $t \in [t_0, t_1]$
     \[
-      \|x(t_0)\|\,e^{-L(t - t_0)} \le \|x(t)\| \le \|x(t_0)\|\,e^{L(t - t_0)}.
+      \|x(t_0) - x_c\|\,e^{-L(t - t_0)} \le \|x(t) - x_c\| \le \|x(t_0) - x_c\|\,e^{L(t - t_0)}.
     \]
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Exercise 3.17(b). -/)
-  (proof := /-- $D^{+}\|x\| \le \|\dot x\| \le L\|x\|$ and
-    $D^{+}(-\|x\|) \le \|\dot x\| \le (-L)(-\|x\|)$
+  (proof := /-- $D^{+}\|x - x_c\| \le \|\dot x\| \le L\|x - x_c\|$ and
+    $D^{+}(-\|x - x_c\|) \le \|\dot x\| \le (-L)(-\|x - x_c\|)$
     (\cref{lem:diniDerivRight-le-norm-of-hasDerivWithinAt}); apply Gr\"onwall
     (\cref{thm:le-mul-exp-of-diniDerivRight-le}) to each. -/)]
 theorem IsTrajectoryOn.norm_exp_bounds {s : ContinuousSystem E U Y} {u : ℝ → U} {x : ℝ → E}
-    {t₀ t₁ L : ℝ} (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁))
-    (hL : ∀ t ∈ Set.Ico t₀ t₁, ‖s.vectorField u t (x t)‖ ≤ L * ‖x t‖) {t : ℝ}
+    {x_c : E} {t₀ t₁ L : ℝ} (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁))
+    (hL : ∀ t ∈ Set.Ico t₀ t₁, ‖s.vectorField u t (x t)‖ ≤ L * ‖x t - x_c‖) {t : ℝ}
     (ht : t ∈ Set.Icc t₀ t₁) :
-    ‖x t₀‖ * Real.exp (-L * (t - t₀)) ≤ ‖x t‖ ∧ ‖x t‖ ≤ ‖x t₀‖ * Real.exp (L * (t - t₀)) := by
+    ‖x t₀ - x_c‖ * Real.exp (-L * (t - t₀)) ≤ ‖x t - x_c‖ ∧
+      ‖x t - x_c‖ ≤ ‖x t₀ - x_c‖ * Real.exp (L * (t - t₀)) := by
   have hx_cont : ContinuousOn x (Set.Icc t₀ t₁) := IsIntegralCurveOn.continuousOn hx
   -- At a point of `[t₀, t₁)`, a derivative within the segment is a right derivative.
   have hx_right : ∀ r ∈ Set.Ico t₀ t₁,
       HasDerivWithinAt x (s.vectorField u r (x r)) (Set.Ici r) r := fun r hr =>
     (hx r (Set.Ico_subset_Icc_self hr)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hr)
-  refine ⟨?_, le_mul_exp_of_diniDerivRight_le hx_cont.norm (fun r hr =>
-    (diniDerivRight_le_norm_of_hasDerivWithinAt (hx_right r hr) fun _ => norm_sub_norm_le _ _
-      ).trans (EReal.coe_le_coe_iff.2 (hL r hr))) t ht⟩
-  have h := le_mul_exp_of_diniDerivRight_le (v := fun r => -‖x r‖) (K := -L) hx_cont.norm.neg
+  have hd_cont : ContinuousOn (fun r => ‖x r - x_c‖) (Set.Icc t₀ t₁) :=
+    (hx_cont.sub continuousOn_const).norm
+  -- `‖x - x_c‖` changes by at most `‖x q - x r‖`.
+  have h_change : ∀ q r, ‖x q - x_c‖ - ‖x r - x_c‖ ≤ ‖x q - x r‖ := fun q r => by
+    simpa using norm_sub_norm_le (x q - x_c) (x r - x_c)
+  refine ⟨?_, le_mul_exp_of_diniDerivRight_le hd_cont (fun r hr =>
+    (diniDerivRight_le_norm_of_hasDerivWithinAt (hx_right r hr) fun q => h_change q r).trans
+      (EReal.coe_le_coe_iff.2 (hL r hr))) t ht⟩
+  have h := le_mul_exp_of_diniDerivRight_le (v := fun r => -‖x r - x_c‖) (K := -L) hd_cont.neg
     (fun r hr => (diniDerivRight_le_norm_of_hasDerivWithinAt (hx_right r hr) fun q => by
-      rw [norm_sub_rev]; linarith [norm_sub_norm_le (x r) (x q)]).trans
+      linarith [h_change r q, norm_sub_rev (x r) (x q)]).trans
         (EReal.coe_le_coe_iff.2 (by linarith [hL r hr]))) t ht
   linarith
 
@@ -647,6 +655,119 @@ lemma stateTransitionMap_of_equilibrium (hu : s.HasUniqueSolutions u) {x_eq : E}
     (h_eq : ∀ t, s.vectorField u t x_eq = 0) {t₀ t : ℝ} (ht : t₀ ≤ t) :
     s.stateTransitionMap u t t₀ x_eq = x_eq :=
   (eq_stateTransitionMap hu (isIntegralCurveOn_const fun r _ => h_eq r) t ⟨ht, le_rfl⟩).symm
+
+/-- **Solutions separate at most exponentially in the initial state**: for a field `L`-Lipschitz
+in the state, uniformly in time, `‖φ(t; t₀, x₀) - φ(t; t₀, y₀)‖ ≤ ‖x₀ - y₀‖ e^{L(t - t₀)}`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.4, without perturbation. -/
+@[blueprint "thm:continuousSystem-dist-stateTransitionMap-le"
+  (title := "Lipschitz dependence on the initial state")
+  (statement := /-- If the system is forward complete under $u$
+    (\cref{def:continuousSystem-isForwardComplete}) and $x \mapsto F(t, x, u(t))$ is
+    $L$-Lipschitz for every $t$, then for $t \ge t_0$
+    \[
+      \|\varphi(t; t_0, x_0) - \varphi(t; t_0, y_0)\| \le \|x_0 - y_0\|\, e^{L(t - t_0)}
+    \]
+    (\cref{def:continuousSystem-stateTransitionMap}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 3.4, without
+    perturbation. -/)
+  (proof := /-- Both maps are trajectories on $[t_0, \infty)$
+    (\cref{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}); apply Gr\"onwall's inequality
+    to their difference on $[t_0, t]$. -/)]
+theorem dist_stateTransitionMap_le (hfc : s.IsForwardComplete u) {L : NNReal}
+    (hL : ∀ t, LipschitzWith L (s.vectorField u t)) {t₀ t : ℝ} (ht : t₀ ≤ t) (x₀ y₀ : E) :
+    dist (s.stateTransitionMap u t t₀ x₀) (s.stateTransitionMap u t t₀ y₀) ≤
+      dist x₀ y₀ * Real.exp (L * (t - t₀)) := by
+  have hu := hasUniqueSolutions_of_lipschitz hL
+  simpa using dist_le_of_isIntegralCurveOn_Icc hL
+    (IsIntegralCurveOn.mono (isTrajectoryOn_stateTransitionMap_Ici hfc hu t₀ x₀)
+      Set.Icc_subset_Ici_self)
+    (IsIntegralCurveOn.mono (isTrajectoryOn_stateTransitionMap_Ici hfc hu t₀ y₀)
+      Set.Icc_subset_Ici_self) t ⟨ht, le_rfl⟩
+
+/-- **Solutions depend Lipschitz-continuously on the initial time and state**: for a field
+`L`-Lipschitz in the state and bounded by `B`, the solutions from `(t₀, x₀)` and `(t₀', x₀')`,
+compared after the same elapsed time `σ`, differ by at most `(2B + 1) e^{Lσ}` times the distance
+between the initial data.  Run the earlier one to the later initial time (speed `B`), then apply
+`dist_stateTransitionMap_le`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 3.2. -/
+@[blueprint "thm:continuousSystem-norm-stateTransitionMap-sub-le"
+  (title := "Lipschitz dependence on the initial time and state")
+  (statement := /-- If the system is forward complete under $u$
+    (\cref{def:continuousSystem-isForwardComplete}), and $x \mapsto F(t, x, u(t))$ is
+    $L$-Lipschitz and bounded by $B$ for every $t$, then for $\sigma \ge 0$
+    \[
+      \|\varphi(t_0 + \sigma; t_0, x_0) - \varphi(t_0' + \sigma; t_0', x_0')\|
+        \le (2B + 1)\,e^{L\sigma}\,\|(t_0, x_0) - (t_0', x_0')\|
+    \]
+    (\cref{def:continuousSystem-stateTransitionMap}), the norm on $\mathbb{R} \times E$ being the
+    maximum.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Section 3.2. -/)
+  (proof := /-- Say $t_0 \le t_0'$.  The first solution moves at most $B|t_0 - t_0'|$ between
+    the two initial times and between the two final times; from $t_0'$ on, the two solutions
+    separate at most like $e^{L\sigma}$
+    (\cref{thm:continuousSystem-dist-stateTransitionMap-le}). -/)]
+theorem norm_stateTransitionMap_sub_le (hfc : s.IsForwardComplete u) {L : NNReal}
+    (hL : ∀ t, LipschitzWith L (s.vectorField u t)) {B : ℝ}
+    (hB : ∀ t y, ‖s.vectorField u t y‖ ≤ B) (z z' : ℝ × E) {σ : ℝ} (hσ : 0 ≤ σ) :
+    ‖s.stateTransitionMap u (z.1 + σ) z.1 z.2 - s.stateTransitionMap u (z'.1 + σ) z'.1 z'.2‖ ≤
+      (2 * B + 1) * Real.exp (L * σ) * dist z z' := by
+  have hu := hasUniqueSolutions_of_lipschitz hL
+  let φ : ℝ × E → ℝ → E := fun p τ => s.stateTransitionMap u τ p.1 p.2
+  have hφ0 : ∀ p, φ p p.1 = p.2 := fun p => stateTransitionMap_self p.1 p.2
+  have hφ : ∀ p, IsIntegralCurveOn (φ p) (s.vectorField u) (Set.Ici p.1) := fun p =>
+    isTrajectoryOn_stateTransitionMap_Ici hfc hu p.1 p.2
+  have hB0 : 0 ≤ B := (norm_nonneg _).trans (hB 0 z.2)
+  have h_exp : 1 ≤ Real.exp (L * σ) := Real.one_le_exp (by positivity)
+  -- The case where `z` starts first.
+  have h_one : ∀ z z' : ℝ × E, z.1 ≤ z'.1 →
+      ‖φ z (z.1 + σ) - φ z' (z'.1 + σ)‖ ≤ (2 * B + 1) * Real.exp (L * σ) * dist z z' := by
+    intro z z' h
+    set d := dist z z'
+    have hdt : z'.1 - z.1 ≤ d := by
+      have := le_max_left (dist z.1 z'.1) (dist z.2 z'.2)
+      rw [← Prod.dist_eq, Real.dist_eq, abs_sub_comm, abs_of_nonneg (by linarith)] at this
+      exact this
+    have hdx : ‖z.2 - z'.2‖ ≤ d := by
+      rw [← dist_eq_norm]
+      exact (le_max_right _ _).trans_eq Prod.dist_eq.symm
+    have hd : 0 ≤ d := dist_nonneg
+    -- `φ z` runs from `z.1` to `z'.1` at speed `B`.
+    have h_speed : ∀ σ' τ, z.1 ≤ σ' → z.1 ≤ τ → ‖φ z τ - φ z σ'‖ ≤ B * |τ - σ'| :=
+      fun σ' τ h₁ h₂ => (hφ z).norm_sub_le (convex_Ici _) (fun _ _ => hB _ _) h₁ h₂
+    have h_gron : ‖φ z (z'.1 + σ) - φ z' (z'.1 + σ)‖ ≤
+        ‖φ z z'.1 - z'.2‖ * Real.exp (L * σ) := by
+      have h := dist_le_of_isIntegralCurveOn_Icc hL
+        ((hφ z).mono (Set.Icc_subset_Ici_iff (by linarith) |>.2 h))
+        ((hφ z').mono Set.Icc_subset_Ici_self) (z'.1 + σ) ⟨by linarith, le_rfl⟩
+      rwa [dist_eq_norm, dist_eq_norm, hφ0 z', add_sub_cancel_left] at h
+    calc ‖φ z (z.1 + σ) - φ z' (z'.1 + σ)‖
+        ≤ ‖φ z (z.1 + σ) - φ z (z'.1 + σ)‖ + ‖φ z (z'.1 + σ) - φ z' (z'.1 + σ)‖ :=
+          norm_sub_le_norm_sub_add_norm_sub _ _ _
+      _ ≤ B * d + (B * d + d) * Real.exp (L * σ) := by
+          gcongr
+          · calc ‖φ z (z.1 + σ) - φ z (z'.1 + σ)‖
+                ≤ B * |z.1 + σ - (z'.1 + σ)| := h_speed _ _ (by linarith) (by linarith)
+              _ ≤ B * d := by
+                  gcongr
+                  rw [abs_le]; constructor <;> linarith
+          · refine h_gron.trans (mul_le_mul_of_nonneg_right ?_ (Real.exp_pos _).le)
+            calc ‖φ z z'.1 - z'.2‖
+                ≤ ‖φ z z'.1 - z.2‖ + ‖z.2 - z'.2‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
+              _ ≤ B * d + d := by
+                  gcongr
+                  calc ‖φ z z'.1 - z.2‖
+                      = ‖φ z z'.1 - φ z z.1‖ := by rw [hφ0 z]
+                    _ ≤ B * |z'.1 - z.1| := h_speed _ _ le_rfl h
+                    _ ≤ B * d := by gcongr; rw [abs_of_nonneg (by linarith)]; exact hdt
+      _ ≤ (2 * B + 1) * Real.exp (L * σ) * d := by nlinarith [mul_nonneg hB0 hd]
+  rcases le_total z.1 z'.1 with h | h
+  · exact h_one z z' h
+  · rw [norm_sub_rev, dist_comm]
+    exact h_one z' z h
 
 /-! ### Invariance -/
 

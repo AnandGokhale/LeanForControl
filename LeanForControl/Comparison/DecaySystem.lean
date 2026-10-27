@@ -4,7 +4,6 @@ import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
 import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.ODEs.ComparisonLemma
-import LeanForControl.ODEs.ODE_properties
 import LeanForControl.ODEs.PicardLindelof
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
@@ -723,7 +722,7 @@ hypothesis on `α` beyond class `K` is needed. -/
   (title := "Subsolutions of the decay system decay")
   (statement := /-- Let $\alpha$ be
     class $\mathcal{K}$ on $[0,a)$.  Then there is a class $\mathcal{KL}$ function $\sigma$
-    with $\sigma(r,0) \le r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
+    with $\sigma(r,0) = r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
     in $[0,a)$ there, and is a Dini subsolution of the decay system (\cref{def:classK-decaySystem}),
     \[
       D^{+}v(s) \;\le\; -\alpha(v(s)),
@@ -746,21 +745,18 @@ hypothesis on `α` beyond class `K` is needed. -/
     $\beta$ is globally Lipschitz (\cref{lem:exists-classK-minorant-lipschitz}). -/)]
 theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
-      (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
+      (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 = r) ∧
       ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Set.Icc t₀ t) →
         v t₀ ∈ Set.Ico 0 a →
         (∀ s ∈ Set.Ico t₀ t, v s ∈ Set.Ico 0 a) →
-        (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ α.decaySystem.F s (v s) ()) →
+        (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ (-α.toFun (v s) : ℝ)) →
         v t ≤ σ.toFun (v t₀) (t - t₀) := by
   obtain ⟨_, L, β, hL_pos, hβ_le_α, hβ_lin, hLip⟩ := exists_classK_minorant_lipschitz α
   have h_base : a / 2 ∈ Set.Ioo 0 a := ⟨half_pos α.ha, half_lt_self α.ha⟩
   obtain ⟨σ, hσ_zero_s, hσ_init, hσ_deriv⟩ :=
     ClassK.exists_classKL_decaySolution β (a / 2) h_base L hL_pos
       fun x hx => hβ_lin x hx.1.le
-  refine ⟨σ, ?_, ?_⟩
-  · -- σ(r, 0) ≤ r for r ∈ [0, a)
-    intro r hr
-    exact le_of_eq (hσ_init r hr)
+  refine ⟨σ, hσ_init, ?_⟩
   · -- Trajectory bound
     intro t₀ t ht v hv_cont hv₀ hv_range hDv
     rcases eq_or_lt_of_le ht with rfl | ht_lt
@@ -829,7 +825,7 @@ theorem ClassK.exists_classKL_bound_above_level {a b : ℝ} (α : ClassK a b) :
         (∀ s ∈ Set.Ico t₀ t, η < v s → v' s ≤ -α.toFun (v s)) →
         v t ≤ max (σ.toFun (v t₀) (t - t₀)) η := by
   obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_of_subsolution
-  refine ⟨σ, hσ_zero, fun {t₀ t η v v'} ht hv hv' hv_mem h_decay => ?_⟩
+  refine ⟨σ, fun r hr => (hσ_zero r hr).le, fun {t₀ t η v v'} ht hv hv' hv_mem h_decay => ?_⟩
   by_cases h_above : ∀ s ∈ Set.Ico t₀ t, η < v s
   · -- Above `η` throughout: `v` is a subsolution of the decay system.
     refine le_max_of_le_left (hσ ht v hv (hv_mem t₀ ⟨le_rfl, ht⟩)

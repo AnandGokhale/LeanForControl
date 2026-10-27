@@ -328,6 +328,29 @@ noncomputable def ClassKInfty.add (α : ClassKInfty) (β : ClassKInfty) :
     (α.strict_mono.add β.strict_mono)
     (Filter.Tendsto.atTop_add_atTop α.tendsto_atTop β.tendsto_atTop)
 
+/-- A class `K∞` function plus a continuous, nondecreasing function vanishing at `0` is class
+`K∞`: the sum is strictly increasing because the first summand is, and unbounded because the
+second is nonnegative. -/
+@[blueprint "lem:classKInfty-addMonotone"
+  (title := "Class $\\mathcal{K}_{\\infty}$ plus a nondecreasing function")
+  (statement := /-- If $\alpha$ is class $\mathcal{K}_{\infty}$ and $f$ is continuous and
+    nondecreasing on $[0, \infty)$ with $f(0) = 0$, then $\alpha + f$ is class
+    $\mathcal{K}_{\infty}$. -/)]
+noncomputable def ClassKInfty.addMonotone (α : ClassKInfty) (f : ℝ → ℝ) (hf0 : f 0 = 0)
+    (hf_cont : ContinuousOn f (Set.Ici 0)) (hf_mono : MonotoneOn f (Set.Ici 0)) : ClassKInfty :=
+  ClassKInfty.of_strictMono (fun x => α x + f x)
+    (by simp [α.map_zero, hf0])
+    (α.continuous.add hf_cont)
+    (fun x hx y hy hxy => add_lt_add_of_lt_of_le (α.strict_mono hx hy hxy) (hf_mono hx hy hxy.le))
+    (Filter.tendsto_atTop_mono' _ (by
+      filter_upwards [Filter.eventually_ge_atTop 0] with x hx
+      exact le_add_of_nonneg_right (hf0 ▸ hf_mono (Set.mem_Ici.2 le_rfl) hx hx))
+      α.tendsto_atTop)
+
+@[simp] theorem ClassKInfty.addMonotone_apply (α : ClassKInfty) (f : ℝ → ℝ) (hf0 : f 0 = 0)
+    (hf_cont : ContinuousOn f (Set.Ici 0)) (hf_mono : MonotoneOn f (Set.Ici 0)) (x : ℝ) :
+    (α.addMonotone f hf0 hf_cont hf_mono).toFun x = α x + f x := rfl
+
 /-- Positive scalar multiple of a class K∞ function is class K∞. -/
 @[blueprint "lem:classKInfty-smul"
   (title := "Positive multiple of a class $\\mathcal{K}_{\\infty}$ function")

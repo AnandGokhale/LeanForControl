@@ -20,6 +20,13 @@ open Matrix
 
 variable {X U Y : Type*} [Fintype X] [Fintype U] [Fintype Y] [DecidableEq X] [DecidableEq U]
 
+omit [Fintype U] [Fintype Y] [DecidableEq U] in
+/-- `toEuclideanCLM`, which reads a matrix as an operator on Euclidean space, is continuous: it is
+linear on a finite-dimensional space. -/
+private theorem continuous_toEuclideanCLM : Continuous (toEuclideanCLM (n := X) (𝕜 := ℝ)) :=
+  LinearMap.continuous_of_finiteDimensional
+    (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearMap
+
 /-!
 ## P6.3 and P6.5 are proved elsewhere
 
@@ -45,7 +52,7 @@ theorem stateTransition_toLTV (sys : ContinuousLTI X U Y ℝ) (t t₀ : ℝ) :
     sys.toLTV.stateTransition t t₀ =
       toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) := by
   rw [ContinuousLTV.stateTransition,
-    show sys.toLTV.A = fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) sys.A from rfl,
+    show sys.toLTV.A = fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) sys.A from funext sys.toLTV_A,
     stateTransitionMatrix_const,
     NormedSpace.map_exp _ continuous_toEuclideanCLM, map_smul]
 

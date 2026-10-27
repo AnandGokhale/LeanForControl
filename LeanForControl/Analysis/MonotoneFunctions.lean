@@ -556,3 +556,24 @@ theorem le_max_of_hasDerivWithinAt_nonpos_above {v v' : ℝ → ℝ} {a b η : �
       linarith [h_nonpos x hx h_above]) ht
   calc v t ≤ max (v a) η + ε * (1 + (t - a)) := h_barrier
     _ = max (v a) η + δ := by rw [div_mul_cancel₀ δ h_len.ne']
+
+/-- **The weak triangle inequality** (Sontag): a nondecreasing, nonnegative `f` on `[0, ∞)`
+satisfies `f(a + b) ≤ f(2a) + f(2b)`, since `a + b ≤ 2 max(a, b)`.  The standard way to split a
+gain applied to a sum, as in cascade and small-gain arguments for input-to-state stability. -/
+@[blueprint "lem:monotoneOn-weak-triangle"
+  (title := "Weak triangle inequality")
+  (latexEnv := "lemma")
+  (statement := /-- If $f$ is nondecreasing and nonnegative on $[0, \infty)$, then
+    $f(a + b) \le f(2a) + f(2b)$ for all $a, b \ge 0$.
+
+    Reference: Sontag, \emph{Input to state stability: basic concepts and results} (2008). -/)
+  (proof := /-- $a + b \le 2\max(a, b)$, so $f(a + b)$ is at most whichever of $f(2a)$, $f(2b)$
+    is larger, and the other is nonnegative. -/)]
+theorem MonotoneOn.weak_triangle {f : ℝ → ℝ} (hf : MonotoneOn f (Ici 0))
+    (hf0 : ∀ y, 0 ≤ y → 0 ≤ f y) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
+    f (a + b) ≤ f (2 * a) + f (2 * b) := by
+  rcases le_total a b with h | h
+  · exact (hf (mem_Ici.2 (add_nonneg ha hb)) (mem_Ici.2 (by positivity)) (by linarith)).trans
+      (le_add_of_nonneg_left (hf0 _ (by positivity)))
+  · exact (hf (mem_Ici.2 (add_nonneg ha hb)) (mem_Ici.2 (by positivity)) (by linarith)).trans
+      (le_add_of_nonneg_right (hf0 _ (by positivity)))

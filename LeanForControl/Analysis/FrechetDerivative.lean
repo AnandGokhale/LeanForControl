@@ -7,6 +7,7 @@ import Mathlib.Analysis.Normed.Module.Convex
 import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.MetricSpace.Thickening
+import Mathlib.Analysis.InnerProductSpace.Calculus
 import Architect
 
 /-!
@@ -144,3 +145,33 @@ theorem fderiv_eq_fderiv_uncurry_comp_inr {V : ℝ → E → F} {t : ℝ} {x : E
   (h.hasFDerivAt.comp x ((hasFDerivAt_const t x).prodMk (hasFDerivAt_id x))).fderiv
 
 end Partial
+
+section InnerProduct
+
+/-- **The gradient of a quadratic form**: `‖∂/∂x ⟪x, M x⟫‖ ≤ 2‖M‖‖x‖`. -/
+@[blueprint "lem:norm-fderiv-inner-apply-self-le"
+  (title := "Gradient of a quadratic form")
+  (statement := /-- For a bounded operator $M$ on a real inner product space,
+    $\bigl\|\partial_x \langle x, Mx \rangle\bigr\| \le 2\|M\|\|x\|$. -/)
+  (proof := /-- The derivative is $z \mapsto \langle x, Mz \rangle + \langle z, Mx \rangle$;
+    apply Cauchy--Schwarz to each term. -/)]
+theorem norm_fderiv_inner_apply_self_le {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] (M : E →L[ℝ] E) (x : E) :
+    ‖fderiv ℝ (fun y => inner ℝ y (M y)) x‖ ≤ 2 * ‖M‖ * ‖x‖ := by
+  have h : HasFDerivAt (fun y => inner ℝ y (M y))
+      ((fderivInnerCLM ℝ (x, M x)).comp ((ContinuousLinearMap.id ℝ E).prod M)) x :=
+    (hasFDerivAt_id x).inner ℝ M.hasFDerivAt
+  rw [h.fderiv]
+  refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun z => ?_
+  simp only [ContinuousLinearMap.comp_apply, ContinuousLinearMap.prod_apply,
+    ContinuousLinearMap.id_apply, fderivInnerCLM_apply, Real.norm_eq_abs]
+  calc |inner ℝ x (M z) + inner ℝ z (M x)|
+      ≤ ‖x‖ * ‖M z‖ + ‖z‖ * ‖M x‖ :=
+        (abs_add_le _ _).trans (add_le_add (abs_real_inner_le_norm _ _)
+          (abs_real_inner_le_norm _ _))
+    _ ≤ ‖x‖ * (‖M‖ * ‖z‖) + ‖z‖ * (‖M‖ * ‖x‖) :=
+        add_le_add (mul_le_mul_of_nonneg_left (M.le_opNorm z) (norm_nonneg _))
+          (mul_le_mul_of_nonneg_left (M.le_opNorm x) (norm_nonneg _))
+    _ = 2 * ‖M‖ * ‖x‖ * ‖z‖ := by ring
+
+end InnerProduct

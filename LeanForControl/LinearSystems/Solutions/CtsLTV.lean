@@ -1,4 +1,5 @@
-import LeanForControl.LinearSystems.Solutions.PeanoBaker
+import LeanForControl.ODEs.PeanoBaker
+import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Architect
@@ -21,14 +22,6 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 namespace LinearSystems
 
 open Matrix MeasureTheory
-
-variable {X : Type*} [Fintype X] [DecidableEq X]
-
-/-- `toEuclideanCLM`, which reads a matrix as an operator on Euclidean space, is continuous: it is
-linear on a finite-dimensional space. -/
-theorem continuous_toEuclideanCLM : Continuous (toEuclideanCLM (n := X) (𝕜 := ℝ)) :=
-  LinearMap.continuous_of_finiteDimensional
-    (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearMap
 
 namespace ContinuousLTV
 

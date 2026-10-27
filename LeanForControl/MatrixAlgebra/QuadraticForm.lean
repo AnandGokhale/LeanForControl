@@ -5,7 +5,6 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Data.Real.StarOrdered
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
 import Mathlib.Topology.Order.Compact
-import LeanForControl.Analysis.FrechetDerivative
 import Architect
 
 /-!
