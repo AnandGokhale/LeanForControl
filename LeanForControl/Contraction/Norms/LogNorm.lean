@@ -16,7 +16,8 @@ equality `μ(A) = sup_{x ≠ 0} ⟦A x, x⟧ / ‖x‖²`, for every regular pai
 The basic properties of `μ` then follow from those of a pairing, through the regular pairing of the
 norm: subadditivity, positive homogeneity, the translation property `μ(A + c I) = μ(A) + c`, the
 norm of difference property `|μ(A) - μ(B)| ≤ ‖A - B‖`, and the product property
-`-μ(A) ‖x‖ ≤ ‖A x‖`.
+`-μ(A) ‖x‖ ≤ ‖A x‖`.  A change of coordinates that preserves the norm preserves the log norm
+(`logNorm_conj`).
 
 References: F. Bullo, *Contraction Theory for Dynamical Systems* (ed. 1.0, 2022), equation (2.22),
 Remark 2.9, Lemma 2.10 and Definition 2.17; A. V. Proskurnikov and F. Bullo, *Regular Pairings for
@@ -264,3 +265,39 @@ theorem neg_logNorm_mul_norm_le (A : E →L[ℝ] E) (x : E) : -logNorm A * ‖x�
   have h₂ := (abs_le.1 ((ofNorm E).abs_le_norm_mul_norm (A x) x)).1
   have hx' : 0 < ‖x‖ := norm_pos_iff.2 hx
   nlinarith
+
+/-- **A norm-preserving change of coordinates preserves the operator norm**: if `e : E → F` is
+linear, invertible and `‖e x‖ = ‖x‖`, then `‖e B e⁻¹‖ = ‖B‖`. -/
+theorem opNorm_conj {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] (e : E ≃L[ℝ] F)
+    (he : ∀ x, ‖e x‖ = ‖x‖) (B : E →L[ℝ] E) : ‖(e ∘L B ∘L e.symm : F →L[ℝ] F)‖ = ‖B‖ := by
+  rw [← e.conjContinuousAlgEquiv_apply]
+  have he' (y : F) : ‖e.symm y‖ = ‖y‖ := by rw [← he, e.apply_symm_apply]
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun y => ?_)
+    (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_)
+  · rw [ContinuousLinearEquiv.conjContinuousAlgEquiv_apply_apply, he, ← he' y]
+    exact B.le_opNorm _
+  · calc ‖B x‖ = ‖e.conjContinuousAlgEquiv B (e x)‖ := by simp [he]
+      _ ≤ ‖e.conjContinuousAlgEquiv B‖ * ‖e x‖ := ContinuousLinearMap.le_opNorm _ _
+      _ = ‖e.conjContinuousAlgEquiv B‖ * ‖x‖ := by rw [he]
+
+/-- **A norm-preserving change of coordinates preserves the log norm**: if `e : E → F` is linear,
+invertible and `‖e x‖ = ‖x‖`, then `μ(e A e⁻¹) = μ(A)`. -/
+@[blueprint "lem:logNorm-conj"
+  (title := "Log norm under a norm-preserving change of coordinates")
+  (latexEnv := "lemma")
+  (statement := /-- Let $e : E \to F$ be an invertible bounded linear map with $\|e x\| = \|x\|$
+    for all $x$.  Then $\mu(e A e^{-1}) = \mu(A)$ for every bounded linear operator $A$ on $E$
+    (\cref{def:logNorm}). -/)
+  (proof := /-- Conjugation by $e$ preserves operator norms (both $\|e B e^{-1} y\| \le \|B\|
+    \|y\|$ and $\|B x\| = \|e B e^{-1} (e x)\| \le \|e B e^{-1}\| \|x\|$), and
+    $e(I + hA)e^{-1} = I + h \, eAe^{-1}$, so $\|I + h \, eAe^{-1}\| = \|I + hA\|$ for every
+    $h$. -/)]
+theorem logNorm_conj {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] (e : E ≃L[ℝ] F)
+    (he : ∀ x, ‖e x‖ = ‖x‖) (A : E →L[ℝ] E) :
+    logNorm (e ∘L A ∘L e.symm : F →L[ℝ] F) = logNorm A := by
+  rw [← e.conjContinuousAlgEquiv_apply]
+  unfold logNorm
+  congr 1
+  ext h
+  rw [← opNorm_conj e he (1 + h • A), ← e.conjContinuousAlgEquiv_apply, map_add, map_one,
+    map_smul]

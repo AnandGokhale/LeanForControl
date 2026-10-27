@@ -22,6 +22,7 @@ import LeanForControl.Contraction.Norms.Defs
 import LeanForControl.Contraction.Norms.LogNorm
 import LeanForControl.Contraction.Norms.CurveNormDerivative
 import LeanForControl.Contraction.Norms.RegularPairing
+import LeanForControl.Contraction.Norms.WeightedNorm
 import LeanForControl.LinearSystems.Continuous
 import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Controllability.Defs
