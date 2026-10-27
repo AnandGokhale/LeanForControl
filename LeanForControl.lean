@@ -1,7 +1,4 @@
 import LeanForControl.Analysis.Continuity
-import LeanForControl.Analysis.ConvexAnalysis.BaillonHaddad
-import LeanForControl.Analysis.ConvexAnalysis.Prox
-import LeanForControl.Analysis.ConvexAnalysis.Subdifferential
 import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.Analysis.IntegralCurves
@@ -10,7 +7,6 @@ import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.Norm
 import LeanForControl.Analysis.OmegaLimit
-import LeanForControl.Analysis.OneSidedLipschitz
 import LeanForControl.Analysis.PositiveDefinite
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.Analysis.SublevelSet

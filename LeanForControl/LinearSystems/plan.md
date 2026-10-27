@@ -236,8 +236,8 @@ Two further connections between `Φ` and the nonlinear state transition map `φ`
 - **`Φ` is the derivative of the flow** — not planned as a public result. Differentiability
   of solutions in the initial state (autonomous form, applied to the time-augmented system) is
   proved privately in `Stability/Continuous/Converse.lean`, its only user.  Contraction and
-  Coppel's inequality go through Dini derivatives and one-sided Lipschitz bounds
-  (`Analysis/OneSidedLipschitz.lean`), which need no derivative of the flow.
+  Coppel's inequality will go through Dini derivatives and one-sided Lipschitz bounds (work in
+  progress on the `convex-analysis` branch), which need no derivative of the flow.
 
 ## Status: blueprint coverage
 
