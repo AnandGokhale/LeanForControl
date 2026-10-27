@@ -2,7 +2,7 @@ import LeanForControl.Contraction.Norms.RegularPairing
 import Architect
 
 /-!
-# `Contraction.Norms.Characterization` — what a regular pairing says about the norm
+# `Contraction.Norms.CurveNormDerivative` — differentiating the norm along a curve
 
 * `le_ofNorm`, `neg_ofNorm_neg_le` — the Deimling sandwich: every regular pairing lies between the
   left and the right derivative of the norm.
