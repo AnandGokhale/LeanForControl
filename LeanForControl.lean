@@ -56,6 +56,7 @@ import LeanForControl.LinearSystems.Stability.Discrete.LyapunovLTV
 import LeanForControl.LinearSystems.Stability.Discrete.Schur
 import LeanForControl.MatrixAlgebra.CayleyHamilton
 import LeanForControl.MatrixAlgebra.Complexify
+import LeanForControl.MatrixAlgebra.EuclideanCLM
 import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.PosDef
 import LeanForControl.MatrixAlgebra.QuadraticForm

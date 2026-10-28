@@ -2,6 +2,7 @@ import Mathlib.Analysis.CStarAlgebra.Matrix
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.Complexify
+import LeanForControl.MatrixAlgebra.EuclideanCLM
 import LeanForControl.MatrixAlgebra.Exponential
 import Mathlib.Analysis.Matrix.Normed
 import Architect
@@ -390,15 +391,6 @@ private theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwit
         rw [← hshift]
         exact Real.exp_le_exp.2 (by linarith)
     _ = M / c * Real.exp (-γ * t) := by field_simp
-
-/-- The matrices' Euclidean operators are bounded by their `L∞` norms, up to a constant: a linear
-map between finite-dimensional spaces is continuous.  No explicit constant is needed. -/
-private lemma exists_norm_toEuclideanCLM_le :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ M : Matrix X X ℝ, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) M‖ ≤ C * ‖M‖ := by
-  let T : Matrix X X ℝ →L[ℝ] (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
-    LinearMap.toContinuousLinearMap
-      (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearEquiv.toLinearMap
-  exact ⟨‖T‖, norm_nonneg _, fun M => T.le_opNorm M⟩
 
 /-- **Exponential decay of the state under a Hurwitz matrix**, in the Euclidean norm: the operator
 `e^{At}` on `ℝ^X` has norm at most `k e^{-γt}`. -/

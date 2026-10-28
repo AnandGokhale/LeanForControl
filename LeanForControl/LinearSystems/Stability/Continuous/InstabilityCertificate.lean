@@ -402,7 +402,7 @@ private lemma exists_positive_quadraticForm_direction
       rw [hx] at hqx
       simp at hqx
     · unfold quadraticForm
-      rw [Matrix.inner_toEuclideanCLM]
+      rw [smul_euclidean_def, Matrix.inner_toEuclideanCLM]
       change 0 < x ⬝ᵥ H *ᵥ x
       simpa only [B, Matrix.toBilin'_apply'] using hqx
   · refine ⟨WithLp.toLp 2 y, ?_, ?_⟩
@@ -411,7 +411,7 @@ private lemma exists_positive_quadraticForm_direction
       rw [hy] at hqy
       simp at hqy
     · unfold quadraticForm
-      rw [Matrix.inner_toEuclideanCLM]
+      rw [smul_euclidean_def, Matrix.inner_toEuclideanCLM]
       change 0 < y ⬝ᵥ H *ᵥ y
       simpa only [B, Matrix.toBilin'_apply'] using hqy
 

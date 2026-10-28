@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Solutions.CtsLTV
+import LeanForControl.MatrixAlgebra.EuclideanCLM
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Architect
 
@@ -16,16 +17,9 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6.
 
 namespace LinearSystems
 
-open Matrix
+open Matrix NormedSpace
 
 variable {X U Y : Type*} [Fintype X] [Fintype U] [Fintype Y] [DecidableEq X] [DecidableEq U]
-
-omit [Fintype U] [Fintype Y] [DecidableEq U] in
-/-- `toEuclideanCLM`, which reads a matrix as an operator on Euclidean space, is continuous: it is
-linear on a finite-dimensional space. -/
-private theorem continuous_toEuclideanCLM : Continuous (toEuclideanCLM (n := X) (𝕜 := ℝ)) :=
-  LinearMap.continuous_of_finiteDimensional
-    (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearMap
 
 /-!
 ## P6.3 and P6.5 are proved elsewhere
@@ -50,7 +44,7 @@ open scoped Matrix.Norms.Operator in
     $\exp$ commutes with the continuous algebra map from matrices to operators. -/)]
 theorem stateTransition_toLTV (sys : ContinuousLTI X U Y ℝ) (t t₀ : ℝ) :
     sys.toLTV.stateTransition t t₀ =
-      toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) := by
+      toEuclideanCLM (n := X) (𝕜 := ℝ) (exp ((t - t₀) • sys.A)) := by
   rw [ContinuousLTV.stateTransition,
     show sys.toLTV.A = fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) sys.A from funext sys.toLTV_A,
     stateTransitionMatrix_const,
@@ -68,8 +62,8 @@ theorem stateTransition_toLTV (sys : ContinuousLTI X U Y ℝ) (t t₀ : ℝ) :
     matrix, rewritten by \cref{thm:continuousLTI-stateTransition-toLTV}. -/)]
 theorem eq_exp_of_isTrajectoryOn (sys : ContinuousLTI X U Y ℝ) {x : ℝ → EuclideanSpace ℝ X}
     {t₀ t₁ : ℝ} (hx : sys.IsTrajectoryOn 0 x (Set.Icc t₀ t₁)) {t : ℝ} (ht : t ∈ Set.Icc t₀ t₁) :
-    x t = toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) (x t₀) := by
-  rw [← stateTransition_toLTV]
+    x t = exp ((t - t₀) • sys.A) • x t₀ := by
+  rw [smul_euclidean_def, ← stateTransition_toLTV]
   exact sys.toLTV.eq_homogeneousResponse_of_isTrajectoryOn continuous_const hx ht
 
 /-- **Variation of constants, time-invariant case.** For an LTI system the forced response is the
@@ -91,9 +85,9 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 6. -/
 theorem forcedResponse_toLTV (sys : ContinuousLTI X U Y ℝ) (u : ℝ → EuclideanSpace ℝ U)
     (t₀ : ℝ) (x₀ : EuclideanSpace ℝ X) (t : ℝ) :
     sys.toLTV.forcedResponse u t₀ x₀ t =
-      toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) x₀ +
-        ∫ τ in t₀..t, toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - τ) • sys.A))
-          (toEuclideanLin sys.B (u τ)) := by
+      exp ((t - t₀) • sys.A) • x₀ +
+        ∫ τ in t₀..t, exp ((t - τ) • sys.A) •
+          toEuclideanLin sys.B (u τ) := by
   simp only [ContinuousLTV.forcedResponse, stateTransition_toLTV]
   rfl
 
@@ -112,9 +106,9 @@ theorem forcedResponse_toLTV (sys : ContinuousLTI X U Y ℝ) (u : ℝ → Euclid
 theorem isTrajectory (sys : ContinuousLTI X U Y ℝ) {u : ℝ → EuclideanSpace ℝ U}
     (hu : Continuous u) (t₀ : ℝ) (x₀ : EuclideanSpace ℝ X) :
     sys.IsTrajectory u (fun t =>
-      toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - t₀) • sys.A)) x₀ +
-        ∫ τ in t₀..t, toEuclideanCLM (n := X) (𝕜 := ℝ) (NormedSpace.exp ((t - τ) • sys.A))
-          (toEuclideanLin sys.B (u τ))) := by
+      exp ((t - t₀) • sys.A) • x₀ +
+        ∫ τ in t₀..t, exp ((t - τ) • sys.A) •
+          toEuclideanLin sys.B (u τ)) := by
   convert sys.toLTV.isTrajectory_forcedResponse continuous_const continuous_const hu t₀ x₀
     using 1
   exact funext fun t => (forcedResponse_toLTV sys u t₀ x₀ t).symm

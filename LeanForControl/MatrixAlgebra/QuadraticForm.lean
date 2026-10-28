@@ -5,6 +5,7 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Data.Real.StarOrdered
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
 import Mathlib.Topology.Order.Compact
+import LeanForControl.MatrixAlgebra.EuclideanCLM
 import Architect
 
 /-!
@@ -46,7 +47,7 @@ Reference: standard quadratic Lyapunov-function construction. -/
   -/)]
 noncomputable def quadraticForm
     (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝⁿ) : ℝ :=
-  inner ℝ x (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P x)
+  inner ℝ x (P • x)
 
 /-- The quadratic form associated to `P`, centered at an equilibrium `x_eq`.
 
@@ -72,7 +73,7 @@ lemma quadraticForm_eq_toQuadraticMap' (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝ
     quadraticForm P x = P.toQuadraticMap' (WithLp.ofLp x) := by
   rw [quadraticForm, Matrix.toQuadraticMap', LinearMap.BilinMap.toQuadraticMap_apply,
     Matrix.toLinearMap₂'_apply']
-  simp only [Matrix.ofLp_toEuclideanCLM, PiLp.inner_apply, dotProduct]
+  simp only [PiLp.inner_apply, dotProduct]
   exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
 
 /-- A positive-definite matrix has a positive quadratic form away from zero.
@@ -88,7 +89,7 @@ lemma quadraticForm_pos (P : Matrix (Fin n) (Fin n) ℝ) (hP : P.PosDef)
 Original: normalization infrastructure for positive-definite quadratic forms. -/
 lemma quadraticForm_smul (P : Matrix (Fin n) (Fin n) ℝ) (a : ℝ) (x : ℝⁿ) :
     quadraticForm P (a • x) = a ^ 2 * quadraticForm P x := by
-  simp only [quadraticForm, map_smul, real_inner_smul_left, real_inner_smul_right,
+  simp only [quadraticForm, smul_comm P a, real_inner_smul_left, real_inner_smul_right,
     pow_two]
   ring
 
@@ -102,8 +103,8 @@ lemma abs_quadraticForm_le
       ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖ ^ 2 := by
   rw [quadraticForm]
   calc
-    |inner ℝ x (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P x)| ≤
-        ‖x‖ * ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P x‖ :=
+    |inner ℝ x (P • x)| ≤
+        ‖x‖ * ‖P • x‖ :=
       abs_real_inner_le_norm _ _
     _ ≤ ‖x‖ *
         (‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P‖ * ‖x‖) := by
@@ -182,16 +183,14 @@ Reference: the product rule for the standard quadratic Lyapunov function. -/
 theorem fderiv_centeredQuadraticForm_apply
     (P : Matrix (Fin n) (Fin n) ℝ) (x_eq x v : ℝⁿ) :
     fderiv ℝ (centeredQuadraticForm P x_eq) x v =
-      inner ℝ (x - x_eq) (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P v) +
-        inner ℝ v
-          (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P (x - x_eq)) := by
+      inner ℝ (x - x_eq) (P • v) + inner ℝ v (P • (x - x_eq)) := by
   have hy : HasFDerivAt (fun z : ℝⁿ ↦ z - x_eq) (1 : ℝⁿ →L[ℝ] ℝⁿ) x :=
     (hasFDerivAt_id x).sub_const x_eq
   have hPy := (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P).hasFDerivAt.comp x hy
   have hinner := hy.inner ℝ hPy
   have happ := congrArg (fun L : ℝⁿ →L[ℝ] ℝ ↦ L v) hinner.fderiv
   unfold centeredQuadraticForm quadraticForm
-  simpa [Function.comp_def] using happ
+  simpa [Function.comp_def, smul_euclidean_def] using happ
 
 /-- The derivative of a centered, possibly indefinite matrix quadratic form
 along `y' = A y` is represented by `P A + Aᵀ P`.
@@ -199,10 +198,10 @@ along `y' = A y` is represented by `P A + Aᵀ P`.
 Reference: the product rule for quadratic forms. -/
 theorem fderiv_centeredQuadraticForm_apply_matrix
     (A P : Matrix (Fin n) (Fin n) ℝ) (x_eq x : ℝⁿ) :
-    fderiv ℝ (centeredQuadraticForm P x_eq) x
-        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
+    fderiv ℝ (centeredQuadraticForm P x_eq) x (A • (x - x_eq)) =
       quadraticForm (P * A + Aᵀ * P) (x - x_eq) := by
   rw [fderiv_centeredQuadraticForm_apply]
+  simp only [smul_euclidean_def]
   let y := x - x_eq
   let a := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A
   let p := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
@@ -215,6 +214,7 @@ theorem fderiv_centeredQuadraticForm_apply_matrix
   change inner ℝ y ((p * a + star a * p) y) = _
   rw [← htranspose]
   unfold quadraticForm
+  rw [smul_euclidean_def]
   congr 2
   simp [p, a]
 
@@ -306,7 +306,7 @@ theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
     {c : ℝ} (hc : 0 < c) :
     ∃ r > 0, ∀ x : ℝⁿ, ‖x - x_eq‖ < r →
       |fderiv ℝ (centeredQuadraticForm M x_eq) x
-          (f x - f x_eq - Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq))| ≤
+          (f x - f x_eq - A • (x - x_eq))| ≤
         c * ‖x - x_eq‖ ^ 2 := by
   let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M
   let η : ℝ := c / (4 * (‖p‖ + 1))
@@ -323,7 +323,7 @@ theorem exists_abs_fderiv_centeredQuadraticForm_remainder_le
   refine ⟨r, hr, ?_⟩
   intro x hx
   let y : ℝⁿ := x - x_eq
-  let e : ℝⁿ := f x - f x_eq - Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
+  let e : ℝⁿ := f x - f x_eq - A • y
   have he_norm : ‖e‖ ≤ η * ‖y‖ := hrem (by rwa [dist_eq_norm])
   have herror_abs :
       |fderiv ℝ (centeredQuadraticForm M x_eq) x e| ≤ 2 * ‖p‖ * ‖y‖ * ‖e‖ := by

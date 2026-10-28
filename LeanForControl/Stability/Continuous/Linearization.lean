@@ -85,18 +85,18 @@ private theorem exists_centeredQuadraticForm_decay
   intro x hx
   let y : ℝⁿ := x - x_eq
   let e : ℝⁿ := f x - f x_eq -
-    Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
+    A • y
   have herror : fderiv ℝ (centeredQuadraticForm P x_eq) x e ≤ (1 / 2 : ℝ) * ‖y‖ ^ 2 :=
     (le_abs_self _).trans (hrem x hx)
   have hf_split : f x =
-      Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y + e := by
+      A • y + e := by
     dsimp [e]
     rw [heq]
     abel
   rw [hf_split, map_add]
   calc
     fderiv ℝ (centeredQuadraticForm P x_eq) x
-          (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y) +
+          (A • y) +
         fderiv ℝ (centeredQuadraticForm P x_eq) x e
         ≤ -‖y‖ ^ 2 + (1 / 2 : ℝ) * ‖y‖ ^ 2 := by
           rw [fderiv_centeredQuadraticForm_linear hLyap]
@@ -267,14 +267,14 @@ private theorem unstable_of_quadratic_certificate {Y : Type*} {s : ContinuousSys
   · intro x hx
     let y : ℝⁿ := x - x_eq
     let e : ℝⁿ := f x - f x_eq -
-      Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y
+      A • y
     have hy_r : ‖y‖ < r := by
       have : ‖x - x_eq‖ ≤ r / 2 := by simpa [ρ] using hx
       dsimp [y]
       linarith
     have herror_bound : |fderiv ℝ V x e| ≤ (m / 2) * ‖y‖ ^ 2 := hrem x hy_r
     have hf_split : f x =
-        Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y + e := by
+        A • y + e := by
       dsimp [e]
       rw [heq]
       abel
@@ -283,7 +283,7 @@ private theorem unstable_of_quadratic_certificate {Y : Type*} {s : ContinuousSys
       abel
     have hlinear :
         fderiv ℝ V x
-            (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y) =
+            (A • y) =
           Matrix.quadraticForm G y + 2 * α * V x := by
       rw [show V = Matrix.centeredQuadraticForm H x_eq by rfl]
       rw [Matrix.fderiv_centeredQuadraticForm_apply_matrix]
@@ -362,7 +362,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
     this is \cref{thm:positive-real-eigenvalue-unstable} at $x_{\mathrm{eq}} = 0$. -/)]
 theorem unstable_linear_of_eigenvalue_re_pos {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
     (A : Matrix (Fin n) (Fin n) ℝ)
-    (hF : ∀ t x, s.F t x () = Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A x)
+    (hF : ∀ t x, s.F t x () = A • x)
     (mu : ℂ) (v : Fin n → ℂ) (hv : v ≠ 0) (hAv : A.complexify *ᵥ v = mu • v)
     (hmu : 0 < mu.re) :
     s.Unstable 0 :=

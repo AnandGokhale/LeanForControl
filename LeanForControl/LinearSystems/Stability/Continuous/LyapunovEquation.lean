@@ -776,7 +776,7 @@ theorem fderiv_centeredQuadraticForm_linear_general
     (hEq : ContinuousLyapunovEquation A P Q)
     (x_eq x : ℝⁿ) :
     fderiv ℝ (centeredQuadraticForm P x_eq) x
-        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
+        (A • (x - x_eq)) =
       -quadraticForm Q (x - x_eq) := by
   rw [fderiv_centeredQuadraticForm_apply]
   let y := x - x_eq
@@ -799,11 +799,12 @@ theorem fderiv_centeredQuadraticForm_linear_general
       simpa using h
     change p * a + Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) Aᵀ * p = -q at h'
     rwa [htranspose] at h'
+  simp only [smul_euclidean_def]
   rw [← ContinuousLinearMap.adjoint_inner_right]
   rw [← inner_add_right]
   change inner ℝ y ((p * a + star a * p) y) = -quadraticForm Q y
   rw [hclm]
-  simp [quadraticForm, q]
+  simp [quadraticForm, q, smul_euclidean_def]
 
 /-- For identity forcing, the quadratic derivative along the linear vector field is
 `-‖x - x_eq‖²`.
@@ -823,7 +824,7 @@ theorem fderiv_centeredQuadraticForm_linear
     (hEq : ContinuousLyapunovEquation A P 1)
     (x_eq x : ℝⁿ) :
     fderiv ℝ (centeredQuadraticForm P x_eq) x
-        (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A (x - x_eq)) =
+        (A • (x - x_eq)) =
       -‖x - x_eq‖ ^ 2 := by
   rw [fderiv_centeredQuadraticForm_linear_general hEq]
   simp [quadraticForm]

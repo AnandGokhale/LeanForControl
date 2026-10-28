@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Stability.DefsStability
+import LeanForControl.MatrixAlgebra.EuclideanCLM
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTV
 import LeanForControl.Stability.Continuous.LyapunovFunctions
 import LeanForControl.Analysis.LieDerivative
@@ -42,17 +43,6 @@ namespace LinearSystems
 open Matrix Set MeasureTheory
 
 variable {X : Type*} [Fintype X] [DecidableEq X]
-
-/-- The transpose of a matrix is the adjoint of the operator it defines on Euclidean space. -/
-@[blueprint "lem:toEuclideanCLM-transpose"
-  (title := "The transpose is the adjoint")
-  (latexEnv := "lemma")
-  (statement := /-- For a real square matrix $M$, the operator of $M^{\mathsf T}$ on Euclidean
-    space is the adjoint of the operator of $M$. -/)]
-theorem toEuclideanCLM_transpose (M : Matrix X X ℝ) :
-    toEuclideanCLM (n := X) (𝕜 := ℝ) Mᵀ = star (toEuclideanCLM (n := X) (𝕜 := ℝ) M) := by
-  rw [← conjTranspose_eq_transpose_of_trivial, ← Matrix.star_eq_conjTranspose]
-  exact (toEuclideanCLM (n := X) (𝕜 := ℝ)).map_star' M
 
 /-- **For constant matrices the differential Lyapunov equation is the algebraic one**: a
 constant `P` has zero derivative, so `-Ṗ = PA + AᵀP + Q` reads `PA + AᵀP = -Q`. -/
