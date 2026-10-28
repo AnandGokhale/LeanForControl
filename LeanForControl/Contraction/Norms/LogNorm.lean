@@ -264,6 +264,13 @@ theorem abs_logNorm_sub_logNorm_le (A B : E →L[ℝ] E) :
     linarith [logNorm_le_norm (A - B)]
   exact abs_sub_le_iff.2 ⟨h A B, by rw [norm_sub_rev]; exact h B A⟩
 
+/-- The log norm is `1`-Lipschitz, by the norm of difference property; in particular it is
+continuous. -/
+lemma lipschitzWith_logNorm : LipschitzWith 1 (logNorm : (E →L[ℝ] E) → ℝ) :=
+  LipschitzWith.of_dist_le_mul fun A B => by
+    rw [NNReal.coe_one, one_mul, Real.dist_eq, dist_eq_norm]
+    exact abs_logNorm_sub_logNorm_le A B
+
 /-- **The log norm is convex**, by subadditivity and positive homogeneity. -/
 lemma convexOn_logNorm : ConvexOn ℝ univ (logNorm : (E →L[ℝ] E) → ℝ) :=
   ⟨convex_univ, fun A _ B _ a b ha hb _ => by
@@ -330,6 +337,15 @@ theorem opNorm_symm_le_of_logNorm_neg (A : E ≃L[ℝ] E) (hA : μ (A : E →L[�
   rw [ContinuousLinearEquiv.coe_coe, A.apply_symm_apply] at h
   rw [ContinuousLinearEquiv.coe_coe, div_mul_eq_mul_div, le_div_iff_of_neg hA]
   linarith
+
+/-- The log norm is continuous. -/
+lemma continuous_logNorm : Continuous (logNorm : (E →L[ℝ] E) → ℝ) := by
+  rcases subsingleton_or_nontrivial E with hE | hE
+  · exact continuous_of_const fun A B => by
+      congr 1
+      ext x
+      exact Subsingleton.elim _ _
+  · exact lipschitzWith_logNorm.continuous
 
 /-- **A norm-preserving change of coordinates preserves the operator norm**: if `e : E → F` is
 linear, invertible and `‖e x‖ = ‖x‖`, then `‖e B e⁻¹‖ = ‖B‖`. -/
