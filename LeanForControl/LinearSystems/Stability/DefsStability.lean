@@ -150,7 +150,9 @@ noncomputable def lyapunovIntegrand (s : ContinuousLTV E U Y) (Q : ℝ → E →
   star (s.stateTransition τ t) * Q τ * s.stateTransition τ t
 
 /-- **Khalil's solution of the differential Lyapunov equation**,
-`P(t) = ∫_t^∞ Φ(τ, t)* Q(τ) Φ(τ, t) dτ`.
+`P(t) = ∫_t^∞ Φ(τ, t)* Q(τ) Φ(τ, t) dτ`.  It is a Bochner integral, so it is `0` when the integrand
+is not integrable on `(t, ∞)`; it converges when the system is exponentially stable and `Q` is
+continuous and bounded, the hypotheses of the results that compute it.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
 @[blueprint "def:continuousLTV-lyapunovIntegral"

@@ -504,8 +504,13 @@ def existenceInterval (s : ContinuousSystem E U Y) (u : ℝ → U) (t₀ : ℝ) 
 
 open scoped Classical in
 /-- The **state transition map** `φ(t; t₀, x₀)`: the value at `t` of a trajectory from `x₀` at
-time `t₀` that exists up to `t`, and `x₀` outside the existence interval.  With unique solutions
-(`HasUniqueSolutions`) the choice of trajectory does not matter. -/
+time `t₀` that exists up to `t`, and `x₀` outside the existence interval (before `t₀`, or past a
+finite escape time).
+
+It is meant for systems with unique solutions (`HasUniqueSolutions`), which the results about its
+trajectories assume.  Without uniqueness the trajectory is chosen separately for each `t`, so
+`t ↦ φ(t; t₀, x₀)` may splice different solutions and need not be a trajectory; there the honest
+object is the set of solutions from `x₀`, which is how the stability definitions are stated. -/
 @[blueprint "def:continuousSystem-stateTransitionMap"
   (title := "State transition map")
   (statement := /-- The \emph{state transition map} $\varphi(t; t_0, x_0)$ of $s$ under $u$ is
@@ -1021,6 +1026,7 @@ theorem isCaratheodoryTrajectoryOn_Icc_iff {s : ContinuousSystem E U Y} {u : ℝ
     have h_sol : IsIntegralSolution t₀ t₁ x (x t₀) (s.vectorField u) := fun t ht => by
       rw [h_uIcc] at ht
       have h_eq := (h t₀ (left_mem_Icc.2 hle) t ht ht.1).2
+      refine ⟨h_int t₀ (left_mem_Icc.2 hle) t ht, ?_⟩
       rw [← h_eq]
       abel
     have h_curve := (isIntegralSolution_iff_isIntegralCurveOn hg').1 h_sol
@@ -1029,7 +1035,7 @@ theorem isCaratheodoryTrajectoryOn_Icc_iff {s : ContinuousSystem E U Y} {u : ℝ
     intro h a ha b hb _
     have h_sol := (isIntegralSolution_iff_isIntegralCurveOn hg').2 (by rwa [h_uIcc])
     refine ⟨h_int a ha b hb, ?_⟩
-    rw [h_sol b (h_uIcc ▸ hb), h_sol a (h_uIcc ▸ ha), add_sub_add_left_eq_sub,
+    rw [(h_sol b (h_uIcc ▸ hb)).2, (h_sol a (h_uIcc ▸ ha)).2, add_sub_add_left_eq_sub,
       intervalIntegral.integral_interval_sub_left (h_int t₀ (left_mem_Icc.2 hle) b hb)
         (h_int t₀ (left_mem_Icc.2 hle) a ha)]
 

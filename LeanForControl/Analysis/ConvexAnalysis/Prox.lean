@@ -29,8 +29,9 @@ open scoped RealInnerProductSpace Gradient
 variable {X : Type*} [NormedAddCommGroup X] [InnerProductSpace ℝ X]
 
 open scoped Classical in
-/-- The *proximal operator* of `γR`: the minimizer over `D` of `y ↦ R y + ‖y - v‖² / (2γ)`.  It
-exists and is unique when `R` is closed, convex and proper and `γ > 0`; otherwise it is `v`. -/
+/-- The *proximal operator* of `γR`: a minimizer over `D` of `y ↦ R y + ‖y - v‖² / (2γ)`, and `v`
+when there is none.  For `R` closed, convex and proper and `γ > 0` the minimizer exists and is
+unique; otherwise (`γ ≤ 0`, or several minimizers) it is an unspecified one of them. -/
 noncomputable def prox (γ : ℝ) (R : X → ℝ) (D : Set X) (v : X) : X :=
   if h : ∃ z ∈ D, IsMinOn (fun y => R y + ‖y - v‖ ^ 2 / (2 * γ)) D z then h.choose else v
 

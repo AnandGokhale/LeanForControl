@@ -19,7 +19,7 @@ open Set Filter Topology MeasureTheory intervalIntegral
 /-! ### Class KL
 
 A *class KL* function `β(r, s)` is class K in `r` for each fixed `s`, and for each
-fixed `r` it is strictly decreasing in `s` and tends to zero as `s → ∞`.
+fixed `r` it is non-increasing in `s` and tends to zero as `s → ∞`.
 It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖x₀‖, t)`. -/
 
 /-- A class KL function `β : [0,a) × [0,∞) → ℝ`:
@@ -28,17 +28,21 @@ It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.3. Differences:
     - Khalil says `β(·, s)` is class `K`; here `map_zero`, `continuous` and `strict_mono_r` spell
       that out, so no `ClassK` instance is required for each `s`.
-    - Continuity is joint on `[0,a) × [0,∞)`, matching Khalil's `β` continuous. -/
+    - Continuity is joint on `[0,a) × [0,∞)`, matching Khalil's `β` continuous.
+    - Khalil asks `β(r, ·)` to be decreasing; here it is only non-increasing (`anti_s`).  Nothing
+      is lost: `β(r, s) + α(r) e^{-s}`, with `α` class `K`, is a strictly decreasing majorant. -/
 @[blueprint "def:isClassKL"
   (title := "Class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{class $\mathcal{KL}$} function on $[0,a) \times [0,\infty)$
     is continuous, class $\mathcal{K}$ in the first argument, and for each fixed $r > 0$
-    is strictly decreasing and tends to $0$ as $s \to \infty$. It arises as the bound
+    is non-increasing and tends to $0$ as $s \to \infty$. It arises as the bound
     $\|x(t)\| \le \beta(\|x_0\|, t)$ in asymptotic stability estimates.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.3.  Difference: Khalil says
     $\beta(\cdot, s)$ is class $\mathcal{K}$; here that is spelled out as separate fields, so no
-    class $\mathcal{K}$ instance is required for each $s$.
+    class $\mathcal{K}$ instance is required for each $s$.  Khalil also asks $\beta(r, \cdot)$ to
+    be decreasing; non-increasing loses nothing, since $\beta(r, s) + \alpha(r) e^{-s}$, with
+    $\alpha$ class $\mathcal{K}$, is a strictly decreasing majorant.
   -/)]
 structure ClassKL (a : ℝ) where
   ha : 0 < a
