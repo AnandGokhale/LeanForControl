@@ -1,5 +1,7 @@
 import LeanForControl.Contraction.Norms.CurveNormDerivative
 import Mathlib.Analysis.Calculus.Deriv.Inv
+import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Architect
 
 /-!
@@ -17,7 +19,15 @@ The basic properties of `μ` then follow from those of a pairing, through the re
 norm: subadditivity, positive homogeneity, the translation property `μ(A + c I) = μ(A) + c`, the
 norm of difference property `|μ(A) - μ(B)| ≤ ‖A - B‖`, and the product property
 `-μ(A) ‖x‖ ≤ ‖A x‖`.  A change of coordinates that preserves the norm preserves the log norm
-(`logNorm_conj`).
+(`logNorm_conj`).  It is convex, so on a polytope of operators it is at most its largest
+value at a vertex (`logNorm_le_sup'_of_mem_convexHull`), and `μ(A) < 0` bounds the inverse,
+`‖A⁻¹‖ ≤ -1/μ(A)` (`opNorm_symm_le_of_logNorm_neg`).
+
+On a real inner product space the pairing is the inner product, so:
+
+* `logNorm_le_iff_inner_le` — `μ(A) ≤ c` iff `⟪A v, v⟫ ≤ c ‖v‖²` for all `v`;
+* `logNorm_isGreatest_inner` — in finite dimension, `μ(A)` is the largest eigenvalue of the
+  symmetric part `(A + A*) / 2`, with `A*` the adjoint for that inner product.
 
 References: F. Bullo, *Contraction Theory for Dynamical Systems* (ed. 1.0, 2022), equation (2.22),
 Remark 2.9, Lemma 2.10 and Definition 2.17; A. V. Proskurnikov and F. Bullo, *Regular Pairings for
@@ -44,6 +54,11 @@ right derivative of the operator norm at the identity in the direction `A`. -/
 noncomputable def logNorm (A : E →L[ℝ] E) : ℝ :=
   derivWithin (fun h : ℝ => ‖(1 : E →L[ℝ] E) + h • A‖) (Ioi 0) 0
 
+/-- `μ A` for the log norm of `A`; available after `open scoped LogNorm`. -/
+scoped[LogNorm] notation "μ" => logNorm
+
+open scoped LogNorm
+
 namespace RegularPairing
 
 /-- **Lumer's inequality**: `⟦A x, x⟧ ≤ μ(A) ‖x‖²`, for every regular pairing. -/
@@ -59,7 +74,7 @@ namespace RegularPairing
     its right derivative is at most $\mu(A) \|x\|$
     (\cref{lem:hasDerivWithinAt-le-of-le-of-eq}). -/)]
 theorem pairing_le_logNorm (p : RegularPairing E) (A : E →L[ℝ] E) (x : E) :
-    p (A x) x ≤ logNorm A * ‖x‖ ^ 2 := by
+    p (A x) x ≤ μ A * ‖x‖ ^ 2 := by
   rcases eq_or_ne x 0 with rfl | hx
   · simp
   have : Nontrivial E := ⟨⟨x, 0, hx⟩⟩
@@ -68,10 +83,10 @@ theorem pairing_le_logNorm (p : RegularPairing E) (A : E →L[ℝ] E) (x : E) :
     ((hasDerivWithinAt_norm_add_smul A 1).mul_const ‖x‖) (by simp)
     (Eventually.of_forall fun h => by simpa using ((1 : E →L[ℝ] E) + h • A).le_opNorm x)
   calc p (A x) x ≤ ofNorm E (A x) x := p.le_ofNorm _ _
-    _ ≤ ‖x‖ * (logNorm A * ‖x‖) := by
+    _ ≤ ‖x‖ * (μ A * ‖x‖) := by
         rw [ofNorm_apply]
         exact mul_le_mul_of_nonneg_left hle (norm_nonneg x)
-    _ = logNorm A * ‖x‖ ^ 2 := by ring
+    _ = μ A * ‖x‖ ^ 2 := by ring
 
 /-- **The converse of Lumer's inequality**: if `⟦A x, x⟧ ≤ c ‖x‖²` for all `x`, then `μ(A) ≤ c`. -/
 @[blueprint "thm:regularPairing-logNorm-le"
@@ -142,7 +157,7 @@ end RegularPairing
 
 open RegularPairing
 
-@[simp] lemma logNorm_zero : logNorm (0 : E →L[ℝ] E) = 0 := by
+@[simp] lemma logNorm_zero : μ (0 : E →L[ℝ] E) = 0 := by
   simp [logNorm]
 
 section Properties
@@ -160,7 +175,7 @@ variable [Nontrivial E]
   (proof := /-- For the regular pairing of the norm, subadditivity and Lumer's inequality give
     $\pair{(A + B)x}{x} \le \pair{Ax}{x} + \pair{Bx}{x} \le (\mu(A) + \mu(B))\|x\|^2$; apply
     \cref{thm:regularPairing-logNorm-le}. -/)]
-theorem logNorm_add_le (A B : E →L[ℝ] E) : logNorm (A + B) ≤ logNorm A + logNorm B :=
+theorem logNorm_add_le (A B : E →L[ℝ] E) : μ (A + B) ≤ μ A + μ B :=
   RegularPairing.logNorm_le (ofNorm E) fun x => by
     rw [ContinuousLinearMap.add_apply, add_mul]
     exact ((ofNorm E).add_left_le _ _ _).trans (add_le_add
@@ -177,19 +192,23 @@ theorem logNorm_add_le (A B : E →L[ℝ] E) : logNorm (A + B) ≤ logNorm A + l
     (2.29a). -/)
   (proof := /-- $\pair{aAx}{x} = a \pair{Ax}{x} \le a \mu(A) \|x\|^2$ gives $\mu(aA) \le a\mu(A)$;
     for $a > 0$, apply this to $a^{-1}$ and $aA$ for the reverse. -/)]
-theorem logNorm_smul (A : E →L[ℝ] E) {a : ℝ} (ha : 0 ≤ a) : logNorm (a • A) = a * logNorm A := by
-  have hle : ∀ {a : ℝ}, 0 ≤ a → ∀ B : E →L[ℝ] E, logNorm (a • B) ≤ a * logNorm B := fun ha B =>
+theorem logNorm_smul (A : E →L[ℝ] E) {a : ℝ} (ha : 0 ≤ a) : μ (a • A) = a * μ A := by
+  have hle : ∀ {a : ℝ}, 0 ≤ a → ∀ B : E →L[ℝ] E, μ (a • B) ≤ a * μ B := fun ha B =>
     RegularPairing.logNorm_le (ofNorm E) fun x => by
       rw [ContinuousLinearMap.smul_apply, (ofNorm E).smul_left _ ha, mul_assoc]
       exact mul_le_mul_of_nonneg_left ((ofNorm E).pairing_le_logNorm B x) ha
   refine le_antisymm (hle ha A) ?_
   rcases ha.eq_or_lt with rfl | ha
   · simp
-  calc a * logNorm A = a * logNorm (a⁻¹ • a • A) := by
+  calc a * μ A = a * μ (a⁻¹ • a • A) := by
         rw [smul_smul, inv_mul_cancel₀ ha.ne', one_smul]
-    _ ≤ a * (a⁻¹ * logNorm (a • A)) :=
+    _ ≤ a * (a⁻¹ * μ (a • A)) :=
         mul_le_mul_of_nonneg_left (hle (inv_nonneg.2 ha.le) _) ha.le
-    _ = logNorm (a • A) := by field_simp
+    _ = μ (a • A) := by field_simp
+
+/-- **Homogeneity of the log norm for `a ≤ 0`**, `μ(a A) = |a| μ(-A)`. -/
+lemma logNorm_smul_of_nonpos (A : E →L[ℝ] E) {a : ℝ} (ha : a ≤ 0) : μ (a • A) = -a * μ (-A) := by
+  rw [← logNorm_smul _ (neg_nonneg.2 ha), smul_neg, neg_smul, _root_.neg_neg]
 
 /-- **The translation property of the log norm**, `μ(A + c I) = μ(A) + c`. -/
 @[blueprint "lem:logNorm-add-smul-one"
@@ -204,8 +223,8 @@ theorem logNorm_smul (A : E →L[ℝ] E) {a : ℝ} (ha : 0 ≤ a) : logNorm (a �
     $\pair{Ax + cx}{x} = \pair{Ax}{x} + c\|x\|^2 \le (\mu(A) + c)\|x\|^2$, so
     $\mu(A + cI) \le \mu(A) + c$; apply this to $A + cI$ and $-c$ for the reverse. -/)]
 theorem logNorm_add_smul_one (A : E →L[ℝ] E) (c : ℝ) :
-    logNorm (A + c • (1 : E →L[ℝ] E)) = logNorm A + c := by
-  have hle (B : E →L[ℝ] E) (c : ℝ) : logNorm (B + c • (1 : E →L[ℝ] E)) ≤ logNorm B + c :=
+    μ (A + c • (1 : E →L[ℝ] E)) = μ A + c := by
+  have hle (B : E →L[ℝ] E) (c : ℝ) : μ (B + c • (1 : E →L[ℝ] E)) ≤ μ B + c :=
     RegularPairing.logNorm_le (ofNorm E) fun x => by
       rw [ContinuousLinearMap.add_apply, ContinuousLinearMap.smul_apply,
         ContinuousLinearMap.one_apply, (ofNorm E).add_smul_self, add_mul]
@@ -216,11 +235,11 @@ theorem logNorm_add_smul_one (A : E →L[ℝ] E) (c : ℝ) :
   linarith
 
 /-- `μ(c I) = c`. -/
-lemma logNorm_smul_one (c : ℝ) : logNorm (c • (1 : E →L[ℝ] E)) = c := by
+lemma logNorm_smul_one (c : ℝ) : μ (c • (1 : E →L[ℝ] E)) = c := by
   simpa using logNorm_add_smul_one (0 : E →L[ℝ] E) c
 
 /-- **The log norm is at most the norm**, `μ(A) ≤ ‖A‖`. -/
-lemma logNorm_le_norm (A : E →L[ℝ] E) : logNorm A ≤ ‖A‖ :=
+lemma logNorm_le_norm (A : E →L[ℝ] E) : μ A ≤ ‖A‖ :=
   RegularPairing.logNorm_le (ofNorm E) fun x => by
     calc ofNorm E (A x) x ≤ ‖A x‖ * ‖x‖ := (ofNorm E).le_norm_mul_norm _ _
       _ ≤ ‖A‖ * ‖x‖ * ‖x‖ := by gcongr; exact A.le_opNorm x
@@ -238,12 +257,34 @@ lemma logNorm_le_norm (A : E →L[ℝ] E) : logNorm A ≤ ‖A‖ :=
     $\mu(A) \le \mu(B) + \mu(A - B) \le \mu(B) + \|A - B\|$, since $\mu(C) \le \|C\|$ by
     Cauchy--Schwarz; exchange $A$ and $B$. -/)]
 theorem abs_logNorm_sub_logNorm_le (A B : E →L[ℝ] E) :
-    |logNorm A - logNorm B| ≤ ‖A - B‖ := by
-  have h (A B : E →L[ℝ] E) : logNorm A - logNorm B ≤ ‖A - B‖ := by
+    |μ A - μ B| ≤ ‖A - B‖ := by
+  have h (A B : E →L[ℝ] E) : μ A - μ B ≤ ‖A - B‖ := by
     have := logNorm_add_le B (A - B)
     rw [add_sub_cancel] at this
     linarith [logNorm_le_norm (A - B)]
   exact abs_sub_le_iff.2 ⟨h A B, by rw [norm_sub_rev]; exact h B A⟩
+
+/-- **The log norm is convex**, by subadditivity and positive homogeneity. -/
+lemma convexOn_logNorm : ConvexOn ℝ univ (logNorm : (E →L[ℝ] E) → ℝ) :=
+  ⟨convex_univ, fun A _ B _ a b ha hb _ => by
+    simp only [smul_eq_mul]
+    calc μ (a • A + b • B) ≤ μ (a • A) + μ (b • B) := logNorm_add_le _ _
+      _ = a * μ A + b * μ B := by rw [logNorm_smul _ ha, logNorm_smul _ hb]⟩
+
+/-- **The log norm on a polytope of operators** is at most its largest value at a vertex:
+`μ(A) ≤ maxⱼ μ(Aⱼ)` for `A` in the convex hull of `A₁, …, Aₘ`.  For the norm, this is Mathlib's
+`convexOn_norm` with `ConvexOn.le_sup_of_mem_convexHull`. -/
+@[blueprint "thm:logNorm-le-sup-of-mem-convexHull"
+  (title := "Log norm on a polytope of matrices")
+  (statement := /-- If $A$ lies in the convex hull of $A_1, \dots, A_m$, then
+    $\mu(A) \le \max_j \mu(A_j)$ (\cref{def:logNorm}). -/)
+  (proof := /-- $\mu$ is convex, by subadditivity (\cref{lem:logNorm-add-le}) and positive
+    homogeneity (\cref{lem:logNorm-smul}); a convex function on a polytope is at most its
+    largest value at a vertex. -/)]
+theorem logNorm_le_sup'_of_mem_convexHull {t : Finset (E →L[ℝ] E)} {A : E →L[ℝ] E}
+    (hA : A ∈ convexHull ℝ (t : Set (E →L[ℝ] E))) :
+    μ A ≤ t.sup' (Finset.coe_nonempty.1 (convexHull_nonempty_iff.1 ⟨A, hA⟩)) logNorm :=
+  convexOn_logNorm.le_sup_of_mem_convexHull (subset_univ _) hA
 
 end Properties
 
@@ -265,6 +306,30 @@ theorem neg_logNorm_mul_norm_le (A : E →L[ℝ] E) (x : E) : -logNorm A * ‖x�
   have h₂ := (abs_le.1 ((ofNorm E).abs_le_norm_mul_norm (A x) x)).1
   have hx' : 0 < ‖x‖ := norm_pos_iff.2 hx
   nlinarith
+
+/-- The product property for `-A`, `-μ(-A) ‖x‖ ≤ ‖A x‖`. -/
+lemma neg_logNorm_neg_mul_norm_le (A : E →L[ℝ] E) (x : E) : -μ (-A) * ‖x‖ ≤ ‖A x‖ := by
+  simpa using neg_logNorm_mul_norm_le (-A) x
+
+/-- **The uniform monotonicity property of the log norm**: if `μ(A) < 0`, then
+`‖A⁻¹‖ ≤ -1 / μ(A)`. -/
+@[blueprint "lem:opNorm-symm-le-of-logNorm-neg"
+  (title := "Uniform monotonicity property of the log norm")
+  (latexEnv := "lemma")
+  (statement := /-- If $A$ is invertible and $\mu(A) < 0$, then
+    $\|A^{-1}\| \le -1/\mu(A)$ (\cref{def:logNorm}).
+
+    Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0), Lemma 2.10. -/)
+  (proof := /-- The product property (\cref{lem:neg-logNorm-mul-norm-le}) at $x = A^{-1} y$ gives
+    $-\mu(A) \|A^{-1} y\| \le \|y\|$. -/)]
+theorem opNorm_symm_le_of_logNorm_neg (A : E ≃L[ℝ] E) (hA : μ (A : E →L[ℝ] E) < 0) :
+    ‖(A.symm : E →L[ℝ] E)‖ ≤ -1 / μ (A : E →L[ℝ] E) := by
+  refine ContinuousLinearMap.opNorm_le_bound _ (div_pos_of_neg_of_neg (by norm_num) hA).le
+    fun y => ?_
+  have h := neg_logNorm_mul_norm_le (A : E →L[ℝ] E) (A.symm y)
+  rw [ContinuousLinearEquiv.coe_coe, A.apply_symm_apply] at h
+  rw [ContinuousLinearEquiv.coe_coe, div_mul_eq_mul_div, le_div_iff_of_neg hA]
+  linarith
 
 /-- **A norm-preserving change of coordinates preserves the operator norm**: if `e : E → F` is
 linear, invertible and `‖e x‖ = ‖x‖`, then `‖e B e⁻¹‖ = ‖B‖`. -/
@@ -294,10 +359,86 @@ invertible and `‖e x‖ = ‖x‖`, then `μ(e A e⁻¹) = μ(A)`. -/
     $h$. -/)]
 theorem logNorm_conj {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] (e : E ≃L[ℝ] F)
     (he : ∀ x, ‖e x‖ = ‖x‖) (A : E →L[ℝ] E) :
-    logNorm (e ∘L A ∘L e.symm : F →L[ℝ] F) = logNorm A := by
+    μ (e ∘L A ∘L e.symm : F →L[ℝ] F) = μ A := by
   rw [← e.conjContinuousAlgEquiv_apply]
   unfold logNorm
   congr 1
   ext h
   rw [← opNorm_conj e he (1 + h • A), ← e.conjContinuousAlgEquiv_apply, map_add, map_one,
     map_smul]
+
+/-! ### Inner product spaces -/
+
+section InnerProduct
+
+open scoped RealInnerProductSpace
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [Nontrivial E]
+
+/-- **The log norm on a real inner product space is a quadratic-form bound**: `μ(A) ≤ c` iff
+`⟪A v, v⟫ ≤ c ‖v‖²` for all `v`. -/
+@[blueprint "thm:logNorm-le-iff-inner-le"
+  (title := "The log norm on an inner product space")
+  (statement := /-- On a real inner product space, $\mu(A) \le c$ if and only if
+    $\langle A v, v \rangle \le c \|v\|^2$ for all $v$ (\cref{def:logNorm}). -/)
+  (proof := /-- Lumer's property (\cref{thm:regularPairing-pairing-le-logNorm},
+    \cref{thm:regularPairing-logNorm-le}) for the inner product
+    (\cref{def:regularPairing-ofInner}). -/)]
+theorem logNorm_le_iff_inner_le (A : E →L[ℝ] E) (c : ℝ) :
+    μ A ≤ c ↔ ∀ v, ⟪A v, v⟫ ≤ c * ‖v‖ ^ 2 :=
+  ⟨fun h v => ((RegularPairing.ofInner E).pairing_le_logNorm A v).trans
+    (mul_le_mul_of_nonneg_right h (sq_nonneg _)), (RegularPairing.ofInner E).logNorm_le⟩
+
+/-- **The log norm on a finite-dimensional real inner product space** is the largest eigenvalue of
+the symmetric part `(A + A*) / 2`.  Here `A*` is the adjoint for *this* inner product: on `ℝⁿ` with
+the standard inner product it is `Aᵀ` (`Matrix.logNorm_euclidean_isGreatest`); for a weighted
+inner product `xᵀ P y` it is `P⁻¹ Aᵀ P`, and `Matrix.logNormL2PosDef_isGreatest` states that
+case with `P` explicit. -/
+theorem logNorm_isGreatest_inner [FiniteDimensional ℝ E] (A : E →L[ℝ] E) :
+    IsGreatest {a | Module.End.HasEigenvalue
+      (((2⁻¹ : ℝ) • (A + ContinuousLinearMap.adjoint A) : E →L[ℝ] E) : E →ₗ[ℝ] E) a}
+      (μ A) := by
+  set S : E →L[ℝ] E := (2⁻¹ : ℝ) • (A + ContinuousLinearMap.adjoint A)
+  have hS (x : E) : ⟪S x, x⟫ = ⟪A x, x⟫ := by
+    simp only [S, ContinuousLinearMap.smul_apply, ContinuousLinearMap.add_apply,
+      real_inner_smul_left, inner_add_left, ContinuousLinearMap.adjoint_inner_left,
+      real_inner_comm (A x)]
+    ring
+  have hsymm : (S : E →ₗ[ℝ] E).IsSymmetric := fun x y => by
+    simp only [ContinuousLinearMap.coe_coe, S, ContinuousLinearMap.smul_apply,
+      ContinuousLinearMap.add_apply, real_inner_smul_left, real_inner_smul_right, inner_add_left,
+      inner_add_right, ContinuousLinearMap.adjoint_inner_left,
+      ContinuousLinearMap.adjoint_inner_right, real_inner_comm (A y)]
+    ring
+  -- every eigenvalue of `S` is at most `μ(A)`
+  have hub (a : ℝ) (ha : Module.End.HasEigenvalue (S : E →ₗ[ℝ] E) a) : a ≤ μ A := by
+    obtain ⟨v, hv⟩ := ha.exists_hasEigenvector
+    have h := (RegularPairing.ofInner E).pairing_le_logNorm A v
+    rw [RegularPairing.ofInner_apply, ← hS, show S v = a • v from hv.apply_eq_smul,
+      real_inner_smul_left, real_inner_self_eq_norm_sq] at h
+    exact le_of_mul_le_mul_right h (pow_pos (norm_pos_iff.2 hv.2) 2)
+  -- `μ(A)` is at most the supremum of the Rayleigh quotient of `S`, an eigenvalue of `S`
+  have hev := hsymm.hasEigenvalue_iSup_of_finiteDimensional
+  have hle : μ A ≤ ⨆ x : { x : E // x ≠ 0 },
+      RCLike.re ⟪(S : E →ₗ[ℝ] E) x, x⟫ / ‖(x : E)‖ ^ 2 := by
+    refine (RegularPairing.ofInner E).logNorm_le fun x => ?_
+    rcases eq_or_ne x 0 with rfl | hx
+    · simp
+    have hb : BddAbove (Set.range fun x : { x : E // x ≠ 0 } =>
+        RCLike.re ⟪(S : E →ₗ[ℝ] E) x, x⟫ / ‖(x : E)‖ ^ 2) := by
+      refine ⟨‖S‖, ?_⟩
+      rintro _ ⟨⟨y, hy⟩, rfl⟩
+      have hy' : 0 < ‖y‖ ^ 2 := by positivity
+      simp only [ContinuousLinearMap.coe_coe, RCLike.re_to_real]
+      rw [div_le_iff₀ hy']
+      calc ⟪S y, y⟫ ≤ ‖S y‖ * ‖y‖ := real_inner_le_norm _ _
+        _ ≤ ‖S‖ * ‖y‖ * ‖y‖ := by gcongr; exact S.le_opNorm y
+        _ = ‖S‖ * ‖y‖ ^ 2 := by ring
+    have h := le_ciSup hb ⟨x, hx⟩
+    simp only [ContinuousLinearMap.coe_coe, RCLike.re_to_real] at h
+    rw [div_le_iff₀ (by positivity)] at h
+    rw [RegularPairing.ofInner_apply, ← hS]
+    simpa only [ContinuousLinearMap.coe_coe, RCLike.re_to_real] using h
+  exact ⟨le_antisymm (hub _ hev) hle ▸ hev, hub⟩
+
+end InnerProduct

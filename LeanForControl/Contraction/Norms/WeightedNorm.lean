@@ -1,4 +1,6 @@
 import LeanForControl.Contraction.Norms.LogNorm
+import Mathlib.Analysis.Normed.Lp.Matrix
+import Mathlib.Topology.Algebra.Module.FiniteDimension
 import Architect
 
 /-!
@@ -15,10 +17,14 @@ logarithmic norm and Lumer's property) applies to it unchanged.
   and the log norm of an operator `A` on `E`, measured in the weighted norm.
 * `WeightedNorm.opNorm_eq`, `WeightedNorm.logNorm_eq` — `‖A‖_R = ‖R A R⁻¹‖` and
   `μ_R(A) = μ(R A R⁻¹)`.
+* `Matrix.toWeight p hR` — an invertible matrix `R` (`hR : IsUnit R`) as a weight on `ℝⁿ` with the
+  ℓᵖ norm, `x ↦ R x`.
 
 References: F. Bullo, *Contraction Theory for Dynamical Systems* (ed. 1.0, 2022), Section 2.3 and
 Lemma 2.11.
 -/
+
+open scoped LogNorm
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
@@ -73,7 +79,11 @@ noncomputable def opNorm (A : E →L[ℝ] E) : ℝ :=
 
 /-- `μ_R(A)`: the log norm of `A`, measured in the weighted norm. -/
 noncomputable def logNorm (A : E →L[ℝ] E) : ℝ :=
-  _root_.logNorm (equiv R ∘L A ∘L (equiv R).symm : WeightedNorm R →L[ℝ] WeightedNorm R)
+  μ (equiv R ∘L A ∘L (equiv R).symm : WeightedNorm R →L[ℝ] WeightedNorm R)
+
+/-- `μ[R] A` for the log norm of `A` in the weighted norm; available after
+`open scoped LogNorm`. -/
+scoped[LogNorm] notation:max "μ[" R "]" => WeightedNorm.logNorm R
 
 /-- Moving `A` to the weighted space and then to `F` by `R` is `R A R⁻¹`. -/
 private lemma weight_comp (A : E →L[ℝ] E) :
@@ -99,7 +109,33 @@ theorem opNorm_eq (A : E →L[ℝ] E) : opNorm R A = ‖(R ∘L A ∘L R.symm : 
   (proof := /-- $\|A x\|_R = \|(R A R^{-1})(R x)\|$, and $R$ maps the unit sphere of
     $\|\cdot\|_R$ onto that of $\|\cdot\|$; apply \cref{lem:logNorm-conj}. -/)]
 theorem logNorm_eq (A : E →L[ℝ] E) :
-    logNorm R A = _root_.logNorm (R ∘L A ∘L R.symm : F →L[ℝ] F) := by
+    μ[R] A = μ (R ∘L A ∘L R.symm : F →L[ℝ] F) := by
   rw [logNorm, ← weight_comp R A, _root_.logNorm_conj _ (norm_weight R)]
 
 end WeightedNorm
+
+/-! ### Matrix weights -/
+
+namespace Matrix
+
+open WithLp (toLp ofLp)
+
+variable {n : Type*} [Fintype n] [DecidableEq n] (p : ENNReal) [Fact (1 ≤ p)]
+
+/-- **An invertible matrix as a weight** on `ℝⁿ` with the ℓᵖ norm: `x ↦ R x`. -/
+noncomputable def toWeight {R : Matrix n n ℝ} (hR : IsUnit R) :
+    WithLp p (n → ℝ) ≃L[ℝ] WithLp p (n → ℝ) :=
+  have hdet := (isUnit_iff_isUnit_det R).1 hR
+  LinearEquiv.toContinuousLinearEquiv
+    { toLpLin p p R with
+      invFun := toLpLin p p R⁻¹
+      left_inv := fun x => by simp [toLpLin_apply, mulVec_mulVec, nonsing_inv_mul R hdet]
+      right_inv := fun x => by simp [toLpLin_apply, mulVec_mulVec, mul_nonsing_inv R hdet] }
+
+@[simp] lemma toWeight_apply {R : Matrix n n ℝ} (hR : IsUnit R) (x : WithLp p (n → ℝ)) :
+    toWeight p hR x = toLp p (R *ᵥ ofLp x) := rfl
+
+@[simp] lemma toWeight_symm_apply {R : Matrix n n ℝ} (hR : IsUnit R) (x : WithLp p (n → ℝ)) :
+    (toWeight p hR).symm x = toLp p (R⁻¹ *ᵥ ofLp x) := rfl
+
+end Matrix

@@ -484,7 +484,14 @@ With Lumer's property, each basic property of the log norm reduces to a property
 \inputleannode{lem:logNorm-add-smul-one}
 \inputleannode{lem:abs-logNorm-sub-logNorm-le}
 \inputleannode{lem:neg-logNorm-mul-norm-le}
+\inputleannode{lem:opNorm-symm-le-of-logNorm-neg}
+\inputleannode{thm:logNorm-le-sup-of-mem-convexHull}
 \inputleannode{lem:logNorm-conj}
+
+On an inner product space the pairing is the inner product, so a log-norm bound is a quadratic-form
+inequality.
+
+\inputleannode{thm:logNorm-le-iff-inner-le}
 
 \section{Weighted norms}
 
@@ -493,6 +500,26 @@ its operator and log norms relate to the unweighted ones.
 
 \inputleannode{def:weightedNorm}
 \inputleannode{thm:weightedNorm-logNorm-eq}
+
+\section{Log norms of matrices}
+
+\inputleannode{thm:logNormLpWeight-eq}
+\inputleannode{thm:logNorm-linfty}
+\inputleannode{thm:logNorm-l1}
+\inputleannode{thm:logNorm-l1-diagonal}
+\inputleannode{thm:logNorm-linfty-diagonal}
+\inputleannode{thm:logNorm-l1-diagonal-le-iff}
+\inputleannode{thm:logNorm-linfty-diagonal-le-iff}
+
+For the norm $\sqrt{x^\top P x}$ the log norm is a quadratic-form bound and an eigenvalue; the
+Euclidean norm is the case $P = I$.
+
+\inputleannode{thm:logNormL2PosDef-le-iff}
+\inputleannode{thm:logNormL2PosDef-eq-lambdaMax}
+\inputleannode{thm:logNormL2PosDef-le-iff-lmi}
+\inputleannode{thm:logNorm-euclidean-le-iff}
+\inputleannode{thm:logNorm-euclidean-eq-lambdaMax}
+\inputleannode{thm:isHurwitz-iff-exists-logNormL2PosDef-neg}
 
 \chapter{Linear systems}
 
