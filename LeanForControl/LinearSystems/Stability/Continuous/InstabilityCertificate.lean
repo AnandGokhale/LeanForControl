@@ -1,4 +1,4 @@
-import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Complexify
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties
@@ -20,7 +20,7 @@ ingredient from finite-dimensional linear algebra.
 Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*.
 -/
 
-open Matrix MatrixAlgebra Set
+open Matrix Set
 open scoped RealInnerProductSpace
 
 
@@ -219,6 +219,8 @@ lemma toBilin_symm_real
   rw [hH.eq, dotProduct_comm]
 
 end MatrixAlgebra
+
+open MatrixAlgebra
 
 namespace LinearSystems
 

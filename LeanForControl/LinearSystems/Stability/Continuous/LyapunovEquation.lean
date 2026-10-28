@@ -2,6 +2,7 @@ import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
 import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.MatrixAlgebra.Exponential
+import LeanForControl.MatrixAlgebra.PosDef
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.Normed.Operator.Mul
@@ -25,7 +26,7 @@ Reference: Khalil, *Nonlinear Systems*.
 
 namespace LinearSystems
 
-open Filter Matrix MatrixAlgebra MeasureTheory Set
+open Filter Matrix MeasureTheory Set
 open scoped Matrix.Norms.Frobenius RealInnerProductSpace Topology BigOperators ComplexOrder
 
 section General
@@ -443,13 +444,13 @@ theorem IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov
       rw [Subsingleton.elim (NormedSpace.exp (((1 : ℕ) : ℝ) • A)) 0]; simp⟩
   · obtain ⟨m, hm0, hm⟩ := exists_pow_norm_lt_one_of_spectralRadius_lt_one
       (NormedSpace.exp A.complexify)
-      (MatrixAlgebra.spectralRadius_exp_complexify_lt_one A hA)
+      (Matrix.spectralRadius_exp_complexify_lt_one A hA)
     refine ⟨m, hm0, ?_⟩
     calc ‖NormedSpace.exp ((m : ℝ) • A)‖
         = ‖(NormedSpace.exp ((m : ℝ) • A)).complexify‖ :=
           (Matrix.frobenius_norm_complexify _).symm
       _ = ‖NormedSpace.exp A.complexify ^ m‖ := by
-          rw [MatrixAlgebra.complexification_exp, ← Matrix.exp_nsmul]
+          rw [Matrix.complexification_exp, ← Matrix.exp_nsmul]
           congr 2
           ext i j
           simp

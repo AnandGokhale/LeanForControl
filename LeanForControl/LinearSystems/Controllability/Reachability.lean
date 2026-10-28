@@ -1,5 +1,6 @@
 import LeanForControl.LinearSystems.Controllability.Defs
 import LeanForControl.LinearSystems.Controllability.Controllability
+import LeanForControl.MatrixAlgebra.CayleyHamilton
 import LeanForControl.MatrixAlgebra.Rank
 import Mathlib.Algebra.Module.Submodule.Invariant
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
@@ -131,7 +132,7 @@ theorem reachableSubspace_eq_top_iff_isControllable
   unfold reachableSubspace
   rw [LinearMap.range_eq_top]
   simpa using
-    (MatrixAlgebra.mulVec_range_top_iff_rank_eq_card_rows
+    (Matrix.mulVec_range_top_iff_rank_eq_card_rows
       (controllabilityMatrix A B))
 
 /-- Cayley--Hamilton closes the single boundary term needed for reachable
@@ -143,7 +144,7 @@ private lemma cayleyHamilton_boundary_mem_reachableSubspace
   -- By Cayley--Hamilton `Aⁿ` is a combination of the lower powers `A⁰, …, Aⁿ⁻¹`, and each
   -- `(Aⁱ B) u` with `i < n` is a finite-horizon response, hence reachable.
   have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
-    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    have h := Matrix.pow_card_eq_neg_sum_charpoly_coeff A
     rwa [Fintype.card_fin] at h
   have hlower : ∀ i ∈ Finset.range n,
       (A.charpoly.coeff i • A ^ i * B) *ᵥ u ∈ reachableSubspace A B := by

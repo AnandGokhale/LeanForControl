@@ -1,6 +1,6 @@
 import LeanForControl.Analysis.FrechetDerivative
 import LeanForControl.MatrixAlgebra.QuadraticForm
-import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Complexify
 import LeanForControl.LinearSystems.Stability.DefsStability
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
@@ -61,7 +61,7 @@ section Stable
 
 open Filter Set Topology
 open scoped RealInnerProductSpace
-open LinearSystems MatrixAlgebra
+open LinearSystems Matrix
 
 /-- Near an equilibrium, a quadratic Lyapunov function solving the identity-forced
 Lyapunov equation has a uniform negative quadratic Lie-derivative bound.
@@ -199,10 +199,10 @@ Supplies the seed point of the Chetaev cone: the certificate is positive somewhe
 neighbourhood of the equilibrium. -/
 private theorem exists_centered_quadratic_seed
     (H : Matrix (Fin n) (Fin n) ℝ) (x_eq w : ℝⁿ) (hw : w ≠ 0)
-    (hHw : 0 < MatrixAlgebra.quadraticForm H w)
+    (hHw : 0 < Matrix.quadraticForm H w)
     {ρ δ : ℝ} (hρ : 0 < ρ) (hδ : 0 < δ) :
     ∃ x, ‖x - x_eq‖ < min δ ρ ∧
-      0 < MatrixAlgebra.centeredQuadraticForm H x_eq x := by
+      0 < Matrix.centeredQuadraticForm H x_eq x := by
   let d := min δ ρ
   have hd : 0 < d := lt_min hδ hρ
   have hwnorm : 0 < ‖w‖ := norm_pos_iff.mpr hw
@@ -215,9 +215,9 @@ private theorem exists_centered_quadratic_seed
       field_simp
     rw [hs_norm]
     linarith
-  · rw [MatrixAlgebra.centeredQuadraticForm]
+  · rw [Matrix.centeredQuadraticForm]
     simp only [add_sub_cancel_left]
-    rw [MatrixAlgebra.quadraticForm_smul]
+    rw [Matrix.quadraticForm_smul]
     positivity
 
 /-- A quadratic Chetaev certificate for the shifted linearization implies
@@ -238,7 +238,7 @@ private theorem unstable_of_quadratic_certificate {Y : Type*} {s : ContinuousSys
     (hα : 0 < α)
     (hshift : (H * A + Aᵀ * H - (2 * α) • H).PosDef)
     (w : ℝⁿ) (hw : w ≠ 0)
-    (hHw : 0 < MatrixAlgebra.quadraticForm H w) :
+    (hHw : 0 < Matrix.quadraticForm H w) :
     s.Unstable x_eq := by
   have hn : n ≠ 0 := by
     intro hnzero
@@ -248,22 +248,22 @@ private theorem unstable_of_quadratic_certificate {Y : Type*} {s : ContinuousSys
   let G : Matrix (Fin n) (Fin n) ℝ := H * A + Aᵀ * H - (2 * α) • H
   have hG : G.PosDef := by simpa [G] using hshift
   obtain ⟨m, hm, hm_lower⟩ :=
-    MatrixAlgebra.exists_pos_mul_norm_sq_le_quadraticForm G hG
+    Matrix.exists_pos_mul_norm_sq_le_quadraticForm G hG
   let p : ℝⁿ →L[ℝ] ℝⁿ :=
     Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) H
   have hp_nonneg : 0 ≤ ‖p‖ := norm_nonneg p
   obtain ⟨r, hr, hrem⟩ :=
-    MatrixAlgebra.exists_abs_fderiv_centeredQuadraticForm_remainder_le A H hf hJac
+    Matrix.exists_abs_fderiv_centeredQuadraticForm_remainder_le A H hf hJac
       (c := m / 2) (by linarith)
   let ρ : ℝ := r / 2
   have hρ : 0 < ρ := by dsimp [ρ]; positivity
-  let V : ℝⁿ → ℝ := MatrixAlgebra.centeredQuadraticForm H x_eq
+  let V : ℝⁿ → ℝ := Matrix.centeredQuadraticForm H x_eq
   apply ContinuousSystem.unstable_of_exponential_chetaev hF hf
-    ((MatrixAlgebra.centeredQuadraticForm_contDiff H x_eq).of_le (by norm_num))
+    ((Matrix.centeredQuadraticForm_contDiff H x_eq).of_le (by norm_num))
       hρ hα hp_nonneg
   · intro x hx
-    simpa [V, MatrixAlgebra.centeredQuadraticForm, p] using
-      MatrixAlgebra.abs_quadraticForm_le H (x - x_eq)
+    simpa [V, Matrix.centeredQuadraticForm, p] using
+      Matrix.abs_quadraticForm_le H (x - x_eq)
   · intro x hx
     let y : ℝⁿ := x - x_eq
     let e : ℝⁿ := f x - f x_eq -
@@ -284,14 +284,14 @@ private theorem unstable_of_quadratic_certificate {Y : Type*} {s : ContinuousSys
     have hlinear :
         fderiv ℝ V x
             (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A y) =
-          MatrixAlgebra.quadraticForm G y + 2 * α * V x := by
-      rw [show V = MatrixAlgebra.centeredQuadraticForm H x_eq by rfl]
-      rw [MatrixAlgebra.fderiv_centeredQuadraticForm_apply_matrix]
+          Matrix.quadraticForm G y + 2 * α * V x := by
+      rw [show V = Matrix.centeredQuadraticForm H x_eq by rfl]
+      rw [Matrix.fderiv_centeredQuadraticForm_apply_matrix]
       rw [hmatrix]
-      rw [MatrixAlgebra.quadraticForm_matrix_add,
-        MatrixAlgebra.quadraticForm_matrix_smul]
+      rw [Matrix.quadraticForm_matrix_add,
+        Matrix.quadraticForm_matrix_smul]
       rfl
-    have hG_lower : m * ‖y‖ ^ 2 ≤ MatrixAlgebra.quadraticForm G y :=
+    have hG_lower : m * ‖y‖ ^ 2 ≤ Matrix.quadraticForm G y :=
       hm_lower y
     rw [hf_split, map_add, hlinear]
     have herr_lower : -(m / 2 * ‖y‖ ^ 2) ≤ fderiv ℝ V x e :=
@@ -376,7 +376,7 @@ end Unstable
 
 section TimeVarying
 
-open Set Metric Matrix LinearSystems MatrixAlgebra
+open Set Metric Matrix LinearSystems
 open scoped NNReal
 
 /-- **The linearization remainder is quadratic**: with `f(t, x_eq) = 0` and `∂f/∂x(t, ·)`

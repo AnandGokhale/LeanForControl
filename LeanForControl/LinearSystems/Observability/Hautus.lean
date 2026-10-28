@@ -1,5 +1,6 @@
 import LeanForControl.LinearSystems.Observability.Defs
 import LeanForControl.LinearSystems.Observability.Observability
+import LeanForControl.MatrixAlgebra.CayleyHamilton
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
@@ -26,7 +27,7 @@ The unobservable subspace `unobservableSubspace A C` and the block-row matrix
   `unobservableSubspace A C = ⊥ ↔ IsObservable A C`.
 * Cayley-Hamilton helper: vectors in `unobservableSubspace` are killed by
   `C * A^n` too, not just `C * A^k` for `k < n`
-  (via `MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff`).
+  (via `Matrix.pow_card_eq_neg_sum_charpoly_coeff`).
 * `A`-invariance of `unobservableSubspace`.
 * Failure direction: `¬ IsObservable A C → ∃ μ, witness vector` via
   eigenvector extraction on `unobservableSubspace`.
@@ -83,7 +84,7 @@ private lemma mulVec_aPowN_eq_zero_of_mem_unobservableSubspace
   -- `(C Aⁱ) v` with `i < n` vanishes because `v` is unobservable.
   rw [mem_unobservableSubspace_iff] at hv
   have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
-    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    have h := Matrix.pow_card_eq_neg_sum_charpoly_coeff A
     rwa [Fintype.card_fin] at h
   have hlower : ∀ i ∈ Finset.range n, (C * A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
     intro i hi

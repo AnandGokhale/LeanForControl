@@ -2,7 +2,7 @@ import Mathlib.Analysis.Complex.Basic
 import Mathlib.Data.Matrix.Mul
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Calculus.Deriv.Basic
-import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Complexify
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Analysis.InnerProductSpace.Adjoint
@@ -22,7 +22,7 @@ counterparts (`IsSchur`: every eigenvalue in the open unit disc; the discrete Ly
 
 Both predicates are stated through eigenpairs of the complexification rather than through an
 enumeration of eigenvalues or through `spectrum`: that is the form in which they are produced
-(`MatrixAlgebra.exists_eigenpair_of_mem_spectrum_exp`) and consumed, and it avoids choosing an
+(`Matrix.exists_eigenpair_of_mem_spectrum_exp`) and consumed, and it avoids choosing an
 ordering of the eigenvalues.
 
 Zero-dimensional matrices satisfy both predicates vacuously, there being no nonzero

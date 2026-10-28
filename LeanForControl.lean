@@ -54,9 +54,10 @@ import LeanForControl.LinearSystems.Stability.Discrete.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Discrete.LyapunovLTI
 import LeanForControl.LinearSystems.Stability.Discrete.LyapunovLTV
 import LeanForControl.LinearSystems.Stability.Discrete.Schur
-import LeanForControl.MatrixAlgebra.Complex
-import LeanForControl.MatrixAlgebra.Eigenpair
+import LeanForControl.MatrixAlgebra.CayleyHamilton
+import LeanForControl.MatrixAlgebra.Complexify
 import LeanForControl.MatrixAlgebra.Exponential
+import LeanForControl.MatrixAlgebra.PosDef
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
 import LeanForControl.MatrixAlgebra.Spectrum
