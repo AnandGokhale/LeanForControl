@@ -501,6 +501,10 @@ its operator and log norms relate to the unweighted ones.
 \inputleannode{def:weightedNorm}
 \inputleannode{thm:weightedNorm-logNorm-eq}
 
+A weight also carries a regular pairing to the weighted norm.
+
+\inputleannode{def:regularPairing-weighted}
+
 \section{Log norms of matrices}
 
 \inputleannode{thm:logNormLpWeight-eq}
@@ -510,6 +514,13 @@ its operator and log norms relate to the unweighted ones.
 \inputleannode{thm:logNorm-linfty-diagonal}
 \inputleannode{thm:logNorm-l1-diagonal-le-iff}
 \inputleannode{thm:logNorm-linfty-diagonal-le-iff}
+
+The $\ell_1$ and $\ell_\infty$ norms have regular pairings in closed form, and through them a
+weighted log-norm bound is an inequality for every vector.
+
+\inputleannode{def:regularPairing-sign}
+\inputleannode{def:regularPairing-max}
+\inputleannode{thm:logNormLpWeight-le-iff-pairing}
 
 For the norm $\sqrt{x^\top P x}$ the log norm is a quadratic-form bound and an eigenvalue; the
 Euclidean norm is the case $P = I$.

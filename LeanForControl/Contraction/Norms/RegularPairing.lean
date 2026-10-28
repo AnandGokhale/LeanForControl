@@ -5,10 +5,10 @@ import LeanForControl.Analysis.DiniDeriv
 import Architect
 
 /-!
-# `Contraction.Norms.RegularPairing` — the algebra of regular pairings, and two of them
+# `Contraction.Norms.RegularPairing` — the algebra of regular pairings, and constructions
 
-Facts that follow from the axioms of a regular pairing alone, and the two regular pairings every
-space of interest carries.
+Facts that follow from the axioms of a regular pairing alone, the two regular pairings every
+space of interest carries, and the weighted pairing of a weighted norm.
 
 * `abs_le_norm_mul_norm`, `abs_sub_le` — the two-sided Cauchy–Schwarz inequality, and Lipschitz
   continuity in the first argument.
@@ -16,6 +16,8 @@ space of interest carries.
 * `RegularPairing.ofInner` — the inner product of an inner product space.
 * `RegularPairing.ofNorm` — the regular pairing of the norm, on every normed space: the right
   derivative of the norm, `⟦x, y⟧ = ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`.
+* `RegularPairing.weighted` — a regular pairing and an invertible weight `R` give the regular
+  pairing `⟦x, y⟧_R = ⟦R x, R y⟧` for the weighted norm `‖x‖_R = ‖R x‖`.
 
 References: A. V. Proskurnikov and F. Bullo, *Regular Pairings for Nonquadratic Lyapunov
 Functions and Contraction Analysis*, SIAM J. Control Optim. 64(1):496–521 (2026),
@@ -231,5 +233,41 @@ lemma ofNorm_apply (x y : E) :
     ofNorm E x y = ‖y‖ * derivWithin (fun h : ℝ => ‖y + h • x‖) (Ioi 0) 0 := rfl
 
 end Norm
+
+/-! ### Weighted pairings -/
+
+section Weighted
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
+  [NormedSpace ℝ F]
+
+/-- **The weighted pairing**: a regular pairing on `F` and an invertible weight `R : E → F` give the
+regular pairing `⟦x, y⟧_R = ⟦R x, R y⟧` for the weighted norm `‖x‖_R = ‖R x‖`. -/
+@[blueprint "def:regularPairing-weighted"
+  (title := "Weighted regular pairing")
+  (statement := /-- Let $\pair{\cdot}{\cdot}$ be a regular pairing (\cref{def:regularPairing}) on
+    $F$ and $R : E \to F$ an invertible bounded linear map.  Then
+    $\pair{x}{y}_R = \pair{R x}{R y}$ is a regular pairing for the weighted norm
+    $\|x\|_R = \|R x\|$ (\cref{def:weightedNorm}). -/)
+  (proof := /-- $R$ is linear and $\|R x\| = \|x\|_R$, so each axiom for $\pair{\cdot}{\cdot}_R$ is
+    the same axiom for $\pair{\cdot}{\cdot}$ at $R x$, $R y$. -/)]
+noncomputable def weighted (p : RegularPairing F) (R : E ≃L[ℝ] F) :
+    RegularPairing (WeightedNorm R) where
+  toFun x y := p (WeightedNorm.weight R x) (WeightedNorm.weight R y)
+  add_left_le x₁ x₂ y := by rw [map_add]; exact p.add_left_le _ _ _
+  smul_left a ha x y := by rw [map_smul]; exact p.smul_left a ha _ _
+  smul_right a ha x y := by rw [map_smul]; exact p.smul_right a ha _ _
+  neg_neg x y := by rw [map_neg, map_neg]; exact p.neg_neg _ _
+  self x := by rw [p.self, WeightedNorm.norm_weight]
+  le_norm_mul_norm x y := by
+    simpa only [WeightedNorm.norm_weight] using p.le_norm_mul_norm _ _
+  neg_self x := by rw [map_neg, p.neg_self, WeightedNorm.norm_weight]
+
+/-- `⟦x, y⟧_R = ⟦R x, R y⟧`, for vectors `x, y` of `E` measured in the weighted norm. -/
+@[simp] lemma weighted_equiv (p : RegularPairing F) (R : E ≃L[ℝ] F) (x y : E) :
+    p.weighted R (WeightedNorm.equiv R x) (WeightedNorm.equiv R y) = p (R x) (R y) := by
+  simp [weighted, WeightedNorm.equiv]
+
+end Weighted
 
 end RegularPairing

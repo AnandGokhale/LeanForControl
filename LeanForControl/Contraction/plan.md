@@ -17,14 +17,13 @@ Remaining work only; done results are removed. Status: ◐ partial · ✗ missin
 | Log norm as the growth rate of `‖e^{Ah}x‖` at `h = 0` | ✗ med | derivative of the matrix exponential + Lumer |
 | ℓ² induced norm `‖A‖₂ = √λ_max(AᵀA)` | ✗ med | |
 | Weighted ℓ² induced norm as an LMI `AᵀPA ⪯ b²P` | ✗ med | needs the induced norm in `√(xᵀPx)` |
-| ℓ¹/ℓ∞ log norms as sups of the sign/max pairings | ✗ med | sign and max pairings (below) + Lumer |
 
 ## Spectrum and monotonicity
 
 | Result | Status | Where / what is needed |
 |---|---|---|
 | `\|λ\| ≤ ρ(A) ≤ ‖A‖`, `1/‖A⁻¹‖ ≤ \|λ\|` | ✗ med–hard | real `λ` easy; complex `λ` needs the norm on `ℂⁿ` |
-| `-μ(-A) ≤ Re λ ≤ α(A) ≤ μ(A)` | ✗ med–hard | same |
+| `-μ(-A) ≤ Re λ ≤ α(A) ≤ μ(A)` | ◐ med–hard | ℓ² weights: `α(A) ≤ μ_{2,P^½}(A)` follows from `isHurwitzWithRate_iff_exists_logNormL2PosDef_lt` once `α(A)` is defined; general norms need the norm on `ℂⁿ` |
 | Monotonic norm, diagonal `A`: `‖A‖ = ρ(A)`, `μ(A) = α(A)` | ✗ med | monotonic norms |
 | Monotonicity of `ρ`, `‖·‖`, `α`, `μ` under `\|A\|`, `\|A\|_M` | ✗ hard | monotonic norms, Perron–Frobenius-type facts |
 
@@ -37,14 +36,13 @@ Remaining work only; done results are removed. Status: ◐ partial · ✗ missin
 | Feasibility at `b = α(A)` ⇔ semisimple | ✗ hard | Jordan form |
 | Optimal diagonal weights for nonnegative / Metzler matrices | ✗ hard | Perron–Frobenius |
 | Majorant Hurwitz ⇒ diagonally stable ⇒ totally Hurwitz ⇒ Hurwitz | ✗ hard | |
-| `α(A)` as the infimum of weighted log norms | ✗ hard | the three results above |
+| `α(A)` as the infimum of weighted log norms | ◐ hard | ℓ² weights: the strict form is `isHurwitzWithRate_iff_exists_logNormL2PosDef_lt` (`LinearSystems/Stability/Continuous/HurwitzLogNorm.lean`); stating `α(A) = inf_P μ_{2,P^½}(A)` needs a definition of `α(A)`; diagonal ℓ¹/ℓ∞ weights need the three results above |
 
 ## Regular pairings
 
 | Result | Status | Where / what is needed |
 |---|---|---|
 | Curve norm derivative a.e., locally Lipschitz curves | ◐ med | Mathlib's Rademacher + `hasDerivAt_norm_sq` |
-| Sign and max pairings for weighted ℓ¹/ℓ∞; they are regular | ✗ med | the 7 axioms; max pairing is fiddly |
 | Compatible pairings are squeezed by the upper pairing; agree a.e. | ✗ med | squeeze easy; a.e. needs Rademacher |
 
 ## Matrix sets

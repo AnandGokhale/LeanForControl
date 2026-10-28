@@ -21,6 +21,7 @@ import LeanForControl.Comparison.PositiveDefiniteBounds
 import LeanForControl.Contraction.Norms.Defs
 import LeanForControl.Contraction.Norms.LogNorm
 import LeanForControl.Contraction.Norms.Lp
+import LeanForControl.Contraction.Norms.LpPairings
 import LeanForControl.Contraction.Norms.CurveNormDerivative
 import LeanForControl.Contraction.Norms.RegularPairing
 import LeanForControl.Contraction.Norms.WeightedNorm
