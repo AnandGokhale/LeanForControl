@@ -15,8 +15,8 @@ All of it holds over an arbitrary commutative ring, except the last lemma, which
 spectrum of a matrix over a field with its eigenvalues. None of it is about `ℂ`, about
 complexification, or about stability — those uses live downstream.
 
-The file sits below both `Exponential.lean` and `Spectrum.lean` because both need it:
-`exp_mulVec_of_mulVec_eq_smul` is the exponential's member of this family, and its proof runs
+The file sits below both `Exponential.lean` and the discrete-time `Schur.lean` because both need
+it: `exp_mulVec_of_mulVec_eq_smul` is the exponential's member of this family, and its proof runs
 through the power case.
 
 Reference: standard linear algebra.

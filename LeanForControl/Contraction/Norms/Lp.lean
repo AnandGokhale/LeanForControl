@@ -1,4 +1,5 @@
 import LeanForControl.Contraction.Norms.WeightedNorm
+import LeanForControl.MatrixAlgebra.Spectrum
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Algebra.Group.Pi.Units
@@ -12,8 +13,8 @@ import Architect
 
 Explicit formulas for the log norm of a matrix `A ∈ ℝⁿˣⁿ` acting on `ℝⁿ` with an ℓᵖ norm, plain or
 weighted.  After `open scoped LogNorm`, `μ_{p} A` is the ℓᵖ log norm, `μ_{p, R} A` the log norm in
-the weighted norm `‖x‖_{p,R} = ‖R x‖_p`, and `μ_{2,P^½} A` the log norm in `√(xᵀ P x)`; these, the
-Metzler majorant and `λ_max` are defined in `Defs.lean`.
+the weighted norm `‖x‖_{p,R} = ‖R x‖_p`, and `μ_{2,P^½} A` the log norm in `√(xᵀ P x)`; these and
+the Metzler majorant are defined in `Defs.lean`, and `λ_max` in `MatrixAlgebra/Spectrum.lean`.
 
 * `Matrix.logNormLpWeight_eq` — `μ_{p,R}(A) = μ_p(R A R⁻¹)`, for every `p` and invertible `R`.
 * `Matrix.logNorm_linfty`, `Matrix.logNorm_l1` — `μ_∞(A) = maxᵢ (aᵢᵢ + ∑_{j ≠ i} |aᵢⱼ|)` and
@@ -509,7 +510,15 @@ See `logNormL2PosDef_isGreatest`. -/
     $\mu_{2,P^{1/2}}(A)$ is the largest eigenvalue of $(A + P^{-1} A^\top P)/2$; conjugating by
     $P$ gives $(P A P^{-1} + A^\top)/2$, with the same spectrum. -/)]
 theorem logNormL2PosDef_eq_lambdaMax {P : Matrix n n ℝ} (hP : P.PosDef) (A : Matrix n n ℝ) :
-    μ_{2,P^½} A = lambdaMax ((2⁻¹ : ℝ) • (P * A * P⁻¹ + Aᵀ)) :=
+    μ_{2,P^½} A = lambdaMax ((2⁻¹ : ℝ) • (P * A * P⁻¹ + Aᵀ))
+      -- symmetrizable by `P`: `(P A P⁻¹ + Aᵀ) P / 2 = (P A + Aᵀ P) / 2`, symmetric
+      ⟨P, hP, by
+        have hPt : Pᵀ = P := by simpa using hP.isHermitian.eq
+        rw [Matrix.smul_mul, Matrix.add_mul, Matrix.mul_assoc _ P⁻¹,
+          nonsing_inv_mul P hP.det_pos.ne'.isUnit, Matrix.mul_one]
+        refine IsHermitian.smul ?_ (.all _)
+        simp [IsHermitian, conjTranspose_eq_transpose_of_trivial, transpose_mul, hPt,
+          add_comm]⟩ :=
   (logNormL2PosDef_isGreatest hP A).csSup_eq.symm
 
 omit [Nonempty n] in
@@ -586,7 +595,9 @@ theorem logNorm_euclidean_isGreatest (A : Matrix n n ℝ) :
     Table 2.1. -/)
   (proof := /-- \cref{thm:logNormL2PosDef-eq-lambdaMax} with $P = I$. -/)]
 theorem logNorm_euclidean_eq_lambdaMax (A : Matrix n n ℝ) :
-    μ_{2} A = lambdaMax ((2⁻¹ : ℝ) • (A + Aᵀ)) :=
+    μ_{2} A = lambdaMax ((2⁻¹ : ℝ) • (A + Aᵀ))
+      (IsHermitian.isSymmetrizable <| .smul (by
+        simp [IsHermitian, conjTranspose_eq_transpose_of_trivial, add_comm]) (.all _)) :=
   (logNorm_euclidean_isGreatest A).csSup_eq.symm
 
 end Matrix

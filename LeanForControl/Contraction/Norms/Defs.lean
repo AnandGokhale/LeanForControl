@@ -20,8 +20,7 @@ files.  After `open scoped LogNorm`:
 | `μ_{2,P^½} A` | `Matrix.logNormL2PosDef` | log norm of a matrix in `√(xᵀ P x)` |
 
 Also: `RegularPairing`, `WeightedNorm.opNorm` (`‖A‖_R`), `Matrix.toWeight` (a matrix weight),
-`Matrix.WeightedEuclidean` (`ℝⁿ` with `√(xᵀ P x)`), `Matrix.metzlerMajorant` (`|A|_M`) and
-`Matrix.lambdaMax` (`λ_max`).
+`Matrix.WeightedEuclidean` (`ℝⁿ` with `√(xᵀ P x)`) and `Matrix.metzlerMajorant` (`|A|_M`).
 
 ## Regular pairings
 
@@ -258,9 +257,6 @@ end Lp
 
 /-- **The Metzler majorant** `|A|_M`: the diagonal of `A`, and `|aᵢⱼ|` off the diagonal. -/
 def metzlerMajorant (A : Matrix n n ℝ) : Matrix n n ℝ := fun i j => if i = j then A i i else |A i j|
-
-/-- `λ_max(S)`: the largest real eigenvalue of `S`, the supremum of its real spectrum. -/
-noncomputable def lambdaMax (S : Matrix n n ℝ) : ℝ := sSup (spectrum ℝ S)
 
 /-! ### The weighted Euclidean norm `‖x‖_{2,P^½} = √(xᵀ P x)` -/
 

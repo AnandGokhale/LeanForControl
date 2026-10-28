@@ -59,6 +59,7 @@ import LeanForControl.MatrixAlgebra.Eigenpair
 import LeanForControl.MatrixAlgebra.Exponential
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import LeanForControl.MatrixAlgebra.Rank
+import LeanForControl.MatrixAlgebra.Spectrum
 import LeanForControl.ODEs.ComparisonLemma
 import LeanForControl.ODEs.DefsPeanoBaker
 import LeanForControl.ODEs.GronwallBellman
