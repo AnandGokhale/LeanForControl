@@ -34,7 +34,6 @@ Remaining work only; done results are removed. Status: ◐ partial · ✗ missin
 |---|---|---|
 | ε-optimal weighted norms via triangularization | ✗ hard | Schur form over `ℂ`, complex weights |
 | Existence of optimal norms ⇔ semisimple critical eigenvalues | ✗ hard | Jordan form |
-| `b > α(A)` ⇒ `AᵀP + PA ⪯ 2bP` feasible | ✗ med | `LinearSystems` Lyapunov theory for `A - bI` |
 | Feasibility at `b = α(A)` ⇔ semisimple | ✗ hard | Jordan form |
 | Optimal diagonal weights for nonnegative / Metzler matrices | ✗ hard | Perron–Frobenius |
 | Majorant Hurwitz ⇒ diagonally stable ⇒ totally Hurwitz ⇒ Hurwitz | ✗ hard | |

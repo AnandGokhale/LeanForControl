@@ -5,7 +5,6 @@ import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.Data.Real.StarOrdered
 import Mathlib.Analysis.Matrix.Order
 import Mathlib.Analysis.Convex.Quasiconvex
-import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import Architect
 
 /-!
@@ -13,7 +12,8 @@ import Architect
 
 Explicit formulas for the log norm of a matrix `A ∈ ℝⁿˣⁿ` acting on `ℝⁿ` with an ℓᵖ norm, plain or
 weighted.  After `open scoped LogNorm`, `μ_{p} A` is the ℓᵖ log norm, `μ_{p, R} A` the log norm in
-the weighted norm `‖x‖_{p,R} = ‖R x‖_p`, and `μ_{2,P^½} A` the log norm in `√(xᵀ P x)`.
+the weighted norm `‖x‖_{p,R} = ‖R x‖_p`, and `μ_{2,P^½} A` the log norm in `√(xᵀ P x)`; these, the
+Metzler majorant and `λ_max` are defined in `Defs.lean`.
 
 * `Matrix.logNormLpWeight_eq` — `μ_{p,R}(A) = μ_p(R A R⁻¹)`, for every `p` and invertible `R`.
 * `Matrix.logNorm_linfty`, `Matrix.logNorm_l1` — `μ_∞(A) = maxᵢ (aᵢᵢ + ∑_{j ≠ i} |aᵢⱼ|)` and
@@ -28,8 +28,7 @@ the weighted norm `‖x‖_{p,R} = ‖R x‖_p`, and `μ_{2,P^½} A` the log nor
   `μ_{2,P^½}(A) = λ_max((P A P⁻¹ + Aᵀ) / 2)`, with `λ_max = Matrix.lambdaMax`.  Both come from the
   inner-product results in `LogNorm.lean`.
 * `Matrix.logNormL2PosDef_le_iff_lmi` — the LMI form `μ_{2,P^½}(A) ≤ b ⟺ Aᵀ P + P A ⪯ 2 b P`;
-  quasiconvex in `P`.  `Matrix.isHurwitz_iff_exists_logNormL2PosDef_neg` — `A` is Hurwitz iff
-  `μ_{2,P^½}(A) < 0` for some `P ≻ 0`.
+  quasiconvex in `P`.
 * `Matrix.logNormLpWeight_two_eq` — a weight on the Euclidean norm is a `P`:
   `μ_{2,R}(A) = μ_{2,(RᵀR)^½}(A)`.
 * `Matrix.logNorm_euclidean_le_iff`, `Matrix.logNorm_euclidean_eq_lambdaMax` — the case `P = I`
@@ -50,37 +49,11 @@ variable {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
 
 /-! ### The matrix log norms `μ_{p}` and `μ_{p, R}` -/
 
-section Defs
+section Weight
 
 omit [Nonempty n]
 
 variable (p : ENNReal) [Fact (1 ≤ p)]
-
-/-- `A` as an operator on `ℝⁿ` with the ℓᵖ norm. -/
-noncomputable def toLpCLM (A : Matrix n n ℝ) : WithLp p (n → ℝ) →L[ℝ] WithLp p (n → ℝ) :=
-  LinearMap.toContinuousLinearMap (toLpLin p p A)
-
-/-- `μ_{p} A`: the log norm of the matrix `A` on `ℝⁿ` with the ℓᵖ norm. -/
-noncomputable def logNormLp (A : Matrix n n ℝ) : ℝ := μ (toLpCLM p A)
-
-open Classical in
-/-- `μ_{p, R} A`: the log norm of the matrix `A` in the weighted norm `‖x‖_{p,R} = ‖R x‖_p`.  It is
-meaningful for an invertible weight `R`; for a singular `R`, which is not a weight, it is `0`. -/
-noncomputable def logNormLpWeight (R A : Matrix n n ℝ) : ℝ :=
-  if hR : IsUnit R then μ[toWeight p hR] (toLpCLM p A) else 0
-
-/-- `μ_{p} A` for the ℓᵖ log norm of a matrix; available after `open scoped LogNorm`. -/
-scoped[LogNorm] notation:max "μ_{" p "}" => Matrix.logNormLp p
-
-/-- `μ_{p, R} A` for the weighted ℓᵖ log norm of a matrix; available after `open scoped LogNorm`. -/
-scoped[LogNorm] notation:max "μ_{" p ", " R "}" => Matrix.logNormLpWeight p R
-
-/-- The weight carries `A` to `R A R⁻¹`. -/
-private lemma toWeight_comp {R : Matrix n n ℝ} (hR : IsUnit R) (A : Matrix n n ℝ) :
-    (toWeight p hR ∘L toLpCLM p A ∘L (toWeight p hR).symm :
-      WithLp p (n → ℝ) →L[ℝ] WithLp p (n → ℝ)) = toLpCLM p (R * A * R⁻¹) := by
-  ext x
-  simp [toLpCLM, toLpLin_apply, mulVec_mulVec, Matrix.mul_assoc]
 
 /-- **Weighted log norms of matrices**, `μ_{p,R}(A) = μ_p(R A R⁻¹)`, for every `p` and every
 invertible weight `R`. -/
@@ -95,13 +68,17 @@ invertible weight `R`. -/
   (proof := /-- \cref{thm:weightedNorm-logNorm-eq}, with $R$ carrying $A$ to $R A R^{-1}$. -/)]
 theorem logNormLpWeight_eq {R : Matrix n n ℝ} (hR : IsUnit R) (A : Matrix n n ℝ) :
     μ_{p, R} A = μ_{p} (R * A * R⁻¹) := by
-  rw [logNormLpWeight, dif_pos hR, WeightedNorm.logNorm_eq, toWeight_comp p hR, logNormLp]
+  rw [logNormLpWeight, dif_pos hR, WeightedNorm.logNorm_eq, logNormLp]
+  -- the weight carries `A` to `R A R⁻¹`
+  congr 1
+  ext x
+  simp [toLpCLM, toLpLin_apply, mulVec_mulVec, Matrix.mul_assoc]
 
 /-- The identity weight changes nothing, `μ_{p,I}(A) = μ_p(A)`. -/
 lemma logNormLpWeight_one (A : Matrix n n ℝ) : μ_{p, (1 : Matrix n n ℝ)} A = μ_{p} A := by
   rw [logNormLpWeight_eq p isUnit_one, inv_one, Matrix.mul_one, Matrix.one_mul]
 
-end Defs
+end Weight
 
 /-- **The ℓ∞ induced norm of a matrix is its largest absolute row sum**, `‖A‖∞ = maxᵢ ∑ⱼ |aᵢⱼ|`. -/
 theorem linfty_opNorm_eq_sup' (M : Matrix n n ℝ) :
@@ -316,9 +293,6 @@ theorem logNorm_linfty_diagonal {η : n → ℝ} (hη : ∀ i, 0 < η i) (A : Ma
     rw [abs_mul, abs_mul, abs_inv, abs_of_pos (hη i), abs_of_pos (hη j)]
     ring
 
-/-- **The Metzler majorant** `|A|_M`: the diagonal of `A`, and `|aᵢⱼ|` off the diagonal. -/
-def metzlerMajorant (A : Matrix n n ℝ) : Matrix n n ℝ := fun i j => if i = j then A i i else |A i j|
-
 /-- **The diagonally weighted ℓ¹ log norm as a linear inequality**: for `η > 0`,
 `μ_{1,[η]}(A) ≤ b` iff `ηᵀ |A|_M ≤ b ηᵀ`. -/
 @[blueprint "thm:logNorm-l1-diagonal-le-iff"
@@ -403,77 +377,6 @@ theorem quasiconvexOn_logNorm_linfty_diagonal (A : Matrix n n ℝ) :
   nlinarith
 
 open scoped RealInnerProductSpace
-
-/-- `λ_max(S)`: the largest real eigenvalue of `S`, the supremum of its real spectrum. -/
-noncomputable def lambdaMax (S : Matrix n n ℝ) : ℝ := sSup (spectrum ℝ S)
-
-/-! ### The weighted Euclidean norm `‖x‖_{2,P^½} = √(xᵀ P x)` -/
-
-/-- `ℝⁿ` with the inner product `xᵀ P y` and its norm `‖x‖ = √(xᵀ P x)`, for `P ≻ 0`. -/
-def WeightedEuclidean {P : Matrix n n ℝ} (_hP : P.PosDef) : Type _ := n → ℝ
-
-namespace WeightedEuclidean
-
-variable {P : Matrix n n ℝ} (hP : P.PosDef)
-
-noncomputable instance : NormedAddCommGroup (WeightedEuclidean hP) := P.toNormedAddCommGroup hP
-
-noncomputable instance : InnerProductSpace ℝ (WeightedEuclidean hP) :=
-  P.toInnerProductSpace hP.posSemidef
-
-instance : FiniteDimensional ℝ (WeightedEuclidean hP) :=
-  inferInstanceAs (FiniteDimensional ℝ (n → ℝ))
-
-instance : Nontrivial (WeightedEuclidean hP) := inferInstanceAs (Nontrivial (n → ℝ))
-
-/-- `A` as an operator on `ℝⁿ` with the norm `√(xᵀ P x)`. -/
-noncomputable def toCLM (A : Matrix n n ℝ) : WeightedEuclidean hP →L[ℝ] WeightedEuclidean hP :=
-  LinearMap.toContinuousLinearMap (Matrix.toLin' A)
-
-omit [Nonempty n] [DecidableEq n] in
-lemma inner_def (x y : WeightedEuclidean hP) :
-    ⟪x, y⟫ = (x : n → ℝ) ⬝ᵥ (P *ᵥ (y : n → ℝ)) := by
-  change (P *ᵥ y) ⬝ᵥ star x = _
-  rw [star_trivial, dotProduct_comm]
-
-end WeightedEuclidean
-
-open Classical in
-/-- `μ_{2,P^½} A`: the log norm of the matrix `A` in the norm `‖x‖ = √(xᵀ P x)`.  It is meaningful
-for `P ≻ 0`; otherwise it is `0`. -/
-noncomputable def logNormL2PosDef (P A : Matrix n n ℝ) : ℝ :=
-  if hP : P.PosDef then μ (WeightedEuclidean.toCLM hP A) else 0
-
-end Matrix
-
-namespace LogNorm
-
-/-- `μ_{2,P^½} A` for the log norm of `A` in `‖x‖ = √(xᵀ P x)`; available after
-`open scoped LogNorm`.  It shares its opening `μ_{` with `μ_{p, R}`, so that `μ_{2, R}` still
-parses as the weighted ℓ² log norm. -/
-scoped syntax:max "μ_{" num "," term "^½}" : term
-
-scoped macro_rules
-  | `(μ_{$p:num, $P^½}) =>
-    if p.getNat = 2 then `(Matrix.logNormL2PosDef $P)
-    else Lean.Macro.throwError "`μ_{p,P^½}` is defined only for p = 2"
-
-/-- Print `logNormL2PosDef P A` as `μ_{2,P^½} A`. -/
-@[scoped app_unexpander Matrix.logNormL2PosDef]
-def unexpandLogNormL2PosDef : Lean.PrettyPrinter.Unexpander
-  | `($_ $P:ident $A) => `(μ_{2, $P^½} $A)
-  | `($_ $P $A) => `(μ_{2, ($P)^½} $A)
-  | `($_ $P:ident) => `(μ_{2, $P^½})
-  | `($_ $P) => `(μ_{2, ($P)^½})
-  | _ => throw ()
-
-end LogNorm
-
-namespace Matrix
-
-open scoped RealInnerProductSpace
-
-variable {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
 
 /-- **The weighted Euclidean log norm as a quadratic-form bound**: for `P ≻ 0`,
 `μ_{2,P^½}(A) ≤ c` iff `vᵀ P A v ≤ c vᵀ P v` for all `v`. -/
@@ -685,30 +588,5 @@ theorem logNorm_euclidean_isGreatest (A : Matrix n n ℝ) :
 theorem logNorm_euclidean_eq_lambdaMax (A : Matrix n n ℝ) :
     μ_{2} A = lambdaMax ((2⁻¹ : ℝ) • (A + Aᵀ)) :=
   (logNorm_euclidean_isGreatest A).csSup_eq.symm
-
-/-- **Hurwitz matrices are exactly those contracting in some weighted Euclidean norm**: `A` is
-Hurwitz iff `μ_{2,P^½}(A) < 0` for some `P ≻ 0`. -/
-@[blueprint "thm:isHurwitz-iff-exists-logNormL2PosDef-neg"
-  (title := "Hurwitz matrices and weighted Euclidean log norms")
-  (statement := /-- $A$ is Hurwitz if and only if $\mu_{2,P^{1/2}}(A) < 0$ for some
-    $P \succ 0$. -/)
-  (proof := /-- \cref{thm:isHurwitz-iff-exists-posDef-lyapunovRate}, read through
-    \cref{thm:logNormL2PosDef-le-iff-lmi}: $A^\top P + P A \preceq -2 c P$ says
-    $\mu_{2,P^{1/2}}(A) \le -c$. -/)]
-theorem isHurwitz_iff_exists_logNormL2PosDef_neg (A : Matrix n n ℝ) :
-    LinearSystems.IsHurwitz A ↔ ∃ P : Matrix n n ℝ, P.PosDef ∧ μ_{2,P^½} A < 0 := by
-  rw [LinearSystems.isHurwitz_iff_exists_posDef_lyapunovRate]
-  -- `-(P A + Aᵀ P) - 2c P ⪰ 0` is the LMI `Aᵀ P + P A ⪯ 2 (-c) P`
-  have hlmi (P : Matrix n n ℝ) (hP : P.PosDef) (c : ℝ) :
-      μ_{2,P^½} A ≤ -c ↔ (-(P * A + Aᵀ * P) - (2 * c) • P).PosSemidef := by
-    rw [logNormL2PosDef_le_iff_lmi hP, Matrix.le_iff]
-    congr! 1
-    rw [mul_neg, neg_smul]
-    abel
-  constructor
-  · rintro ⟨P, c, hc, hP, h⟩
-    exact ⟨P, hP, ((hlmi P hP c).2 h).trans_lt (neg_lt_zero.2 hc)⟩
-  · rintro ⟨P, hP, h⟩
-    exact ⟨P, -μ_{2,P^½} A, neg_pos.2 h, hP, (hlmi P hP _).1 (by rw [neg_neg])⟩
 
 end Matrix

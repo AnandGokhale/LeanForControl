@@ -44,6 +44,7 @@ import LeanForControl.LinearSystems.Solutions.DiscLTV
 import LeanForControl.LinearSystems.Solutions.LogNormBounds
 import LeanForControl.LinearSystems.Stability.Continuous.DifferentialLyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.Hurwitz
+import LeanForControl.LinearSystems.Stability.Continuous.HurwitzLogNorm
 import LeanForControl.LinearSystems.Stability.Continuous.InstabilityCertificate
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovEquation
 import LeanForControl.LinearSystems.Stability.Continuous.LyapunovLTI

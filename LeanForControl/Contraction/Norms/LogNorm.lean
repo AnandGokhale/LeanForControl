@@ -7,8 +7,8 @@ import Architect
 /-!
 # `Contraction.Norms.LogNorm` — the logarithmic norm and Lumer's property
 
-* `logNorm A` — the logarithmic norm `μ(A) = lim_{h → 0⁺} (‖I + h A‖ - 1) / h` of a bounded
-  operator: the right derivative of the operator norm at the identity in the direction `A`.
+The log norm `μ(A) = lim_{h → 0⁺} (‖I + h A‖ - 1) / h` is defined in `Defs.lean`.
+
 * `RegularPairing.pairing_le_logNorm` — Lumer's inequality, `⟦A x, x⟧ ≤ μ(A) ‖x‖²`.
 * `RegularPairing.logNorm_le` — conversely, `⟦A x, x⟧ ≤ c ‖x‖²` for all `x` implies `μ(A) ≤ c`.
 
@@ -38,24 +38,6 @@ Nonquadratic Lyapunov Functions and Contraction Analysis*, SIAM J. Control Optim
 open Set Filter Topology
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-
-/-- **The logarithmic norm** of a bounded operator, `μ(A) = lim_{h → 0⁺} (‖I + h A‖ - 1) / h`: the
-right derivative of the operator norm at the identity in the direction `A`. -/
-@[blueprint "def:logNorm"
-  (title := "Logarithmic norm")
-  (statement := /-- The \emph{logarithmic norm} of a bounded linear operator $A$ on a real normed
-    space is
-    \[ \mu(A) = \lim_{h \to 0^+} \frac{\|I + h A\| - 1}{h}, \]
-    the right derivative of the induced norm at $I$ in the direction $A$; the limit exists by
-    \cref{lem:hasDerivWithinAt-norm-add-smul}.
-
-    Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0), equation (2.22)
-    and Remark 2.9. -/)]
-noncomputable def logNorm (A : E →L[ℝ] E) : ℝ :=
-  derivWithin (fun h : ℝ => ‖(1 : E →L[ℝ] E) + h • A‖) (Ioi 0) 0
-
-/-- `μ A` for the log norm of `A`; available after `open scoped LogNorm`. -/
-scoped[LogNorm] notation "μ" => logNorm
 
 open scoped LogNorm
 
