@@ -150,7 +150,7 @@ theorem isObservable_iff_observabilityMatrix_rank_eq
     (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) :
     IsObservable A C ↔ Matrix.rank (observabilityMatrix A C) = n := by
   refine (isObservable_iff_observabilityMatrix_ker_trivial A C).trans ?_
-  refine (MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols
+  refine (Matrix.mulVec_kernel_trivial_iff_rank_eq_card_cols
     (observabilityMatrix A C)).trans ?_
   rw [Fintype.card_fin]
 

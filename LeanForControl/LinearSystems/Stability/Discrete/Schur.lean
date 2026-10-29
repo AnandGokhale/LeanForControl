@@ -1,7 +1,7 @@
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.LinearSystems.Stability.DefsStability
-import LeanForControl.MatrixAlgebra.Complex
-import LeanForControl.MatrixAlgebra.Eigenpair
+import LeanForControl.MatrixAlgebra.Complexify
+import LeanForControl.MatrixAlgebra.Spectrum
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
@@ -39,7 +39,7 @@ variable {X : Type*} [Fintype X] [DecidableEq X]
 lemma IsSchur.spectralRadius_lt_one [Nonempty X] {A : Matrix X X ℝ} (hA : IsSchur A) :
     spectralRadius ℂ A.complexify < 1 := by
   refine spectrum.spectralRadius_lt_of_forall_lt _ fun z hz => ?_
-  obtain ⟨v, hv, hAv⟩ := (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).1 hz
+  obtain ⟨v, hv, hAv⟩ := (Matrix.mem_spectrum_iff_exists_eigenpair _ _).1 hz
   simpa only [ENNReal.coe_lt_coe] using hA z v hv hAv
 
 /-- Under the Schur condition some positive power of `A` is a strict contraction. -/
@@ -178,7 +178,7 @@ theorem isSchur_of_tendsto_pow (hmat : Tendsto (fun k : ℕ => A ^ k) atTop (�
   calc ‖v‖ = 1 * ‖v‖ := (one_mul _).symm
     _ ≤ ‖μ‖ ^ k * ‖v‖ := mul_le_mul_of_nonneg_right (one_le_pow₀ hμ) (norm_nonneg v)
     _ = ‖(A ^ k).complexify *ᵥ v‖ := by
-        rw [Matrix.complexify_pow, MatrixAlgebra.pow_mulVec_of_mulVec_eq_smul hAv, norm_smul,
+        rw [Matrix.complexify_pow, Matrix.pow_mulVec_of_mulVec_eq_smul hAv, norm_smul,
           norm_pow]
 
 /-- Pointwise decay of `Aᵏ x` on real states upgrades to decay of `Aᵏ`: the standard basis

@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Stability.Discrete.Schur
+import LeanForControl.MatrixAlgebra.PosDef
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.Topology.Instances.Matrix
@@ -27,7 +28,7 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.4.
 
 namespace LinearSystems
 
-open Filter Matrix MatrixAlgebra Topology
+open Filter Matrix Topology
 open scoped Matrix.Norms.Operator ComplexOrder
 
 variable {X : Type*} [Fintype X] [DecidableEq X]
@@ -50,10 +51,10 @@ lemma IsSchur.transpose {A : Matrix X X ℝ} (hA : IsSchur A) : IsSchur Aᵀ := 
   intro μ v hv hAv
   have hmem : μ ∈ spectrum ℂ A.complexify := by
     have h : μ ∈ spectrum ℂ (Aᵀ).complexify :=
-      (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, hAv⟩
+      (Matrix.mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, hAv⟩
     rw [Matrix.mem_spectrum_iff_isRoot_charpoly] at h ⊢
     rwa [Matrix.complexify_transpose, Matrix.charpoly_transpose] at h
-  obtain ⟨w, hw, hAw⟩ := (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).1 hmem
+  obtain ⟨w, hw, hAw⟩ := (Matrix.mem_spectrum_iff_exists_eigenpair _ _).1 hmem
   exact hA μ w hw hAw
 
 /-! ## Schur gives a solution -/

@@ -94,12 +94,12 @@ theorem locallyAsymptoticallyStable_iff_isHurwitz
   · intro hA
     obtain ⟨k, -, γ, hγ, hbd⟩ := hA.exists_norm_toEuclideanCLM_exp_le
     have hbound : ∀ t₀ t : ℝ, t₀ ≤ t → ∀ x₀ : EuclideanSpace ℝ X,
-        ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (exp ((t - t₀) • sys.A)) x₀‖ ≤
+        ‖exp ((t - t₀) • sys.A) • x₀‖ ≤
           k * Real.exp (-γ * (t - t₀)) * ‖x₀‖ := fun t₀ t ht x₀ =>
       (ContinuousLinearMap.le_opNorm _ _).trans
         (mul_le_mul_of_nonneg_right (hbd _ (sub_nonneg.2 ht)) (norm_nonneg _))
     refine ⟨fun t₀ _ x₀ => ⟨k * ‖x₀‖, fun t ht => ?_⟩, fun t₀ _ x₀ => ?_⟩
-    · calc ‖toEuclideanCLM (n := X) (𝕜 := ℝ) (exp ((t - t₀) • sys.A)) x₀‖
+    · calc ‖exp ((t - t₀) • sys.A) • x₀‖
           ≤ k * Real.exp (-γ * (t - t₀)) * ‖x₀‖ := hbound t₀ t ht x₀
         _ ≤ k * 1 * ‖x₀‖ := by
             have hk : 0 ≤ k := le_trans (norm_nonneg _) ((hbd 0 le_rfl).trans (by simp))

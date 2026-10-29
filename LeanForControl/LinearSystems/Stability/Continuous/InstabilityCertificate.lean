@@ -1,4 +1,4 @@
-import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Complexify
 import LeanForControl.MatrixAlgebra.QuadraticForm
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Properties
@@ -20,7 +20,7 @@ ingredient from finite-dimensional linear algebra.
 Reference: Hahn, *Stability of Motion*; Khalil, *Nonlinear Systems*.
 -/
 
-open Matrix MatrixAlgebra Set
+open Matrix Set
 open scoped RealInnerProductSpace
 
 
@@ -220,6 +220,8 @@ lemma toBilin_symm_real
 
 end MatrixAlgebra
 
+open MatrixAlgebra
+
 namespace LinearSystems
 
 variable {n : ℕ}
@@ -400,7 +402,7 @@ private lemma exists_positive_quadraticForm_direction
       rw [hx] at hqx
       simp at hqx
     · unfold quadraticForm
-      rw [Matrix.inner_toEuclideanCLM]
+      rw [smul_euclidean_def, Matrix.inner_toEuclideanCLM]
       change 0 < x ⬝ᵥ H *ᵥ x
       simpa only [B, Matrix.toBilin'_apply'] using hqx
   · refine ⟨WithLp.toLp 2 y, ?_, ?_⟩
@@ -409,7 +411,7 @@ private lemma exists_positive_quadraticForm_direction
       rw [hy] at hqy
       simp at hqy
     · unfold quadraticForm
-      rw [Matrix.inner_toEuclideanCLM]
+      rw [smul_euclidean_def, Matrix.inner_toEuclideanCLM]
       change 0 < y ⬝ᵥ H *ᵥ y
       simpa only [B, Matrix.toBilin'_apply'] using hqy
 

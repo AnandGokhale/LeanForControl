@@ -2,7 +2,7 @@ import Mathlib.Analysis.Complex.Basic
 import Mathlib.Data.Matrix.Mul
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Calculus.Deriv.Basic
-import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Complexify
 import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Analysis.InnerProductSpace.Adjoint
@@ -22,7 +22,7 @@ counterparts (`IsSchur`: every eigenvalue in the open unit disc; the discrete Ly
 
 Both predicates are stated through eigenpairs of the complexification rather than through an
 enumeration of eigenvalues or through `spectrum`: that is the form in which they are produced
-(`MatrixAlgebra.exists_eigenpair_of_mem_spectrum_exp`) and consumed, and it avoids choosing an
+(`Matrix.exists_eigenpair_of_mem_spectrum_exp`) and consumed, and it avoids choosing an
 ordering of the eigenvalues.
 
 Zero-dimensional matrices satisfy both predicates vacuously, there being no nonzero
@@ -150,7 +150,9 @@ noncomputable def lyapunovIntegrand (s : ContinuousLTV E U Y) (Q : ℝ → E →
   star (s.stateTransition τ t) * Q τ * s.stateTransition τ t
 
 /-- **Khalil's solution of the differential Lyapunov equation**,
-`P(t) = ∫_t^∞ Φ(τ, t)* Q(τ) Φ(τ, t) dτ`.
+`P(t) = ∫_t^∞ Φ(τ, t)* Q(τ) Φ(τ, t) dτ`.  It is a Bochner integral, so it is `0` when the integrand
+is not integrable on `(t, ∞)`; it converges when the system is exponentially stable and `Q` is
+continuous and bounded, the hypotheses of the results that compute it.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
 @[blueprint "def:continuousLTV-lyapunovIntegral"

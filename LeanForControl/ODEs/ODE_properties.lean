@@ -90,7 +90,7 @@ continuous and `L`-Lipschitz in the state, and `‖G‖ ≤ μ`. Then for every 
 
 It is stated for arbitrary data so that the backward case of `continuous_dependence_ODE` can
 reuse it, unchanged, on the time-reflected data. -/
-private lemma continuous_dependence_forward (hL : 0 < L) {a b : ℝ} {u v : ℝ → E}
+private lemma continuous_dependence_forward [CompleteSpace E] (hL : 0 < L) {a b : ℝ} {u v : ℝ → E}
     {F G : ℝ → E → E} {u0 v0 : E} (hab : a ≤ b)
     (hu : IsIntegralSolution a b u u0 F)
     (hv : IsIntegralSolution a b v v0 (fun s x => F s x + G s x))
@@ -106,9 +106,9 @@ private lemma continuous_dependence_forward (hL : 0 < L) {a b : ℝ} {u v : ℝ 
      absorbs that linear term into the integral, which is then exactly Gronwall's shape. -/
   -- The integral equations, read on `Icc a b` rather than on the unordered segment.
   have hu' : ∀ t ∈ Icc a b, u t = u0 + ∫ s in a..t, F s (u s) :=
-    fun t ht => hu t (by rw [uIcc_of_le hab]; exact ht)
+    fun t ht => (hu t (by rw [uIcc_of_le hab]; exact ht)).2
   have hv' : ∀ t ∈ Icc a b, v t = v0 + ∫ s in a..t, (F s (v s) + G s (v s)) :=
-    fun t ht => hv t (by rw [uIcc_of_le hab]; exact ht)
+    fun t ht => (hv t (by rw [uIcc_of_le hab]; exact ht)).2
   -- Step 1. Integrability of every integrand on `[a, b]`.
   have hu_cont' : ContinuousOn u (uIcc a b) := by rwa [uIcc_of_le hab]
   have hv_cont' : ContinuousOn v (uIcc a b) := by rwa [uIcc_of_le hab]
@@ -225,7 +225,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.4. -/
     case, reflect: \cref{lem:isIntegralSolution-reflect} sends
     $\sigma \mapsto t_0 + t_1 - \sigma$ and negates the field, turning the backward instance
     into a forward one on $[t_1, t_0]$ to which the same argument applies unchanged. -/)]
-theorem continuous_dependence_ODE
+theorem continuous_dependence_ODE [CompleteSpace E]
     (hL : 0 < L)
     (hy : IsIntegralSolution t₀ t₁ y y₀ f)
     (hz : IsIntegralSolution t₀ t₁ z z₀ (fun s x => f s x + g s x))
@@ -319,7 +319,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 3.5. -/
     $\|y(t) - z(t)\| \le \alpha e^{L(t-t_0)} + \frac{\alpha}{L}(e^{L(t-t_0)} - 1)
     = \alpha(1 + 1/L)e^{L(t-t_0)} - \alpha/L$.  Drop the $-\alpha/L$ and bound $e^{L(t-t_0)}$
     by $e^{L(t_1-t_0)}$ to get at most $\varepsilon$. -/)]
-theorem continuous_dependence_parameters
+theorem continuous_dependence_parameters [CompleteSpace E]
     (ht : t₀ ≤ t₁)
     (hL : 0 < L)
     (hα : 0 < α)

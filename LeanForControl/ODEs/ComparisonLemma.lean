@@ -69,9 +69,11 @@ lemma isIntegralSolution_of_hasDerivAt {f : ℝ → ℝ → ℝ} {u : ℝ → �
   rw [uIcc_of_le ht]
   intro s hs
   have h := hu_cont.mono (Icc_subset_Icc_right hs.2)
+  have hint : IntervalIntegrable (fun τ => f τ (u τ)) MeasureTheory.volume t₀ s :=
+    ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop)
+  refine ⟨hint, ?_⟩
   linarith [hu₀, intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1 h
-    (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩)
-    (ContinuousOn.intervalIntegrable_of_Icc hs.1 (by fun_prop))]
+    (fun _ hτ ↦ hu_deriv _ ⟨hτ.1, hτ.2.trans_le hs.2⟩) hint]
 
 /-! ## The comparison lemma -/
 

@@ -167,6 +167,23 @@ theorem diniDerivRight_mono {f g : ℝ → ℝ} {a : ℝ} (h_eq : f a = g a)
   rw [h_eq]
   exact EReal.coe_le_coe_iff.2 (div_le_div_of_nonneg_right (by linarith) h_pos.le)
 
+/-- **Right derivatives are monotone at a point of contact.**  If `f` and `g` agree at `a`,
+`f ≤ g` just to the right of `a`, and both have right derivatives at `a`, then `f' ≤ g'`. -/
+@[blueprint "lem:hasDerivWithinAt-le-of-le-of-eq"
+  (title := "Monotonicity of the right derivative")
+  (latexEnv := "lemma")
+  (statement := /-- If $f(a) = g(a)$, $f \le g$ on a right neighbourhood of $a$, and $f$, $g$
+    have right derivatives $f'$, $g'$ at $a$, then $f' \le g'$. -/)
+  (proof := /-- Both right derivatives are Dini derivatives
+    (\cref{lem:diniDerivRight-of-hasDerivWithinAt}); apply \cref{lem:diniDerivRight-mono}. -/)]
+theorem HasDerivWithinAt.le_of_le_of_eq {f g : ℝ → ℝ} {f' g' a : ℝ}
+    (hf : HasDerivWithinAt f f' (Ioi a) a) (hg : HasDerivWithinAt g g' (Ioi a) a)
+    (h_eq : f a = g a) (h_le : ∀ᶠ x in 𝓝[>] a, f x ≤ g x) : f' ≤ g' := by
+  have h := diniDerivRight_mono h_eq h_le
+  rwa [diniDerivRight_of_hasDerivWithinAt (hasDerivWithinAt_Ioi_iff_Ici.1 hf),
+    diniDerivRight_of_hasDerivWithinAt (hasDerivWithinAt_Ioi_iff_Ici.1 hg),
+    EReal.coe_le_coe_iff] at h
+
 /-! ### Grönwall's inequality in Dini form -/
 
 /-- **Grönwall's inequality, Dini form.**  If `v` is continuous on `[a, b]` and `D⁺ v ≤ K v` on

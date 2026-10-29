@@ -1,7 +1,8 @@
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.LinearSystems.Stability.DefsStability
-import LeanForControl.MatrixAlgebra.Complex
+import LeanForControl.MatrixAlgebra.Complexify
+import LeanForControl.MatrixAlgebra.EuclideanCLM
 import LeanForControl.MatrixAlgebra.Exponential
 import Mathlib.Analysis.Matrix.Normed
 import Architect
@@ -124,12 +125,12 @@ theorem isHurwitzWithRate_iff_add_smul_one
     have hshift' : (A.complexify + (α : ℂ) • (1 : Matrix X X ℂ)) *ᵥ v
         = ((μ - (α : ℂ)) + (α : ℂ)) • v := by simpa using hshift
     have hμ := hA (μ - α) v hv
-      ((MatrixAlgebra.mulVec_add_smul_one_eq_smul_iff _ _ _ _).1 hshift')
+      ((Matrix.mulVec_add_smul_one_eq_smul_iff _ _ _ _).1 hshift')
     simp only [Complex.sub_re, Complex.ofReal_re] at hμ
     linarith
   · intro hshift μ v hv hbase
     have heig : (A + α • (1 : Matrix X X ℝ)).complexify *ᵥ v = (μ + (α : ℂ)) • v := by
-      simpa using (MatrixAlgebra.mulVec_add_smul_one_eq_smul_iff
+      simpa using (Matrix.mulVec_add_smul_one_eq_smul_iff
         A.complexify (α : ℂ) μ v).2 hbase
     have hμ := hshift (μ + α) v hv heig
     simp only [Complex.add_re, Complex.ofReal_re] at hμ
@@ -197,11 +198,11 @@ theorem IsHurwitz.exists_pos_isHurwitzWithRate {A : Matrix X X ℝ} (hA : IsHurw
   obtain ⟨μ₀, hμ₀mem, hμ₀max⟩ :=
     (spectrum.isCompact (A.complexify)).exists_isMaxOn
       (spectrum.nonempty (A.complexify)) Complex.continuous_re.continuousOn
-  obtain ⟨v₀, hv₀, hv₀eig⟩ := (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).1 hμ₀mem
+  obtain ⟨v₀, hv₀, hv₀eig⟩ := (Matrix.mem_spectrum_iff_exists_eigenpair _ _).1 hμ₀mem
   have hneg : μ₀.re < 0 := hA μ₀ v₀ hv₀ hv₀eig
   refine ⟨-μ₀.re / 2, by linarith, fun μ v hv heig => ?_⟩
   have hmem : μ ∈ spectrum ℂ A.complexify :=
-    (MatrixAlgebra.mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, heig⟩
+    (Matrix.mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, heig⟩
   have := hμ₀max hmem
   simp only [Set.mem_setOf_eq] at this
   linarith
@@ -284,12 +285,12 @@ private lemma exists_norm_exp_nsmul_lt_one
     simp
   · obtain ⟨m, hm0, hm⟩ := exists_pow_norm_lt_one_of_spectralRadius_lt_one
       (exp (A.complexify))
-      (MatrixAlgebra.spectralRadius_exp_complexify_lt_one A hA)
+      (Matrix.spectralRadius_exp_complexify_lt_one A hA)
     refine ⟨m, hm0, ?_⟩
     calc ‖exp ((m : ℝ) • A)‖
         = ‖(exp ((m : ℝ) • A)).complexify‖ := (Matrix.linfty_opNorm_complexify _).symm
       _ = ‖exp (A.complexify) ^ m‖ := by
-          rw [MatrixAlgebra.complexification_exp, ← Matrix.exp_nsmul]
+          rw [Matrix.complexification_exp, ← Matrix.exp_nsmul]
           congr 2
           ext i j
           simp
@@ -391,15 +392,6 @@ private theorem IsHurwitz.exists_norm_exp_le {A : Matrix X X ℝ} (hA : IsHurwit
         exact Real.exp_le_exp.2 (by linarith)
     _ = M / c * Real.exp (-γ * t) := by field_simp
 
-/-- The matrices' Euclidean operators are bounded by their `L∞` norms, up to a constant: a linear
-map between finite-dimensional spaces is continuous.  No explicit constant is needed. -/
-private lemma exists_norm_toEuclideanCLM_le :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ M : Matrix X X ℝ, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) M‖ ≤ C * ‖M‖ := by
-  let T : Matrix X X ℝ →L[ℝ] (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
-    LinearMap.toContinuousLinearMap
-      (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearEquiv.toLinearMap
-  exact ⟨‖T‖, norm_nonneg _, fun M => T.le_opNorm M⟩
-
 /-- **Exponential decay of the state under a Hurwitz matrix**, in the Euclidean norm: the operator
 `e^{At}` on `ℝ^X` has norm at most `k e^{-γt}`. -/
 @[blueprint "thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le"
@@ -494,13 +486,13 @@ theorem isHurwitz_of_tendsto_exp
         simp [Complex.mul_re]
     _ = ‖exp ((t : ℂ) • A.complexify) *ᵥ v‖ := by
         -- `v` is an eigenvector of `tAℂ` with eigenvalue `tμ`, so of its exponential too.
-        rw [MatrixAlgebra.exp_mulVec_of_mulVec_eq_smul _ _ _
-            (MatrixAlgebra.smul_mulVec_of_mulVec_eq_smul hAv (t : ℂ)),
+        rw [Matrix.exp_mulVec_of_mulVec_eq_smul _ _ _
+            (Matrix.smul_mulVec_of_mulVec_eq_smul hAv (t : ℂ)),
           norm_smul]
     _ = ‖(exp (t • A)).complexify *ᵥ v‖ := by
         have hmap : (exp (t • A)).complexify
             = exp ((t : ℂ) • A.complexify) := by
-          rw [MatrixAlgebra.complexification_exp]
+          rw [Matrix.complexification_exp]
           congr 1
           ext i j
           simp

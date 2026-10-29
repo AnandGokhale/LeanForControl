@@ -55,6 +55,7 @@ real number are characterized by the difference quotients themselves.
 \inputleannode{lem:diniDerivRight-le-norm-of-hasDerivWithinAt}
 
 \inputleannode{lem:diniDerivRight-mono}
+\inputleannode{lem:hasDerivWithinAt-le-of-le-of-eq}
 
 \subsection{Gr\"onwall's inequality in Dini form}
 
@@ -103,6 +104,8 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 \inputleannode{lem:abs-norm-sq-sub-norm-sq-le}
 
 \inputleannode{lem:prod-norm-le-norm-fst-add-norm-snd}
+\inputleannode{lem:hasDerivWithinAt-norm-add-smul}
+\inputleannode{lem:derivWithin-norm-add-smul-le}
 
 \section{Positive definite functions}
 
@@ -439,6 +442,123 @@ escapes in finite time, and nothing like forward completeness is ever needed.
 
 \inputleannode{lem:discreteSystem-zeroInput-isTrajectoryOn-iff}
 
+\chapter{Contraction theory}
+
+A \emph{pairing} replaces the inner product in contraction analysis for norms that come from no
+inner product.  Regular pairings are the pairings for which the norm of a curve can be
+differentiated through the pairing, which is what contraction arguments use.
+
+\section{Regular pairings}
+
+\inputleannode{def:regularPairing}
+\inputleannode{lem:regularPairing-abs-le-norm-mul-norm}
+\inputleannode{lem:regularPairing-abs-sub-le}
+\inputleannode{lem:regularPairing-add-smul-self}
+
+Every normed space carries a regular pairing, built from the norm alone; on an inner product space
+the inner product is another.
+
+\inputleannode{def:regularPairing-ofInner}
+\inputleannode{def:regularPairing-ofNorm}
+\inputleannode{lem:normPairing-eq-inner}
+
+\section{What a regular pairing says about the norm}
+
+Every regular pairing lies between the left and right derivatives of the norm, and so it computes
+the derivative of the norm along any curve.  This is what makes $\frac12 \|x\|^2$ usable as a
+Lyapunov function for every norm.
+
+\inputleannode{thm:regularPairing-le-ofNorm}
+\inputleannode{lem:hasDerivWithinAt-norm-sq}
+\inputleannode{thm:hasDerivAt-norm-sq}
+
+\section{The logarithmic norm}
+
+\inputleannode{def:logNorm}
+\inputleannode{thm:regularPairing-pairing-le-logNorm}
+\inputleannode{thm:regularPairing-logNorm-le}
+
+With Lumer's property, each basic property of the log norm reduces to a property of a pairing.
+
+\inputleannode{lem:logNorm-add-le}
+\inputleannode{lem:logNorm-smul}
+\inputleannode{lem:logNorm-add-smul-one}
+\inputleannode{lem:abs-logNorm-sub-logNorm-le}
+\inputleannode{lem:neg-logNorm-mul-norm-le}
+\inputleannode{lem:opNorm-symm-le-of-logNorm-neg}
+\inputleannode{thm:logNorm-le-sup-of-mem-convexHull}
+\inputleannode{lem:logNorm-conj}
+
+On an inner product space the pairing is the inner product, so a log-norm bound is a quadratic-form
+inequality.
+
+\inputleannode{thm:logNorm-le-iff-inner-le}
+
+\section{Weighted norms}
+
+A weighted norm is an ordinary norm, so every result above applies to it; the one new fact is how
+its operator and log norms relate to the unweighted ones.
+
+\inputleannode{def:weightedNorm}
+\inputleannode{thm:weightedNorm-logNorm-eq}
+
+A weight also carries a regular pairing to the weighted norm.
+
+\inputleannode{def:regularPairing-weighted}
+
+\section{Log norms of matrices}
+
+\inputleannode{thm:logNormLpWeight-eq}
+\inputleannode{thm:logNorm-linfty}
+\inputleannode{thm:logNorm-l1}
+\inputleannode{thm:logNorm-l1-diagonal}
+\inputleannode{thm:logNorm-linfty-diagonal}
+\inputleannode{thm:logNorm-l1-diagonal-le-iff}
+\inputleannode{thm:logNorm-linfty-diagonal-le-iff}
+
+The $\ell_1$ and $\ell_\infty$ norms have regular pairings in closed form, and through them a
+weighted log-norm bound is an inequality for every vector.
+
+\inputleannode{def:regularPairing-sign}
+\inputleannode{def:regularPairing-max}
+\inputleannode{thm:logNormLpWeight-le-iff-pairing}
+
+For the norm $\sqrt{x^\top P x}$ the log norm is a quadratic-form bound and an eigenvalue; the
+Euclidean norm is the case $P = I$.
+
+\inputleannode{def:isSymmetrizable}
+\inputleannode{def:lambdaMax}
+\inputleannode{thm:logNormL2PosDef-le-iff}
+\inputleannode{thm:logNormL2PosDef-eq-lambdaMax}
+\inputleannode{thm:logNormL2PosDef-le-iff-lmi}
+\inputleannode{thm:logNorm-euclidean-le-iff}
+\inputleannode{thm:logNorm-euclidean-eq-lambdaMax}
+
+\section{One-sided Lipschitz maps}
+
+The one-sided Lipschitz constant extends the log norm from linear to nonlinear maps.  For a
+differentiable map it is the largest log norm of the Jacobian, which is how
+contractivity of a nonlinear system is checked in practice.
+
+\inputleannode{def:oneSidedLipschitz}
+
+\inputleannode{thm:oneSidedLipschitz-le-iff}
+\inputleannode{thm:regularPairing-pairing-le-of-oneSidedLipschitz-le}
+\inputleannode{thm:oneSidedLipschitz-le-iff-inner}
+\inputleannode{thm:oneSidedLipschitz-affine}
+\inputleannode{thm:oneSidedLipschitz-le-of-lipschitzOnWith}
+\inputleannode{thm:oneSidedLipschitz-properties}
+\inputleannode{thm:oneSidedLipschitz-eq-iSup-logNorm}
+\inputleannode{thm:regularPairing-logNorm-fderiv-le-iff}
+
+For maps of $\mathbb{R}^n$ the Jacobian test combines with the matrix log norms above.
+
+\inputleannode{def:hasJacobianAt}
+\inputleannode{thm:oneSidedLipschitzLpWeight-eq-iSup}
+\inputleannode{thm:oneSidedLipschitzL2PosDef-le-iff}
+\inputleannode{thm:oneSidedLipschitzLpWeight-le-iff-pairing}
+\inputleannode{thm:row-test-iff-ordered-increments}
+
 \chapter{Linear systems}
 
 \section{The linear system objects}
@@ -627,6 +747,13 @@ quantifies over.
 \inputleannode{thm:isTrajectoryOn-homogeneousResponse}
 
 \inputleannode{thm:eq-homogeneousResponse-of-isTrajectoryOn}
+
+The log norm of $A(t)$, for any norm on the state space, bounds the growth of solutions.
+
+\inputleannode{thm:continuousLTV-norm-stateTransition-le}
+\inputleannode{thm:continuousLTV-le-norm-stateTransition}
+\inputleannode{thm:continuousLTV-norm-forcedResponse-le}
+\inputleannode{thm:continuousLTV-norm-forcedResponse-le-of-const}
 
 \inputleannode{thm:continuousLTV-isForwardComplete-zeroInput}
 
@@ -1492,6 +1619,16 @@ is written in, so it is recorded as a sixth equivalent.
 
 \inputleannode{thm:lyapunovStability-tfae}
 
+\subsection{Weighted Euclidean log norms}
+
+Read through the LMI form of the weighted Euclidean log norm
+(\cref{thm:logNormL2PosDef-le-iff-lmi}), a Lyapunov certificate is a norm in which $A$ is
+contracting.
+
+\inputleannode{thm:isHurwitz-iff-exists-logNormL2PosDef-neg}
+
+\inputleannode{thm:isHurwitzWithRate-iff-exists-logNormL2PosDef-lt}
+
 \subsection{Quadratic forms along a linear vector field}
 
 What makes a solution of the Lyapunov equation a Lyapunov \emph{function}: the forcing matrix
@@ -1620,6 +1757,8 @@ as well, once the linearization error is absorbed near the equilibrium.
 \inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
 
 \inputleannode{lem:norm-fderiv-inner-apply-self-le}
+
+\inputleannode{lem:hasFDerivAt-apply-le-of-increment-le}
 
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 
