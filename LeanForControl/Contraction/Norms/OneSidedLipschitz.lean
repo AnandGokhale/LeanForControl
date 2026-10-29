@@ -86,7 +86,7 @@ theorem RegularPairing.pairing_le_of_oneSidedLipschitz_le (p : RegularPairing E)
   (title := "One-sided Lipschitz constant of an affine map")
   (statement := /-- For a bounded linear operator $A$ on a nontrivial normed space and a vector
     $d$, $\operatorname{osL}(x \mapsto A x + d) = \mu(A)$
-    (\cref{def:oneSidedLipschitz,def:logNorm}).
+    (\cref{def:oneSidedLipschitz} and \cref{def:logNorm}).
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
     Chapter 3. -/)]
@@ -247,7 +247,7 @@ theorem RegularPairing.logNorm_fderiv_le_iff (p : RegularPairing E) (hCo : IsOpe
   (statement := /-- Let $C$ be open and convex and $F$ differentiable on $C$, with
     derivative $DF$.  Then
     \[ \operatorname{osL}(F) = \sup_{x \in C} \mu(DF(x)) \]
-    on $C$ (\cref{def:oneSidedLipschitz,def:logNorm}).
+    on $C$ (\cref{def:oneSidedLipschitz} and \cref{def:logNorm}).
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
     Chapter 3. -/)
@@ -495,7 +495,7 @@ omit [DecidableEq n] [Nonempty n] in
   (title := "Weighted Euclidean one-sided Lipschitz bounds")
   (statement := /-- For $P \succ 0$, $\operatorname{osL}_{2,P^{1/2}}(F) \le b$ on $C$ if and only
     if $(F(x) - F(y))^\top P (x - y) \le b \, (x - y)^\top P (x - y)$ for all $x, y \in C$.  With
-    \cref{thm:oneSidedLipschitzLpWeight-eq-iSup,thm:logNormL2PosDef-le-iff-lmi}, both are
+    \cref{thm:oneSidedLipschitzLpWeight-eq-iSup} and \cref{thm:logNormL2PosDef-le-iff-lmi}, both are
     equivalent to $P J(x) + J(x)^\top P \preceq 2 b P$ on $C$ for differentiable
     $F$ on an open convex $C$. -/)
   (proof := /-- \cref{thm:oneSidedLipschitz-le-iff-inner} in the inner product
@@ -583,7 +583,7 @@ differentiable on `C` with Jacobian matrix `J`, `ηᵀ J(x) ≤ b ηᵀ` on `C` 
       \text{ for all } \beta > 0,\ y, y + \beta\eta \in C. \]
     For a Metzler $J$ and $\eta > 0$, the left sides are $\mu_{1,[\eta]}(J(x)) \le b$ and
     $\mu_{\infty,[\eta]^{-1}}(J(x)) \le b$
-    (\cref{thm:logNorm-l1-diagonal-le-iff,thm:logNorm-linfty-diagonal-le-iff}).
+    (\cref{thm:logNorm-l1-diagonal-le-iff} and \cref{thm:logNorm-linfty-diagonal-le-iff}).
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
     Chapter 3. -/)
