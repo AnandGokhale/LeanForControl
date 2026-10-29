@@ -45,7 +45,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {C : Set E} {F G
   (statement := /-- $\operatorname{osL}(F) \le b$ on $C$ (\cref{def:oneSidedLipschitz}) if and only
     if $\pair{F(x) - F(y)}{x - y} \le b \|x - y\|^2$ for all $x, y \in C$, for the regular
     pairing of the norm (\cref{def:regularPairing-ofNorm}). -/)]
-theorem oneSidedLipschitz_le_iff (hC : C.Nontrivial) (b : ℝ) :
+theorem oneSidedLipschitz_le_iff (b : ℝ) :
     osL F on C ≤ b ↔
       ∀ x ∈ C, ∀ y ∈ C, ⟦F x - F y; x - y⟧ ≤ b * ‖x - y‖ ^ 2 := by
   simp only [oneSidedLipschitz, iSup_le_iff, EReal.coe_le_coe_iff,
@@ -57,12 +57,12 @@ theorem oneSidedLipschitz_le_iff (hC : C.Nontrivial) (b : ℝ) :
   simpa [hxy] using div_le_iff₀ (pow_pos (norm_pos_iff.2 (sub_ne_zero.2 hxy)) 2)
 
 /-- Each quotient `⟦F x - F y; x - y⟧ / ‖x - y‖²` is at most `osL F on C`. -/
-lemma le_oneSidedLipschitz (hC : C.Nontrivial) {x y : E} (hx : x ∈ C) (hy : y ∈ C) (hxy : x ≠ y) :
+lemma le_oneSidedLipschitz {x y : E} (hx : x ∈ C) (hy : y ∈ C) (hxy : x ≠ y) :
     ((⟦F x - F y; x - y⟧ / ‖x - y‖ ^ 2 : ℝ) : EReal) ≤ osL F on C :=
   le_iSup₂_of_le x hx (le_iSup₂_of_le y hy (le_iSup_of_le hxy le_rfl))
 
 /-- `osL F on C ≤ X` as soon as every quotient `⟦F x - F y; x - y⟧ / ‖x - y‖²` is. -/
-lemma oneSidedLipschitz_le_of_forall (hC : C.Nontrivial) {X : EReal}
+lemma oneSidedLipschitz_le_of_forall {X : EReal}
     (h : ∀ x ∈ C, ∀ y ∈ C, x ≠ y →
       ((⟦F x - F y; x - y⟧ / ‖x - y‖ ^ 2 : ℝ) : EReal) ≤ X) :
     osL F on C ≤ X :=
@@ -75,11 +75,11 @@ lemma oneSidedLipschitz_le_of_forall (hC : C.Nontrivial) {X : EReal}
   (statement := /-- If $\operatorname{osL}(F) \le b$ on $C$ (\cref{def:oneSidedLipschitz}), then
     $\pair{F(x) - F(y)}{x - y} \le b \|x - y\|^2$ for all $x, y \in C$ and every regular pairing
     (\cref{def:regularPairing}). -/)]
-theorem RegularPairing.pairing_le_of_oneSidedLipschitz_le (p : RegularPairing E) (hC : C.Nontrivial)
+theorem RegularPairing.pairing_le_of_oneSidedLipschitz_le (p : RegularPairing E)
     {b : ℝ}
     (h : osL F on C ≤ b) {x y : E} (hx : x ∈ C) (hy : y ∈ C) :
     ⟦F x - F y; x - y⟧_p ≤ b * ‖x - y‖ ^ 2 :=
-  (p.le_ofNorm _ _).trans ((oneSidedLipschitz_le_iff hC b).1 h x hx y hy)
+  (p.le_ofNorm _ _).trans ((oneSidedLipschitz_le_iff b).1 h x hx y hy)
 
 /-- **`osL` of an affine map is the log norm**: `osL(x ↦ A x + d) = μ(A)`. -/
 @[blueprint "thm:oneSidedLipschitz-affine"
@@ -122,7 +122,7 @@ theorem oneSidedLipschitz_mem_Icc_of_lipschitzOnWith {K : ℝ≥0} (h : Lipschit
     calc _ ≤ ‖F x - F y‖ * ‖x - y‖ := (RegularPairing.ofNorm E).abs_le_norm_mul_norm _ _
       _ ≤ K * ‖x - y‖ * ‖x - y‖ := mul_le_mul_of_nonneg_right hL (norm_nonneg _)
       _ = K * ‖x - y‖ ^ 2 := by ring
-  refine ⟨?_, (oneSidedLipschitz_le_iff hC _).2 fun x hx y hy => (abs_le.1 (hCS x hx y hy)).2⟩
+  refine ⟨?_, (oneSidedLipschitz_le_iff _).2 fun x hx y hy => (abs_le.1 (hCS x hx y hy)).2⟩
   -- the quotient at one pair `x ≠ y` is already `≥ -K`
   obtain ⟨x, hx, y, hy, hxy⟩ := hC
   refine le_iSup₂_of_le x hx (le_iSup₂_of_le y hy (le_iSup_of_le hxy ?_))
@@ -256,24 +256,24 @@ theorem RegularPairing.logNorm_fderiv_le_iff (p : RegularPairing E) (hCo : IsOpe
     (\cref{thm:oneSidedLipschitz-le-iff}), which holds if and only if $\mu(DF(x)) \le b$ on $C$
     (\cref{thm:regularPairing-logNorm-fderiv-le-iff}).  Two extended reals with the same real
     upper bounds are equal. -/)]
-theorem oneSidedLipschitz_eq_iSup_logNorm (hC : C.Nontrivial) (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem oneSidedLipschitz_eq_iSup_logNorm (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hF : ∀ x ∈ C, HasFDerivAt F (DF x) x) :
     osL F on C = ⨆ x ∈ C, (μ (DF x) : EReal) := by
   have h := (RegularPairing.ofNorm E).logNorm_fderiv_le_iff hCo hCc hF
   refine le_antisymm (EReal.le_of_forall_lt_iff_le.1 fun b hb => ?_) (iSup₂_le fun x hx => ?_)
   · -- `μ (DF) < b` on `C` gives the pairing bound with `b`
-    exact (oneSidedLipschitz_le_iff hC b).2 <| (h b).1 fun x hx =>
+    exact (oneSidedLipschitz_le_iff b).2 <| (h b).1 fun x hx =>
       EReal.coe_le_coe_iff.1 ((le_iSup₂ (f := fun x _ => (μ (DF x) : EReal)) x hx).trans hb.le)
   · -- every real `b > osL` bounds the pairing, hence `μ (DF x) ≤ b`
     refine EReal.le_of_forall_lt_iff_le.1 fun b hb => EReal.coe_le_coe_iff.2 ?_
-    exact (h b).2 ((oneSidedLipschitz_le_iff hC b).1 hb.le) x hx
+    exact (h b).2 ((oneSidedLipschitz_le_iff b).1 hb.le) x hx
 
 /-- **The Jacobian test as a bound**: on an open convex set, for `F` differentiable on `C`,
 `osL F on C ≤ b` iff `μ(DF(x)) ≤ b` for all `x ∈ C`. -/
-theorem oneSidedLipschitz_le_iff_logNorm_le (hC : C.Nontrivial) (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem oneSidedLipschitz_le_iff_logNorm_le (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hF : ∀ x ∈ C, HasFDerivAt F (DF x) x) (b : ℝ) :
     osL F on C ≤ b ↔ ∀ x ∈ C, μ (DF x) ≤ b := by
-  simp [oneSidedLipschitz_eq_iSup_logNorm hC hCo hCc hF]
+  simp [oneSidedLipschitz_eq_iSup_logNorm hCo hCc hF]
 
 end Jacobian
 
@@ -296,9 +296,9 @@ end Jacobian
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
     Chapter 3. -/)]
-theorem oneSidedLipschitz_add_le (hC : C.Nontrivial) :
+theorem oneSidedLipschitz_add_le :
     osL (F + G) on C ≤ osL F on C + osL G on C := by
-  refine oneSidedLipschitz_le_of_forall hC fun x hx y hy hxy => ?_
+  refine oneSidedLipschitz_le_of_forall fun x hx y hy hxy => ?_
   have hw : 0 < ‖x - y‖ ^ 2 := pow_pos (norm_pos_iff.2 (sub_ne_zero.2 hxy)) 2
   -- subadditivity of the pairing at the increments of `F` and `G`
   have hadd := (RegularPairing.ofNorm E).add_left_le (F x - F y) (G x - G y) (x - y)
@@ -310,17 +310,17 @@ theorem oneSidedLipschitz_add_le (hC : C.Nontrivial) :
           add_sub_add_comm]
         gcongr
     _ ≤ osL F on C + osL G on C :=
-        add_le_add (le_oneSidedLipschitz hC hx hy hxy) (le_oneSidedLipschitz hC hx hy hxy)
+        add_le_add (le_oneSidedLipschitz hx hy hxy) (le_oneSidedLipschitz hx hy hxy)
 
 /-- **Positive homogeneity**: `osL(a F) = a osL(F)` for `a ≥ 0`. -/
 theorem oneSidedLipschitz_smul {a : ℝ} (ha : 0 ≤ a) (hC : C.Nontrivial) :
     osL (a • F) on C = (a : EReal) * osL F on C := by
   -- `osL (c G) ≤ c osL G` for `c ≥ 0`, termwise by homogeneity of the pairing
   have hle (G : E → E) {c : ℝ} (hc : 0 ≤ c) : osL (c • G) on C ≤ (c : EReal) * osL G on C := by
-    refine oneSidedLipschitz_le_of_forall hC fun x hx y hy hxy => ?_
+    refine oneSidedLipschitz_le_of_forall fun x hx y hy hxy => ?_
     rw [Pi.smul_apply, Pi.smul_apply, ← smul_sub, (RegularPairing.ofNorm E).smul_left c hc,
       mul_div_assoc, EReal.coe_mul]
-    exact mul_le_mul_of_nonneg_left (le_oneSidedLipschitz hC hx hy hxy) (EReal.coe_nonneg.2 hc)
+    exact mul_le_mul_of_nonneg_left (le_oneSidedLipschitz hx hy hxy) (EReal.coe_nonneg.2 hc)
   refine le_antisymm (hle F ha) ?_
   rcases ha.eq_or_lt with rfl | ha
   · -- `a = 0`: `osL 0 = 0`, at any pair of distinct points
@@ -335,16 +335,16 @@ theorem oneSidedLipschitz_smul {a : ℝ} (ha : 0 ≤ a) (hC : C.Nontrivial) :
           rw [← mul_assoc, ← EReal.coe_mul, mul_inv_cancel₀ ha.ne', EReal.coe_one, one_mul]
 
 /-- **Translation**: `osL(F + a id) = osL(F) + a`. -/
-theorem oneSidedLipschitz_add_smul_id (hC : C.Nontrivial) (a : ℝ) :
+theorem oneSidedLipschitz_add_smul_id (a : ℝ) :
     osL (fun x => F x + a • x) on C = osL F on C + a := by
   -- `osL (G + c id) ≤ osL G + c`, termwise by partial linearity of the pairing
   have hle (G : E → E) (c : ℝ) : osL (fun x => G x + c • x) on C ≤ osL G on C + c := by
-    refine oneSidedLipschitz_le_of_forall hC fun x hx y hy hxy => ?_
+    refine oneSidedLipschitz_le_of_forall fun x hx y hy hxy => ?_
     have hw : 0 < ‖x - y‖ ^ 2 := pow_pos (norm_pos_iff.2 (sub_ne_zero.2 hxy)) 2
     rw [show G x + c • x - (G y + c • y) = G x - G y + c • (x - y) by rw [smul_sub]; abel,
       (RegularPairing.ofNorm E).add_smul_self, add_div, mul_div_cancel_right₀ _ hw.ne',
       EReal.coe_add]
-    exact add_le_add (le_oneSidedLipschitz hC hx hy hxy) le_rfl
+    exact add_le_add (le_oneSidedLipschitz hx hy hxy) le_rfl
   refine le_antisymm (hle F a) ?_
   -- the reverse: `F = (F + a id) - a id`
   have h := hle (fun x => F x + a • x) (-a)
@@ -355,22 +355,22 @@ theorem oneSidedLipschitz_add_smul_id (hC : C.Nontrivial) (a : ℝ) :
         rw [add_assoc, ← EReal.coe_add, neg_add_cancel, EReal.coe_zero, add_zero]
 
 /-- **The lower bound**: if `osL F on C ≤ b`, then `‖F x - F y‖ ≥ -b ‖x - y‖` on `C`. -/
-theorem neg_mul_norm_sub_le_of_oneSidedLipschitz_le (hC : C.Nontrivial) {b : ℝ}
+theorem neg_mul_norm_sub_le_of_oneSidedLipschitz_le {b : ℝ}
     (h : osL F on C ≤ b) {x y : E}
     (hx : x ∈ C) (hy : y ∈ C) : -b * ‖x - y‖ ≤ ‖F x - F y‖ := by
   rcases eq_or_ne x y with rfl | hxy
   · simp
   -- `-‖F x - F y‖ ‖x - y‖ ≤ ⟦F x - F y; x - y⟧ ≤ b ‖x - y‖²`, then divide by `‖x - y‖ > 0`
-  have hb := (oneSidedLipschitz_le_iff hC b).1 h x hx y hy
+  have hb := (oneSidedLipschitz_le_iff b).1 h x hx y hy
   have hCS := (abs_le.1 ((RegularPairing.ofNorm E).abs_le_norm_mul_norm (F x - F y) (x - y))).1
   have hw : 0 < ‖x - y‖ := norm_pos_iff.2 (sub_ne_zero.2 hxy)
   nlinarith
 
 /-- **The norm of difference**: `osL(F) ≤ osL(G) + Lip(F - G)`. -/
-theorem oneSidedLipschitz_le_add_of_lipschitzOnWith (hC : C.Nontrivial) {K : ℝ≥0}
+theorem oneSidedLipschitz_le_add_of_lipschitzOnWith {K : ℝ≥0}
     (h : LipschitzOnWith K (F - G) C) :
     osL F on C ≤ osL G on C + ((K : ℝ) : EReal) := by
-  refine oneSidedLipschitz_le_of_forall hC fun x hx y hy hxy => ?_
+  refine oneSidedLipschitz_le_of_forall fun x hx y hy hxy => ?_
   have hw : 0 < ‖x - y‖ ^ 2 := pow_pos (norm_pos_iff.2 (sub_ne_zero.2 hxy)) 2
   -- `F x - F y = (G x - G y) + ((F - G) x - (F - G) y)`: subadditivity, then Cauchy–Schwarz and
   -- the Lipschitz bound on the second term
@@ -386,15 +386,15 @@ theorem oneSidedLipschitz_le_add_of_lipschitzOnWith (hC : C.Nontrivial) {K : ℝ
         rw [← EReal.coe_add, EReal.coe_le_coe_iff, div_add' _ _ _ hw.ne']
         gcongr
         nlinarith [norm_nonneg (x - y), norm_nonneg ((F - G) x - (F - G) y)]
-    _ ≤ osL G on C + ((K : ℝ) : EReal) := add_le_add (le_oneSidedLipschitz hC hx hy hxy) le_rfl
+    _ ≤ osL G on C + ((K : ℝ) : EReal) := add_le_add (le_oneSidedLipschitz hx hy hxy) le_rfl
 
 /-- **Uniform monotonicity**: a map with `osL F on C < 0` is injective on `C`. -/
-theorem injOn_of_oneSidedLipschitz_neg (hC : C.Nontrivial) (h : osL F on C < 0) : InjOn F C := by
+theorem injOn_of_oneSidedLipschitz_neg (h : osL F on C < 0) : InjOn F C := by
   -- a real `b < 0` above `osL`, then the lower bound `‖F x - F y‖ ≥ -b ‖x - y‖`
   obtain ⟨b, hb, hb0⟩ := EReal.exists_between_coe_real h
   have hb0 : b < 0 := EReal.coe_lt_coe_iff.1 hb0
   intro x hx y hy hxy
-  have := neg_mul_norm_sub_le_of_oneSidedLipschitz_le hC hb.le hx hy
+  have := neg_mul_norm_sub_le_of_oneSidedLipschitz_le hb.le hx hy
   rw [hxy, sub_self, norm_zero] at this
   exact sub_eq_zero.1 (norm_le_zero_iff.1 (by nlinarith [norm_nonneg (x - y)]))
 
@@ -416,9 +416,9 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {C : Set E
   (proof := /-- The pairing of the norm is the inner product: for $w \ne 0$ the norm is
     differentiable at $w$ with derivative $\langle \cdot, w \rangle / \|w\|$; apply
     \cref{thm:oneSidedLipschitz-le-iff}. -/)]
-theorem oneSidedLipschitz_le_iff_inner (hC : C.Nontrivial) (b : ℝ) :
+theorem oneSidedLipschitz_le_iff_inner (b : ℝ) :
     osL F on C ≤ b ↔ ∀ x ∈ C, ∀ y ∈ C, ⟪F x - F y, x - y⟫ ≤ b * ‖x - y‖ ^ 2 := by
-  simp only [oneSidedLipschitz_le_iff hC, RegularPairing.normPairing_eq_inner]
+  simp only [oneSidedLipschitz_le_iff, RegularPairing.normPairing_eq_inner]
 
 end Inner
 
@@ -443,7 +443,7 @@ with Jacobian matrix `J`, `osL_{p,R} F on C = sup_{x ∈ C} μ_{p,R}(J x)`. -/
   (proof := /-- \cref{thm:oneSidedLipschitz-eq-iSup-logNorm} in the weighted norm, where the
     derivative of $F$ is the matrix $J(x)$ acting on $\mathbb{R}^n$. -/)]
 theorem oneSidedLipschitzLpWeight_eq_iSup (p : ℝ≥0∞) [Fact (1 ≤ p)] {R : Matrix n n ℝ}
-    (hR : IsUnit R) (hC : C.Nontrivial) (hCo : IsOpen C) (hCc : Convex ℝ C)
+    (hR : IsUnit R) (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hF : ∀ x ∈ C, HasJacobianAt F (J x) x) :
     osL_{p, R} F on C = ⨆ x ∈ C, (μ_{p, R} (J x) : EReal) := by
   -- the identity of `ℝⁿ`, from the sup norm to `‖R x‖_p`, carries the derivative across
@@ -458,7 +458,6 @@ theorem oneSidedLipschitzLpWeight_eq_iSup (p : ℝ≥0∞) [Fact (1 ≤ p)] {R :
     (WeightedNorm.equiv (toWeight p hR) '' (toLp p '' C)) (fun z => e (F (e.symm z))) _
     (fun z => (e : (n → ℝ) →L[ℝ] _).comp
       ((J (e.symm z)).toCLM.comp (e.symm : _ →L[ℝ] n → ℝ)))
-    ((hC.image (WithLp.toLp_injective p)).image (WeightedNorm.equiv _).injective)
     (hset ▸ e.isOpenMap C hCo) (hset ▸ hCc.linear_image e.toLinearEquiv.toLinearMap)
     (by rw [hset]; rintro _ ⟨x, hx, rfl⟩; simpa using (hF x hx).conj e)
   conv at key => rhs; rw [hset, iSup_image]
@@ -471,17 +470,23 @@ theorem oneSidedLipschitzLpWeight_eq_iSup (p : ℝ≥0∞) [Fact (1 ≤ p)] {R :
 
 /-- **The Jacobian test in the norm `√(xᵀ P x)`**: on an open convex set, for `F` differentiable
 with Jacobian matrix `J`, `osL_{2,P^½} F on C = sup_{x ∈ C} μ_{2,P^½}(J x)`. -/
-theorem oneSidedLipschitzL2PosDef_eq_iSup {P : Matrix n n ℝ} (hP : P.PosDef) (hC : C.Nontrivial)
+theorem oneSidedLipschitzL2PosDef_eq_iSup {P : Matrix n n ℝ} (hP : P.PosDef)
     (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hF : ∀ x ∈ C, HasJacobianAt F (J x) x) :
     osL_{2,P^½} F on C = ⨆ x ∈ C, (μ_{2,P^½} (J x) : EReal) := by
-  -- the general test in the norm `√(xᵀ P x)`, with the derivative moved there by the identity
+  -- the general test in the norm `√(xᵀ P x)`, with `F` and its derivative moved there by the
+  -- identity `e`
+  set e := WeightedEuclidean.equiv hP
   rw [oneSidedLipschitzL2PosDef, dif_pos hP]
   simp only [logNormL2PosDef, dif_pos hP]
-  exact @oneSidedLipschitz_eq_iSup_logNorm (WeightedEuclidean hP) _ _ C F _
-    (fun x => WeightedEuclidean.toCLM hP (J x)) hC
-    (hCo.preimage (WeightedEuclidean.equiv hP).symm.continuous) hCc
-    fun x hx => (hF x hx).conj (WeightedEuclidean.equiv hP)
+  rw [oneSidedLipschitz_eq_iSup_logNorm (e.isOpenMap C hCo)
+    (hCc.linear_image e.toLinearEquiv.toLinearMap)
+    (DF := fun z => WeightedEuclidean.toCLM hP (J (e.symm z))) (by
+      rintro _ ⟨x, hx, rfl⟩
+      beta_reduce
+      rw [e.symm_apply_apply]
+      exact (hF x hx).conj e), iSup_image]
+  simp only [e.symm_apply_apply]
 
 omit [DecidableEq n] [Nonempty n] in
 /-- **`osL` in the norm `√(xᵀ P x)` as an increment condition**: `osL_{2,P^½} F on C ≤ b` iff
@@ -495,13 +500,13 @@ omit [DecidableEq n] [Nonempty n] in
     $F$ on an open convex $C$. -/)
   (proof := /-- \cref{thm:oneSidedLipschitz-le-iff-inner} in the inner product
     $x^\top P y$. -/)]
-theorem oneSidedLipschitzL2PosDef_le_iff {P : Matrix n n ℝ} (hP : P.PosDef) (hC : C.Nontrivial)
+theorem oneSidedLipschitzL2PosDef_le_iff {P : Matrix n n ℝ} (hP : P.PosDef)
     (b : ℝ) :
     osL_{2,P^½} F on C ≤ b ↔
       ∀ x ∈ C, ∀ y ∈ C, (F x - F y) ⬝ᵥ (P *ᵥ (x - y)) ≤ b * ((x - y) ⬝ᵥ (P *ᵥ (x - y))) := by
   -- the inner-product form in `xᵀ P y`, whose norm squared is `xᵀ P x`
-  rw [oneSidedLipschitzL2PosDef, dif_pos hP,
-    @oneSidedLipschitz_le_iff_inner (WeightedEuclidean hP) _ _ C F hC b]
+  rw [oneSidedLipschitzL2PosDef, dif_pos hP, oneSidedLipschitz_le_iff_inner _ b]
+  simp only [forall_mem_image, ContinuousLinearEquiv.symm_apply_apply]
   refine forall₂_congr fun x _ => forall₂_congr fun y _ => ?_
   rw [← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def, WeightedEuclidean.inner_def]
   exact Iff.rfl
@@ -521,7 +526,7 @@ regular pairing of the ℓᵖ norm; with the sign (`p = 1`) or max (`p = ∞`) p
     \cref{thm:regularPairing-logNorm-fderiv-le-iff} for the weighted pairing
     (\cref{def:regularPairing-weighted}). -/)]
 theorem oneSidedLipschitzLpWeight_le_iff_pairing (p : ℝ≥0∞) [Fact (1 ≤ p)]
-    (q : RegularPairing (WithLp p (n → ℝ))) {R : Matrix n n ℝ} (hR : IsUnit R) (hC : C.Nontrivial)
+    (q : RegularPairing (WithLp p (n → ℝ))) {R : Matrix n n ℝ} (hR : IsUnit R)
     (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hF : ∀ x ∈ C, HasJacobianAt F (J x) x) (b : ℝ) :
     osL_{p, R} F on C ≤ b ↔ ∀ x ∈ C, ∀ y ∈ C,
@@ -538,7 +543,7 @@ theorem oneSidedLipschitzLpWeight_le_iff_pairing (p : ℝ≥0∞) [Fact (1 ≤ p
     (e.isOpenMap C hCo) (hCc.linear_image e.toLinearEquiv.toLinearMap)
     (by rintro _ ⟨x, hx, rfl⟩; simpa using (hF x hx).conj e) b
   simp only [forall_mem_image, e.symm_apply_apply, ← map_sub] at key
-  rw [oneSidedLipschitzLpWeight_eq_iSup p hR hC hCo hCc hF]
+  rw [oneSidedLipschitzLpWeight_eq_iSup p hR hCo hCc hF]
   simp only [iSup₂_le_iff, EReal.coe_le_coe_iff]
   convert key using 4 with x hx
   · simp only [logNormLpWeight, dif_pos hR, WeightedNorm.logNorm]

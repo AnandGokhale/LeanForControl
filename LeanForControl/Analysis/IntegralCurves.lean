@@ -49,7 +49,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     \[
       x(t) \;=\; x_0 + \int_{t_0}^{t} F(s,\, x(s))\,\mathrm{d}s
     \]
-    for every $t$ between $t_0$ and $t_1$, the integrand being integrable. -/)]
+    for every $t$ between $t_0$ and $t_1$, the integrand being integrable. -/),
+  -- `CompleteSpace E` is unused in the body on purpose: see the docstring
+  nolint unusedArguments]
 def IsIntegralSolution [CompleteSpace E] (t₀ t₁ : ℝ) (x : ℝ → E) (x₀ : E) (F : ℝ → E → E) :
     Prop :=
   ∀ t ∈ Set.uIcc t₀ t₁,

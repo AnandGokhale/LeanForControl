@@ -393,14 +393,15 @@ theorem logNormL2PosDef_le_iff {P : Matrix n n ℝ} (hP : P.PosDef) (A : Matrix 
     μ_{2,P^½} A ≤ c ↔ ∀ v : n → ℝ, v ⬝ᵥ ((P * A) *ᵥ v) ≤ c * (v ⬝ᵥ (P *ᵥ v)) := by
   have hPt : Pᵀ = P := by simpa using hP.isHermitian.eq
   rw [logNormL2PosDef, dif_pos hP, logNorm_le_iff_inner_le]
-  refine forall_congr' fun v => ?_
+  refine (WeightedEuclidean.equivE hP).forall_congr fun v => ?_
+  rcases v with ⟨v⟩
   rw [← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def, WeightedEuclidean.inner_def]
   -- `(A v)ᵀ P v = vᵀ P A v`, as `P` is symmetric
   have key : (A *ᵥ v) ⬝ᵥ (P *ᵥ (v : n → ℝ)) = v ⬝ᵥ ((P * A) *ᵥ v) := by
     calc (A *ᵥ v) ⬝ᵥ (P *ᵥ (v : n → ℝ)) = (P *ᵥ (v : n → ℝ)) ⬝ᵥ (A *ᵥ v) := dotProduct_comm _ _
       _ = ((v : n → ℝ) ᵥ* P) ⬝ᵥ (A *ᵥ v) := by rw [← vecMul_transpose, hPt]
       _ = v ⬝ᵥ ((P * A) *ᵥ v) := by rw [← dotProduct_mulVec, mulVec_mulVec]
-  change (A *ᵥ v) ⬝ᵥ (P *ᵥ v) ≤ _ ↔ _
+  change (A *ᵥ v) ⬝ᵥ (P *ᵥ v) ≤ c * (v ⬝ᵥ (P *ᵥ v)) ↔ v ⬝ᵥ ((P * A) *ᵥ v) ≤ c * (v ⬝ᵥ (P *ᵥ v))
   rw [key]
 
 open scoped MatrixOrder in
@@ -465,21 +466,22 @@ theorem logNormL2PosDef_isGreatest {P : Matrix n n ℝ} (hP : P.PosDef) (A : Mat
       WeightedEuclidean.toCLM hP (P⁻¹ * Aᵀ * P) := by
     refine ((ContinuousLinearMap.eq_adjoint_iff _ _).2 fun x y => ?_).symm
     rw [WeightedEuclidean.inner_def, WeightedEuclidean.inner_def]
-    change ((P⁻¹ * Aᵀ * P) *ᵥ (x : n → ℝ)) ⬝ᵥ (P *ᵥ (y : n → ℝ)) =
-      (x : n → ℝ) ⬝ᵥ (P *ᵥ (A *ᵥ (y : n → ℝ)))
+    change ((P⁻¹ * Aᵀ * P) *ᵥ x.ofWE) ⬝ᵥ (P *ᵥ y.ofWE) = x.ofWE ⬝ᵥ (P *ᵥ (A *ᵥ y.ofWE))
     rw [hT, mulVec_mulVec, mulVec_mulVec, transpose_mul, transpose_mul, transpose_transpose,
       transpose_nonsing_inv, hPt, Matrix.mul_assoc, Matrix.mul_assoc, nonsing_inv_mul P hdet,
       Matrix.mul_one]
+  -- the identity `ℝⁿ → (ℝⁿ, √(xᵀ P x))` conjugates the matrix to the operator, keeping the spectrum
+  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP := ((WeightedEuclidean.equivE hP).linearEquiv ℝ).symm
   have hS : ((((2⁻¹ : ℝ) • (WeightedEuclidean.toCLM hP A +
       ContinuousLinearMap.adjoint (WeightedEuclidean.toCLM hP A))) :
       WeightedEuclidean hP →L[ℝ] WeightedEuclidean hP) :
         WeightedEuclidean hP →ₗ[ℝ] WeightedEuclidean hP) =
-      (Matrix.toLin' ((2⁻¹ : ℝ) • (A + P⁻¹ * Aᵀ * P)) :
-        WeightedEuclidean hP →ₗ[ℝ] WeightedEuclidean hP) := by
+      e.conjAlgEquiv ℝ (Matrix.toLin' ((2⁻¹ : ℝ) • (A + P⁻¹ * Aᵀ * P))) := by
     rw [hadj]
-    ext x
-    simp [WeightedEuclidean.toCLM]
-    rfl
+    ext x : 2
+    change (2⁻¹ : ℝ) • (A *ᵥ x.ofWE + (P⁻¹ * Aᵀ * P) *ᵥ x.ofWE) =
+      ((2⁻¹ : ℝ) • (A + P⁻¹ * Aᵀ * P)) *ᵥ x.ofWE
+    rw [smul_mulVec, add_mulVec]
   -- conjugating by `P` turns `(A + P⁻¹ Aᵀ P) / 2` into `(P A P⁻¹ + Aᵀ) / 2`
   set u : (Matrix n n ℝ)ˣ := (Matrix.isUnit_iff_isUnit_det P).2 hdet |>.unit
   have key : (2⁻¹ : ℝ) • (P * A * P⁻¹ + Aᵀ) =
@@ -493,7 +495,7 @@ theorem logNormL2PosDef_isGreatest {P : Matrix n n ℝ} (hP : P.PosDef) (A : Mat
   rw [logNormL2PosDef, dif_pos hP, key, spectrum.units_conjugate]
   convert logNorm_isGreatest_inner (WeightedEuclidean.toCLM hP A) using 1
   ext a
-  rw [Set.mem_setOf_eq, hS, Module.End.hasEigenvalue_iff_mem_spectrum,
+  rw [Set.mem_setOf_eq, hS, Module.End.hasEigenvalue_iff_mem_spectrum, AlgEquiv.spectrum_eq,
     ← AlgEquiv.spectrum_eq (Matrix.toLinAlgEquiv' (R := ℝ) (n := n))]
   rfl
 
@@ -511,15 +513,7 @@ See `logNormL2PosDef_isGreatest`. -/
     $\mu_{2,P^{1/2}}(A)$ is the largest eigenvalue of $(A + P^{-1} A^\top P)/2$; conjugating by
     $P$ gives $(P A P^{-1} + A^\top)/2$, with the same spectrum. -/)]
 theorem logNormL2PosDef_eq_lambdaMax {P : Matrix n n ℝ} (hP : P.PosDef) (A : Matrix n n ℝ) :
-    μ_{2,P^½} A = lambdaMax ((2⁻¹ : ℝ) • (P * A * P⁻¹ + Aᵀ))
-      -- symmetrizable by `P`: `(P A P⁻¹ + Aᵀ) P / 2 = (P A + Aᵀ P) / 2`, symmetric
-      ⟨P, hP, by
-        have hPt : Pᵀ = P := by simpa using hP.isHermitian.eq
-        rw [Matrix.smul_mul, Matrix.add_mul, Matrix.mul_assoc _ P⁻¹,
-          nonsing_inv_mul P hP.det_pos.ne'.isUnit, Matrix.mul_one]
-        refine IsHermitian.smul ?_ (.all _)
-        simp [IsHermitian, conjTranspose_eq_transpose_of_trivial, transpose_mul, hPt,
-          add_comm]⟩ :=
+    μ_{2,P^½} A = lambdaMax ((2⁻¹ : ℝ) • (P * A * P⁻¹ + Aᵀ)) :=
   (logNormL2PosDef_isGreatest hP A).csSup_eq.symm
 
 omit [Nonempty n] in
@@ -532,13 +526,14 @@ theorem logNormLpWeight_two_eq {R : Matrix n n ℝ} (hR : IsUnit R) (A : Matrix 
       PosDef.conjTranspose_mul_self R (mulVec_injective_iff_isUnit.2 hR)
   -- `x ↦ R x`, from `√(xᵀ Rᵀ R x)` to the Euclidean norm
   let e : WeightedEuclidean hP ≃L[ℝ] EuclideanSpace ℝ n := LinearEquiv.toContinuousLinearEquiv
-    ((WithLp.linearEquiv 2 ℝ (n → ℝ)).symm.trans (toWeight 2 hR).toLinearEquiv)
+    (((WeightedEuclidean.equivE hP).linearEquiv ℝ).trans
+      ((WithLp.linearEquiv 2 ℝ (n → ℝ)).symm.trans (toWeight 2 hR).toLinearEquiv))
   have he (x : WeightedEuclidean hP) : ‖e x‖ = ‖x‖ := by
     refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
     rw [← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def]
-    change (R *ᵥ x) ⬝ᵥ star (R *ᵥ x) = _
+    change (R *ᵥ x.ofWE) ⬝ᵥ star (R *ᵥ x.ofWE) = _
     rw [star_trivial]
-    rw [← mulVec_mulVec, dotProduct_mulVec (x : n → ℝ) Rᵀ, vecMul_transpose]
+    rw [← mulVec_mulVec, dotProduct_mulVec x.ofWE Rᵀ, vecMul_transpose]
   rw [logNormLpWeight_eq 2 hR, logNormL2PosDef, dif_pos hP, logNormLp, ← logNorm_conj e he]
   congr 1
   ext x : 1
@@ -552,7 +547,8 @@ omit [Nonempty n] in
 lemma logNormL2PosDef_one (A : Matrix n n ℝ) : μ_{2,(1 : Matrix n n ℝ)^½} A = μ_{2} A := by
   -- `ℝⁿ` with the Euclidean norm, viewed in the inner product `xᵀ I y`
   let e : EuclideanSpace ℝ n ≃L[ℝ] WeightedEuclidean PosDef.one :=
-    LinearEquiv.toContinuousLinearEquiv (WithLp.linearEquiv 2 ℝ (n → ℝ))
+    LinearEquiv.toContinuousLinearEquiv ((WithLp.linearEquiv 2 ℝ (n → ℝ)).trans
+      ((WeightedEuclidean.equivE PosDef.one).linearEquiv ℝ).symm)
   have he (x : EuclideanSpace ℝ n) : ‖e x‖ = ‖x‖ := by
     refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
     rw [← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def,
@@ -596,9 +592,7 @@ theorem logNorm_euclidean_isGreatest (A : Matrix n n ℝ) :
     Table 2.1. -/)
   (proof := /-- \cref{thm:logNormL2PosDef-eq-lambdaMax} with $P = I$. -/)]
 theorem logNorm_euclidean_eq_lambdaMax (A : Matrix n n ℝ) :
-    μ_{2} A = lambdaMax ((2⁻¹ : ℝ) • (A + Aᵀ))
-      (IsHermitian.isSymmetrizable <| .smul (by
-        simp [IsHermitian, conjTranspose_eq_transpose_of_trivial, add_comm]) (.all _)) :=
+    μ_{2} A = lambdaMax ((2⁻¹ : ℝ) • (A + Aᵀ)) :=
   (logNorm_euclidean_isGreatest A).csSup_eq.symm
 
 end Matrix

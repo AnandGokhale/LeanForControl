@@ -68,8 +68,8 @@ theorem isHurwitzWithRate_iff_exists_logNormL2PosDef_lt (A : Matrix n n ℝ) (b 
     rw [logNormL2PosDef, logNormL2PosDef, dif_pos hP, dif_pos hP, ← logNorm_add_smul_one]
     congr 1
     ext x : 1
-    simp [WeightedEuclidean.toCLM]
-    rfl
+    apply WeightedEuclidean.ext
+    simp [add_mulVec, neg_mulVec, smul_mulVec, one_mulVec]
   rw [h, add_neg_lt_iff_lt_add, zero_add]
 
 end Matrix

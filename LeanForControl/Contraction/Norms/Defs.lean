@@ -2,7 +2,9 @@ import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Normed.Lp.Matrix
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Data.Real.StarOrdered
+import Mathlib.Algebra.Module.TransferInstance
 import Mathlib.Topology.Algebra.Module.FiniteDimension
+import LeanForControl.Analysis.Jacobian
 import Architect
 
 /-!
@@ -172,27 +174,23 @@ noncomputable def normPairing (x y : E) : ℝ :=
 `osL(F) = sup_{x ≠ y ∈ C} ⟦F x - F y; x - y⟧ / ‖x - y‖²`, for the pairing of the norm
 (`normPairing`, the regular pairing `RegularPairing.ofNorm`).  It extends the log norm from linear
 to nonlinear maps; it can be negative, and it is `+∞` when the quotients are unbounded (`F x = x³`),
-so it takes values in `EReal`.  As in the book, `C` has at least two points: the proof
-`C.Nontrivial` is an argument, found automatically from the context (or from `Nontrivial E` for
-`C = univ`). -/
+so it takes values in `EReal`.  The book takes `C` with at least two points; here the definition is
+total, and on a set with fewer than two points the supremum is empty and `osL = ⊥`.  Theorems that
+need two points assume `C.Nontrivial`. -/
 @[blueprint "def:oneSidedLipschitz"
   (title := "One-sided Lipschitz constant")
   (statement := /-- On a real normed space $E$, the \emph{one-sided Lipschitz constant} of a map
     $F : E \to E$ on $C \subseteq E$ is
     \[ \operatorname{osL}(F) = \sup_{x \ne y \in C} \frac{\pair{F(x) - F(y)}{x - y}}{\|x - y\|^2}
       \in \mathbb{R} \cup \{+\infty\}, \]
-    for a set $C$ with at least two points and the regular pairing of the norm
+    for a set $C$ with at least two points (on smaller sets the supremum is empty) and the regular
+    pairing of the norm
     (\cref{def:regularPairing-ofNorm}).  For a linear map it is the log norm
     (\cref{def:logNorm}).
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
     Chapter 3. -/)]
-noncomputable def oneSidedLipschitz (C : Set E) (F : E → E)
-    (_hC : C.Nontrivial := by
-      first
-        | assumption
-        | exact Set.nontrivial_univ
-        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+noncomputable def oneSidedLipschitz (C : Set E) (F : E → E) : EReal :=
   ⨆ (x ∈ C) (y ∈ C) (_ : x ≠ y), ((normPairing (F x - F y) (x - y) / ‖x - y‖ ^ 2 : ℝ) : EReal)
 
 end OneSidedLipschitz
@@ -211,22 +209,34 @@ variable {E} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     on $E$ is $\|x\|_R = \|R x\|$.  It is a norm because $R$ is linear and injective.
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
-    Section 2.3. -/)]
-def WeightedNorm (_R : E ≃L[ℝ] F) : Type _ := E
+    Section 2.3. -/), ext]
+structure WeightedNorm (R : E ≃L[ℝ] F) where
+  /-- The vector `x` of `E`, as a vector of the weighted space. -/
+  toWeighted (R) ::
+  /-- The vector of `E` underlying a vector of the weighted space. -/
+  ofWeighted : E
 
 namespace WeightedNorm
 
 variable (R : E ≃L[ℝ] F)
 
-instance : AddCommGroup (WeightedNorm R) := inferInstanceAs (AddCommGroup E)
+/-- `WeightedNorm.ofWeighted` and `WeightedNorm.toWeighted` as an equivalence. -/
+@[simps]
+protected def equivE : WeightedNorm R ≃ E where
+  toFun := ofWeighted
+  invFun := toWeighted R
+  left_inv _ := rfl
+  right_inv _ := rfl
 
-instance : Module ℝ (WeightedNorm R) := inferInstanceAs (Module ℝ E)
+instance : AddCommGroup (WeightedNorm R) := (WeightedNorm.equivE R).addCommGroup
 
-instance [Nontrivial E] : Nontrivial (WeightedNorm R) := inferInstanceAs (Nontrivial E)
+instance : Module ℝ (WeightedNorm R) := (WeightedNorm.equivE R).module ℝ
 
-/-- `R` on the weighted space, as a linear map: the norm is pulled back along it.  Its source is
-`WeightedNorm R`, not `E`, which an ascription on `R.toLinearEquiv` would not achieve. -/
-private def weightₗ : WeightedNorm R ≃ₗ[ℝ] F := R.toLinearEquiv
+instance [Nontrivial E] : Nontrivial (WeightedNorm R) := (WeightedNorm.equivE R).nontrivial
+
+/-- `R` on the weighted space, as a linear map: the norm is pulled back along it. -/
+private def weightₗ : WeightedNorm R ≃ₗ[ℝ] F :=
+  ((WeightedNorm.equivE R).linearEquiv ℝ).trans R.toLinearEquiv
 
 noncomputable instance : NormedAddCommGroup (WeightedNorm R) :=
   NormedAddCommGroup.induced _ _ (weightₗ R) (weightₗ R).injective
@@ -261,14 +271,8 @@ noncomputable def logNorm (A : E →L[ℝ] E) : ℝ :=
 scoped[LogNorm] notation:max "μ[" R "]" => WeightedNorm.logNorm R
 
 /-- `osL[R](F)`: the one-sided Lipschitz constant of `F` on `C`, measured in the weighted norm. -/
-noncomputable def oneSidedLipschitz (C : Set E) (F : E → E)
-    (hC : C.Nontrivial := by
-      first
-        | assumption
-        | exact Set.nontrivial_univ
-        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+noncomputable def oneSidedLipschitz (C : Set E) (F : E → E) : EReal :=
   _root_.oneSidedLipschitz (equiv R '' C) (fun x => equiv R (F ((equiv R).symm x)))
-    (hC.image (equiv R).injective)
 
 end WeightedNorm
 
@@ -317,28 +321,16 @@ noncomputable def logNormLpWeight (R A : Matrix n n ℝ) : ℝ :=
   if hR : IsUnit R then μ[toWeight p hR] (toLpCLM p A) else 0
 
 /-- `osL_{p}(F)`: the one-sided Lipschitz constant on `C` of a map `F` of `ℝⁿ`, in the ℓᵖ norm. -/
-noncomputable def oneSidedLipschitzLp (C : Set (n → ℝ)) (F : (n → ℝ) → n → ℝ)
-    (hC : C.Nontrivial := by
-      first
-        | assumption
-        | exact Set.nontrivial_univ
-        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+noncomputable def oneSidedLipschitzLp (C : Set (n → ℝ)) (F : (n → ℝ) → n → ℝ) : EReal :=
   _root_.oneSidedLipschitz (toLp p '' C) (fun x => toLp p (F (ofLp x)))
-    (hC.image (WithLp.toLp_injective p))
 
 open Classical in
 /-- `osL_{p,R}(F)`: the one-sided Lipschitz constant on `C` of a map `F` of `ℝⁿ`, in the weighted
 norm `‖R x‖_p`.  It is meaningful for an invertible `R`; otherwise it is `0`. -/
 noncomputable def oneSidedLipschitzLpWeight (R : Matrix n n ℝ) (C : Set (n → ℝ))
-    (F : (n → ℝ) → n → ℝ)
-    (hC : C.Nontrivial := by
-      first
-        | assumption
-        | exact Set.nontrivial_univ
-        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+    (F : (n → ℝ) → n → ℝ) : EReal :=
   if hR : IsUnit R then
     WeightedNorm.oneSidedLipschitz (toWeight p hR) (toLp p '' C) (fun x => toLp p (F (ofLp x)))
-      (hC.image (WithLp.toLp_injective p))
   else 0
 
 /-- `μ_{p} A` for the ℓᵖ log norm of a matrix; available after `open scoped LogNorm`. -/
@@ -358,40 +350,95 @@ def metzlerMajorant (A : Matrix n n ℝ) : Matrix n n ℝ := fun i j => if i = j
 /-! ### The weighted Euclidean norm `‖x‖_{2,P^½} = √(xᵀ P x)` -/
 
 /-- `ℝⁿ` with the inner product `xᵀ P y` and its norm `‖x‖ = √(xᵀ P x)`, for `P ≻ 0`. -/
-def WeightedEuclidean {P : Matrix n n ℝ} (_hP : P.PosDef) : Type _ := n → ℝ
+@[ext]
+structure WeightedEuclidean {P : Matrix n n ℝ} (hP : P.PosDef) where
+  /-- The vector `x` of `ℝⁿ`, as a vector of the weighted space. -/
+  toWE (hP) ::
+  /-- The vector of `ℝⁿ` underlying a vector of the weighted space. -/
+  ofWE : n → ℝ
 
 namespace WeightedEuclidean
 
 variable {P : Matrix n n ℝ} (hP : P.PosDef)
 
-noncomputable instance : NormedAddCommGroup (WeightedEuclidean hP) := P.toNormedAddCommGroup hP
+/-- `WeightedEuclidean.ofWE` and `WeightedEuclidean.toWE` as an equivalence. -/
+@[simps]
+protected def equivE : WeightedEuclidean hP ≃ (n → ℝ) where
+  toFun := ofWE
+  invFun := toWE hP
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance : AddCommGroup (WeightedEuclidean hP) := (WeightedEuclidean.equivE hP).addCommGroup
+
+noncomputable instance : Module ℝ (WeightedEuclidean hP) := (WeightedEuclidean.equivE hP).module ℝ
+
+omit [Fintype n] [DecidableEq n] in
+@[simp] lemma ofWE_add (x y : WeightedEuclidean hP) : (x + y).ofWE = x.ofWE + y.ofWE := rfl
+
+omit [Fintype n] [DecidableEq n] in
+@[simp] lemma ofWE_neg (x : WeightedEuclidean hP) : (-x).ofWE = -x.ofWE := rfl
+
+omit [Fintype n] [DecidableEq n] in
+@[simp] lemma ofWE_sub (x y : WeightedEuclidean hP) : (x - y).ofWE = x.ofWE - y.ofWE := rfl
+
+omit [Fintype n] [DecidableEq n] in
+@[simp] lemma ofWE_smul (a : ℝ) (x : WeightedEuclidean hP) : (a • x).ofWE = a • x.ofWE := rfl
+
+instance [Nonempty n] : Nontrivial (WeightedEuclidean hP) :=
+  (WeightedEuclidean.equivE hP).nontrivial
+
+/-- The inner product `⟪x, y⟫ = xᵀ P y`. -/
+@[reducible] private noncomputable def core : InnerProductSpace.Core ℝ (WeightedEuclidean hP) where
+  inner x y := x.ofWE ⬝ᵥ (P *ᵥ y.ofWE)
+  conj_inner_symm x y := by
+    have hT : Pᵀ = P := by simpa [conjTranspose_eq_transpose_of_trivial] using hP.isHermitian.eq
+    rw [conj_trivial, dotProduct_mulVec, ← mulVec_transpose, hT, dotProduct_comm]
+  re_inner_nonneg x := by
+    simpa using hP.posSemidef.dotProduct_mulVec_nonneg x.ofWE
+  add_left x y z := add_dotProduct _ _ _
+  smul_left x y r := by
+    simp only [conj_trivial]
+    exact smul_dotProduct _ _ _
+  definite x hx := by
+    by_contra h
+    have h' : x.ofWE ≠ 0 := fun h0 => h (congrArg (toWE hP) h0)
+    have := hP.dotProduct_mulVec_pos h'
+    simp only [star_trivial] at this
+    exact this.ne' hx
+
+noncomputable instance : NormedAddCommGroup (WeightedEuclidean hP) :=
+  @InnerProductSpace.Core.toNormedAddCommGroup _ _ _ _ _ (core hP)
 
 noncomputable instance : InnerProductSpace ℝ (WeightedEuclidean hP) :=
-  P.toInnerProductSpace hP.posSemidef
+  InnerProductSpace.ofCore (core hP).toCore
 
-instance : FiniteDimensional ℝ (WeightedEuclidean hP) :=
-  inferInstanceAs (FiniteDimensional ℝ (n → ℝ))
-
-instance [Nonempty n] : Nontrivial (WeightedEuclidean hP) := inferInstanceAs (Nontrivial (n → ℝ))
+omit [Fintype n] [DecidableEq n] in
+instance [Finite n] : FiniteDimensional ℝ (WeightedEuclidean hP) :=
+  LinearEquiv.finiteDimensional ((WeightedEuclidean.equivE hP).linearEquiv ℝ).symm
 
 /-- The identity of `ℝⁿ`, from the sup norm of `n → ℝ` to the norm `√(xᵀ P x)`. -/
 noncomputable def equiv : (n → ℝ) ≃L[ℝ] WeightedEuclidean hP :=
-  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP :=
-    { toFun := fun x => x, invFun := fun x => x, map_add' := fun _ _ => rfl,
-      map_smul' := fun _ _ => rfl, left_inv := fun _ => rfl, right_inv := fun _ => rfl }
+  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP := ((WeightedEuclidean.equivE hP).linearEquiv ℝ).symm
   { e with
     continuous_toFun := e.toLinearMap.continuous_of_finiteDimensional
     continuous_invFun := e.symm.toLinearMap.continuous_of_finiteDimensional }
 
-/-- `A` as an operator on `ℝⁿ` with the norm `√(xᵀ P x)`. -/
-noncomputable def toCLM (A : Matrix n n ℝ) : WeightedEuclidean hP →L[ℝ] WeightedEuclidean hP :=
-  LinearMap.toContinuousLinearMap (Matrix.toLin' A)
+omit [DecidableEq n] in
+@[simp] lemma equiv_apply (x : n → ℝ) : equiv hP x = toWE hP x := rfl
 
 omit [DecidableEq n] in
-lemma inner_def (x y : WeightedEuclidean hP) :
-    ⟪x, y⟫ = (x : n → ℝ) ⬝ᵥ (P *ᵥ (y : n → ℝ)) := by
-  change (P *ᵥ y) ⬝ᵥ star x = _
-  rw [star_trivial, dotProduct_comm]
+@[simp] lemma equiv_symm_apply (x : WeightedEuclidean hP) : (equiv hP).symm x = x.ofWE := rfl
+
+/-- `A` as an operator on `ℝⁿ` with the norm `√(xᵀ P x)`. -/
+noncomputable def toCLM (A : Matrix n n ℝ) : WeightedEuclidean hP →L[ℝ] WeightedEuclidean hP :=
+  (equiv hP : (n → ℝ) →L[ℝ] _) ∘L A.toCLM ∘L ((equiv hP).symm : _ →L[ℝ] n → ℝ)
+
+@[simp] lemma toCLM_apply (A : Matrix n n ℝ) (x : WeightedEuclidean hP) :
+    toCLM hP A x = toWE hP (A *ᵥ x.ofWE) := rfl
+
+omit [DecidableEq n] in
+lemma inner_def (x y : WeightedEuclidean hP) : ⟪x, y⟫ = x.ofWE ⬝ᵥ (P *ᵥ y.ofWE) := rfl
 
 end WeightedEuclidean
 
@@ -405,13 +452,11 @@ open Classical in
 /-- `osL_{2,P^½}(F)`: the one-sided Lipschitz constant on `C` of a map `F` of `ℝⁿ`, in the norm
 `√(xᵀ P x)`.  It is meaningful for `P ≻ 0`; otherwise it is `0`. -/
 noncomputable def oneSidedLipschitzL2PosDef (P : Matrix n n ℝ) (C : Set (n → ℝ))
-    (F : (n → ℝ) → n → ℝ)
-    (hC : C.Nontrivial := by
-      first
-        | assumption
-        | exact Set.nontrivial_univ
-        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
-  if hP : P.PosDef then @_root_.oneSidedLipschitz (WeightedEuclidean hP) _ _ C F hC else 0
+    (F : (n → ℝ) → n → ℝ) : EReal :=
+  if hP : P.PosDef then
+    _root_.oneSidedLipschitz (WeightedEuclidean.equiv hP '' C)
+      (fun x => WeightedEuclidean.equiv hP (F ((WeightedEuclidean.equiv hP).symm x)))
+  else 0
 
 end Matrix
 
@@ -439,8 +484,7 @@ def unexpandLogNormL2PosDef : Lean.PrettyPrinter.Unexpander
 /-! #### One-sided Lipschitz constants
 
 `osL F`, `osL[R] F`, `osL_{p} F`, `osL_{p, R} F` and `osL_{2,P^½} F` mirror the log norms: the
-one-sided Lipschitz constant on all of the space.  Appending `on C` restricts it to `C`, which needs
-a proof `C.Nontrivial` in the context. -/
+one-sided Lipschitz constant on all of the space.  Appending `on C` restricts it to `C`. -/
 
 /-- `osL F` and `osL F on C`: the one-sided Lipschitz constant. -/
 scoped syntax:max "osL " term:max (" on " term:max)? : term

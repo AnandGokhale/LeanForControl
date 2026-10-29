@@ -16,9 +16,9 @@ its eigenvalues.
 
 The second part is about real spectra.  A real matrix `S` is *symmetrizable* when `S P` is
 symmetric for some `P ≻ 0`.  Such an `S` is similar to the symmetric matrix `P^{-½} (S P) P^{-½}`,
-so its spectrum is real; symmetric matrices are the case `P = I`.  These are the matrices on which
-the largest eigenvalue `λ_max` means what it says, and `Matrix.lambdaMax` asks for a proof that its
-argument is one of them.
+so its spectrum is real; symmetric matrices are the case `P = I`.  `Matrix.lambdaMax` is defined for
+every real matrix as its largest real eigenvalue; on symmetrizable matrices it is the largest
+eigenvalue.
 
 Reference: standard linear algebra.
 -/
@@ -120,12 +120,14 @@ theorem IsHermitian.isSymmetrizable {S : Matrix n n ℝ} (hS : S.IsHermitian) :
 
 variable [DecidableEq n]
 
-/-- `λ_max(S)`: the largest eigenvalue of a symmetrizable `S`, the supremum of its spectrum. -/
+/-- `λ_max(S)`: the largest real eigenvalue of `S`, the supremum of its real spectrum (`0` if it
+has none).  For a symmetrizable `S` the spectrum is real, and this is its largest eigenvalue. -/
 @[blueprint "def:lambdaMax"
   (title := "Largest eigenvalue")
-  (statement := /-- For a symmetrizable $S$ (\cref{def:isSymmetrizable}), $\lambda_{\max}(S)$ is its
-    largest eigenvalue. -/)]
-noncomputable def lambdaMax (S : Matrix n n ℝ) (_hS : S.IsSymmetrizable) : ℝ :=
+  (statement := /-- For $S \in \mathbb{R}^{n \times n}$, $\lambda_{\max}(S)$ is the largest real
+    eigenvalue of $S$.  For a symmetrizable $S$ (\cref{def:isSymmetrizable}) every eigenvalue is
+    real, and $\lambda_{\max}(S)$ is its largest eigenvalue. -/)]
+noncomputable def lambdaMax (S : Matrix n n ℝ) : ℝ :=
   sSup (spectrum ℝ S)
 
 end RealSpectrum
