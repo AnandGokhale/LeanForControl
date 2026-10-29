@@ -93,7 +93,7 @@ theorem RegularPairing.pairing_le_of_oneSidedLipschitz_le (p : RegularPairing E)
 theorem oneSidedLipschitz_affine [Nontrivial E] (A : E →L[ℝ] E) (d : E) :
     osL (fun x => A x + d) = (μ A : EReal) := by
   have hinc (x y : E) : A x + d - (A y + d) = A (x - y) := by rw [map_sub]; abel
-  refine le_antisymm ((oneSidedLipschitz_le_iff nontrivial_univ _).2 fun x _ y _ => ?_) ?_
+  refine le_antisymm ((oneSidedLipschitz_le_iff _).2 fun x _ y _ => ?_) ?_
   · -- Lumer's inequality for the increment `A (x - y)`
     rw [hinc]
     exact (RegularPairing.ofNorm E).pairing_le_logNorm A (x - y)
@@ -101,7 +101,7 @@ theorem oneSidedLipschitz_affine [Nontrivial E] (A : E →L[ℝ] E) (d : E) :
     refine EReal.le_of_forall_lt_iff_le.1 fun b hb => EReal.coe_le_coe_iff.2 ?_
     refine (RegularPairing.ofNorm E).logNorm_le fun z => ?_
     simpa [hinc] using
-      (oneSidedLipschitz_le_iff nontrivial_univ b).1 hb.le z (mem_univ z) 0 (mem_univ 0)
+      (oneSidedLipschitz_le_iff b).1 hb.le z (mem_univ z) 0 (mem_univ 0)
 
 /-- **A Lipschitz constant bounds `osL`**: `-Lip(F) ≤ osL(F) ≤ Lip(F)` on a set with two points or
 more. -/
@@ -325,7 +325,7 @@ theorem oneSidedLipschitz_smul {a : ℝ} (ha : 0 ≤ a) (hC : C.Nontrivial) :
   rcases ha.eq_or_lt with rfl | ha
   · -- `a = 0`: `osL 0 = 0`, at any pair of distinct points
     obtain ⟨x, hx, y, hy, hxy⟩ := hC
-    simpa [normPairing] using le_oneSidedLipschitz (F := (0 : ℝ) • F) ⟨x, hx, y, hy, hxy⟩ hx hy hxy
+    simpa [normPairing] using le_oneSidedLipschitz (F := (0 : ℝ) • F) hx hy hxy
   · -- `a > 0`: `osL F = osL (a⁻¹ (a F)) ≤ a⁻¹ osL (a F)`
     have h := hle (a • F) (inv_nonneg.2 ha.le)
     rw [smul_smul, inv_mul_cancel₀ ha.ne', one_smul] at h
@@ -505,7 +505,7 @@ theorem oneSidedLipschitzL2PosDef_le_iff {P : Matrix n n ℝ} (hP : P.PosDef)
     osL_{2,P^½} F on C ≤ b ↔
       ∀ x ∈ C, ∀ y ∈ C, (F x - F y) ⬝ᵥ (P *ᵥ (x - y)) ≤ b * ((x - y) ⬝ᵥ (P *ᵥ (x - y))) := by
   -- the inner-product form in `xᵀ P y`, whose norm squared is `xᵀ P x`
-  rw [oneSidedLipschitzL2PosDef, dif_pos hP, oneSidedLipschitz_le_iff_inner _ b]
+  rw [oneSidedLipschitzL2PosDef, dif_pos hP, oneSidedLipschitz_le_iff_inner b]
   simp only [forall_mem_image, ContinuousLinearEquiv.symm_apply_apply]
   refine forall₂_congr fun x _ => forall₂_congr fun y _ => ?_
   rw [← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def, WeightedEuclidean.inner_def]
