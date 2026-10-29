@@ -19,6 +19,8 @@ norm from linear to nonlinear maps, `osL(F) = sup_{x ≠ y ∈ C} ⟦F x - F y; 
   regular pairing gives the same condition (`RegularPairing.logNorm_fderiv_le_iff`).
 * Properties, as for the log norm: subadditivity, positive homogeneity, translation, the lower
   bound `‖F x - F y‖ ≥ -osL(F) ‖x - y‖`, the norm of difference, and injectivity when `osL < 0`.
+* `norm_sub_le_exp_integral_of_oneSidedLipschitz` — two curves driven by a field one-sided
+  Lipschitz with `b(t)` satisfy `‖x(t) - y(t)‖ ≤ exp (∫ b) ‖x(t₀) - y(t₀)‖`.
 * Maps of `ℝⁿ` with Jacobian matrix `J`: `osL_{p,R} F on C = sup_x μ_{p,R}(J x)` and
   `osL_{2,P^½} F on C = sup_x μ_{2,P^½}(J x)`; the increment forms for `√(xᵀ P x)` and for any
   regular pairing of `‖R x‖_p` (the sign and max pairings for `p = 1, ∞`); and, for weighted ℓ¹ and
@@ -397,6 +399,38 @@ theorem injOn_of_oneSidedLipschitz_neg (h : osL F on C < 0) : InjOn F C := by
   have := neg_mul_norm_sub_le_of_oneSidedLipschitz_le hb.le hx hy
   rw [hxy, sub_self, norm_zero] at this
   exact sub_eq_zero.1 (norm_le_zero_iff.1 (by nlinarith [norm_nonneg (x - y)]))
+
+/-! #### Curves driven by a one-sided Lipschitz map -/
+
+/-- **The distance between curves of a one-sided Lipschitz field**: if `v t` is one-sided
+Lipschitz with `b(t)` on `C`, two curves in `C` with right derivatives `v t (x t)` and `v t (y t)`
+satisfy `‖x(t) - y(t)‖ ≤ exp (∫_{t₀}^t b) ‖x(t₀) - y(t₀)‖`, in any norm.  The one-sided Lipschitz
+counterpart of Mathlib's `dist_le_of_isIntegralCurveOn_Icc`. -/
+@[blueprint "thm:norm-sub-le-exp-integral-of-oneSidedLipschitz"
+  (title := "Distance between curves of a one-sided Lipschitz field")
+  (statement := /-- Let $b$ be continuous and $v : \mathbb{R} \times E \to E$ with
+    $\operatorname{osL}(v(t, \cdot)) \le b(t)$ on $C$ (\cref{def:oneSidedLipschitz}) for
+    $t \in [t_0, t_1)$.  If $x, y$ are continuous on $[t_0, t_1]$, take values in $C$ on
+    $[t_0, t_1)$, and have right derivatives $v(t, x(t))$ and $v(t, y(t))$ there, then for
+    $t \in [t_0, t_1]$
+    \[ \|x(t) - y(t)\| \le \exp\Bigl( \int_{t_0}^{t} b(\tau) \, d\tau \Bigr)
+      \|x(t_0) - y(t_0)\|. \]
+
+    Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
+    Chapter 3. -/)]
+theorem norm_sub_le_exp_integral_of_oneSidedLipschitz {v : ℝ → E → E} {b : ℝ → ℝ}
+    {x y : ℝ → E} {t₀ t₁ : ℝ} (hb : Continuous b)
+    (hv : ∀ t ∈ Ico t₀ t₁, osL (v t) on C ≤ b t)
+    (hx : ContinuousOn x (Icc t₀ t₁))
+    (hx' : ∀ t ∈ Ico t₀ t₁, HasDerivWithinAt x (v t (x t)) (Ici t) t)
+    (hy : ContinuousOn y (Icc t₀ t₁))
+    (hy' : ∀ t ∈ Ico t₀ t₁, HasDerivWithinAt y (v t (y t)) (Ici t) t)
+    (hxC : ∀ t ∈ Ico t₀ t₁, x t ∈ C) (hyC : ∀ t ∈ Ico t₀ t₁, y t ∈ C) :
+    ∀ t ∈ Icc t₀ t₁, ‖x t - y t‖ ≤ Real.exp (∫ τ in t₀..t, b τ) * ‖x t₀ - y t₀‖ :=
+  -- the exponential bound for `x - y`, whose pairing with its derivative is bounded by `osL`
+  RegularPairing.norm_le_exp_integral_of_pairing_le hb (hx.sub hy)
+    (fun r hr => (hx' r hr).sub (hy' r hr))
+    fun r hr => (oneSidedLipschitz_le_iff (b r)).1 (hv r hr) _ (hxC r hr) _ (hyC r hr)
 
 end General
 
