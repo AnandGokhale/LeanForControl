@@ -12,11 +12,9 @@ Remaining work only; done results are removed. Status: ◐ partial · ✗ missin
 
 | Result | Status | Where / what is needed |
 |---|---|---|
-| **Contraction bound**: if `F t` is one-sided Lipschitz with `b(t)`, then `‖x(t) - y(t)‖ ≤ e^{∫ₛᵗ b} ‖x(s) - y(s)‖`, any norm | ✗ med | curve norm derivative + Dini comparison, as for the Coppel bounds |
-| Forward uniqueness | ✗ easy | contraction bound |
 | Displacement: `‖x(t) - x₀‖ ≤ ∫_{t₀}^t e^{∫ₛᵗ b} ‖F(s, x₀)‖ ds` | ✗ med | same method |
 | Forward completeness | ✗ hard | extension of solutions; existence from continuity alone (Peano) |
-| Equivalence: one-sided Lipschitz with `b` ⟺ `D⁺‖x - y‖ ≤ b ‖x - y‖` along every pair of solutions | ✗ med | ⇒ contraction bound; ⇐ assumes a solution through every point |
+| Converse of the contraction bound: `IsInfinitesimallyContractingOn s u C c` ⇒ `osL(F(t, ·, u(t))) ≤ -c` on open `C` | ✗ med | difference quotients of pairs of trajectories through every point of `C` (an existence assumption) |
 | Discrete twin: Lipschitz with `b` ⟺ `‖x(k+1) - y(k+1)‖ ≤ b ‖x(k) - y(k)‖` | ✗ easy | |
 | Speed bound `‖F(x(t))‖ ≤ e^{c(t-s)} ‖F(x(s))‖`, any norm | ✗ med | contraction bound applied to `x` and its time shift |
 
@@ -24,10 +22,10 @@ Remaining work only; done results are removed. Status: ◐ partial · ✗ missin
 
 | Result | Status | Where / what is needed |
 |---|---|---|
-| Continuous time: infinitesimally nonexpansive, strictly and strongly (rate `c`) infinitesimally contracting | ✗ easy | in any norm, through `osL` |
+| Continuous time: strictly contracting (`‖x(t) - y(t)‖` decreasing, no rate) | ✗ easy | `IsContractingOn` covers rate `c` (strong for `c > 0`, nonexpansive for `c = 0`) |
 | Discrete time: nonexpansive, strictly contracting, strongly contracting (factor `ρ`) | ✗ easy | |
 | Strong ⇒ strict ⇒ nonexpansive | ✗ easy | |
-| Jacobian forms `μ(DF) ≤ -c`, `‖DF‖ ≤ ρ` on convex sets | ✗ easy | `oneSidedLipschitz_le_iff_logNorm_le`; on `ℝⁿ`, `HasJacobianAt` |
+| Jacobian form: `μ(DF(t, ·)) ≤ -c` on an open convex `C` ⇒ `IsInfinitesimallyContractingOn`; discrete `‖DF‖ ≤ ρ` | ✗ easy | `oneSidedLipschitz_le_iff_logNorm_le` + `isInfinitesimallyContractingOn_of_oneSidedLipschitz`; on `ℝⁿ`, `HasJacobianAt` |
 
 ## Certificates
 

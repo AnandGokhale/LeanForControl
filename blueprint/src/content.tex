@@ -471,6 +471,7 @@ Lyapunov function for every norm.
 \inputleannode{thm:regularPairing-le-ofNorm}
 \inputleannode{lem:hasDerivWithinAt-norm-sq}
 \inputleannode{thm:hasDerivAt-norm-sq}
+\inputleannode{thm:norm-le-exp-integral-of-pairing-le}
 
 \section{The logarithmic norm}
 
@@ -550,6 +551,7 @@ contractivity of a nonlinear system is checked in practice.
 \inputleannode{thm:oneSidedLipschitz-properties}
 \inputleannode{thm:oneSidedLipschitz-eq-iSup-logNorm}
 \inputleannode{thm:regularPairing-logNorm-fderiv-le-iff}
+\inputleannode{thm:norm-sub-le-exp-integral-of-oneSidedLipschitz}
 
 For maps of $\mathbb{R}^n$ the Jacobian test combines with the matrix log norms above.
 
@@ -558,6 +560,18 @@ For maps of $\mathbb{R}^n$ the Jacobian test combines with the matrix log norms 
 \inputleannode{thm:oneSidedLipschitzL2PosDef-le-iff}
 \inputleannode{thm:oneSidedLipschitzLpWeight-le-iff-pairing}
 \inputleannode{thm:row-test-iff-ordered-increments}
+
+\section{Contracting systems}
+
+A system is contracting when the distance between any two of its trajectories decays
+exponentially.  In a norm, a one-sided Lipschitz bound on the vector field is a certificate for
+it, as a Lyapunov function is for stability.
+
+\inputleannode{def:continuousSystem-isContractingOn}
+\inputleannode{def:continuousSystem-isInfinitesimallyContractingOn}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-of-oneSidedLipschitz}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-eqOn}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-hasUniqueSolutions}
 
 \chapter{Linear systems}
 
