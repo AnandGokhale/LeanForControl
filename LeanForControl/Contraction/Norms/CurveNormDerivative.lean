@@ -6,10 +6,10 @@ import Architect
 
 * `le_ofNorm`, `neg_ofNorm_neg_le` — the Deimling sandwich: every regular pairing lies between the
   left and the right derivative of the norm.
-* `hasDerivWithinAt_norm_sq` — along a curve, the right derivative of `‖x(t)‖²` is `2 ⟦ẋ, x⟧` for
+* `hasDerivWithinAt_norm_sq` — along a curve, the right derivative of `‖x(t)‖²` is `2 ⟦ẋ; x⟧` for
   the regular pairing of the norm.
 * `hasDerivAt_norm_sq` — the curve norm derivative formula: wherever `‖x(t)‖²` is differentiable,
-  its derivative is `2 ⟦ẋ, x⟧`, for every regular pairing.
+  its derivative is `2 ⟦ẋ; x⟧`, for every regular pairing.
 
 References: A. V. Proskurnikov and F. Bullo, *Regular Pairings for Nonquadratic Lyapunov
 Functions and Contraction Analysis*, SIAM J. Control Optim. 64(1):496–521 (2026),
@@ -17,13 +17,14 @@ doi:10.1137/24M1689685, Theorem 3.5 (iii) and (v), and Lemma A.1.
 -/
 
 open Set Filter Topology Asymptotics
+open scoped LogNorm
 
 namespace RegularPairing
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- **Deimling's inequality**: every regular pairing lies below the regular pairing of the norm,
-`⟦x, y⟧ ≤ ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`. -/
+`⟦x; y⟧ ≤ ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`. -/
 @[blueprint "thm:regularPairing-le-ofNorm"
   (title := "Deimling's inequality")
   (statement := /-- For a regular pairing (\cref{def:regularPairing}) and the regular pairing
@@ -35,7 +36,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     $h \pair{x}{y} + \|y\|^2 = \pair{y + h x}{y} \le \|y + h x\| \, \|y\|$, so
     $\pair{x}{y} \le \|y\| \, (\|y + h x\| - \|y\|)/h$; let $h \to 0^+$.  The lower bound is the
     upper bound for $-x$, with $0 = \pair{0}{y} \le \pair{x}{y} + \pair{-x}{y}$. -/)]
-theorem le_ofNorm (p : RegularPairing E) (x y : E) : p x y ≤ ofNorm E x y := by
+theorem le_ofNorm (p : RegularPairing E) (x y : E) : ⟦x; y⟧_p ≤ ⟦x; y⟧ := by
   refine ge_of_tendsto (((hasDerivWithinAt_iff_tendsto_slope' (s := Ioi 0)
     (lt_irrefl (0 : ℝ))).1 (hasDerivWithinAt_norm_add_smul x y)).const_mul ‖y‖) ?_
   filter_upwards [self_mem_nhdsWithin] with h (hh : 0 < h)
@@ -47,8 +48,8 @@ theorem le_ofNorm (p : RegularPairing E) (x y : E) : p x y ≤ ofNorm E x y := b
   rw [mul_div_assoc', le_div_iff₀ hh]
   nlinarith
 
-/-- The lower half of the Deimling sandwich, `-[-x, y]₊ ≤ ⟦x, y⟧`. -/
-theorem neg_ofNorm_neg_le (p : RegularPairing E) (x y : E) : -ofNorm E (-x) y ≤ p x y := by
+/-- The lower half of the Deimling sandwich, `-[-x, y]₊ ≤ ⟦x; y⟧`. -/
+theorem neg_ofNorm_neg_le (p : RegularPairing E) (x y : E) : -⟦-x; y⟧ ≤ ⟦x; y⟧_p := by
   have h := p.add_left_le x (-x) y
   rw [add_neg_cancel, zero_left] at h
   linarith [p.le_ofNorm (-x) y]
@@ -70,7 +71,7 @@ norm: if `x` has right derivative `v` at `t`, then `‖x(·)‖²` has right der
     the product rule gives the square. -/)]
 theorem hasDerivWithinAt_norm_sq {x : ℝ → E} {v : E} {t : ℝ}
     (hx : HasDerivWithinAt x v (Ioi t) t) :
-    HasDerivWithinAt (fun s => ‖x s‖ ^ 2) (2 * ofNorm E v (x t)) (Ioi t) t := by
+    HasDerivWithinAt (fun s => ‖x s‖ ^ 2) (2 * ⟦v; x t⟧) (Ioi t) t := by
   set D := derivWithin (fun h : ℝ => ‖x t + h • v‖) (Ioi 0) 0
   have hk : HasDerivWithinAt (fun s => ‖x t + (s - t) • v‖) D (Ioi t) t := by
     have := HasDerivWithinAt.scomp t
@@ -94,7 +95,7 @@ theorem hasDerivWithinAt_norm_sq {x : ℝ → E} {v : E} {t : ℝ}
     ring
 
 /-- **The curve norm derivative formula**: for every regular pairing, wherever `‖x(t)‖²` is
-differentiable its derivative is `2 ⟦ẋ(t), x(t)⟧`. -/
+differentiable its derivative is `2 ⟦ẋ(t); x(t)⟧`. -/
 @[blueprint "thm:hasDerivAt-norm-sq"
   (title := "Curve norm derivative formula")
   (statement := /-- Let $\pair{\cdot}{\cdot}$ be a regular pairing (\cref{def:regularPairing}) and
@@ -109,7 +110,7 @@ differentiable its derivative is `2 ⟦ẋ(t), x(t)⟧`. -/
     $2 \pair{\dot x}{x}$ between them. -/)]
 theorem hasDerivAt_norm_sq (p : RegularPairing E) {x : ℝ → E} {v : E} {t : ℝ}
     (hx : HasDerivAt x v t) (hd : DifferentiableAt ℝ (fun s => ‖x s‖ ^ 2) t) :
-    HasDerivAt (fun s => ‖x s‖ ^ 2) (2 * p v (x t)) t := by
+    HasDerivAt (fun s => ‖x s‖ ^ 2) (2 * ⟦v; x t⟧_p) t := by
   have hR := (uniqueDiffWithinAt_Ioi t).eq_deriv _ hd.hasDerivAt.hasDerivWithinAt
     (hasDerivWithinAt_norm_sq hx.hasDerivWithinAt)
   have hx' : HasDerivAt x v (-(-t)) := by rwa [_root_.neg_neg]

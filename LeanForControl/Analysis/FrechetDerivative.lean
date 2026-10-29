@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.Calculus.FDeriv.Equiv
 import Mathlib.Analysis.Asymptotics.Defs
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Analysis.Calculus.MeanValue
@@ -15,7 +16,8 @@ import Architect
 
 Bounds on the linearization error `f x - f x₀ - Df(x₀)(x - x₀)` beyond Mathlib's pointwise
 little-o (`HasFDerivAt.isLittleO`): uniform over a compact set for a `C¹` map, and quadratic for a
-Lipschitz derivative.  Also the partial derivative of a function of `(t, x)` in `x`.
+Lipschitz derivative.  Also the partial derivative of a function of `(t, x)` in `x`, and the
+derivative of a map read in other coordinates (`HasFDerivAt.conj`).
 -/
 
 open Filter Asymptotics Set
@@ -131,6 +133,22 @@ theorem Convex.norm_image_sub_sub_le_of_lipschitzOnWith {f : E → F} {f' : E �
 
 end Quadratic
 
+section Conj
+
+variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- **A map in other coordinates**: if `f` has derivative `f'` at `x`, then `e ∘ f ∘ e⁻¹` has
+derivative `e ∘ f' ∘ e⁻¹` at `e x`, for a continuous linear equivalence `e`.  Used with `e` the
+identity of `ℝⁿ` between two norms, to move a derivative from one norm to the other. -/
+theorem HasFDerivAt.conj (e : E ≃L[𝕜] F) {f : E → E} {f' : E →L[𝕜] E} {x : E}
+    (hf : HasFDerivAt f f' x) :
+    HasFDerivAt (fun z => e (f (e.symm z)))
+      ((e : E →L[𝕜] F).comp (f'.comp (e.symm : F →L[𝕜] E))) (e x) :=
+  e.comp_hasFDerivAt_iff.2 <| e.symm.comp_right_hasFDerivAt_iff.2 <| by simpa using hf
+
+end Conj
+
 section Partial
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
@@ -145,6 +163,40 @@ theorem fderiv_eq_fderiv_uncurry_comp_inr {V : ℝ → E → F} {t : ℝ} {x : E
   (h.hasFDerivAt.comp x ((hasFDerivAt_const t x).prodMk (hasFDerivAt_id x))).fderiv
 
 end Partial
+
+section Directional
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
+  [NormedSpace ℝ F]
+
+/-- **A bound on increments bounds the derivative**: if `φ (f (x + t v) - f x) ≤ t c` for small
+`t > 0`, with `φ` continuous and positively homogeneous, then `φ (f' v) ≤ c`. -/
+@[blueprint "lem:hasFDerivAt-apply-le-of-increment-le"
+  (title := "Increment bounds bound the derivative")
+  (statement := /-- Let $f$ have derivative $f'$ at $x$, let $C$ be a neighbourhood of $x$, and
+    let $\varphi$ be continuous with $\varphi(a u) = a \varphi(u)$ for $a \ge 0$.  If
+    $\varphi(f(x + t v) - f(x)) \le t c$ whenever $t > 0$ and $x + t v \in C$, then
+    $\varphi(f'(x) v) \le c$. -/)
+  (proof := /-- $\varphi$ of the difference quotient $(f(x + t v) - f(x))/t$ is at most $c$ for
+    small $t > 0$ and tends to $\varphi(f'(x) v)$ as $t \to 0^+$. -/)]
+theorem HasFDerivAt.apply_le_of_increment_le {f : E → F} {f' : E →L[ℝ] F} {x : E}
+    (hf : HasFDerivAt f f' x) {C : Set E} (hC : C ∈ 𝓝 x) {φ : F → ℝ} (hφ : Continuous φ)
+    (hφa : ∀ a : ℝ, 0 ≤ a → ∀ u, φ (a • u) = a * φ u) (v : E) {c : ℝ}
+    (h : ∀ t : ℝ, 0 < t → x + t • v ∈ C → φ (f (x + t • v) - f x) ≤ t * c) :
+    φ (f' v) ≤ c := by
+  have hd : HasDerivAt (fun t : ℝ => f (x + t • v)) (f' v) 0 := by
+    simpa using hf.comp_hasDerivAt_of_eq (0 : ℝ)
+      (((hasDerivAt_id 0).smul_const v).const_add x) (by simp)
+  have hmem : ∀ᶠ t in 𝓝[>] (0 : ℝ), x + t • v ∈ C :=
+    nhdsWithin_le_nhds (((continuous_const.add (continuous_id.smul continuous_const)).tendsto' 0
+      x (by simp)).eventually hC)
+  refine le_of_tendsto ((hφ.tendsto _).comp (hd.tendsto_slope.mono_left (nhdsGT_le_nhdsNE 0))) ?_
+  filter_upwards [hmem, self_mem_nhdsWithin] with t ht (htp : 0 < t)
+  simp only [Function.comp_apply, slope_def_module, sub_zero, zero_smul, add_zero]
+  rw [hφa _ (inv_nonneg.2 htp.le), inv_mul_le_iff₀ htp]
+  exact h t htp ht
+
+end Directional
 
 section InnerProduct
 

@@ -1,6 +1,7 @@
 import LeanForControl.Analysis.Continuity
 import LeanForControl.Analysis.DiniDeriv
 import LeanForControl.Analysis.FrechetDerivative
+import LeanForControl.Analysis.Jacobian
 import LeanForControl.Analysis.IntegralCurves
 import LeanForControl.Analysis.Integrals
 import LeanForControl.Analysis.LieDerivative
@@ -22,6 +23,7 @@ import LeanForControl.Contraction.Norms.Defs
 import LeanForControl.Contraction.Norms.LogNorm
 import LeanForControl.Contraction.Norms.Lp
 import LeanForControl.Contraction.Norms.LpPairings
+import LeanForControl.Contraction.Norms.OneSidedLipschitz
 import LeanForControl.Contraction.Norms.CurveNormDerivative
 import LeanForControl.Contraction.Norms.RegularPairing
 import LeanForControl.Contraction.Norms.WeightedNorm

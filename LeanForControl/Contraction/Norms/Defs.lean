@@ -13,14 +13,20 @@ files.  After `open scoped LogNorm`:
 
 | Notation | Definition | Meaning |
 |---|---|---|
+| `⟦x; y⟧_p`, `⟦x; y⟧` | `RegularPairing`, `ofNorm` | a regular pairing; the norm's pairing |
 | `μ A` | `logNorm` | log norm of a bounded operator |
 | `μ[R] A` | `WeightedNorm.logNorm` | log norm in `‖x‖_R = ‖R x‖` (`WeightedNorm R`) |
 | `μ_{p} A` | `Matrix.logNormLp` | ℓᵖ log norm of a matrix |
 | `μ_{p, R} A` | `Matrix.logNormLpWeight` | log norm of a matrix in `‖R x‖_p` |
 | `μ_{2,P^½} A` | `Matrix.logNormL2PosDef` | log norm of a matrix in `√(xᵀ P x)` |
+| `osL F on C` | `oneSidedLipschitz` | one-sided Lipschitz constant of a map on `C` |
+| `osL[R] F`, `osL_{p} F`, … | `WeightedNorm.oneSidedLipschitz`, … | the same, in the norms above |
+
+Each `osL` form takes an optional `on C`; without it, `C` is the whole space.
 
 Also: `RegularPairing`, `WeightedNorm.opNorm` (`‖A‖_R`), `Matrix.toWeight` (a matrix weight),
-`Matrix.WeightedEuclidean` (`ℝⁿ` with `√(xᵀ P x)`) and `Matrix.metzlerMajorant` (`|A|_M`).
+`Matrix.WeightedEuclidean` (`ℝⁿ` with `√(xᵀ P x)`),
+`Matrix.IsMetzler` and `Matrix.metzlerMajorant` (`|A|_M`).
 
 ## Regular pairings
 
@@ -28,11 +34,11 @@ A *regular pairing* on a normed space replaces the inner product in contraction 
 that come from no inner product (`ℓ¹`, `ℓ∞`, weighted and polyhedral norms).  Every contraction
 result is stated for an arbitrary regular pairing; a norm then needs only its pairing.
 
-* `RegularPairing E` — a real-valued `⟦x, y⟧` on `E`, compatible with the norm (`⟦x, x⟧ = ‖x‖²`),
+* `RegularPairing E` — a real-valued `⟦x; y⟧` on `E`, compatible with the norm (`⟦x; x⟧ = ‖x‖²`),
   subadditive and nonnegatively homogeneous, bounded by `‖x‖ ‖y‖`, and with the straight-angle
-  property `⟦-x, x⟧ = -‖x‖²`.  The last condition is what makes the pairing measure how the norm
+  property `⟦-x; x⟧ = -‖x‖²`.  The last condition is what makes the pairing measure how the norm
   changes: it is equivalent to the curve norm derivative formula
-  `½ d/dt ‖x(t)‖² = ⟦ẋ(t), x(t)⟧`, to Lumer's equality `μ(A) = sup_{‖x‖ = 1} ⟦A x, x⟧`, and to
+  `½ d/dt ‖x(t)‖² = ⟦ẋ(t); x(t)⟧`, to Lumer's equality `μ(A) = sup_{‖x‖ = 1} ⟦A x; x⟧`, and to
   Deimling's inequality (Proskurnikov and Bullo, Theorem 3.5).
 
 Without the straight-angle property the axioms are those of a *weak pairing*; weak pairings appear
@@ -53,8 +59,8 @@ doi:10.1137/24M1689685, Definitions 2.5 and 3.8 and Theorem 3.5.
 variable (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- A **regular pairing** on a normed space `E`, compatible with its norm: a real-valued
-`⟦x, y⟧`, subadditive and nonnegatively homogeneous in its first argument, with `⟦x, x⟧ = ‖x‖²`,
-`⟦x, y⟧ ≤ ‖x‖ ‖y‖`, and the straight-angle property `⟦-x, x⟧ = -‖x‖²`.
+`⟦x; y⟧`, subadditive and nonnegatively homogeneous in its first argument, with `⟦x; x⟧ = ‖x‖²`,
+`⟦x; y⟧ ≤ ‖x‖ ‖y‖`, and the straight-angle property `⟦-x; x⟧ = -‖x‖²`.
 
 References: Bullo, *Contraction Theory for Dynamical Systems* (ed. 1.0, 2022), Definitions 2.16
 and 2.17; Proskurnikov and Bullo, SIAM J. Control Optim. (2026), Definitions 2.5 and 3.8. -/
@@ -83,7 +89,7 @@ and 2.17; Proskurnikov and Bullo, SIAM J. Control Optim. (2026), Definitions 2.5
     positive definiteness is not an axiom; Cauchy--Schwarz is one-sided; continuity in the first
     argument is not assumed. -/)]
 structure RegularPairing where
-  /-- The pairing `⟦x, y⟧`. -/
+  /-- The pairing `⟦x; y⟧`. -/
   toFun : E → E → ℝ
   /-- Subadditivity in the first argument. -/
   add_left_le : ∀ x₁ x₂ y, toFun (x₁ + x₂) y ≤ toFun x₁ y + toFun x₂ y
@@ -107,6 +113,17 @@ variable {E}
 instance : CoeFun (RegularPairing E) (fun _ => E → E → ℝ) := ⟨RegularPairing.toFun⟩
 
 end RegularPairing
+
+namespace LogNorm
+
+/-- `⟦x; y⟧_p` for the regular pairing `p` at `x, y`; available after `open scoped LogNorm`.
+Without the subscript, `⟦x; y⟧` is the pairing of the norm, `RegularPairing.ofNorm`. -/
+scoped syntax:max "⟦" term "; " term "⟧_" term:max : term
+
+scoped macro_rules
+  | `(⟦$x; $y⟧_$p) => `(RegularPairing.toFun $p $x $y)
+
+end LogNorm
 
 /-! ### The logarithmic norm -/
 
@@ -137,6 +154,48 @@ scoped[LogNorm] notation "μ" => logNorm
 end LogNorm
 
 open scoped LogNorm
+
+/-! ### One-sided Lipschitz maps -/
+
+section OneSidedLipschitz
+
+open Set
+
+variable {E}
+
+/-- **The pairing of the norm**, `⟦x; y⟧ = ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`, as a function.  It is
+a regular pairing, `RegularPairing.ofNorm`, whose axioms are proved in `RegularPairing.lean`. -/
+noncomputable def normPairing (x y : E) : ℝ :=
+  ‖y‖ * derivWithin (fun h : ℝ => ‖y + h • x‖) (Ioi 0) 0
+
+/-- **The one-sided Lipschitz constant** of `F` on `C`,
+`osL(F) = sup_{x ≠ y ∈ C} ⟦F x - F y; x - y⟧ / ‖x - y‖²`, for the pairing of the norm
+(`normPairing`, the regular pairing `RegularPairing.ofNorm`).  It extends the log norm from linear
+to nonlinear maps; it can be negative, and it is `+∞` when the quotients are unbounded (`F x = x³`),
+so it takes values in `EReal`.  As in the book, `C` has at least two points: the proof
+`C.Nontrivial` is an argument, found automatically from the context (or from `Nontrivial E` for
+`C = univ`). -/
+@[blueprint "def:oneSidedLipschitz"
+  (title := "One-sided Lipschitz constant")
+  (statement := /-- On a real normed space $E$, the \emph{one-sided Lipschitz constant} of a map
+    $F : E \to E$ on $C \subseteq E$ is
+    \[ \operatorname{osL}(F) = \sup_{x \ne y \in C} \frac{\pair{F(x) - F(y)}{x - y}}{\|x - y\|^2}
+      \in \mathbb{R} \cup \{+\infty\}, \]
+    for a set $C$ with at least two points and the regular pairing of the norm
+    (\cref{def:regularPairing-ofNorm}).  For a linear map it is the log norm
+    (\cref{def:logNorm}).
+
+    Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
+    Chapter 3. -/)]
+noncomputable def oneSidedLipschitz (C : Set E) (F : E → E)
+    (_hC : C.Nontrivial := by
+      first
+        | assumption
+        | exact Set.nontrivial_univ
+        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+  ⨆ (x ∈ C) (y ∈ C) (_ : x ≠ y), ((normPairing (F x - F y) (x - y) / ‖x - y‖ ^ 2 : ℝ) : EReal)
+
+end OneSidedLipschitz
 
 /-! ### Weighted norms -/
 
@@ -201,6 +260,16 @@ noncomputable def logNorm (A : E →L[ℝ] E) : ℝ :=
 `open scoped LogNorm`. -/
 scoped[LogNorm] notation:max "μ[" R "]" => WeightedNorm.logNorm R
 
+/-- `osL[R](F)`: the one-sided Lipschitz constant of `F` on `C`, measured in the weighted norm. -/
+noncomputable def oneSidedLipschitz (C : Set E) (F : E → E)
+    (hC : C.Nontrivial := by
+      first
+        | assumption
+        | exact Set.nontrivial_univ
+        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+  _root_.oneSidedLipschitz (equiv R '' C) (fun x => equiv R (F ((equiv R).symm x)))
+    (hC.image (equiv R).injective)
+
 end WeightedNorm
 
 end Weighted
@@ -247,6 +316,31 @@ meaningful for an invertible weight `R`; for a singular `R`, which is not a weig
 noncomputable def logNormLpWeight (R A : Matrix n n ℝ) : ℝ :=
   if hR : IsUnit R then μ[toWeight p hR] (toLpCLM p A) else 0
 
+/-- `osL_{p}(F)`: the one-sided Lipschitz constant on `C` of a map `F` of `ℝⁿ`, in the ℓᵖ norm. -/
+noncomputable def oneSidedLipschitzLp (C : Set (n → ℝ)) (F : (n → ℝ) → n → ℝ)
+    (hC : C.Nontrivial := by
+      first
+        | assumption
+        | exact Set.nontrivial_univ
+        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+  _root_.oneSidedLipschitz (toLp p '' C) (fun x => toLp p (F (ofLp x)))
+    (hC.image (WithLp.toLp_injective p))
+
+open Classical in
+/-- `osL_{p,R}(F)`: the one-sided Lipschitz constant on `C` of a map `F` of `ℝⁿ`, in the weighted
+norm `‖R x‖_p`.  It is meaningful for an invertible `R`; otherwise it is `0`. -/
+noncomputable def oneSidedLipschitzLpWeight (R : Matrix n n ℝ) (C : Set (n → ℝ))
+    (F : (n → ℝ) → n → ℝ)
+    (hC : C.Nontrivial := by
+      first
+        | assumption
+        | exact Set.nontrivial_univ
+        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+  if hR : IsUnit R then
+    WeightedNorm.oneSidedLipschitz (toWeight p hR) (toLp p '' C) (fun x => toLp p (F (ofLp x)))
+      (hC.image (WithLp.toLp_injective p))
+  else 0
+
 /-- `μ_{p} A` for the ℓᵖ log norm of a matrix; available after `open scoped LogNorm`. -/
 scoped[LogNorm] notation:max "μ_{" p "}" => Matrix.logNormLp p
 
@@ -254,6 +348,9 @@ scoped[LogNorm] notation:max "μ_{" p "}" => Matrix.logNormLp p
 scoped[LogNorm] notation:max "μ_{" p ", " R "}" => Matrix.logNormLpWeight p R
 
 end Lp
+
+/-- **Metzler matrix**: every off-diagonal entry is nonnegative. -/
+def IsMetzler (A : Matrix n n ℝ) : Prop := ∀ i j, i ≠ j → 0 ≤ A i j
 
 /-- **The Metzler majorant** `|A|_M`: the diagonal of `A`, and `|aᵢⱼ|` off the diagonal. -/
 def metzlerMajorant (A : Matrix n n ℝ) : Matrix n n ℝ := fun i j => if i = j then A i i else |A i j|
@@ -277,6 +374,15 @@ instance : FiniteDimensional ℝ (WeightedEuclidean hP) :=
 
 instance [Nonempty n] : Nontrivial (WeightedEuclidean hP) := inferInstanceAs (Nontrivial (n → ℝ))
 
+/-- The identity of `ℝⁿ`, from the sup norm of `n → ℝ` to the norm `√(xᵀ P x)`. -/
+noncomputable def equiv : (n → ℝ) ≃L[ℝ] WeightedEuclidean hP :=
+  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP :=
+    { toFun := fun x => x, invFun := fun x => x, map_add' := fun _ _ => rfl,
+      map_smul' := fun _ _ => rfl, left_inv := fun _ => rfl, right_inv := fun _ => rfl }
+  { e with
+    continuous_toFun := e.toLinearMap.continuous_of_finiteDimensional
+    continuous_invFun := e.symm.toLinearMap.continuous_of_finiteDimensional }
+
 /-- `A` as an operator on `ℝⁿ` with the norm `√(xᵀ P x)`. -/
 noncomputable def toCLM (A : Matrix n n ℝ) : WeightedEuclidean hP →L[ℝ] WeightedEuclidean hP :=
   LinearMap.toContinuousLinearMap (Matrix.toLin' A)
@@ -294,6 +400,18 @@ open Classical in
 for `P ≻ 0`; otherwise it is `0`. -/
 noncomputable def logNormL2PosDef (P A : Matrix n n ℝ) : ℝ :=
   if hP : P.PosDef then μ (WeightedEuclidean.toCLM hP A) else 0
+
+open Classical in
+/-- `osL_{2,P^½}(F)`: the one-sided Lipschitz constant on `C` of a map `F` of `ℝⁿ`, in the norm
+`√(xᵀ P x)`.  It is meaningful for `P ≻ 0`; otherwise it is `0`. -/
+noncomputable def oneSidedLipschitzL2PosDef (P : Matrix n n ℝ) (C : Set (n → ℝ))
+    (F : (n → ℝ) → n → ℝ)
+    (hC : C.Nontrivial := by
+      first
+        | assumption
+        | exact Set.nontrivial_univ
+        | fail "osL on C needs `hC : C.Nontrivial` (two points or more) in context") : EReal :=
+  if hP : P.PosDef then @_root_.oneSidedLipschitz (WeightedEuclidean hP) _ _ C F hC else 0
 
 end Matrix
 
@@ -317,5 +435,42 @@ def unexpandLogNormL2PosDef : Lean.PrettyPrinter.Unexpander
   | `($_ $P:ident) => `(μ_{2, $P^½})
   | `($_ $P) => `(μ_{2, ($P)^½})
   | _ => throw ()
+
+/-! #### One-sided Lipschitz constants
+
+`osL F`, `osL[R] F`, `osL_{p} F`, `osL_{p, R} F` and `osL_{2,P^½} F` mirror the log norms: the
+one-sided Lipschitz constant on all of the space.  Appending `on C` restricts it to `C`, which needs
+a proof `C.Nontrivial` in the context. -/
+
+/-- `osL F` and `osL F on C`: the one-sided Lipschitz constant. -/
+scoped syntax:max "osL " term:max (" on " term:max)? : term
+
+/-- `osL[R] F` and `osL[R] F on C`: the one-sided Lipschitz constant in the weighted norm. -/
+scoped syntax:max "osL[" term "] " term:max (" on " term:max)? : term
+
+/-- `osL_{p} F`, `osL_{p, R} F`, `osL_{2,P^½} F`, each with an optional `on C`. -/
+scoped syntax:max "osL_{" term "} " term:max (" on " term:max)? : term
+
+@[inherit_doc LogNorm.«termOsL_{_}_On_»]
+scoped syntax:max "osL_{" term ", " term "} " term:max (" on " term:max)? : term
+
+@[inherit_doc LogNorm.«termOsL_{_}_On_»]
+scoped syntax:max "osL_{" num "," term "^½} " term:max (" on " term:max)? : term
+
+scoped macro_rules
+  | `(osL $F on $C) => `(oneSidedLipschitz $C $F)
+  | `(osL $F) => `(oneSidedLipschitz Set.univ $F)
+  | `(osL[$R] $F on $C) => `(WeightedNorm.oneSidedLipschitz $R $C $F)
+  | `(osL[$R] $F) => `(WeightedNorm.oneSidedLipschitz $R Set.univ $F)
+  | `(osL_{$p} $F on $C) => `(Matrix.oneSidedLipschitzLp $p $C $F)
+  | `(osL_{$p} $F) => `(Matrix.oneSidedLipschitzLp $p Set.univ $F)
+  | `(osL_{$p, $R} $F on $C) => `(Matrix.oneSidedLipschitzLpWeight $p $R $C $F)
+  | `(osL_{$p, $R} $F) => `(Matrix.oneSidedLipschitzLpWeight $p $R Set.univ $F)
+  | `(osL_{$p:num, $P^½} $F on $C) =>
+    if p.getNat = 2 then `(Matrix.oneSidedLipschitzL2PosDef $P $C $F)
+    else Lean.Macro.throwError "`osL_{p,P^½}` is defined only for p = 2"
+  | `(osL_{$p:num, $P^½} $F) =>
+    if p.getNat = 2 then `(Matrix.oneSidedLipschitzL2PosDef $P Set.univ $F)
+    else Lean.Macro.throwError "`osL_{p,P^½}` is defined only for p = 2"
 
 end LogNorm

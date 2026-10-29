@@ -1,4 +1,5 @@
 import LeanForControl.Contraction.Norms.WeightedNorm
+import LeanForControl.Analysis.Jacobian
 import LeanForControl.MatrixAlgebra.Spectrum
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Matrix.PosDef
@@ -18,7 +19,7 @@ the Metzler majorant are defined in `Defs.lean`, and `λ_max` in `MatrixAlgebra/
 
 * `Matrix.logNormLpWeight_eq` — `μ_{p,R}(A) = μ_p(R A R⁻¹)`, for every `p` and invertible `R`.
 * `Matrix.logNorm_linfty`, `Matrix.logNorm_l1` — `μ_∞(A) = maxᵢ (aᵢᵢ + ∑_{j ≠ i} |aᵢⱼ|)` and
-  `μ_1(A) = maxⱼ (aⱼⱼ + ∑_{i ≠ j} |aᵢⱼ|)`; `Matrix.logNorm_toLin'` is the ℓ∞ formula for a matrix
+  `μ_1(A) = maxⱼ (aⱼⱼ + ∑_{i ≠ j} |aᵢⱼ|)`; `Matrix.logNorm_toCLM` is the ℓ∞ formula for a matrix
   acting on `n → ℝ`, the form a Jacobian meets.
 * `Matrix.logNorm_l1_diagonal`, `Matrix.logNorm_linfty_diagonal` — the diagonally weighted ℓ¹ and
   ℓ∞ log norms, `μ_{1,[η]}` and `μ_{∞,[η]⁻¹}`; `Matrix.logNorm_l1_diagonal_le_iff`,
@@ -102,8 +103,8 @@ theorem linfty_opNorm_eq_sup' (M : Matrix n n ℝ) :
 /-- **The ℓ∞ log norm of a matrix acting on `n → ℝ`**, `maxᵢ (aᵢᵢ + ∑_{j ≠ i} |aᵢⱼ|)`.  The sup norm
 is the native norm of `n → ℝ`, so this is the form a Jacobian `LinearMap.toMatrix' (fderiv ℝ f x)`
 meets; `logNorm_linfty` states it as `μ_{∞}`. -/
-theorem logNorm_toLin' (A : Matrix n n ℝ) :
-    μ (LinearMap.toContinuousLinearMap (Matrix.toLin' A)) =
+theorem logNorm_toCLM (A : Matrix n n ℝ) :
+    μ A.toCLM =
       Finset.univ.sup' Finset.univ_nonempty
         fun i => A i i + ∑ j ∈ Finset.univ.erase i, |A i j| := by
   set c : n → ℝ := fun i => A i i + ∑ j ∈ Finset.univ.erase i, |A i j|
@@ -121,7 +122,7 @@ theorem logNorm_toLin' (A : Matrix n n ℝ) :
   have hsmall : ∀ᶠ h in 𝓝[>] (0 : ℝ), h * ∑ i, |A i i| < 1 := nhdsWithin_le_nhds
     (((continuous_id.mul continuous_const).tendsto' 0 0 (by simp)).eventually (gt_mem_nhds one_pos))
   have hnorm : ∀ᶠ h in 𝓝[>] (0 : ℝ),
-      ‖(1 : (n → ℝ) →L[ℝ] (n → ℝ)) + h • LinearMap.toContinuousLinearMap (Matrix.toLin' A)‖ =
+      ‖(1 : (n → ℝ) →L[ℝ] (n → ℝ)) + h • A.toCLM‖ =
         1 + h * C := by
     filter_upwards [self_mem_nhdsWithin, hsmall] with h (hh : 0 < h) hK
     have hi (i : n) : 0 ≤ 1 + h * A i i := by
@@ -130,7 +131,7 @@ theorem logNorm_toLin' (A : Matrix n n ℝ) :
       nlinarith [neg_abs_le (A i i)]
     rw [← linfty_opNorm_toMatrix]
     simp only [ContinuousLinearMap.coe_add, ContinuousLinearMap.coe_smul, map_add, map_smul,
-      LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin']
+      Matrix.toCLM, LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin']
     rw [show LinearMap.toMatrix' ((1 : (n → ℝ) →L[ℝ] (n → ℝ)) : (n → ℝ) →ₗ[ℝ] (n → ℝ)) = 1 from
       LinearMap.toMatrix'_id, linfty_opNorm_eq_sup']
     refine le_antisymm (Finset.sup'_le _ _ fun i _ => ?_) ?_
@@ -165,9 +166,9 @@ theorem logNorm_linfty (A : Matrix n n ℝ) :
   -- `WithLp ∞ (n → ℝ)` and `n → ℝ` carry the same norm
   let e := PiLp.continuousLinearEquiv ∞ ℝ (fun _ : n => ℝ)
   rw [logNormLp, ← logNorm_conj e (fun x => PiLp.norm_ofLp x),
-    show (e ∘L toLpCLM ∞ A ∘L e.symm : (n → ℝ) →L[ℝ] (n → ℝ)) =
-      LinearMap.toContinuousLinearMap (Matrix.toLin' A) by ext; simp [e, toLpCLM, toLpLin_apply],
-    logNorm_toLin']
+    show (e ∘L toLpCLM ∞ A ∘L e.symm : (n → ℝ) →L[ℝ] (n → ℝ)) = A.toCLM by
+      ext; simp [e, toLpCLM, toLpLin_apply],
+    logNorm_toCLM]
 
 /-- **The ℓ¹ induced norm of a matrix is its largest absolute column sum**, `‖A‖₁ = ‖Aᵀ‖∞`. -/
 theorem l1_opNorm_eq_linfty_transpose (M : Matrix n n ℝ) :
@@ -209,7 +210,7 @@ theorem logNorm_l1 (A : Matrix n n ℝ) :
     μ_{1} A =
       Finset.univ.sup' Finset.univ_nonempty
         fun j => A j j + ∑ i ∈ Finset.univ.erase j, |A i j| := by
-  have h := logNorm_toLin' Aᵀ
+  have h := logNorm_toCLM Aᵀ
   simp only [transpose_apply] at h
   rw [← h, logNormLp, toLpCLM]
   unfold logNorm
@@ -220,7 +221,7 @@ theorem logNorm_l1 (A : Matrix n n ℝ) :
       LinearMap.toContinuousLinearMap (toLpLin 1 1 (1 + h • A)) by ext; simp,
     l1_opNorm_eq_linfty_transpose, ← linfty_opNorm_toMatrix]
   simp only [ContinuousLinearMap.coe_add, ContinuousLinearMap.coe_smul, map_add, map_smul,
-    LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin', transpose_add,
+    Matrix.toCLM, LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin', transpose_add,
     transpose_smul, transpose_one]
   rw [show LinearMap.toMatrix' ((1 : (n → ℝ) →L[ℝ] (n → ℝ)) : (n → ℝ) →ₗ[ℝ] (n → ℝ)) = 1 from
     LinearMap.toMatrix'_id]

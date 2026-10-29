@@ -44,3 +44,6 @@ CTDS-*.pdf
 
 # Local audit tooling and approvals.
 /audit/
+
+# Notes shared privately, not part of the library.
+LeanForControl/Contraction/improvements.md

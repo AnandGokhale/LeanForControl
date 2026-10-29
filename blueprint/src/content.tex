@@ -460,6 +460,7 @@ the inner product is another.
 
 \inputleannode{def:regularPairing-ofInner}
 \inputleannode{def:regularPairing-ofNorm}
+\inputleannode{lem:normPairing-eq-inner}
 
 \section{What a regular pairing says about the norm}
 
@@ -532,6 +533,31 @@ Euclidean norm is the case $P = I$.
 \inputleannode{thm:logNormL2PosDef-le-iff-lmi}
 \inputleannode{thm:logNorm-euclidean-le-iff}
 \inputleannode{thm:logNorm-euclidean-eq-lambdaMax}
+
+\section{One-sided Lipschitz maps}
+
+The one-sided Lipschitz constant extends the log norm from linear to nonlinear maps.  For a
+differentiable map it is the largest log norm of the Jacobian, which is how
+contractivity of a nonlinear system is checked in practice.
+
+\inputleannode{def:oneSidedLipschitz}
+
+\inputleannode{thm:oneSidedLipschitz-le-iff}
+\inputleannode{thm:regularPairing-pairing-le-of-oneSidedLipschitz-le}
+\inputleannode{thm:oneSidedLipschitz-le-iff-inner}
+\inputleannode{thm:oneSidedLipschitz-affine}
+\inputleannode{thm:oneSidedLipschitz-le-of-lipschitzOnWith}
+\inputleannode{thm:oneSidedLipschitz-properties}
+\inputleannode{thm:oneSidedLipschitz-eq-iSup-logNorm}
+\inputleannode{thm:regularPairing-logNorm-fderiv-le-iff}
+
+For maps of $\mathbb{R}^n$ the Jacobian test combines with the matrix log norms above.
+
+\inputleannode{def:hasJacobianAt}
+\inputleannode{thm:oneSidedLipschitzLpWeight-eq-iSup}
+\inputleannode{thm:oneSidedLipschitzL2PosDef-le-iff}
+\inputleannode{thm:oneSidedLipschitzLpWeight-le-iff-pairing}
+\inputleannode{thm:row-test-iff-ordered-increments}
 
 \chapter{Linear systems}
 
@@ -1731,6 +1757,8 @@ as well, once the linearization error is absorbed near the equilibrium.
 \inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
 
 \inputleannode{lem:norm-fderiv-inner-apply-self-le}
+
+\inputleannode{lem:hasFDerivAt-apply-le-of-increment-le}
 
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 

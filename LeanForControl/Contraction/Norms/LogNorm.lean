@@ -9,11 +9,11 @@ import Architect
 
 The log norm `μ(A) = lim_{h → 0⁺} (‖I + h A‖ - 1) / h` is defined in `Defs.lean`.
 
-* `RegularPairing.pairing_le_logNorm` — Lumer's inequality, `⟦A x, x⟧ ≤ μ(A) ‖x‖²`.
-* `RegularPairing.logNorm_le` — conversely, `⟦A x, x⟧ ≤ c ‖x‖²` for all `x` implies `μ(A) ≤ c`.
+* `RegularPairing.pairing_le_logNorm` — Lumer's inequality, `⟦A x; x⟧ ≤ μ(A) ‖x‖²`.
+* `RegularPairing.logNorm_le` — conversely, `⟦A x; x⟧ ≤ c ‖x‖²` for all `x` implies `μ(A) ≤ c`.
 
-Together they say that `μ(A)` is the least `c` with `⟦A x, x⟧ ≤ c ‖x‖²` for all `x`: Lumer's
-equality `μ(A) = sup_{x ≠ 0} ⟦A x, x⟧ / ‖x‖²`, for every regular pairing.
+Together they say that `μ(A)` is the least `c` with `⟦A x; x⟧ ≤ c ‖x‖²` for all `x`: Lumer's
+equality `μ(A) = sup_{x ≠ 0} ⟦A x; x⟧ / ‖x‖²`, for every regular pairing.
 
 The basic properties of `μ` then follow from those of a pairing, through the regular pairing of the
 norm: subadditivity, positive homogeneity, the translation property `μ(A + c I) = μ(A) + c`, the
@@ -43,7 +43,7 @@ open scoped LogNorm
 
 namespace RegularPairing
 
-/-- **Lumer's inequality**: `⟦A x, x⟧ ≤ μ(A) ‖x‖²`, for every regular pairing. -/
+/-- **Lumer's inequality**: `⟦A x; x⟧ ≤ μ(A) ‖x‖²`, for every regular pairing. -/
 @[blueprint "thm:regularPairing-pairing-le-logNorm"
   (title := "Lumer's inequality")
   (statement := /-- For a regular pairing (\cref{def:regularPairing}) and a bounded linear operator
@@ -56,7 +56,7 @@ namespace RegularPairing
     its right derivative is at most $\mu(A) \|x\|$
     (\cref{lem:hasDerivWithinAt-le-of-le-of-eq}). -/)]
 theorem pairing_le_logNorm (p : RegularPairing E) (A : E →L[ℝ] E) (x : E) :
-    p (A x) x ≤ μ A * ‖x‖ ^ 2 := by
+    ⟦A x; x⟧_p ≤ μ A * ‖x‖ ^ 2 := by
   rcases eq_or_ne x 0 with rfl | hx
   · simp
   have : Nontrivial E := ⟨⟨x, 0, hx⟩⟩
@@ -70,7 +70,7 @@ theorem pairing_le_logNorm (p : RegularPairing E) (A : E →L[ℝ] E) (x : E) :
         exact mul_le_mul_of_nonneg_left hle (norm_nonneg x)
     _ = μ A * ‖x‖ ^ 2 := by ring
 
-/-- **The converse of Lumer's inequality**: if `⟦A x, x⟧ ≤ c ‖x‖²` for all `x`, then `μ(A) ≤ c`. -/
+/-- **The converse of Lumer's inequality**: if `⟦A x; x⟧ ≤ c ‖x‖²` for all `x`, then `μ(A) ≤ c`. -/
 @[blueprint "thm:regularPairing-logNorm-le"
   (title := "Converse of Lumer's inequality")
   (statement := /-- For a regular pairing (\cref{def:regularPairing}) on a nontrivial space, if
@@ -89,7 +89,7 @@ theorem pairing_le_logNorm (p : RegularPairing E) (A : E →L[ℝ] E) (x : E) :
     $\|I + h A\| \le (1 + h^2 \|A\|^2)/(1 - h c)$, a function equal to $1$ at $h = 0$ with right
     derivative $c$ there (\cref{lem:hasDerivWithinAt-le-of-le-of-eq}). -/)]
 theorem logNorm_le [Nontrivial E] (p : RegularPairing E) {A : E →L[ℝ] E} {c : ℝ}
-    (hc : ∀ x, p (A x) x ≤ c * ‖x‖ ^ 2) : logNorm A ≤ c := by
+    (hc : ∀ x, ⟦A x; x⟧_p ≤ c * ‖x‖ ^ 2) : μ A ≤ c := by
   set K := ‖A‖ ^ 2
   -- for small `h > 0`, `‖I + h A‖ ≤ (1 + h² ‖A‖²) / (1 - h c)`, which has right derivative `c`
   have hg : HasDerivWithinAt (fun h : ℝ => (1 + h * h * K) / (1 - h * c)) c (Ioi 0) 0 :=
@@ -106,12 +106,12 @@ theorem logNorm_le [Nontrivial E] (p : RegularPairing E) {A : E →L[ℝ] E} {c 
   set y := x + h • A x with hy
   rw [show ((1 : E →L[ℝ] E) + h • A) x = y by simp [hy], div_mul_eq_mul_div,
     le_div_iff₀ (by linarith)]
-  -- `‖y‖ (‖y‖ - ‖x‖) ≤ h ⟦A x, y⟧`: the slope of `s ↦ ‖y - s A x‖` and the lower Deimling bound
+  -- `‖y‖ (‖y‖ - ‖x‖) ≤ h ⟦A x; y⟧`: the slope of `s ↦ ‖y - s A x‖` and the lower Deimling bound
   have hslope := derivWithin_norm_add_smul_le (-(A x)) y hh
   rw [show y + h • -(A x) = x by simp [hy], le_div_iff₀ hh] at hslope
   have hdeim := p.neg_ofNorm_neg_le (A x) y
   rw [ofNorm_apply] at hdeim
-  -- `⟦A x, y⟧ ≤ c ‖y‖² + h ‖A‖² ‖x‖ ‖y‖`, from `A x = A y - h A² x`
+  -- `⟦A x; y⟧ ≤ c ‖y‖² + h ‖A‖² ‖x‖ ‖y‖`, from `A x = A y - h A² x`
   have hAx : A x = A y + (-h) • A (A x) := by
     rw [hy, map_add, map_smul]
     module

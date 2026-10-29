@@ -6,15 +6,15 @@ import Architect
 
 The regular pairings of the ℓ¹ and ℓ∞ norms on `ℝⁿ`, in closed form:
 
-* `RegularPairing.sign` — the sign pairing `⟦x, y⟧₁ = ‖y‖₁ Σᵢ sign(yᵢ) xᵢ` for `‖·‖₁`;
-* `RegularPairing.max` — the max pairing `⟦x, y⟧∞ = max_{i ∈ I∞(y)} yᵢ xᵢ` for `‖·‖∞`, where
+* `RegularPairing.sign` — the sign pairing `⟦x; y⟧₁ = ‖y‖₁ Σᵢ sign(yᵢ) xᵢ` for `‖·‖₁`;
+* `RegularPairing.max` — the max pairing `⟦x; y⟧∞ = max_{i ∈ I∞(y)} yᵢ xᵢ` for `‖·‖∞`, where
   `I∞(y) = {i : |yᵢ| = ‖y‖∞}`.
 
-With a weight `R`, `RegularPairing.weighted` gives the weighted pairings `⟦R x, R y⟧₁` and
-`⟦R x, R y⟧∞`.  Through Lumer's inequality and its converse:
+With a weight `R`, `RegularPairing.weighted` gives the weighted pairings `⟦R x; R y⟧₁` and
+`⟦R x; R y⟧∞`.  Through Lumer's inequality and its converse:
 
 * `Matrix.logNormLpWeight_le_iff_pairing` — for any regular pairing of the ℓᵖ norm,
-  `μ_{p,R}(A) ≤ c` iff `⟦R A x, R x⟧ ≤ c ‖R x‖ₚ²` for all `x`; with `RegularPairing.sign n`
+  `μ_{p,R}(A) ≤ c` iff `⟦R A x; R x⟧ ≤ c ‖R x‖ₚ²` for all `x`; with `RegularPairing.sign n`
   (`p = 1`) or `RegularPairing.max n` (`p = ∞`) the pairing is explicit.
 
 References: F. Bullo, *Contraction Theory for Dynamical Systems* (ed. 1.0, 2022), Section 2.4;
@@ -37,7 +37,7 @@ private lemma sign_mul_le_abs (y x : ℝ) : (SignType.sign y : ℝ) * x ≤ |x| 
   · simp
   · simp [sign_pos h, le_abs_self]
 
-/-- **The sign pairing** `⟦x, y⟧₁ = ‖y‖₁ Σᵢ sign(yᵢ) xᵢ`, a regular pairing for the ℓ¹ norm. -/
+/-- **The sign pairing** `⟦x; y⟧₁ = ‖y‖₁ Σᵢ sign(yᵢ) xᵢ`, a regular pairing for the ℓ¹ norm. -/
 @[blueprint "def:regularPairing-sign"
   (title := "The sign pairing")
   (statement := /-- On $\mathbb{R}^n$ with the $\ell_1$ norm,
@@ -103,7 +103,7 @@ private lemma maxIndices_neg (y : WithLp ∞ (n → ℝ)) : maxIndices n (-y) = 
 
 variable (n) [Nonempty n]
 
-/-- **The max pairing** `⟦x, y⟧∞ = max_{i ∈ I∞(y)} yᵢ xᵢ`, a regular pairing for the ℓ∞ norm. -/
+/-- **The max pairing** `⟦x; y⟧∞ = max_{i ∈ I∞(y)} yᵢ xᵢ`, a regular pairing for the ℓ∞ norm. -/
 @[blueprint "def:regularPairing-max"
   (title := "The max pairing")
   (statement := /-- On $\mathbb{R}^n$ with the $\ell_\infty$ norm,
@@ -161,8 +161,8 @@ open WithLp (toLp ofLp)
 
 variable {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n] (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- **Weighted ℓᵖ log norms through a pairing**: for a regular pairing `⟦·,·⟧` of the ℓᵖ norm and
-an invertible `R`, `μ_{p,R}(A) ≤ c` iff `⟦R A x, R x⟧ ≤ c ‖R x‖ₚ²` for all `x`.  With the sign
+/-- **Weighted ℓᵖ log norms through a pairing**: for a regular pairing `⟦·; ·⟧` of the ℓᵖ norm and
+an invertible `R`, `μ_{p,R}(A) ≤ c` iff `⟦R A x; R x⟧ ≤ c ‖R x‖ₚ²` for all `x`.  With the sign
 pairing (`p = 1`) or the max pairing (`p = ∞`) the left side is explicit. -/
 @[blueprint "thm:logNormLpWeight-le-iff-pairing"
   (title := "Weighted $\\ell_p$ log norms through a pairing")
@@ -180,7 +180,7 @@ pairing (`p = 1`) or the max pairing (`p = ∞`) the left side is explicit. -/
 theorem logNormLpWeight_le_iff_pairing (q : RegularPairing (WithLp p (n → ℝ))) {R : Matrix n n ℝ}
     (hR : IsUnit R) (A : Matrix n n ℝ) (c : ℝ) :
     μ_{p, R} A ≤ c ↔
-      ∀ x : n → ℝ, q (toLp p (R *ᵥ A *ᵥ x)) (toLp p (R *ᵥ x)) ≤ c * ‖toLp p (R *ᵥ x)‖ ^ 2 := by
+      ∀ x : n → ℝ, ⟦toLp p (R *ᵥ A *ᵥ x); toLp p (R *ᵥ x)⟧_q ≤ c * ‖toLp p (R *ᵥ x)‖ ^ 2 := by
   have hdet := (isUnit_iff_isUnit_det R).1 hR
   rw [logNormLpWeight_eq p hR, logNormLp]
   -- `R A R⁻¹` applied to `R x` is `R A x`

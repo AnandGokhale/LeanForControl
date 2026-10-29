@@ -1,5 +1,6 @@
 import LeanForControl.Contraction.Norms.Defs
-import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.InnerProductSpace.Calculus
+import Mathlib.Analysis.SpecialFunctions.Sqrt
 import LeanForControl.Analysis.Norm
 import LeanForControl.Analysis.DiniDeriv
 import Architect
@@ -12,12 +13,12 @@ space of interest carries, and the weighted pairing of a weighted norm.
 
 * `abs_le_norm_mul_norm`, `abs_sub_le` — the two-sided Cauchy–Schwarz inequality, and Lipschitz
   continuity in the first argument.
-* `add_smul_self` — partial linearity, `⟦x + a y, y⟧ = ⟦x, y⟧ + a ‖y‖²` for every real `a`.
+* `add_smul_self` — partial linearity, `⟦x + a y; y⟧ = ⟦x; y⟧ + a ‖y‖²` for every real `a`.
 * `RegularPairing.ofInner` — the inner product of an inner product space.
 * `RegularPairing.ofNorm` — the regular pairing of the norm, on every normed space: the right
-  derivative of the norm, `⟦x, y⟧ = ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`.
+  derivative of the norm, `⟦x; y⟧ = ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`.
 * `RegularPairing.weighted` — a regular pairing and an invertible weight `R` give the regular
-  pairing `⟦x, y⟧_R = ⟦R x, R y⟧` for the weighted norm `‖x‖_R = ‖R x‖`.
+  pairing `⟦x; y⟧_R = ⟦R x; R y⟧` for the weighted norm `‖x‖_R = ‖R x‖`.
 
 References: A. V. Proskurnikov and F. Bullo, *Regular Pairings for Nonquadratic Lyapunov
 Functions and Contraction Analysis*, SIAM J. Control Optim. 64(1):496–521 (2026),
@@ -25,7 +26,7 @@ doi:10.1137/24M1689685, Lemma 2.6, Definitions 2.3 and 3.3, Theorem 3.5 and Coro
 -/
 
 open Set Filter Topology
-open scoped RealInnerProductSpace
+open scoped RealInnerProductSpace LogNorm
 
 namespace RegularPairing
 
@@ -33,14 +34,14 @@ section Algebra
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (p : RegularPairing E)
 
-@[simp] lemma zero_left (y : E) : p 0 y = 0 := by
+@[simp] lemma zero_left (y : E) : ⟦0; y⟧_p = 0 := by
   simpa using p.smul_left 0 le_rfl 0 y
 
-@[simp] lemma zero_right (x : E) : p x 0 = 0 := by
+@[simp] lemma zero_right (x : E) : ⟦x; 0⟧_p = 0 := by
   simpa using p.smul_right 0 le_rfl x 0
 
-/-- **The two-sided Cauchy–Schwarz inequality** `|⟦x, y⟧| ≤ ‖x‖ ‖y‖`: the lower bound follows from
-subadditivity, `0 = ⟦0, y⟧ ≤ ⟦x, y⟧ + ⟦-x, y⟧`. -/
+/-- **The two-sided Cauchy–Schwarz inequality** `|⟦x; y⟧| ≤ ‖x‖ ‖y‖`: the lower bound follows from
+subadditivity, `0 = ⟦0; y⟧ ≤ ⟦x; y⟧ + ⟦-x; y⟧`. -/
 @[blueprint "lem:regularPairing-abs-le-norm-mul-norm"
   (title := "Cauchy--Schwarz inequality for a regular pairing")
   (latexEnv := "lemma")
@@ -48,7 +49,7 @@ subadditivity, `0 = ⟦0, y⟧ ≤ ⟦x, y⟧ + ⟦-x, y⟧`. -/
     $|\pair{x}{y}| \le \|x\| \, \|y\|$ for all $x, y$. -/)
   (proof := /-- The upper bound is an axiom.  For the lower bound,
     $0 = \pair{0}{y} \le \pair{x}{y} + \pair{-x}{y} \le \pair{x}{y} + \|x\| \, \|y\|$. -/)]
-lemma abs_le_norm_mul_norm (x y : E) : |p x y| ≤ ‖x‖ * ‖y‖ := by
+lemma abs_le_norm_mul_norm (x y : E) : |⟦x; y⟧_p| ≤ ‖x‖ * ‖y‖ := by
   have h := p.add_left_le x (-x) y
   rw [add_neg_cancel, zero_left] at h
   have h' := p.le_norm_mul_norm (-x) y
@@ -66,7 +67,7 @@ lemma abs_le_norm_mul_norm (x y : E) : |p x y| ≤ ‖x‖ * ‖y‖ := by
   (proof := /-- By subadditivity and Cauchy--Schwarz,
     $\pair{x_1}{y} \le \pair{x_1 - x_2}{y} + \pair{x_2}{y} \le \|x_1 - x_2\| \|y\|
     + \pair{x_2}{y}$; exchange $x_1$ and $x_2$. -/)]
-lemma abs_sub_le (x₁ x₂ y : E) : |p x₁ y - p x₂ y| ≤ ‖x₁ - x₂‖ * ‖y‖ := by
+lemma abs_sub_le (x₁ x₂ y : E) : |⟦x₁; y⟧_p - ⟦x₂; y⟧_p| ≤ ‖x₁ - x₂‖ * ‖y‖ := by
   have h₁ := p.add_left_le (x₁ - x₂) x₂ y
   have h₂ := p.add_left_le (x₂ - x₁) x₁ y
   rw [sub_add_cancel] at h₁ h₂
@@ -75,16 +76,16 @@ lemma abs_sub_le (x₁ x₂ y : E) : |p x₁ y - p x₂ y| ≤ ‖x₁ - x₂‖
   rw [norm_sub_rev] at h₄
   exact abs_sub_le_iff.2 ⟨by linarith, by linarith⟩
 
-/-- `⟦a y, y⟧ = a ‖y‖²` for every real `a`: for `a ≥ 0` by homogeneity, for `a < 0` by the
+/-- `⟦a y; y⟧ = a ‖y‖²` for every real `a`: for `a ≥ 0` by homogeneity, for `a < 0` by the
 straight-angle property. -/
-lemma smul_self (a : ℝ) (y : E) : p (a • y) y = a * ‖y‖ ^ 2 := by
+lemma smul_self (a : ℝ) (y : E) : ⟦a • y; y⟧_p = a * ‖y‖ ^ 2 := by
   rcases le_total 0 a with ha | ha
   · rw [p.smul_left a ha, p.self]
   · have h : a • y = (-a) • -y := by rw [smul_neg, neg_smul, _root_.neg_neg]
     rw [h, p.smul_left (-a) (by linarith), p.neg_self]
     ring
 
-/-- **Partial linearity**: `⟦x + a y, y⟧ = ⟦x, y⟧ + a ‖y‖²` for every real `a`. -/
+/-- **Partial linearity**: `⟦x + a y; y⟧ = ⟦x; y⟧ + a ‖y‖²` for every real `a`. -/
 @[blueprint "lem:regularPairing-add-smul-self"
   (title := "Partial linearity of a regular pairing")
   (latexEnv := "lemma")
@@ -96,7 +97,7 @@ lemma smul_self (a : ℝ) (y : E) : p (a • y) y = a * ‖y‖ ^ 2 := by
   (proof := /-- The straight-angle property gives $\pair{a y}{y} = a \|y\|^2$ for every real $a$.
     Subadditivity gives $\pair{x + a y}{y} \le \pair{x}{y} + a\|y\|^2$, and, applied to
     $x = (x + a y) + (-a) y$, the reverse inequality. -/)]
-lemma add_smul_self (x y : E) (a : ℝ) : p (x + a • y) y = p x y + a * ‖y‖ ^ 2 := by
+lemma add_smul_self (x y : E) (a : ℝ) : ⟦x + a • y; y⟧_p = ⟦x; y⟧_p + a * ‖y‖ ^ 2 := by
   have h₁ := p.add_left_le x (a • y) y
   have h₂ := p.add_left_le (x + a • y) ((-a) • y) y
   rw [add_assoc, ← add_smul, add_neg_cancel, zero_smul, add_zero] at h₂
@@ -111,7 +112,7 @@ section Inner
 
 variable (E : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **The inner product is a regular pairing**, `⟦x, y⟧ = ⟪x, y⟫`. -/
+/-- **The inner product is a regular pairing**, `⟦x; y⟧ = ⟪x, y⟫`. -/
 @[blueprint "def:regularPairing-ofInner"
   (title := "The inner product as a regular pairing")
   (statement := /-- On a real inner product space, $\pair{x}{y} = \langle x, y \rangle$ is a
@@ -150,7 +151,7 @@ private lemma hasDerivWithinAt_norm_add_mul_smul {a : ℝ} (ha : 0 < a) (x y : E
   exact this
 
 /-- **The regular pairing of the norm**, on every normed space: its right derivative,
-`⟦x, y⟧ = ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`, the upper James–Miličić–Tapia pairing. -/
+`⟦x; y⟧ = ‖y‖ · d⁺/dh ‖y + h x‖ |_{h = 0}`, the upper James–Miličić–Tapia pairing. -/
 @[blueprint "def:regularPairing-ofNorm"
   (title := "The regular pairing of a norm")
   (statement := /-- On a real normed space,
@@ -167,8 +168,9 @@ private lemma hasDerivWithinAt_norm_add_mul_smul {a : ℝ} (ha : 0 < a) (x y : E
     straight-angle property: $\|x \pm h x\| = (1 \pm h)\|x\|$ for $0 \le h < 1$. -/)]
 noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] :
     RegularPairing E where
-  toFun x y := ‖y‖ * ∂⁺‖y‖[x]
+  toFun := normPairing
   add_left_le x₁ x₂ y := by
+    unfold normPairing
     -- `y + h (x₁ + x₂)` is the midpoint of `y + 2h x₁` and `y + 2h x₂`
     have hle := (hasDerivWithinAt_norm_add_smul (x₁ + x₂) y).le_of_le_of_eq
       (((hasDerivWithinAt_norm_add_mul_smul two_pos x₁ y).div_const 2).add
@@ -183,6 +185,7 @@ noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] 
     rw [← mul_add]
     exact mul_le_mul_of_nonneg_left (hle.trans_eq (by ring)) (norm_nonneg y)
   smul_left a ha x y := by
+    unfold normPairing
     rcases ha.eq_or_lt with rfl | ha
     · simp
     -- `‖y + h (a x)‖ = ‖y + (a h) x‖`
@@ -190,6 +193,7 @@ noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] 
       rw [smul_smul, mul_comm]) (by simp)).derivWithin (uniqueDiffWithinAt_Ioi 0)]
     ring
   smul_right a ha x y := by
+    unfold normPairing
     rcases ha.eq_or_lt with rfl | ha
     · simp
     -- `‖a y + h x‖ = a ‖y + (a⁻¹ h) x‖`
@@ -201,8 +205,9 @@ noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] 
       (fun h _ => hscale h) (hscale 0)).derivWithin (uniqueDiffWithinAt_Ioi 0), norm_smul,
       Real.norm_of_nonneg ha.le]
     field_simp
-  neg_neg x y := by simp only [smul_neg, ← neg_add, norm_neg]
+  neg_neg x y := by simp only [normPairing, smul_neg, ← neg_add, norm_neg]
   self x := by
+    unfold normPairing
     -- along the ray through `x`, `‖x + h x‖ = (1 + h) ‖x‖`
     have hray : HasDerivWithinAt (fun h : ℝ => ‖x + h • x‖) ‖x‖ (Ioi 0) 0 := by
       refine ((((hasDerivAt_id' (0 : ℝ)).const_add 1).mul_const ‖x‖).hasDerivWithinAt
@@ -211,6 +216,7 @@ noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] 
       rw [show x + h • x = (1 + h) • x by module, norm_smul, Real.norm_of_nonneg (by linarith)]
     rw [hray.derivWithin (uniqueDiffWithinAt_Ioi 0), sq]
   le_norm_mul_norm x y := by
+    unfold normPairing
     -- `‖y + h x‖ ≤ ‖y‖ + h ‖x‖`
     have hle := (hasDerivWithinAt_norm_add_smul x y).le_of_le_of_eq
       (((hasDerivAt_id' (0 : ℝ)).mul_const ‖x‖).const_add ‖y‖).hasDerivWithinAt (by simp)
@@ -219,6 +225,7 @@ noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] 
     rw [mul_comm ‖x‖]
     exact mul_le_mul_of_nonneg_left (hle.trans_eq (one_mul _)) (norm_nonneg y)
   neg_self x := by
+    unfold normPairing
     -- the straight angle: `‖x - h x‖ = (1 - h) ‖x‖` for `0 < h < 1`
     have hray : HasDerivWithinAt (fun h : ℝ => ‖x + h • -x‖) (-‖x‖) (Ioi 0) 0 := by
       refine ((((hasDerivAt_id' (0 : ℝ)).const_sub 1).mul_const ‖x‖).hasDerivWithinAt
@@ -232,7 +239,48 @@ noncomputable def ofNorm (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] 
 lemma ofNorm_apply (x y : E) :
     ofNorm E x y = ‖y‖ * derivWithin (fun h : ℝ => ‖y + h • x‖) (Ioi 0) 0 := rfl
 
+/-- `ofNorm` is the function `normPairing`, with its axioms proved. -/
+@[simp] lemma ofNorm_eq_normPairing (x y : E) : ofNorm E x y = normPairing x y := rfl
+
 end Norm
+
+/-- `⟦x; y⟧` for the pairing of the norm, `RegularPairing.ofNorm`; available after
+`open scoped LogNorm`. -/
+scoped[LogNorm] notation:max "⟦" x "; " y "⟧" => RegularPairing.toFun (RegularPairing.ofNorm _) x y
+
+section InnerNorm
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- **On an inner product space the pairing of the norm is the inner product**,
+`⟦x; y⟧ = ⟪x, y⟫`: away from `0` the norm is differentiable, with derivative `⟪y, ·⟫ / ‖y‖`. -/
+@[blueprint "lem:normPairing-eq-inner"
+  (title := "The pairing of a Hilbert norm is the inner product")
+  (latexEnv := "lemma")
+  (statement := /-- On a real inner product space, the regular pairing of the norm
+    (\cref{def:regularPairing-ofNorm}) is the inner product:
+    $\pair{x}{y} = \langle x, y \rangle$. -/)
+  (proof := /-- For $y = 0$ both sides vanish.  For $y \ne 0$,
+    $h \mapsto \|y + h x\| = \sqrt{\|y + h x\|^2}$ is differentiable at $0$ with derivative
+    $\langle y, x \rangle / \|y\|$, so
+    $\pair{x}{y} = \|y\| \cdot \langle y, x \rangle / \|y\|$. -/)]
+lemma normPairing_eq_inner (x y : E) : ⟦x; y⟧ = ⟪x, y⟫ := by
+  change normPairing x y = _
+  rcases eq_or_ne y 0 with rfl | hy
+  · simp [normPairing]
+  have hd : HasDerivAt (fun h : ℝ => ‖y + h • x‖) (⟪y, x⟫ / ‖y‖) 0 := by
+    have h1 : HasDerivAt (fun h : ℝ => y + h • x) x 0 := by
+      simpa using ((hasDerivAt_id (0 : ℝ)).smul_const x).const_add y
+    convert h1.norm_sq.sqrt (by simpa using hy) using 1
+    · funext h
+      rw [Real.sqrt_sq (norm_nonneg _)]
+    · simp only [zero_smul, add_zero, Real.sqrt_sq (norm_nonneg _)]
+      field_simp
+  unfold normPairing
+  rw [hd.hasDerivWithinAt.derivWithin (uniqueDiffWithinAt_Ioi 0),
+    mul_div_cancel₀ _ (norm_ne_zero_iff.2 hy), real_inner_comm]
+
+end InnerNorm
 
 /-! ### Weighted pairings -/
 
@@ -242,7 +290,7 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
   [NormedSpace ℝ F]
 
 /-- **The weighted pairing**: a regular pairing on `F` and an invertible weight `R : E → F` give the
-regular pairing `⟦x, y⟧_R = ⟦R x, R y⟧` for the weighted norm `‖x‖_R = ‖R x‖`. -/
+regular pairing `⟦x; y⟧_R = ⟦R x; R y⟧` for the weighted norm `‖x‖_R = ‖R x‖`. -/
 @[blueprint "def:regularPairing-weighted"
   (title := "Weighted regular pairing")
   (statement := /-- Let $\pair{\cdot}{\cdot}$ be a regular pairing (\cref{def:regularPairing}) on
@@ -263,11 +311,23 @@ noncomputable def weighted (p : RegularPairing F) (R : E ≃L[ℝ] F) :
     simpa only [WeightedNorm.norm_weight] using p.le_norm_mul_norm _ _
   neg_self x := by rw [map_neg, p.neg_self, WeightedNorm.norm_weight]
 
-/-- `⟦x, y⟧_R = ⟦R x, R y⟧`, for vectors `x, y` of `E` measured in the weighted norm. -/
+/-- `⟦x; y⟧_R = ⟦R x; R y⟧`, for vectors `x, y` of `E` measured in the weighted norm. -/
 @[simp] lemma weighted_equiv (p : RegularPairing F) (R : E ≃L[ℝ] F) (x y : E) :
-    p.weighted R (WeightedNorm.equiv R x) (WeightedNorm.equiv R y) = p (R x) (R y) := by
+    ⟦WeightedNorm.equiv R x; WeightedNorm.equiv R y⟧_(p.weighted R) = ⟦R x; R y⟧_p := by
   simp [weighted, WeightedNorm.equiv]
 
 end Weighted
 
 end RegularPairing
+
+namespace LogNorm
+
+/-- Print the pairing of the norm as `⟦x; y⟧`, and any other pairing as `⟦x; y⟧_p`. -/
+@[scoped app_unexpander RegularPairing.toFun]
+def unexpandPairing : Lean.PrettyPrinter.Unexpander
+  | `($_ (RegularPairing.ofNorm $_) $x $y) => `(⟦$x; $y⟧)
+  | `($_ $p:ident $x $y) => `(⟦$x; $y⟧_$p)
+  | `($_ $p $x $y) => `(⟦$x; $y⟧_($p))
+  | _ => throw ()
+
+end LogNorm
