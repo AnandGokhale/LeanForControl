@@ -307,6 +307,9 @@ noncomputable def toWeight {R : Matrix n n ℝ} (hR : IsUnit R) :
 @[simp] lemma toWeight_symm_apply {R : Matrix n n ℝ} (hR : IsUnit R) (x : WithLp p (n → ℝ)) :
     (toWeight p hR).symm x = toLp p (R⁻¹ *ᵥ ofLp x) := rfl
 
+/-- `‖x‖_{p, R}`: the weighted ℓᵖ norm `‖R x‖_p` of a vector of `ℝⁿ`. -/
+noncomputable def normLpWeight (R : Matrix n n ℝ) (x : n → ℝ) : ℝ := ‖toLp p (R *ᵥ x)‖
+
 /-- `A` as an operator on `ℝⁿ` with the ℓᵖ norm. -/
 noncomputable def toLpCLM (A : Matrix n n ℝ) : WithLp p (n → ℝ) →L[ℝ] WithLp p (n → ℝ) :=
   LinearMap.toContinuousLinearMap (toLpLin p p A)
@@ -442,6 +445,9 @@ lemma inner_def (x y : WeightedEuclidean hP) : ⟪x, y⟫ = x.ofWE ⬝ᵥ (P *�
 
 end WeightedEuclidean
 
+/-- `‖x‖_{2,P^½}`: the weighted Euclidean norm `√(xᵀ P x)` of a vector of `ℝⁿ`. -/
+noncomputable def normL2PosDef (P : Matrix n n ℝ) (x : n → ℝ) : ℝ := √(x ⬝ᵥ (P *ᵥ x))
+
 open Classical in
 /-- `μ_{2,P^½} A`: the log norm of the matrix `A` in the norm `‖x‖ = √(xᵀ P x)`.  It is meaningful
 for `P ≻ 0`; otherwise it is `0`. -/
@@ -479,6 +485,34 @@ def unexpandLogNormL2PosDef : Lean.PrettyPrinter.Unexpander
   | `($_ $P $A) => `(μ_{2, ($P)^½} $A)
   | `($_ $P:ident) => `(μ_{2, $P^½})
   | `($_ $P) => `(μ_{2, ($P)^½})
+  | _ => throw ()
+
+/-! #### Weighted vector norms -/
+
+/-- `‖x‖_{p, R}` for the weighted ℓᵖ norm `‖R x‖_p` and `‖x‖_{2,P^½}` for `√(xᵀ P x)`; available
+after `open scoped LogNorm`. -/
+scoped syntax:max "‖" term "‖_{" term ", " term "}" : term
+
+@[inherit_doc LogNorm.«term‖_‖_{_,_}»]
+scoped syntax:max "‖" term "‖_{" num "," term "^½}" : term
+
+scoped macro_rules
+  | `(‖$x‖_{$p, $R}) => `(Matrix.normLpWeight $p $R $x)
+  | `(‖$x‖_{$p:num, $P^½}) =>
+    if p.getNat = 2 then `(Matrix.normL2PosDef $P $x)
+    else Lean.Macro.throwError "`‖x‖_{p,P^½}` is defined only for p = 2"
+
+/-- Print `normLpWeight p R x` as `‖x‖_{p, R}`. -/
+@[scoped app_unexpander Matrix.normLpWeight]
+def unexpandNormLpWeight : Lean.PrettyPrinter.Unexpander
+  | `($_ $p $R $x) => `(‖$x‖_{$p, $R})
+  | _ => throw ()
+
+/-- Print `normL2PosDef P x` as `‖x‖_{2,P^½}`. -/
+@[scoped app_unexpander Matrix.normL2PosDef]
+def unexpandNormL2PosDef : Lean.PrettyPrinter.Unexpander
+  | `($_ $P:ident $x) => `(‖$x‖_{2, $P^½})
+  | `($_ $P $x) => `(‖$x‖_{2, ($P)^½})
   | _ => throw ()
 
 /-! #### One-sided Lipschitz constants
