@@ -1,4 +1,4 @@
-import LeanForControl.Contraction.Norms.LpPairings
+import LeanForControl.Contraction.Norms.Lp
 import LeanForControl.Analysis.FrechetDerivative
 import Architect
 

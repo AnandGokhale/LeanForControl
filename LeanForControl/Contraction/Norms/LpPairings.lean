@@ -11,11 +11,10 @@ The regular pairings of the ℓ¹ and ℓ∞ norms on `ℝⁿ`, in closed form:
   `I∞(y) = {i : |yᵢ| = ‖y‖∞}`.
 
 With a weight `R`, `RegularPairing.weighted` gives the weighted pairings `⟦R x; R y⟧₁` and
-`⟦R x; R y⟧∞`.  Through Lumer's inequality and its converse:
-
-* `Matrix.logNormLpWeight_le_iff_pairing` — for any regular pairing of the ℓᵖ norm,
-  `μ_{p,R}(A) ≤ c` iff `⟦R A x; R x⟧ ≤ c ‖R x‖ₚ²` for all `x`; with `RegularPairing.sign n`
-  (`p = 1`) or `RegularPairing.max n` (`p = ∞`) the pairing is explicit.
+`⟦R x; R y⟧∞`.  They make explicit the pairing tests for any regular pairing of the ℓᵖ norm,
+`Matrix.logNormLpWeight_le_iff_pairing` (`Lp.lean`) and
+`Matrix.oneSidedLipschitzLpWeight_le_iff_pairing` (`OneSidedLipschitz.lean`).  Nothing else depends
+on this file.
 
 References: F. Bullo, *Contraction Theory for Dynamical Systems* (ed. 1.0, 2022), Section 2.4;
 A. V. Proskurnikov and F. Bullo, *Regular Pairings for Nonquadratic Lyapunov Functions and
@@ -154,47 +153,3 @@ lemma max_apply (x y : WithLp ∞ (n → ℝ)) :
     max n x y = (maxIndices n y).sup' (maxIndices_nonempty y) fun i => y i * x i := rfl
 
 end RegularPairing
-
-namespace Matrix
-
-open WithLp (toLp ofLp)
-
-variable {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n] (p : ℝ≥0∞) [Fact (1 ≤ p)]
-
-/-- **Weighted ℓᵖ log norms through a pairing**: for a regular pairing `⟦·; ·⟧` of the ℓᵖ norm and
-an invertible `R`, `μ_{p,R}(A) ≤ c` iff `⟦R A x; R x⟧ ≤ c ‖R x‖ₚ²` for all `x`.  With the sign
-pairing (`p = 1`) or the max pairing (`p = ∞`) the left side is explicit. -/
-@[blueprint "thm:logNormLpWeight-le-iff-pairing"
-  (title := "Weighted $\\ell_p$ log norms through a pairing")
-  (statement := /-- Let $\pair{\cdot}{\cdot}$ be a regular pairing (\cref{def:regularPairing}) for
-    the $\ell_p$ norm on $\mathbb{R}^n$, for instance the sign pairing
-    (\cref{def:regularPairing-sign}) for $p = 1$ or the max pairing
-    (\cref{def:regularPairing-max}) for $p = \infty$.  For an invertible $R$, a matrix $A$ and
-    $c \in \mathbb{R}$,
-    \[ \mu_{p,R}(A) \le c \iff \pair{R A x}{R x} \le c \|R x\|_p^2 \text{ for all } x. \]
-    The right side is $\pair{A x}{x}_R \le c \|x\|_{p,R}^2$ for the weighted pairing
-    (\cref{def:regularPairing-weighted}). -/)
-  (proof := /-- $\mu_{p,R}(A) = \mu_p(R A R^{-1})$ (\cref{thm:logNormLpWeight-eq}); apply Lumer's
-    inequality (\cref{thm:regularPairing-pairing-le-logNorm}) and its converse
-    (\cref{thm:regularPairing-logNorm-le}) to $R A R^{-1}$, and substitute $y = R x$. -/)]
-theorem logNormLpWeight_le_iff_pairing (q : RegularPairing (WithLp p (n → ℝ))) {R : Matrix n n ℝ}
-    (hR : IsUnit R) (A : Matrix n n ℝ) (c : ℝ) :
-    μ_{p, R} A ≤ c ↔
-      ∀ x : n → ℝ, ⟦toLp p (R *ᵥ A *ᵥ x); toLp p (R *ᵥ x)⟧_q ≤ c * ‖toLp p (R *ᵥ x)‖ ^ 2 := by
-  have hdet := (isUnit_iff_isUnit_det R).1 hR
-  rw [logNormLpWeight_eq p hR, logNormLp]
-  -- `R A R⁻¹` applied to `R x` is `R A x`
-  have hRx (x : n → ℝ) : toLpCLM p (R * A * R⁻¹) (toLp p (R *ᵥ x)) = toLp p (R *ᵥ A *ᵥ x) := by
-    simp [toLpCLM, toLpLin_apply, mulVec_mulVec, Matrix.mul_assoc, nonsing_inv_mul R hdet]
-  constructor
-  · intro h x
-    rw [← hRx]
-    exact (q.pairing_le_logNorm _ _).trans (mul_le_mul_of_nonneg_right h (sq_nonneg _))
-  · intro h
-    refine q.logNorm_le fun y => ?_
-    have hy : y = toLp p (R *ᵥ R⁻¹ *ᵥ ofLp y) := by
-      simp [mulVec_mulVec, mul_nonsing_inv R hdet]
-    rw [hy, hRx]
-    exact h _
-
-end Matrix
