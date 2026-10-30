@@ -15,5 +15,5 @@ SIAM J. Control Optim. 64(1):496–521 (2026).
 Goal: make it easy to prove that a concrete system is contracting in a chosen norm, from a bound
 `μ(DF(x)) ≤ -c` on its Jacobian.  Order of work:
 
-1. the Jacobian form of the contraction bound, and the remaining grades (`Systems/`);
-2. the affine certificate, then the weighted ℓ∞ Hopfield certificate (`Systems/`).
+1. the remaining grades of contractivity (`Systems/`);
+2. the weighted ℓ∞ Hopfield certificate (`Systems/`).

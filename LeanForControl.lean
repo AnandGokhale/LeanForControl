@@ -32,6 +32,7 @@ import LeanForControl.Contraction.Norms.RegularPairing
 import LeanForControl.Contraction.Norms.WeightedNorm
 import LeanForControl.Contraction.Systems.ContractionBound
 import LeanForControl.Contraction.Systems.Defs
+import LeanForControl.Contraction.Systems.Lp
 import LeanForControl.LinearSystems.Continuous
 import LeanForControl.LinearSystems.Controllability.Controllability
 import LeanForControl.LinearSystems.Controllability.Defs
