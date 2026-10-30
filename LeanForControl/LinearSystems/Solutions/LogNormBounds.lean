@@ -48,38 +48,15 @@ variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpa
     derivative and is nonincreasing.  Hence $\|x(t)\| \le e^{M(t)} \|x_0\|$. -/)]
 theorem norm_stateTransition_le (s : ContinuousLTV E U Y) (hA : Continuous s.A) {t₀ t : ℝ}
     (ht : t₀ ≤ t) : ‖s.stateTransition t t₀‖ ≤ exp (∫ τ in t₀..t, μ (s.A τ)) := by
-  have hμ : Continuous fun τ => μ (s.A τ) := continuous_logNorm.comp hA
-  set M : ℝ → ℝ := fun r => ∫ τ in t₀..r, μ (s.A τ)
   refine ContinuousLinearMap.opNorm_le_bound _ (exp_pos _).le fun x₀ => ?_
-  set x : ℝ → E := fun r => s.stateTransition r t₀ x₀
-  have hx (r : ℝ) : HasDerivAt x (s.A r (x r)) r := by
+  have hx (r : ℝ) : HasDerivAt (fun r => s.stateTransition r t₀ x₀)
+      (s.A r (s.stateTransition r t₀ x₀)) r := by
     simpa using (s.hasDerivAt_stateTransition hA r t₀).clm_apply (hasDerivAt_const r x₀)
-  -- `g = e^{-2M} ‖x‖²` has a nonpositive right derivative, so `g t ≤ g t₀ = ‖x₀‖²`
-  set g : ℝ → ℝ := fun r => exp (-(2 * M r)) * ‖x r‖ ^ 2
-  have hg (r : ℝ) : HasDerivWithinAt g
-      (exp (-(2 * M r)) * (-(2 * μ (s.A r))) * ‖x r‖ ^ 2 +
-        exp (-(2 * M r)) * (2 * RegularPairing.ofNorm E (s.A r (x r)) (x r))) (Ici r) r := by
-    have hM := ((hμ.integral_hasStrictDerivAt t₀ r).hasDerivAt.const_mul 2).neg.exp
-    exact hM.hasDerivWithinAt.mul
-      (hasDerivWithinAt_Ioi_iff_Ici.1 (RegularPairing.hasDerivWithinAt_norm_sq
-        (hx r).hasDerivWithinAt))
-  have hle := image_le_of_deriv_right_le_deriv_boundary (f := g) (B := fun _ => ‖x₀‖ ^ 2)
-    (B' := fun _ => 0) (a := t₀) (b := t)
-    (fun r _ => ((((hμ.integral_hasStrictDerivAt t₀ r).hasDerivAt.const_mul 2).neg.exp
-      ).continuousAt.mul ((hx r).continuousAt.norm.pow 2)).continuousWithinAt)
-    (fun r _ => hg r) (by simp [g, M, x]) continuousOn_const
-    (fun r _ => hasDerivWithinAt_const _ _ _) (fun r _ => by
-      have h := (RegularPairing.ofNorm E).pairing_le_logNorm (s.A r) (x r)
-      have he := exp_pos (-(2 * M r))
-      nlinarith) (right_mem_Icc.2 ht)
-  -- `‖x t‖² ≤ e^{2 M t} ‖x₀‖²`
-  have hsq : ‖x t‖ ^ 2 ≤ (exp (M t) * ‖x₀‖) ^ 2 := by
-    have h2 : exp (-(2 * M t)) * exp (M t) ^ 2 = 1 := by
-      rw [← exp_nat_mul, ← exp_add]; norm_num
-    have he := exp_pos (-(2 * M t))
-    simp only [g] at hle
-    nlinarith
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
+  -- the exponential bound for `x(r) = Φ(r, t₀) x₀`, whose pairing with `A x` is bounded by Lumer
+  simpa using RegularPairing.norm_le_exp_integral_of_pairing_le (t₁ := t)
+    (continuous_logNorm.comp hA)
+    (fun r _ => (hx r).continuousAt.continuousWithinAt) (fun r _ => (hx r).hasDerivWithinAt)
+    (fun r _ => (RegularPairing.ofNorm E).pairing_le_logNorm (s.A r) _) t (right_mem_Icc.2 ht)
 
 /-- **Coppel's lower inequality**: `exp (-∫_{t₀}^t μ(-A(τ)) dτ) ≤ ‖Φ(t, t₀)‖` for `t₀ ≤ t`. -/
 @[blueprint "thm:continuousLTV-le-norm-stateTransition"

@@ -62,7 +62,13 @@ matrix with `HasJacobianAt F (J x) x` (`Analysis/Jacobian.lean`).
 |---|---|---|
 | Metzler Jacobian: `osL_{1,[η]} F ≤ b` ⟺ ordered increments, and the ℓ∞ form along `η` | ✗ easy | `oneSidedLipschitzLpWeight_eq_iSup` + diagonal log-norm formulas + `row_le_iff_ordered_increments` / `col_le_iff_increments_along` + `metzlerMajorant_eq_self` |
 | Affine maps: `x ↦ A x + d` is Lipschitz with `ℓ` iff `‖A‖ ≤ ℓ` | ✗ easy | Mathlib's operator-norm API; the `osL` half is `oneSidedLipschitz_affine` |
+| Lipschitz constant from the Jacobian: `Lip(F) = sup_C ‖DF‖` on open convex `C` | ✗ easy | Mathlib: `Convex.lipschitzOnWith_of_nnnorm_hasFDerivWithin_le`, `HasFDerivAt.le_of_lipschitzOn`; only a statement in our form |
+| Lipschitz inverse: `osL F on C < 0` ⇒ `F⁻¹` on `F '' C` is Lipschitz with `-1 / osL F` | ✗ easy | `neg_mul_norm_sub_le_of_oneSidedLipschitz_le`; injectivity is `injOn_of_oneSidedLipschitz_neg` |
+| Pairing-free formula: `osL F = sup_{x ≠ y} lim_{h→0⁺} (‖x - y + h(F x - F y)‖ - ‖x - y‖) / (h ‖x - y‖)` | ✗ med | the upper pairing as a right derivative of the norm (`Norms/CurveNormDerivative.lean`) |
+| One-sided Lipschitz but not Lipschitz: `-x - x³` (`osL = -1`), `1/√x` on `(0, 1)` | ✗ easy | optional examples |
 | `HasJacobianAt` on `EuclideanSpace`: `HasFDerivAt f (toEuclideanCLM A) x` ⟺ `HasJacobianAt (ofLp ∘ f ∘ toLp) A (ofLp x)` | ✗ easy | for the linearization theorems (`Stability/Continuous/Linearization.lean`) |
 | Discrete ℓ² test: `‖DF‖_{2,P^½} ≤ ℓ` ⟺ `DFᵀ P DF ⪯ ℓ² P` ⟺ Lipschitz in `‖·‖_P` | ✗ med | weighted ℓ² induced norm as an LMI (above) |
 | Monotonic norms: `osL` as a sup over ordered pairs only | ✗ hard | monotonic norms, sign-flip invariance of the pairing |
-| Jacobian tests with `ess sup` for locally Lipschitz `F` | ✗ hard | Rademacher, translated segments |
+| Mean value inequality along translated segments: for a.e. small shift `w`, the segment from `y + w` to `x + w` meets the non-differentiability set in a null set | ✗ hard | Rademacher (Mathlib: `LipschitzWith.ae_differentiableAt`), Fubini |
+| Jacobian tests with `ess sup` for locally Lipschitz `F`: `Lip(F) = ess sup ‖DF‖`, `osL(F) = ess sup μ(DF)` | ✗ hard | the translated segments, then continuity of `F` |
+| Ordered incremental inequalities (Metzler forms above) from a.e. Jacobian bounds | ✗ med | the `ess sup` tests |
