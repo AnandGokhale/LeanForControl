@@ -1,4 +1,5 @@
 import LeanForControl.LinearSystems.Observability.Defs
+import LeanForControl.MatrixAlgebra.CayleyHamilton
 import LeanForControl.MatrixAlgebra.Rank
 import Mathlib.Algebra.Module.Submodule.Invariant
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
@@ -153,7 +154,7 @@ theorem isObservable_iff_observabilityMatrix_rank_eq
     (A : Matrix (Fin n) (Fin n) 𝕜) (C : Matrix (Fin p) (Fin n) 𝕜) :
     IsObservable A C ↔ Matrix.rank (observabilityMatrix A C) = n := by
   refine (isObservable_iff_observabilityMatrix_ker_trivial A C).trans ?_
-  refine (MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols
+  refine (Matrix.mulVec_kernel_trivial_iff_rank_eq_card_cols
     (observabilityMatrix A C)).trans ?_
   rw [Fintype.card_fin]
 
@@ -205,7 +206,7 @@ private lemma mulVec_aPowN_eq_zero_of_mem_unobservableSubspace
     (C * A ^ n) *ᵥ v = 0 := by
   rw [mem_unobservableSubspace_iff] at hv
   have hCH : A ^ n = -∑ i ∈ Finset.range n, A.charpoly.coeff i • A ^ i := by
-    have h := MatrixAlgebra.pow_card_eq_neg_sum_charpoly_coeff A
+    have h := Matrix.pow_card_eq_neg_sum_charpoly_coeff A
     rwa [Fintype.card_fin] at h
   have hlower : ∀ i ∈ Finset.range n, (C * A.charpoly.coeff i • A ^ i) *ᵥ v = 0 := by
     intro i hi

@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.ODE.Basic
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.ODE.Transform
 import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.Analysis.Integrals
@@ -36,8 +37,11 @@ in `Analysis/Integrals.lean`.
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- An *integral solution* of `ẋ = F(t, x)` on the segment between `t₀` and `t₁` (in either
-    order) with initial value `x₀`: for every `t` on that segment,
-    `x(t) = x₀ + ∫_{t₀}^{t} F(s, x(s)) ds`. -/
+    order) with initial value `x₀`: for every `t` on that segment, `s ↦ F(s, x(s))` is integrable
+    between `t₀` and `t` and `x(t) = x₀ + ∫_{t₀}^{t} F(s, x(s)) ds`.
+
+    Integrability is part of the definition, and `E` is complete: otherwise the Bochner integral is
+    `0`, and the definition would silently make a constant `x` a solution. -/
 @[blueprint "def:isIntegralSolution"
   (title := "Integral solution")
   (statement := /-- A function $x$, defined on the segment between $t_0$ and $t_1$, is an
@@ -45,15 +49,23 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     \[
       x(t) \;=\; x_0 + \int_{t_0}^{t} F(s,\, x(s))\,\mathrm{d}s
     \]
-    for every $t$ between $t_0$ and $t_1$. -/)]
-def IsIntegralSolution (t₀ t₁ : ℝ) (x : ℝ → E) (x₀ : E) (F : ℝ → E → E) : Prop :=
-  ∀ t ∈ Set.uIcc t₀ t₁, x t = x₀ + ∫ s in t₀..t, F s (x s)
+    for every $t$ between $t_0$ and $t_1$, the integrand being integrable. -/),
+  -- `CompleteSpace E` is unused in the body on purpose: see the docstring
+  nolint unusedArguments]
+def IsIntegralSolution [CompleteSpace E] (t₀ t₁ : ℝ) (x : ℝ → E) (x₀ : E) (F : ℝ → E → E) :
+    Prop :=
+  ∀ t ∈ Set.uIcc t₀ t₁,
+    IntervalIntegrable (fun s => F s (x s)) volume t₀ t ∧ x t = x₀ + ∫ s in t₀..t, F s (x s)
 
 variable {t₀ t₁ : ℝ}
 variable {f g : ℝ → E → E}
 variable {y z : ℝ → E}
 variable {y₀ z₀ : E}
 variable {L μ : ℝ}
+
+section Reparametrization
+
+variable [CompleteSpace E]
 
 /-- Re-anchoring an integral solution: if `x` solves `ẋ = F(t, x)` on the segment between `t₀`
     and `t₁` with initial value `x₀`, then for *any* two points `s`, `r` of that segment it also
@@ -65,8 +77,8 @@ state-transition matrix's invertibility argument needs. -/
 @[blueprint "lem:isIntegralSolution-reanchor"
   (title := "Re-anchoring an integral solution")
   (latexEnv := "lemma")
-  (statement := /-- Let $x$ be a continuous integral solution of $\dot x = F(t,x)$ with initial
-    value $x_0$ on the segment between $t_0$ and $t_1$, with $F$ jointly continuous.  Then for
+  (statement := /-- Let $x$ be an integral solution of $\dot x = F(t,x)$ with initial
+    value $x_0$ on the segment between $t_0$ and $t_1$.  Then for
     any $s, r$ on that segment, $x$ is an integral solution on the segment between $s$ and $r$,
     with initial value $x(s)$:
     \[
@@ -76,19 +88,18 @@ state-transition matrix's invertibility argument needs. -/
     Leaving both endpoints free means the domain need not shrink — taking $s = t_1$ and
     $r = t_0$ re-anchors at one end of the original segment while retaining all of it. -/)
   (proof := /-- Subtract the defining equations at $t$ and at $s$ and split the integral at $s$,
-    which is legitimate because $w \mapsto F(w, x(w))$ is interval-integrable on each piece. -/)]
+    which is legitimate because $w \mapsto F(w, x(w))$ is integrable on each piece, by the
+    definition of an integral solution. -/)]
 lemma IsIntegralSolution.reanchor {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {F : ℝ → E → E}
-    (hx : IsIntegralSolution t₀ t₁ x x₀ F) (hF_cont : Continuous (fun p : ℝ × E => F p.1 p.2))
-    (hx_cont : ContinuousOn x (uIcc t₀ t₁)) {s r : ℝ}
-    (hs : s ∈ uIcc t₀ t₁) (hr : r ∈ uIcc t₀ t₁) :
+    (hx : IsIntegralSolution t₀ t₁ x x₀ F) {s r : ℝ} (hs : s ∈ uIcc t₀ t₁) (hr : r ∈ uIcc t₀ t₁) :
     IsIntegralSolution s r x (x s) F := by
   intro t ht
   have ht' : t ∈ uIcc t₀ t₁ := uIcc_subset_uIcc hs hr ht
-  have hint1 : IntervalIntegrable (fun w => F w (x w)) volume t₀ s :=
-    hF_cont.intervalIntegrable_comp (hx_cont.mono (uIcc_subset_uIcc left_mem_uIcc hs))
-  have hint2 : IntervalIntegrable (fun w => F w (x w)) volume s t :=
-    hF_cont.intervalIntegrable_comp (hx_cont.mono (uIcc_subset_uIcc hs ht'))
-  rw [hx t ht', hx s hs, add_assoc, intervalIntegral.integral_add_adjacent_intervals hint1 hint2]
+  have hint : IntervalIntegrable (fun w => F w (x w)) volume s t :=
+    (hx s hs).1.symm.trans (hx t ht').1
+  refine ⟨hint, ?_⟩
+  rw [(hx t ht').2, (hx s hs).2, add_assoc,
+    intervalIntegral.integral_add_adjacent_intervals (hx s hs).1 hint]
 
 /-- **Time reflection.** Running an integral solution backwards through the midpoint of its own
 interval, `σ ↦ x (t₀ + t₁ - σ)`, gives an integral solution of the negated, reflected field
@@ -132,8 +143,13 @@ lemma IsIntegralSolution.reflect {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {F
     rcases Set.mem_uIcc.mp hσ with ⟨h1, h2⟩ | ⟨h1, h2⟩
     · exact Set.mem_uIcc.mpr (Or.inr ⟨by linarith, by linarith⟩)
     · exact Set.mem_uIcc.mpr (Or.inl ⟨by linarith, by linarith⟩)
-  dsimp only
-  rw [hx _ hmem, intervalIntegral.integral_neg, hkey (fun w => F w (x w)) σ, neg_neg]
+  refine ⟨?_, ?_⟩
+  · have h := ((hx _ hmem).1.comp_sub_left (t₀ + t₁)).neg
+    simpa only [show t₀ + t₁ - t₀ = t₁ by ring, show t₀ + t₁ - (t₀ + t₁ - σ) = σ by ring] using h
+  · dsimp only
+    rw [(hx _ hmem).2, intervalIntegral.integral_neg, hkey (fun w => F w (x w)) σ, neg_neg]
+
+end Reparametrization
 
 /-! ## Relation to Mathlib's integral curves
 
@@ -191,8 +207,8 @@ theorem IsIntegralCurveOn.isIntegralSolution
     exact ((hcurve s (hsub hs')).hasDerivAt hmem).hasDerivWithinAt
   have hint : IntervalIntegrable (fun s => F s (x s)) volume t₀ t :=
     (hFx.mono hsub).intervalIntegrable
-  have hFTC := intervalIntegral.integral_eq_sub_of_hasDeriv_right hcont hderiv hint
-  rw [hFTC]
+  refine ⟨hint, ?_⟩
+  rw [intervalIntegral.integral_eq_sub_of_hasDeriv_right hcont hderiv hint]
   abel
 
 /-- **Integral form implies differential form.** An integral solution on the segment between `t₀`
@@ -217,7 +233,7 @@ theorem IsIntegralSolution.isIntegralCurveOn
   have hderiv : HasDerivWithinAt (fun u => ∫ s in t₀..u, F s (x s)) (F t (x t)) (uIcc t₀ t₁) t :=
     intervalIntegral.integral_hasDerivWithinAt_right hint
       (hFx.stronglyMeasurableAtFilter_nhdsWithin measurableSet_uIcc t) (hFx t ht)
-  exact (hderiv.const_add x₀).congr (fun u hu => hsol u hu) (hsol t ht)
+  exact (hderiv.const_add x₀).congr (fun u hu => (hsol u hu).2) (hsol t ht).2
 
 /-- The two formulations agree, given continuity of `F` along `x`. -/
 @[blueprint "lem:isIntegralSolution-iff-isIntegralCurveOn"
@@ -316,3 +332,30 @@ lemma IsIntegralCurveOn.isIntegralSolution_of_continuous {g : E → E} {t₀ t�
     (hg.comp_continuousOn (fun s hs => (hx s hs).continuousWithinAt))).mpr hx
 
 end IntegralCurve
+
+/-- **An equilibrium is a constant integral curve**: if `v(t, p) = 0` for `t ∈ s`, then
+`t ↦ p` is an integral curve of `v` on `s`. -/
+@[blueprint "lem:isIntegralCurveOn-const"
+  (title := "Constant integral curves at equilibria")
+  (latexEnv := "lemma")
+  (statement := /-- If $v(t, p) = 0$ for every $t \in s$, then the constant curve $t \mapsto p$
+    is an integral curve of $\dot x = v(t, x)$ on $s$. -/)]
+lemma isIntegralCurveOn_const {v : ℝ → E → E} {p : E} {s : Set ℝ} (h : ∀ t ∈ s, v t p = 0) :
+    IsIntegralCurveOn (fun _ => p) v s := fun t ht =>
+  (hasDerivWithinAt_const t s p).congr_deriv (h t ht).symm
+
+/-- **Bounded speed**: an integral curve of a field bounded by `B` along it, on a convex set,
+moves at most `B |τ₂ - τ₁|` between two of its times. -/
+@[blueprint "lem:isIntegralCurveOn-norm-sub-le"
+  (title := "Integral curves of a bounded field move at bounded speed")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\gamma$ be an integral curve of $v$ on a convex set $s$, with
+    $\|v(\tau, \gamma(\tau))\| \le B$ for $\tau \in s$.  Then
+    $\|\gamma(\tau_2) - \gamma(\tau_1)\| \le B\,|\tau_2 - \tau_1|$ for $\tau_1, \tau_2 \in s$. -/)]
+theorem IsIntegralCurveOn.norm_sub_le {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {γ : ℝ → E} {v : ℝ → E → E} {s : Set ℝ} {B : ℝ} (hγ : IsIntegralCurveOn γ v s)
+    (hs : Convex ℝ s) (hv : ∀ τ ∈ s, ‖v τ (γ τ)‖ ≤ B) {τ₁ τ₂ : ℝ} (h₁ : τ₁ ∈ s) (h₂ : τ₂ ∈ s) :
+    ‖γ τ₂ - γ τ₁‖ ≤ B * |τ₂ - τ₁| := by
+  simpa [Real.norm_eq_abs] using
+    hs.norm_image_sub_le_of_norm_hasDerivWithin_le (fun τ hτ => hγ τ hτ) hv h₁ h₂
+

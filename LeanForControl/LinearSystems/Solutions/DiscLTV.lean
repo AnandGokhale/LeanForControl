@@ -245,7 +245,7 @@ each successive value directly. -/
   (statement := /-- Any two solutions of
     $z(t+1) = A(t)z(t) + B(t)u(t)$ with the same value at $t_0$ agree for all $t \ge t_0$. -/)
   (proof := /-- Induction on $t$ from $t_0$.  Unlike
-    \cref{thm:variationOfConstants-unique}, no Lipschitz condition or Gronwall estimate is
+    \cref{thm:eq-forcedResponse-of-isTrajectoryOn}, no Lipschitz condition or Gronwall estimate is
     needed: the recursion determines each successive value outright, so uniqueness is
     immediate. -/)]
 theorem discVariationOfConstants_unique (A : ℕ → Matrix X X ℝ) {t₀ : ℕ}

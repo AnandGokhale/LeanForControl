@@ -1,6 +1,11 @@
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Data.Matrix.Mul
-import LeanForControl.MatrixAlgebra.Complex
+import Mathlib.Analysis.Matrix.Normed
+import Mathlib.Analysis.Calculus.Deriv.Basic
+import LeanForControl.MatrixAlgebra.Complexify
+import LeanForControl.LinearSystems.Solutions.DefsCtsLTV
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Architect
 
 /-!
@@ -11,12 +16,13 @@ abstract index type `X` rather than `Fin n`, matching the convention everything 
 the `ContinuousLTV` object follows.
 
 The continuous-time conditions (`IsHurwitz`, `IsHurwitzWithRate`, the Lyapunov equation
-`PA + AᵀP = -Q`) and their discrete-time counterparts (`IsSchur`: every eigenvalue in the open
-unit disc; the discrete Lyapunov equation `AᵀPA - P = -Q`).
+`PA + AᵀP = -Q` and its time-varying form `-Ṗ = PA + AᵀP + Q`) and their discrete-time
+counterparts (`IsSchur`: every eigenvalue in the open unit disc; the discrete Lyapunov equation
+`AᵀPA - P = -Q`).
 
 Both predicates are stated through eigenpairs of the complexification rather than through an
 enumeration of eigenvalues or through `spectrum`: that is the form in which they are produced
-(`MatrixAlgebra.exists_eigenpair_of_mem_spectrum_exp`) and consumed, and it avoids choosing an
+(`Matrix.exists_eigenpair_of_mem_spectrum_exp`) and consumed, and it avoids choosing an
 ordering of the eigenvalues.
 
 Zero-dimensional matrices satisfy both predicates vacuously, there being no nonzero
@@ -91,6 +97,80 @@ Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 8, Theorem 8.2. 
   -/)]
 def ContinuousLyapunovEquation (A P Q : Matrix X X ℝ) : Prop :=
   P * A + Aᵀ * P = -Q
+
+section Differential
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+
+/-- `P` satisfies the **differential Lyapunov equation** for `A` with forcing `Q` when, at every
+`t ≥ 0`,
+
+    -Ṗ(t) = P(t) A(t) + A(t)* P(t) + Q(t),
+
+with `A(t)*` the adjoint (the transpose, for matrices on Euclidean space).  The time-varying form
+of `ContinuousLyapunovEquation`: for `P` positive definite, `x ↦ ⟪x, P(t) x⟫` decreases along
+`ẋ = A(t) x` at the rate set by `Q(t)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), equation (4.28). -/
+@[blueprint "def:differentialLyapunovEquation"
+  (title := "Differential Lyapunov equation")
+  (statement := /-- For operator-valued functions $A$, $P$ and $Q$ of time on a real Hilbert
+    space, $P$ satisfies the \emph{differential Lyapunov equation} for $A$ with forcing $Q$ when,
+    for every $t \ge 0$, $P$ is differentiable at $t$ and
+    \[
+      -\dot P(t) = P(t)A(t) + A(t)^{*}P(t) + Q(t).
+    \]
+    For constant matrices it is the continuous Lyapunov equation
+    (\cref{def:continuousLyapunovEquation}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), equation (4.28). -/)]
+def DifferentialLyapunovEquation (A P Q : ℝ → E →L[ℝ] E) : Prop :=
+  ∀ t : ℝ, 0 ≤ t → HasDerivAt P (-(P t * A t + star (A t) * P t + Q t)) t
+
+namespace ContinuousLTV
+
+variable {U Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup Y]
+  [NormedSpace ℝ Y]
+
+/-- The integrand of Khalil's solution of the differential Lyapunov equation,
+`Φ(τ, t)* Q(τ) Φ(τ, t)`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "def:continuousLTV-lyapunovIntegrand"
+  (title := "Integrand of the Lyapunov integral")
+  (statement := /-- For a linear time-varying system with state transition operator $\Phi$
+    (\cref{def:continuousLTV-stateTransition}) and an operator function $Q$,
+    \[
+      \Phi(\tau, t)^{*} Q(\tau)\, \Phi(\tau, t).
+    \]
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)]
+noncomputable def lyapunovIntegrand (s : ContinuousLTV E U Y) (Q : ℝ → E →L[ℝ] E) (t τ : ℝ) :
+    E →L[ℝ] E :=
+  star (s.stateTransition τ t) * Q τ * s.stateTransition τ t
+
+/-- **Khalil's solution of the differential Lyapunov equation**,
+`P(t) = ∫_t^∞ Φ(τ, t)* Q(τ) Φ(τ, t) dτ`.  It is a Bochner integral, so it is `0` when the integrand
+is not integrable on `(t, ∞)`; it converges when the system is exponentially stable and `Q` is
+continuous and bounded, the hypotheses of the results that compute it.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.12. -/
+@[blueprint "def:continuousLTV-lyapunovIntegral"
+  (title := "Lyapunov integral")
+  (statement := /-- For a linear time-varying system and an operator function $Q$,
+    \[
+      P(t) = \int_t^\infty \Phi(\tau, t)^{*} Q(\tau)\, \Phi(\tau, t)\, d\tau
+    \]
+    (\cref{def:continuousLTV-lyapunovIntegrand}).
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.12. -/)]
+noncomputable def lyapunovIntegral (s : ContinuousLTV E U Y) (Q : ℝ → E →L[ℝ] E) (t : ℝ) :
+    E →L[ℝ] E :=
+  ∫ τ in Set.Ioi t, s.lyapunovIntegrand Q t τ
+
+end ContinuousLTV
+
+end Differential
 
 /-- A real square matrix is **Schur** when every complex eigenvalue lies in the open unit disc.
 

@@ -82,7 +82,7 @@ theorem isControllable_iff_hautus
   rw [isControllable_iff_isObservable_transpose, isObservable_iff_hautus]
   refine forall_congr' fun μ => ?_
   rw [Matrix.ker_mulVecLin_eq_bot_iff,
-      MatrixAlgebra.mulVec_kernel_trivial_iff_rank_eq_card_cols,
+      Matrix.mulVec_kernel_trivial_iff_rank_eq_card_cols,
       Fintype.card_fin,
       ← hautusControllabilityMatrix_transpose,
       Matrix.rank_transpose]

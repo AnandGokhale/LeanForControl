@@ -2,11 +2,11 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
+import Mathlib.Analysis.SpecialFunctions.Exp
 
 import LeanForControl.Comparison.ClassK
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassL
-import LeanForControl.Analysis.MonotoneFunctions
 
 import Architect
 
@@ -19,7 +19,7 @@ open Set Filter Topology MeasureTheory intervalIntegral
 /-! ### Class KL
 
 A *class KL* function `β(r, s)` is class K in `r` for each fixed `s`, and for each
-fixed `r` it is strictly decreasing in `s` and tends to zero as `s → ∞`.
+fixed `r` it is non-increasing in `s` and tends to zero as `s → ∞`.
 It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖x₀‖, t)`. -/
 
 /-- A class KL function `β : [0,a) × [0,∞) → ℝ`:
@@ -28,17 +28,21 @@ It arises as the bound in asymptotic stability estimates: `‖x(t)‖ ≤ β(‖
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.3. Differences:
     - Khalil says `β(·, s)` is class `K`; here `map_zero`, `continuous` and `strict_mono_r` spell
       that out, so no `ClassK` instance is required for each `s`.
-    - Continuity is joint on `[0,a) × [0,∞)`, matching Khalil's `β` continuous. -/
+    - Continuity is joint on `[0,a) × [0,∞)`, matching Khalil's `β` continuous.
+    - Khalil asks `β(r, ·)` to be decreasing; here it is only non-increasing (`anti_s`).  Nothing
+      is lost: `β(r, s) + α(r) e^{-s}`, with `α` class `K`, is a strictly decreasing majorant. -/
 @[blueprint "def:isClassKL"
   (title := "Class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{class $\mathcal{KL}$} function on $[0,a) \times [0,\infty)$
     is continuous, class $\mathcal{K}$ in the first argument, and for each fixed $r > 0$
-    is strictly decreasing and tends to $0$ as $s \to \infty$. It arises as the bound
+    is non-increasing and tends to $0$ as $s \to \infty$. It arises as the bound
     $\|x(t)\| \le \beta(\|x_0\|, t)$ in asymptotic stability estimates.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.3.  Difference: Khalil says
     $\beta(\cdot, s)$ is class $\mathcal{K}$; here that is spelled out as separate fields, so no
-    class $\mathcal{K}$ instance is required for each $s$.
+    class $\mathcal{K}$ instance is required for each $s$.  Khalil also asks $\beta(r, \cdot)$ to
+    be decreasing; non-increasing loses nothing, since $\beta(r, s) + \alpha(r) e^{-s}$, with
+    $\alpha$ class $\mathcal{K}$, is a strictly decreasing majorant.
   -/)]
 structure ClassKL (a : ℝ) where
   ha : 0 < a
@@ -526,20 +530,22 @@ theorem ClassKL.exists_comp_sandwich {r b₁ b₂ c d : ℝ}
 /-! ### Class KL Global
 
 A *global class KL* function `β(r, s)` is like `ClassKL` but defined on all of
-`[0, ∞) × [0, ∞)`: class K∞ in the first argument (continuous, strictly increasing,
-zero at zero, radially unbounded), antitone and tending to 0 in the second. -/
+`[0, ∞) × [0, ∞)`: class K in the first argument (continuous, strictly increasing, zero at
+zero), antitone and tending to 0 in the second.  As in Khalil, `β(·, s)` need not be unbounded;
+`ClassKLGlobal.exists_le_radiallyUnbounded` dominates any `β` by one with `β(·, 0)` unbounded,
+for the one argument that needs it. -/
 
-/-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K∞ in the first argument,
-    antitone and tending to 0 in the second. 
-    
+/-- A global class KL function `β : [0,∞) × [0,∞) → ℝ`: class K in the first argument,
+    antitone and tending to 0 in the second.  `β(·, s)` need not be unbounded.
+
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.3 with `a = ∞`. -/
 @[blueprint "def:isClassKLGlobal"
   (title := "Global class $\\mathcal{KL}$ function")
   (statement := /-- A \emph{global class $\mathcal{KL}$} function is a map
-    $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is class
-    $\mathcal{K}_{\infty}$ in the first argument (continuous, strictly increasing,
-    zero at zero, radially unbounded) and, for each fixed $r \ge 0$, is antitone
-    and tends to $0$ as $s \to \infty$.
+    $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$, jointly continuous, that is
+    class $\mathcal{K}$ in the first argument (strictly increasing, zero at zero) and, for each
+    fixed $r \ge 0$, is antitone and tends to $0$ as $s \to \infty$.  As in Khalil,
+    $\beta(\cdot, s)$ need not be unbounded.
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.3 with $a = \infty$.
   -/)]
@@ -552,6 +558,48 @@ structure ClassKLGlobal where
   nonneg        : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ toFun r s
   anti_s        : ∀ r ≥ 0, AntitoneOn (fun s => toFun r s) (Set.Ici 0)
   tendsto_zero  : ∀ r ≥ 0, Filter.Tendsto (fun s => toFun r s) Filter.atTop (nhds 0)
+
+/-- **Every global class `KL` function has a radially unbounded majorant**: a global class `KL`
+function `β' ≥ β` with `β'(r, 0) → ∞`.  A global class `KL` function need not be radially
+unbounded itself (`r / (1 + r) · e^{-s}` is not); `β(r, s) + r e^{-s}` is a majorant that is. -/
+@[blueprint "lem:classKLGlobal-exists-le-radiallyUnbounded"
+  (title := "Radially unbounded majorant of a class $\\mathcal{KL}$ function")
+  (latexEnv := "lemma")
+  (statement := /-- For every global class $\mathcal{KL}$ function $\beta$
+    (\cref{def:isClassKLGlobal}) there is a global class $\mathcal{KL}$ function $\beta'$ with
+    $\beta(r, s) \le \beta'(r, s)$ for $r, s \ge 0$ and $\beta'(r, 0) \to \infty$ as
+    $r \to \infty$. -/)
+  (proof := /-- $\beta'(r, s) = \beta(r, s) + r e^{-s}$. -/)]
+theorem ClassKLGlobal.exists_le_radiallyUnbounded (β : ClassKLGlobal) :
+    ∃ β' : ClassKLGlobal, (∀ r, 0 ≤ r → ∀ s, β.toFun r s ≤ β'.toFun r s) ∧
+      Tendsto (fun r => β'.toFun r 0) atTop atTop := by
+  let β' : ClassKLGlobal :=
+    { toFun := fun r s => β.toFun r s + r * Real.exp (-s)
+      map_zero := fun s hs => by simp [β.map_zero s hs]
+      continuous :=
+        β.continuous.add (continuous_fst.mul (continuous_snd.neg.rexp)).continuousOn
+      strict_mono_r := fun s hs a ha b hb hab =>
+        add_lt_add (β.strict_mono_r s hs ha hb hab) (mul_lt_mul_of_pos_right hab (Real.exp_pos _))
+      nonneg := fun r hr s hs => add_nonneg (β.nonneg r hr s hs) (mul_nonneg hr (Real.exp_pos _).le)
+      anti_s := fun r hr => (β.anti_s r hr).add fun a _ b _ hab =>
+        mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (neg_le_neg hab)) hr
+      tendsto_zero := fun r hr => by
+        simpa using (β.tendsto_zero r hr).add (Real.tendsto_exp_neg_atTop_nhds_zero.const_mul r) }
+  refine ⟨β', fun r hr s => le_add_of_nonneg_right (mul_nonneg hr (Real.exp_pos _).le), ?_⟩
+  simpa [β'] using tendsto_atTop_add_left_of_le' atTop 0
+    ((eventually_ge_atTop 0).mono fun r hr => β.nonneg r hr 0 le_rfl) tendsto_id
+
+/-- A global class KL function is nondecreasing in `r`. -/
+@[gcongr]
+theorem ClassKLGlobal.mono_r (β : ClassKLGlobal) {r₁ r₂ s : ℝ} (hr₁ : 0 ≤ r₁) (hs : 0 ≤ s)
+    (h : r₁ ≤ r₂) : β.toFun r₁ s ≤ β.toFun r₂ s :=
+  (β.strict_mono_r s hs).monotoneOn hr₁ (hr₁.trans h) h
+
+/-- A global class KL function is nonincreasing in `s`. -/
+@[gcongr]
+theorem ClassKLGlobal.anti_s_mono (β : ClassKLGlobal) {r s₁ s₂ : ℝ} (hr : 0 ≤ r) (hs₁ : 0 ≤ s₁)
+    (h : s₁ ≤ s₂) : β.toFun r s₂ ≤ β.toFun r s₁ :=
+  β.anti_s r hr hs₁ (hs₁.trans h) h
 
 /-- A global class KL function is continuous in `r` for each fixed `s ≥ 0`: the section of the
     joint continuity in the `continuous` field. -/
@@ -671,3 +719,85 @@ def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGl
   nonneg r hr s hs := β.nonneg (α.toFun r) (α.maps_to hr) s hs
   anti_s r hr        := β.anti_s (α.toFun r) (α.maps_to hr)
   tendsto_zero r hr  := β.tendsto_zero (α.toFun r) (α.maps_to hr)
+
+/-- The sum of two global class KL functions is global class KL. -/
+@[blueprint "lem:classKLGlobal-add"
+  (title := "Sum of global class $\\mathcal{KL}$ functions")
+  (statement := /-- If $\beta$ and $\beta'$ are global class $\mathcal{KL}$, so is
+    $\beta + \beta'$. -/)]
+def ClassKLGlobal.add (β β' : ClassKLGlobal) : ClassKLGlobal where
+  toFun r s     := β.toFun r s + β'.toFun r s
+  map_zero s hs := by rw [β.map_zero s hs, β'.map_zero s hs, add_zero]
+  continuous    := β.continuous.add β'.continuous
+  strict_mono_r s hs := (β.strict_mono_r s hs).add (β'.strict_mono_r s hs)
+  nonneg r hr s hs := add_nonneg (β.nonneg r hr s hs) (β'.nonneg r hr s hs)
+  anti_s r hr   := (β.anti_s r hr).add (β'.anti_s r hr)
+  tendsto_zero r hr := by simpa using (β.tendsto_zero r hr).add (β'.tendsto_zero r hr)
+
+/-- A positive multiple of a global class KL function is global class KL. -/
+@[blueprint "lem:classKLGlobal-smul"
+  (title := "Positive multiple of a global class $\\mathcal{KL}$ function")
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $c > 0$, then $c\beta$ is
+    global class $\mathcal{KL}$. -/)]
+def ClassKLGlobal.smul (β : ClassKLGlobal) (c : ℝ) (hc : 0 < c) : ClassKLGlobal where
+  toFun r s     := c * β.toFun r s
+  map_zero s hs := by rw [β.map_zero s hs, mul_zero]
+  continuous    := continuousOn_const.mul β.continuous
+  strict_mono_r s hs x hx y hy hxy := mul_lt_mul_of_pos_left (β.strict_mono_r s hs hx hy hxy) hc
+  nonneg r hr s hs := mul_nonneg hc.le (β.nonneg r hr s hs)
+  anti_s r hr s₁ hs₁ s₂ hs₂ hs := mul_le_mul_of_nonneg_left (β.anti_s r hr hs₁ hs₂ hs) hc.le
+  tendsto_zero r hr := by simpa using (β.tendsto_zero r hr).const_mul c
+
+/-- Slowing the time argument of a global class KL function by a factor `c > 0` gives a global
+class KL function. -/
+@[blueprint "lem:classKLGlobal-timeScale"
+  (title := "Rescaling time in a global class $\\mathcal{KL}$ function")
+  (statement := /-- If $\beta$ is global class $\mathcal{KL}$ and $c > 0$, then
+    $(r, s) \mapsto \beta(r, s/c)$ is global class $\mathcal{KL}$. -/)]
+noncomputable def ClassKLGlobal.timeScale (β : ClassKLGlobal) (c : ℝ) (hc : 0 < c) :
+    ClassKLGlobal where
+  toFun r s     := β.toFun r (s / c)
+  map_zero _ hs := β.map_zero _ (div_nonneg hs hc.le)
+  continuous    := β.continuous.comp (continuousOn_fst.prodMk (continuousOn_snd.div_const c))
+    fun _ hp => ⟨hp.1, mem_Ici.2 (div_nonneg hp.2 hc.le)⟩
+  strict_mono_r _ hs := β.strict_mono_r _ (div_nonneg hs hc.le)
+  nonneg r hr _ hs := β.nonneg r hr _ (div_nonneg hs hc.le)
+  anti_s r hr _ hs₁ _ hs₂ hs := β.anti_s r hr (div_nonneg hs₁ hc.le) (div_nonneg hs₂ hc.le)
+    (div_le_div_of_nonneg_right hs hc.le)
+  tendsto_zero r hr := (β.tendsto_zero r hr).comp (tendsto_id.atTop_div_const hc)
+
+/-- **Composition with a radius that may shrink in time.**  If `β` is global class KL and
+`a(r, s)` is continuous, vanishes at `r = 0`, is strictly increasing in `r` and nonincreasing in
+`s`, then `β(a(r, s), s)` is global class KL: it decays because `β(a(r, s), s) ≤ β(a(r, 0), s)`.
+This generalizes `comp_right`, where `a(r, s) = α(r)`. -/
+@[blueprint "lem:classKLGlobal-comp-antitone"
+  (title := "Composition with a nonincreasing radius")
+  (statement := /-- Let $\beta$ be global class $\mathcal{KL}$ and let
+    $a : [0, \infty)^2 \to \mathbb{R}$ be continuous, with $a(0, s) = 0$, strictly increasing
+    in $r$ and nonincreasing in $s$.  Then $(r, s) \mapsto \beta(a(r, s), s)$ is global class
+    $\mathcal{KL}$. -/)
+  (proof := /-- Each property of $\beta$ transfers, using $a \ge 0$; for the limit,
+    $0 \le \beta(a(r, s), s) \le \beta(a(r, 0), s) \to 0$. -/)]
+noncomputable def ClassKLGlobal.comp_antitone (β : ClassKLGlobal) (a : ℝ → ℝ → ℝ)
+    (ha_zero : ∀ s ≥ 0, a 0 s = 0) (ha_cont : ContinuousOn (Function.uncurry a) (Ici 0 ×ˢ Ici 0))
+    (ha_mono : ∀ s ≥ 0, StrictMonoOn (fun r => a r s) (Ici 0))
+    (ha_anti : ∀ r ≥ 0, AntitoneOn (fun s => a r s) (Ici 0)) : ClassKLGlobal :=
+  have ha_nonneg : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ a r s := fun r hr s hs =>
+    ha_zero s hs ▸ (ha_mono s hs).monotoneOn (mem_Ici.2 le_rfl) hr hr
+  { toFun r s     := β.toFun (a r s) s
+    map_zero s hs := by rw [ha_zero s hs, β.map_zero s hs]
+    continuous    := β.continuous.comp (ha_cont.prodMk continuousOn_snd)
+      fun p hp => ⟨ha_nonneg p.1 hp.1 p.2 hp.2, hp.2⟩
+    strict_mono_r s hs x hx y hy hxy := β.strict_mono_r s hs (ha_nonneg x hx s hs)
+      (ha_nonneg y hy s hs) (ha_mono s hs hx hy hxy)
+    nonneg r hr s hs := β.nonneg _ (ha_nonneg r hr s hs) s hs
+    anti_s r hr s₁ hs₁ s₂ hs₂ hs :=
+      (β.mono_r (ha_nonneg r hr s₂ hs₂) hs₂ (ha_anti r hr hs₁ hs₂ hs)).trans
+        (β.anti_s _ (ha_nonneg r hr s₁ hs₁) hs₁ hs₂ hs)
+    tendsto_zero r hr := by
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+        (β.tendsto_zero _ (ha_nonneg r hr 0 le_rfl)) ?_ ?_
+      · filter_upwards [eventually_ge_atTop 0] with s hs
+        exact β.nonneg _ (ha_nonneg r hr s hs) s hs
+      · filter_upwards [eventually_ge_atTop 0] with s hs
+        exact β.mono_r (ha_nonneg r hr s hs) hs (ha_anti r hr (mem_Ici.2 le_rfl) hs hs) }

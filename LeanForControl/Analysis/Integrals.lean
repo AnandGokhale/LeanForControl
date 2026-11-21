@@ -1,4 +1,5 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Analysis.SpecialFunctions.Integrability.Basic
 
 import Architect
@@ -123,6 +124,29 @@ lemma hasDerivAt_integral {a b : ℝ} {μ : ℝ → ℝ}
     ((hμ.mono (Icc_subset_Icc_right ht.2.le)).intervalIntegrable_of_Icc ht.1.le)
     ((hμ.mono Ioo_subset_Icc_self).stronglyMeasurableAtFilter isOpen_Ioo t ht)
     (hμ.continuousAt (Icc_mem_nhds ht.1 ht.2))
+
+/-- **Differentiating an integral with variable limits** (Leibniz's rule): for `w` continuous
+and `g`, `h` differentiable at `t`, `d/dτ ∫_{g(τ)}^{h(τ)} w = h'(t) w(h(t)) - g'(t) w(g(t))` at
+`τ = t`.  The fundamental theorem of calculus and the chain rule. -/
+@[blueprint "lem:continuous-hasDerivAt-integral-comp"
+  (title := "Differentiating an integral with variable limits")
+  (latexEnv := "lemma")
+  (statement := /-- For $w$ continuous on $\mathbb{R}$ and $g$, $h$ differentiable at $t$,
+    \[
+      \frac{\mathrm{d}}{\mathrm{d}\tau}\Big|_{\tau = t}
+        \int_{g(\tau)}^{h(\tau)} w(s)\,\mathrm{d}s = h'(t)\, w(h(t)) - g'(t)\, w(g(t)).
+    \] -/)
+  (proof := /-- $\int_{g}^{h} w = \int_0^{h} w - \int_0^{g} w$; differentiate each term by the
+    fundamental theorem of calculus and the chain rule. -/)]
+lemma Continuous.hasDerivAt_integral_comp {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [CompleteSpace E] {w : ℝ → E} (hw : Continuous w) {g h : ℝ → ℝ} {g' h' t : ℝ}
+    (hg : HasDerivAt g g' t) (hh : HasDerivAt h h' t) :
+    HasDerivAt (fun τ => ∫ s in g τ..h τ, w s) (h' • w (h t) - g' • w (g t)) t := by
+  convert ((hw.integral_hasStrictDerivAt 0 (h t)).hasDerivAt.scomp t hh).sub
+    ((hw.integral_hasStrictDerivAt 0 (g t)).hasDerivAt.scomp t hg) using 1
+  funext τ
+  exact (intervalIntegral.integral_interval_sub_left (hw.intervalIntegrable _ _)
+    (hw.intervalIntegrable _ _)).symm
 
 /-- The primitive `s ↦ ∫ τ in a..s, f τ` of an integrable `f` is continuous on `[a, t]`.
 
@@ -314,3 +338,17 @@ lemma tendsto_integral_average_atTop_zero {f a b : ℝ → ℝ}
             fun s hs => hf_anti hη (hη.trans_le hs.1) hs.1
       _ = f (a η) * (b η - a η) := by
           rw [intervalIntegral.integral_const_eq]; ring
+
+/-- **Translating an integral over a half-line**: `∫_a^∞ w(σ + c) dσ = ∫_{a+c}^∞ w`.  Lebesgue
+measure is translation invariant. -/
+@[blueprint "lem:setIntegral-Ioi-comp-add-right"
+  (title := "Translating an integral over a half-line")
+  (latexEnv := "lemma")
+  (statement := /-- For any $w$ and $a, c \in \mathbb{R}$,
+    $\int_a^\infty w(\sigma + c)\,\mathrm{d}\sigma = \int_{a + c}^\infty w(s)\,\mathrm{d}s$. -/)]
+theorem setIntegral_Ioi_comp_add_right {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (w : ℝ → E) (a c : ℝ) : ∫ σ in Ioi a, w (σ + c) = ∫ s in Ioi (a + c), w s := by
+  have h := (measurePreserving_add_right volume c).setIntegral_preimage_emb
+    (measurableEmbedding_addRight c) w (Ioi (a + c))
+  rwa [preimage_add_const_Ioi, add_sub_cancel_right] at h
+

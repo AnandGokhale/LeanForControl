@@ -22,7 +22,6 @@ The unobservable subspace `unobservableSubspace A C` and the block-row matrix
 `LinearSystems.Observability.Defs`. This file develops:
 
 * Foundational unobservable-subspace facts are imported from `Observability`.
-* `hautusObservabilityMatrix A C μ` — the block-row matrix `[μI - A; C]`.
 * Failure direction: `¬ IsObservable A C → ∃ μ, witness vector` via
   eigenvector extraction on `unobservableSubspace`.
 * Converse: a Hautus-failure witness violates observability directly.

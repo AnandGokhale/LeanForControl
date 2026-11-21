@@ -111,7 +111,7 @@ theorem isControllable_iff_controllabilityMatrix_rank_eq
     (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     IsControllable A B ↔ Matrix.rank (controllabilityMatrix A B) = n := by
   refine (isControllable_iff_controllabilityMatrix_mulVec_surjective A B).trans ?_
-  refine (MatrixAlgebra.mulVec_range_top_iff_rank_eq_card_rows
+  refine (Matrix.mulVec_range_top_iff_rank_eq_card_rows
     (controllabilityMatrix A B)).trans ?_
   rw [Fintype.card_fin]
 

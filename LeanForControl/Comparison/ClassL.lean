@@ -3,8 +3,6 @@ import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Topology.Order.IntermediateValue
 
-import LeanForControl.Comparison.ClassK
-import LeanForControl.Comparison.ClassKInfty
 import Architect
 
 open Set Filter Topology MeasureTheory intervalIntegral

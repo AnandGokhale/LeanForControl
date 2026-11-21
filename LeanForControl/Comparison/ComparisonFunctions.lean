@@ -221,17 +221,12 @@ lemma exists_classKL_upper_bound (ψ : ℝ → ℝ → ℝ)
     have h := (hΨ_eq r hr s hs ▸ hψ₁_ge r s).trans (hψ₂_ge r hr s)
     exact h.trans (le_add_of_nonneg_right (mul_nonneg hr (Real.exp_pos _).le))
 
-/-- Given a class K∞ spatial bound `α` and a family `U` of singular class L time-decay
-    functions that is monotone in the radius parameter, there exists a class KL-global
-    function `β` satisfying:
-    - `β(·, 0) → ∞` (K∞ propagation),
-    - `α(r) ≤ β(r, 0)` for all `r ≥ 0`,
-    - `min(α(r), √(α(r) · U(r+1)(s))) ≤ β(r, s)` for all `r ≥ 0`, `s > 0`.
-
-    The candidate `ψ(r,s) = if s = 0 then α(r) else min(α(r), √(α(r)·U(r+1)(s)))` is
-    constructed and smoothed internally; no details of `ψ` leak into the conclusion. -/
-@[blueprint "lem:classKLGlobal-of-KInfty-LSingular-family"
-  (title := "Global class $\\mathcal{KL}$ from a decay family")
+/-- **A class `KL` function above a size bound and a decay bound.**  If `α` is class `K∞` and
+    `U(r, s) > 0` is nonincreasing in `s`, tends to `0` as `s → ∞` and is nondecreasing in `r`,
+    there is a global class `KL` function `β` with `α(r) ≤ β(r, 0)` and
+    `min (α(r)) (U(r + 1, s)) ≤ β(r, s)` for `s > 0`. -/
+@[blueprint "lem:classKLGlobal-exists-ge-min-of-decay"
+  (title := "A class $\\mathcal{KL}$ function above a size bound and a decay bound")
   (latexEnv := "lemma")
   (statement := /-- Let $\alpha$ be class $\mathcal{K}_{\infty}$ and let $U$ be a family of
     functions such that
@@ -241,88 +236,59 @@ lemma exists_classKL_upper_bound (ψ : ℝ → ℝ → ℝ)
       \item $U(r, s) \to 0$ as $s \to \infty$, for each $r > 0$;
       \item $r \mapsto U(r+1, s)$ is monotone on $[0,\infty)$ for each $s > 0$.
     \end{enumerate}
-    Then there is a global class $\mathcal{KL}$ function $\beta$ such that
-    \begin{enumerate}
-      \item $\beta(r, 0) \to \infty$ as $r \to \infty$;
-      \item $\alpha(r) \le \beta(r, 0)$ for all $r \ge 0$;
-      \item $\min\bigl(\alpha(r), \sqrt{\alpha(r)U(r+1, s)}\bigr) \le \beta(r, s)$ for all
-        $r \ge 0$ and $s > 0$.
-    \end{enumerate} -/)
-  (proof := /-- Take $\psi(r, s) := \alpha(r)$ for $s = 0$ and
-    $\min\bigl(\alpha(r), \sqrt{\alpha(r)U(r+1,s)}\bigr)$ for $s > 0$, the radius being shifted
-    by $1$ so that $U$ is only ever evaluated at a strictly positive radius.  Each hypothesis of
-    \cref{lem:exists-classKL-upper-bound} holds for $\psi$: monotonicity in $r$ from that of
-    $\alpha$ and of $r \mapsto U(r+1,s)$, antitonicity in $s$ from that of $U(r+1,\cdot)$, decay
-    from \cref{lem:tendstoMinSqrtMulZero}, and continuity at $r = 0$ because
-    $\psi(\cdot, 0) = \alpha$.  The resulting $\beta$ dominates $\psi$, which gives the three
-    conclusions; $\beta(r,0) \ge \alpha(r) \to \infty$ gives the first.  No property of $\psi$
-    beyond these bounds appears in the statement. -/)]
-lemma ClassKLGlobal.of_KInfty_LSingular_family
+    Then there is a global class $\mathcal{KL}$ function $\beta$ with $\alpha(r) \le \beta(r, 0)$
+    and $\min\{\alpha(r), U(r + 1, s)\} \le \beta(r, s)$ for all $r \ge 0$ and $s > 0$. -/)
+  (proof := /-- Let $\psi(r, 0) = \alpha(r)$ and $\psi(r, s) = \min\{\alpha(r), U(r + 1, s)\}$
+    for $s > 0$; the radius is shifted by $1$ so that $U$ is only evaluated at a positive
+    radius.  Each hypothesis of \cref{lem:exists-classKL-upper-bound} holds for $\psi$:
+    monotonicity in $r$ from that of $\alpha$ and of $r \mapsto U(r+1,s)$, antitonicity in $s$
+    from that of $U(r+1,\cdot)$, decay since $0 \le \psi \le U$, and continuity at $r = 0$ because
+    $\psi(\cdot, 0) = \alpha$.  The resulting $\beta$ dominates $\psi$. -/)]
+lemma ClassKLGlobal.exists_ge_min_of_decay
     (α : ClassKInfty) (U : ℝ → ℝ → ℝ)
     (hU_pos : ∀ r > 0, ∀ s > 0, 0 < U r s)
     (hU_anti : ∀ r > 0, AntitoneOn (U r) (Set.Ioi 0))
     (hU_tendsto : ∀ r > 0, Filter.Tendsto (U r) Filter.atTop (nhds 0))
     (hU_mono_r : ∀ s > 0, MonotoneOn (fun r => U (r + 1) s) (Set.Ici 0)) :
-    ∃ β : ClassKLGlobal,
-      Filter.Tendsto (fun r => β.toFun r 0) Filter.atTop Filter.atTop ∧
-      (∀ r ≥ 0, α.toFun r ≤ β.toFun r 0) ∧
-      (∀ r ≥ 0, ∀ s > 0,
-        min (α.toFun r) (Real.sqrt (α.toFun r * U (r + 1) s)) ≤ β.toFun r s) := by
-  let ψ : ℝ → ℝ → ℝ := fun r s =>
-    if s = 0 then α.toFun r
-    else min (α.toFun r) (Real.sqrt (α.toFun r * U (r + 1) s))
-  have hψ_zero_val : ∀ r, ψ r 0 = α.toFun r := fun r => by simp [ψ]
-  have hψ_pos_val : ∀ r s, 0 < s → ψ r s = min (α.toFun r) (Real.sqrt (α.toFun r * U (r + 1) s)) :=
-    fun r s hs => by simp [ψ, hs.ne']
-  have hψ_nonneg : ∀ r ≥ 0, ∀ s ≥ 0, 0 ≤ ψ r s := by
-    intro r hr s _; simp only [ψ]; split_ifs
-    · exact α.maps_to hr
-    · exact le_min (α.maps_to hr) (Real.sqrt_nonneg _)
-  have hψ_zero : ∀ s ≥ 0, ψ 0 s = 0 := by
-    intro s _; simp only [ψ]; split_ifs with h
-    · exact α.map_zero
-    · rw [α.map_zero, zero_mul, Real.sqrt_zero, min_self]
-  have hψ_mono : ∀ s ≥ 0, MonotoneOn (fun r => ψ r s) (Set.Ici 0) := by
-    intro s hs r₁ hr₁ r₂ hr₂ h_le
-    simp only [ψ]; rcases eq_or_lt_of_le h_le with rfl | h_lt
-    · exact le_rfl
-    · have h_α_le := le_of_lt (α.strict_mono hr₁ hr₂ h_lt)
-      by_cases h_zero : s = 0
-      · simp [if_pos h_zero, h_α_le]
-      · simp only [if_neg h_zero]
-        have hs_pos : 0 < s := lt_of_le_of_ne hs (Ne.symm h_zero)
-        refine min_le_min h_α_le ?_
-        rcases (Set.mem_Ici.mp hr₁).eq_or_lt with rfl | hr₁_pos
-        · rw [α.map_zero, zero_mul, Real.sqrt_zero]; exact Real.sqrt_nonneg _
-        · exact Real.sqrt_le_sqrt (mul_le_mul h_α_le (hU_mono_r s hs_pos hr₁ hr₂ h_le)
-            (le_of_lt (hU_pos (r₁ + 1) (by positivity) s hs_pos)) (α.maps_to hr₂))
-  have hψ_anti : ∀ r ≥ 0, AntitoneOn (fun s => ψ r s) (Set.Ici 0) := by
-    intro r hr s₁ hs₁ s₂ hs₂ h_le
-    simp only [ψ]; rcases eq_or_lt_of_le hr with rfl | _
-    · simp [α.map_zero]
-    · rcases (Set.mem_Ici.mp hs₁).eq_or_lt with rfl | hs₁_pos
-      · rcases (Set.mem_Ici.mp hs₂).eq_or_lt with rfl | hs₂_pos
-        · exact le_rfl
-        · simp [if_neg (hs₂_pos.ne')]
-      · rcases (Set.mem_Ici.mp hs₂).eq_or_lt with rfl | hs₂_pos
-        · linarith
-        · simp only [if_neg (hs₁_pos.ne'), if_neg (hs₂_pos.ne')]
-          exact min_le_min_left _ (Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-            (hU_anti (r + 1) (by positivity) hs₁_pos hs₂_pos h_le) (α.maps_to hr)))
-  have hψ_tendsto : ∀ r ≥ 0, Filter.Tendsto (fun s => ψ r s) Filter.atTop (nhds 0) := by
-    intro r hr; simp only [ψ]; rcases eq_or_lt_of_le hr with rfl | _
-    · simp [α.map_zero]
-    · apply (tendsto_min_sqrt_mul_zero (α.maps_to hr) (hU_tendsto (r + 1) (by positivity))).congr'
-      filter_upwards [Filter.eventually_ne_atTop 0] with s hs; exact (if_neg hs).symm
-  have hψ_cont : ContinuousWithinAt (fun r => ψ r 0) (Set.Ici 0) 0 := by
-    have h : (fun r => ψ r 0) = α.toFun := funext fun r => by simp [ψ]
-    rw [h]; exact α.continuous.continuousWithinAt (Set.mem_Ici.mpr le_rfl)
-  obtain ⟨β, hβ_bound⟩ :=
-    exists_classKL_upper_bound ψ hψ_nonneg hψ_zero hψ_mono hψ_anti hψ_tendsto hψ_cont
-  refine ⟨β, ?_, fun r hr => ?_, fun r hr s hs => ?_⟩
-  · rw [Filter.tendsto_atTop]; intro b
-    filter_upwards [Filter.tendsto_atTop.mp α.tendsto_atTop b,
-                    Filter.eventually_ge_atTop 0] with r hr h0r
-    exact hr.trans (hψ_zero_val r ▸ hβ_bound r h0r 0 le_rfl)
-  · exact hψ_zero_val r ▸ hβ_bound r hr 0 le_rfl
-  · exact hψ_pos_val r s hs ▸ hβ_bound r hr s hs.le
+    ∃ β : ClassKLGlobal, (∀ r ≥ 0, α.toFun r ≤ β.toFun r 0) ∧
+      ∀ r ≥ 0, ∀ s > 0, min (α.toFun r) (U (r + 1) s) ≤ β.toFun r s := by
+  -- `ψ(r, 0) = α(r)` and `ψ(r, s) = min (α(r)) (U(r + 1, s))` for `s > 0`, smoothed into `β`.
+  let ψ : ℝ → ℝ → ℝ := fun r s => if s = 0 then α.toFun r else min (α.toFun r) (U (r + 1) s)
+  have hψ_pos : ∀ r s, 0 < s → ψ r s = min (α.toFun r) (U (r + 1) s) := fun r s hs => by
+    simp [ψ, hs.ne']
+  have hU_pos' : ∀ r ≥ 0, ∀ s > 0, 0 < U (r + 1) s := fun r hr s hs =>
+    hU_pos (r + 1) (by positivity) s hs
+  obtain ⟨β, hβ⟩ := exists_classKL_upper_bound ψ
+    (fun r hr s hs => by
+      rcases hs.eq_or_lt with rfl | hs
+      · simpa [ψ] using α.maps_to hr
+      · exact hψ_pos r s hs ▸ le_min (α.maps_to hr) (hU_pos' r hr s hs).le)
+    (fun s hs => by
+      rcases hs.eq_or_lt with rfl | hs
+      · simp [ψ, α.map_zero]
+      · rw [hψ_pos 0 s hs, α.map_zero]
+        exact min_eq_left (hU_pos' 0 le_rfl s hs).le)
+    (fun s hs r₁ hr₁ r₂ hr₂ h => by
+      rcases hs.eq_or_lt with rfl | hs
+      · simpa [ψ] using α.strict_mono.monotoneOn hr₁ hr₂ h
+      · change ψ r₁ s ≤ ψ r₂ s
+        rw [hψ_pos r₁ s hs, hψ_pos r₂ s hs]
+        exact min_le_min (α.strict_mono.monotoneOn hr₁ hr₂ h) (hU_mono_r s hs hr₁ hr₂ h))
+    (fun r hr s₁ hs₁ s₂ hs₂ h => by
+      rcases (Set.mem_Ici.mp hs₂).eq_or_lt with h₂ | hs₂
+      · simp [ψ, ← h₂, show s₁ = 0 from le_antisymm (h₂ ▸ h) hs₁]
+      change ψ r s₂ ≤ ψ r s₁
+      rw [hψ_pos r s₂ hs₂]
+      rcases (Set.mem_Ici.mp hs₁).eq_or_lt with h₁ | hs₁
+      · simp [ψ, ← h₁]
+      · rw [hψ_pos r s₁ hs₁]
+        exact min_le_min_left _ (hU_anti (r + 1) (by positivity) hs₁ hs₂ h))
+    (fun r hr => tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+      (hU_tendsto (r + 1) (by positivity))
+      (by filter_upwards [Filter.eventually_gt_atTop 0] with s hs
+          exact hψ_pos r s hs ▸ le_min (α.maps_to hr) (hU_pos' r hr s hs).le)
+      (by filter_upwards [Filter.eventually_gt_atTop 0] with s hs
+          exact hψ_pos r s hs ▸ min_le_right _ _))
+    (by simpa [ψ] using α.continuous.continuousWithinAt (Set.mem_Ici.mpr le_rfl))
+  exact ⟨β, fun r hr => by simpa [ψ] using hβ r hr 0 le_rfl,
+    fun r hr s hs => hψ_pos r s hs ▸ hβ r hr s hs.le⟩

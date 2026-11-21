@@ -173,3 +173,48 @@ theorem exists_first_sphere_hit
   · have hbefore : t ∈ Ico t₀ τ := ⟨ht.1, ht.2.lt_of_ne hhit⟩
     exact (show ‖φ t - x_eq‖ < ρ by
       simpa [Metric.mem_ball, dist_eq_norm] using hstay t hbefore).le
+
+/-- **Cutting off a field that is Lipschitz on a set.**  If `g` is `L`-Lipschitz and bounded by `B`
+on `S`, and `χ` is `M`-Lipschitz with `|χ| ≤ 1` and vanishes off `S`, then `χ • g` is
+`(L + M B)`-Lipschitz everywhere. -/
+@[blueprint "lem:lipschitzWith-smul-of-lipschitzOnWith"
+  (title := "Cutting off a field that is Lipschitz on a set")
+  (latexEnv := "lemma")
+  (statement := /-- Let $g$ be $L$-Lipschitz and bounded by $B$ on $S$, and let $\chi$ be
+    $M$-Lipschitz with $|\chi| \le 1$, vanishing off $S$.  Then $\chi g$ is
+    $(L + MB)$-Lipschitz on the whole space. -/)]
+theorem lipschitzWith_smul_of_lipschitzOnWith {α F : Type*} [PseudoMetricSpace α]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] {χ : α → ℝ} {g : α → F} {S : Set α} {M L B : NNReal}
+    (hχ : LipschitzWith M χ) (hχ_le : ∀ y, |χ y| ≤ 1) (hχ_zero : ∀ y ∉ S, χ y = 0)
+    (hg : LipschitzOnWith L g S) (hg_le : ∀ y ∈ S, ‖g y‖ ≤ B) :
+    LipschitzWith (L + M * B) fun y => χ y • g y := by
+  -- Away from `S`, `χ • g` is `0`, and next to a point of `S` it moves only through `χ`.
+  have h_one : ∀ y z, y ∈ S → z ∉ S → ‖χ y • g y‖ ≤ (L + M * B) * dist y z := fun y z hy hz =>
+    calc ‖χ y • g y‖
+        = |χ y - χ z| * ‖g y‖ := by rw [hχ_zero z hz, sub_zero, norm_smul, Real.norm_eq_abs]
+      _ ≤ (M * dist y z) * B := by
+          gcongr
+          · exact (Real.dist_eq _ _).symm.le.trans (hχ.dist_le_mul y z)
+          · exact hg_le y hy
+      _ ≤ (L + M * B) * dist y z := by nlinarith [dist_nonneg (x := y) (y := z), L.coe_nonneg]
+  refine LipschitzWith.of_dist_le_mul fun y z => ?_
+  rw [dist_eq_norm]
+  by_cases hy : y ∈ S <;> by_cases hz : z ∈ S
+  · calc ‖χ y • g y - χ z • g z‖
+        = ‖χ y • (g y - g z) + (χ y - χ z) • g z‖ := by rw [smul_sub, sub_smul]; abel_nf
+      _ ≤ |χ y| * ‖g y - g z‖ + |χ y - χ z| * ‖g z‖ := by
+          refine (norm_add_le _ _).trans ?_
+          rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs]
+      _ ≤ 1 * (L * dist y z) + (M * dist y z) * B := by
+          gcongr
+          · exact hχ_le y
+          · rw [← dist_eq_norm]; exact hg.dist_le_mul y hy z hz
+          · exact (Real.dist_eq _ _).symm.le.trans (hχ.dist_le_mul y z)
+          · exact hg_le z hz
+      _ = (L + M * B) * dist y z := by ring
+  · rw [hχ_zero z hz, zero_smul, sub_zero]
+    exact h_one y z hy hz
+  · rw [hχ_zero y hy, zero_smul, zero_sub, norm_neg, dist_comm]
+    exact h_one z y hz hy
+  · simp only [hχ_zero y hy, hχ_zero z hz, zero_smul, sub_zero, norm_zero]
+    positivity

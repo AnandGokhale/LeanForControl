@@ -1,30 +1,31 @@
-import Mathlib.Data.Matrix.Mul
+import Mathlib.Analysis.Matrix.PosDef
+import Mathlib.Data.Real.StarOrdered
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Architect
 
 /-!
-# Eigenpairs under elementary operations
+# Eigenpairs, the spectrum and `λ_max`
 
-An eigenpair is a pair `(μ, v)` with `A *ᵥ v = μ • v`. This file records what the elementary
-operations on `A` do to it: shifting by a multiple of the identity shifts the eigenvalue,
-scaling scales it, taking powers powers it, and the kernel spelling used by the
-Hautus/PBH tests is the same statement rearranged.
+An eigenpair is a pair `(μ, v)` with `A *ᵥ v = μ • v`.  The first part records what the elementary
+operations on `A` do to it: shifting by a multiple of the identity shifts the eigenvalue, scaling
+scales it, taking powers powers it, and the kernel spelling used by the Hautus/PBH tests is the
+same statement rearranged.  All of it holds over an arbitrary commutative ring, except
+`mem_spectrum_iff_exists_eigenpair`, which identifies the spectrum of a matrix over a field with
+its eigenvalues.
 
-All of it holds over an arbitrary commutative ring, except the last lemma, which identifies the
-spectrum of a matrix over a field with its eigenvalues. None of it is about `ℂ`, about
-complexification, or about stability — those uses live downstream.
-
-The file sits below both `Exponential.lean` and `Spectrum.lean` because both need it:
-`exp_mulVec_of_mulVec_eq_smul` is the exponential's member of this family, and its proof runs
-through the power case.
+The second part is about real spectra.  A real matrix `S` is *symmetrizable* when `S P` is
+symmetric for some `P ≻ 0`.  Such an `S` is similar to the symmetric matrix `P^{-½} (S P) P^{-½}`,
+so its spectrum is real; symmetric matrices are the case `P = I`.  `Matrix.lambdaMax` is defined for
+every real matrix as its largest real eigenvalue; on symmetrizable matrices it is the largest
+eigenvalue.
 
 Reference: standard linear algebra.
 -/
 
-namespace MatrixAlgebra
+namespace Matrix
 
-open Matrix
+section Eigenpair
 
 variable {R : Type*} [CommRing R] {X : Type*} [Fintype X]
 variable {A : Matrix X X R} {μ : R} {v : X → R}
@@ -50,7 +51,7 @@ lemma pow_mulVec_of_mulVec_eq_smul (h : A *ᵥ v = μ • v) : ∀ k : ℕ, A ^ 
   | k + 1 => by
       calc A ^ (k + 1) *ᵥ v = A ^ k *ᵥ (A *ᵥ v) := by rw [pow_succ, Matrix.mulVec_mulVec]
         _ = μ ^ (k + 1) • v := by
-            rw [h, Matrix.mulVec_smul, pow_mulVec_of_mulVec_eq_smul h k, smul_smul, pow_succ,
+            rw [h, mulVec_smul, pow_mulVec_of_mulVec_eq_smul h k, smul_smul, pow_succ,
               mul_comm]
 
 /-- A scalar shift shifts the eigenvalues, leaving the eigenvectors alone. -/
@@ -94,4 +95,41 @@ lemma mem_spectrum_iff_exists_eigenpair {K : Type*} [Field K]
     rw [Module.End.mem_eigenspace_iff]
     simpa [Matrix.toLin'_apply'] using hv
 
-end MatrixAlgebra
+end Eigenpair
+
+section RealSpectrum
+
+variable {n : Type*} [Fintype n]
+
+/-- `S` is *symmetrizable*: `S P` is symmetric for some `P ≻ 0`.  Then `S` is similar to a symmetric
+matrix, so its spectrum is real. -/
+@[blueprint "def:isSymmetrizable"
+  (title := "Symmetrizable matrix")
+  (statement := /-- A matrix $S \in \mathbb{R}^{n \times n}$ is \emph{symmetrizable} if $S P$ is
+    symmetric for some $P \succ 0$.  Then $S$ is similar to the symmetric matrix
+    $P^{-1/2} (S P) P^{-1/2}$, so its eigenvalues are real.  Symmetric matrices are the case
+    $P = I$. -/)]
+def IsSymmetrizable (S : Matrix n n ℝ) : Prop :=
+  ∃ P : Matrix n n ℝ, P.PosDef ∧ (S * P).IsHermitian
+
+/-- A symmetric matrix is symmetrizable, with `P = I`. -/
+theorem IsHermitian.isSymmetrizable {S : Matrix n n ℝ} (hS : S.IsHermitian) :
+    S.IsSymmetrizable := by
+  classical
+  exact ⟨1, PosDef.one, by rwa [Matrix.mul_one]⟩
+
+variable [DecidableEq n]
+
+/-- `λ_max(S)`: the largest real eigenvalue of `S`, the supremum of its real spectrum (`0` if it
+has none).  For a symmetrizable `S` the spectrum is real, and this is its largest eigenvalue. -/
+@[blueprint "def:lambdaMax"
+  (title := "Largest eigenvalue")
+  (statement := /-- For $S \in \mathbb{R}^{n \times n}$, $\lambda_{\max}(S)$ is the largest real
+    eigenvalue of $S$.  For a symmetrizable $S$ (\cref{def:isSymmetrizable}) every eigenvalue is
+    real, and $\lambda_{\max}(S)$ is its largest eigenvalue. -/)]
+noncomputable def lambdaMax (S : Matrix n n ℝ) : ℝ :=
+  sSup (spectrum ℝ S)
+
+end RealSpectrum
+
+end Matrix

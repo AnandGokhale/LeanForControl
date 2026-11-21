@@ -132,7 +132,7 @@ There is no separate "forward" API: `Stable`, `LocallyExponentiallyStable` and `
 | Escape witness gives instability | `unstable_of_escape` | `Continuous/Defs.lean` | ✅ done |
 | Hurwitz exponential contractivity block | `IsHurwitz.exists_norm_exp_nat_smul_lt_one` | `LinearSystems/Stability/Continuous/ExponentialStability.lean` | ✅ done |
 | Arbitrary-`Q` continuous Lyapunov equation | `IsHurwitz.exists_posDef_unique_solution_continuous_lyapunov` | `LinearSystems/Stability/Continuous/LyapunovEquation.lean` | ✅ done, axiom-free |
-| Linearization-error bound, `ε`–`δ` form | `HasFDerivAt.exists_linearization_error_bound` | `Analysis/FrechetDerivative.lean` | ✅ done |
+| Linearization-error bound, `ε`–`δ` form | Mathlib: `HasFDerivAt.isLittleO.bound` | — | ✅ done (the wrapper was removed) |
 | Remainder absorption shared by both branches | `exists_abs_fderiv_centeredQuadraticForm_remainder_le` | `MatrixAlgebra/QuadraticForm.lean` | ✅ done |
 | Hurwitz Jacobian gives local exponential stability | `hurwitz_linearization_locally_exponentially_stable` | `Continuous/Linearization.lean` | ✅ done |
 | Positive-real eigenpair gives a quadratic Chetaev certificate | `exists_instability_quadratic_certificate_of_complex_eigenvalue_re_pos` | `LinearSystems/Stability/Continuous/InstabilityCertificate.lean` | ✅ done, axiom-free |
@@ -290,6 +290,84 @@ What is open is readability, in descending value:
 4. **Argument order.** `Tbar_fn` takes `η r`, `W_fn` takes `r η` — opposite orders on adjacent
    functions, invisible because neither name says which slot is which. Fixing it lets partial
    application feed the abstraction with no lambda.
+
+### Gaps against Khalil in the converse, ISS and linearization results
+
+Each is documented in its docstring's *Differences* list; collected here so they are fixed together.
+
+1. **The estimate-only notions do not assert that solutions exist.** Khalil's uniform asymptotic
+   stability (Definition 4.4), exponential stability (Definition 4.5) and input-to-state
+   stability (Definition 4.7) say the solution *exists* for all `t ≥ t₀` and satisfies the
+   estimate.  `UniformlyAsymptoticallyStable`, `GloballyUniformlyAsymptoticallyStable`,
+   `LocallyExponentiallyStable`, `GloballyExponentiallyStable` (`Continuous/Defs.lean`) and
+   `InputToStateStable` (`Continuous/ISS.lean`) only bound trajectory segments `[t₀, t₁]`; the
+   theorems producing them (4.19, Lemma 4.6, Lemma 4.7, the Lyapunov theorems) never prove
+   existence.  Two consequences: finite escape is not excluded by the definition, and an
+   ill-posed system with no classical solutions — e.g. under a discontinuous input — satisfies
+   the estimate vacuously.
+
+   *Decision (2026-10-24): keep the definitions estimate-only* — every result is an
+   estimate-to-estimate implication and composes as is, and changing only ISS would split it from
+   GUAS, which it feeds.  *Fix:* prove the **extension theorem** — a solution of a locally
+   Lipschitz, continuous field that stays bounded on `[t₀, t₁)` extends past `t₁`
+   (`ODEs/PicardLindelof.lean` has global existence only for globally Lipschitz fields) — and
+   then one lemma per estimate-only notion: *estimate + well-posed ⇒ forward complete*
+   (`IsForwardComplete`).  That closes the gap with Khalil for all of them at once.
+
+   Related design question: the library is split on this.  `LocallyAsymptoticallyStable`,
+   `GloballyAsymptoticallyStable` and the ultimate-boundedness notions *do* carry
+   `IsForwardCompleteOn`; the uniform and exponential notions and ISS do not, and Lemma 4.5 has
+   separate `…_of_isForwardComplete` variants.  Even `IsForwardCompleteOn` asserts only that
+   existing segments extend, not that a solution exists from every initial state.
+2. **Hypotheses on `f` for all `t ∈ ℝ`, not `t ≥ 0`.** The converse theorems 4.14 (local and
+   global) and 4.16 (`Continuous/Converse.lean`), linearization 4.13 and both directions of 4.15
+   (`Continuous/Linearization.lean`), and Lemma 4.6 (`Continuous/ISS.lean`) ask `f` to be `C¹`,
+   Lipschitz and to vanish at `x_eq` for every `t ∈ ℝ`.  Cause: differentiability of `V` at
+   `t = 0` goes through solutions from slightly negative initial times (the time-augmented
+   system and the private sensitivity lemmas in `Continuous/Converse.lean` work on open sets).  Fix:
+   one-sided derivatives on `[0, ∞) × D` throughout the sensitivity lemmas.
+3. **Lyapunov functions are differentiable, not `C¹`.** Khalil's converse theorems 4.14 and 4.16
+   assert continuously differentiable `V`; the Lyapunov structures
+   (`Continuous/LyapunovFunctions.lean`) and the converse theorems give only differentiability.
+   Fix: continuity of the derivative — one more dominated-convergence argument in each converse
+   construction.
+
+### The ISS-branch audit is unfinished
+
+The declarations added on the `ISS` branch are being reviewed one by one against a local checklist,
+`AUDIT.md` at the repository root (gitignored; regenerate it with the declaration diff against
+`main` if lost).  Systems, Analysis, Comparison, the state transition map and the norm lemmas are
+done; matrix algebra, ODEs, LTV, the stability definitions, boundedness, ISS, cascades,
+linearization and the converse theorems remain, together with the list of breaking changes to
+declarations that exist on `main`.
+
+### Coordinate changes for systems
+
+Khalil, Hespanha and the linear-systems theory change coordinates constantly: shifting an
+equilibrium to the origin ("without loss of generality `x = 0`"), similarity transforms `z = Tx`
+(`A' = TAT⁻¹`, `B' = TB`, `C' = CT⁻¹`; modal and Kalman forms), and later Lyapunov
+transformations `z = T(t)x` and diffeomorphisms.  Today each use is done by hand: Theorem 4.13 is
+stated at the origin and generalized to `x_eq` with an inline shifted system and
+`LocallyExponentiallyStable.of_semiconj`.
+
+Plan, after the audit backlog is down: an affine coordinate change `s.map φ`,
+`φ(x) = Lx + b` with `L : E ≃L[ℝ] E'`, `F'(t, z, u) = L F(t, φ⁻¹ z, u)`; trajectories and
+equilibria correspond; every stability notion transfers both ways (norms distort by at most
+`‖L‖`, `‖L⁻¹‖`), with `of_semiconj` a special case.  Similarity transforms of `ContinuousLTV` and
+`ContinuousLTI` as instances.  Put it in leaf files (`Systems/CoordinateChange.lean`,
+`Stability/Continuous/CoordinateChange.lean`), not in `Systems/Continuous.lean`.  Nonlinear and
+time-varying changes only when a theorem needs them.
+
+### `comparison_lemma` asks for its comparison solutions
+
+The Dini derivative is now `EReal`-valued (as in Saks, Bruckner and Bullo), so `comparison_lemma`
+no longer carries boundedness hypotheses on the difference quotients.  It still asks the caller
+for the perturbed solutions `z_λ` of `ż = f(t, z) + λ` (`hz_exists`), which every caller
+discharges with `exists_isIntegralSolution_Icc_of_lipschitz`; build them inside the proof instead.
+For the linear case, `le_mul_exp_of_diniDerivRight_le` (a wrapper of Mathlib's Grönwall) is
+already the lighter tool.  (`IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` is *not* a
+corollary of it: the Lie-derivative version needs its rate bound only on the open interval, the
+Dini one on `[t₀, t₁)`.)
 
 ### `ClassKLGlobal.continuous_r` concludes on the wrong set
 

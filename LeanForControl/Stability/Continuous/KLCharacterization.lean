@@ -499,7 +499,7 @@ private lemma HasUniformClassKInftyBound.toClassK {sys : ContinuousSystem E Unit
     `x_eq`.
 
     The four shape conditions are exactly the hypotheses of
-    `ClassKLGlobal.of_KInfty_LSingular_family`, which is what consumes this result.
+    `ClassKLGlobal.exists_ge_min_of_decay`, which is what consumes this result.
 
     Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5 (global case). -/
 @[blueprint "lem:continuousSystem-exists-decayBound-family"
@@ -519,7 +519,7 @@ private lemma HasUniformClassKInftyBound.toClassK {sys : ContinuousSystem E Unit
         every $t \in (t_0, t_1]$.
     \end{enumerate}
     Conditions (1)--(4) are exactly the hypotheses of
-    \cref{lem:classKLGlobal-of-KInfty-LSingular-family}; (5) is the decay bound.  Unlike the
+    \cref{lem:classKLGlobal-exists-ge-min-of-decay}; (5) is the decay bound.  Unlike the
     local case (\cref{lem:continuousSystem-exists-classLSingular-decayBound}) no single envelope
     can serve every initial state, so the radius remains a parameter.
 
@@ -925,9 +925,10 @@ theorem uniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem E Unit Y
 uniformly asymptotically stable if and only if there is a global class `KL` bound `β` on *every*
 trajectory, with no restriction on the initial state.
 
-The conditions on `β` are spelled out rather than packaged as `ClassKLGlobal` because the two do
-not coincide: this statement needs radial unboundedness of `β(·, 0)`, which `ClassKLGlobal` does
-not carry, and does not need its `nonneg` field.
+The backward direction needs `β(·, 0)` unbounded, to invert it into the radius of global uniform
+stability; it replaces `β` by a radially unbounded majorant
+(`ClassKLGlobal.exists_le_radiallyUnbounded`), so the statement asks only that `β` be class `KL`,
+as in Khalil.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
 @[blueprint "lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL"
@@ -935,89 +936,69 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
   (latexEnv := "lemma")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ is globally uniformly asymptotically stable
     (\cref{def:continuousSystem-globallyUniformlyAsymptoticallyStable}) if and only if there is
-    a $\beta : [0,\infty) \times [0,\infty) \to \mathbb{R}$ that is
-    \begin{enumerate}
-      \item zero at the origin: $\beta(0, s) = 0$ for $s \ge 0$;
-      \item jointly continuous on $[0,\infty) \times [0,\infty)$;
-      \item strictly increasing in $r$ for each fixed $s \ge 0$;
-      \item radially unbounded: $\beta(r, 0) \to \infty$ as $r \to \infty$;
-      \item antitone in $s$ for each fixed $r \ge 0$, with $\beta(r,s) \to 0$ as
-        $s \to \infty$;
-    \end{enumerate}
-    such that $\|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0)$ for
+    a global class $\mathcal{KL}$ function $\beta$ (\cref{def:isClassKLGlobal}) such that
+    $\|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0)$ for
     every trajectory on a segment $[t_0, t_1]$ with $t_0 \ge 0$ and every $t \in [t_0, t_1]$,
     with no restriction on the initial state.
-
-    Condition (4) is what makes the characterization \emph{global}: without it $\beta$ is class
-    $\mathcal{KL}$ on a bounded radius and the statement collapses to the local one
-    (\cref{lem:continuousSystem-uniformlyAsymptoticallyStable-iff-classKL}).
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5, global case. -/)
   (proof := /-- Forward: global uniform stability gives a class $\mathcal{K}_\infty$ bound, the
     convergence times from every ball a family of decay envelopes
     (\cref{lem:continuousSystem-exists-decayBound-family}), and
-    \cref{lem:classKLGlobal-of-KInfty-LSingular-family} combines them.  Backward:
-    $\alpha = \beta(\cdot, 0)$ is class $\mathcal{K}_\infty$ and $\delta = \alpha^{-1}$ gives
-    global uniform stability; from the $r$-ball every deviation is at most $\beta(r, \cdot) \to 0$.
-    -/)]
+    \cref{lem:classKLGlobal-exists-ge-min-of-decay} combines them.  Backward: replace
+    $\beta$ by a radially unbounded majorant
+    (\cref{lem:classKLGlobal-exists-le-radiallyUnbounded}); then $\alpha = \beta(\cdot, 0)$ is
+    class $\mathcal{K}_\infty$ and $\delta = \alpha^{-1}$ gives global uniform stability; from the
+    $r$-ball every deviation is at most $\beta(r, \cdot) \to 0$. -/)]
 theorem globallyUniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem E Unit Y)
     (x_eq : E) :
-    s.GloballyUniformlyAsymptoticallyStable x_eq ↔ ∃ β : ℝ → ℝ → ℝ,
-      (∀ σ ≥ 0, β 0 σ = 0) ∧
-      ContinuousOn (Function.uncurry β) (Ici 0 ×ˢ Ici 0) ∧
-      (∀ σ ≥ 0, StrictMonoOn (fun r => β r σ) (Ici 0)) ∧
-      Tendsto (fun r => β r 0) atTop atTop ∧
-      (∀ r ≥ 0, AntitoneOn (fun σ => β r σ) (Ici 0)) ∧
-      (∀ r ≥ 0, Tendsto (fun σ => β r σ) atTop (𝓝 0)) ∧
+    s.GloballyUniformlyAsymptoticallyStable x_eq ↔ ∃ β : ClassKLGlobal,
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E), s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
-        ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ β ‖x t₀ - x_eq‖ (t - t₀) := by
+        ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) := by
   constructor
   · rintro ⟨hGUS, hGUC⟩
     obtain ⟨α, hα⟩ := exists_classKInfty_of_globallyUniformlyStable hGUS
     obtain ⟨U, hU_pos, hU_anti, hU_tendsto, hU_mono_r, hU_decay⟩ :=
       exists_decayBound_family α hGUC hα
-    obtain ⟨β, hβ_rtendsto, hβ_at_zero, hβ_at_pos⟩ :=
-      ClassKLGlobal.of_KInfty_LSingular_family α U hU_pos hU_anti hU_tendsto hU_mono_r
-    refine ⟨β.toFun, β.map_zero, β.continuous, β.strict_mono_r, hβ_rtendsto, β.anti_s,
-      β.tendsto_zero, fun t₀ ht₀ t₁ x hx t ht => ?_⟩
+    obtain ⟨β, hβ_zero, hβ_pos⟩ :=
+      ClassKLGlobal.exists_ge_min_of_decay α U hU_pos hU_anti hU_tendsto hU_mono_r
+    refine ⟨β, fun t₀ ht₀ t₁ x hx t ht => ?_⟩
     have h_α : ‖x t - x_eq‖ ≤ α.toFun ‖x t₀ - x_eq‖ := hα t₀ ht₀ t₁ x hx t ht
     rcases ht.1.eq_or_lt with rfl | ht_strict
     · rw [sub_self]
-      exact h_α.trans (hβ_at_zero _ (norm_nonneg _))
-    have h_sub_pos : 0 < t - t₀ := sub_pos.mpr ht_strict
-    rcases (norm_nonneg (x t₀ - x_eq)).eq_or_lt with hr_zero | hr_pos
-    · -- Starting at `x_eq`, the trajectory stays there.
-      have h_zero : ‖x t - x_eq‖ = 0 :=
-        le_antisymm (h_α.trans (by rw [← hr_zero, α.map_zero])) (norm_nonneg _)
-      rw [h_zero, ← hr_zero, β.map_zero (t - t₀) h_sub_pos.le]
-    · -- The geometric-mean cap chains to `β`.
-      have h_U : ‖x t - x_eq‖ ≤ U (‖x t₀ - x_eq‖ + 1) (t - t₀) :=
-        hU_decay _ (by positivity) t₀ ht₀ t₁ x hx (by linarith) t ⟨ht_strict, ht.2⟩
-      exact (le_min h_α (le_sqrt_mul_of_le_of_le (norm_nonneg _) h_α h_U)).trans
-        (hβ_at_pos _ (norm_nonneg _) _ h_sub_pos)
-  · rintro ⟨β, hβ_zero, hβ_cont, hβ_mono, hβ_rtendsto, hβ_anti, hβ_stendsto, hβ_bound⟩
-    let α : ClassKInfty := ClassKInfty.of_strictMono (fun r => β r 0) (hβ_zero 0 le_rfl)
-      ((hβ_cont.comp (continuousOn_id.prodMk continuousOn_const)
+      exact h_α.trans (hβ_zero _ (norm_nonneg _))
+    · exact (le_min h_α (hU_decay _ (by positivity) t₀ ht₀ t₁ x hx (lt_add_one _) t
+        ⟨ht_strict, ht.2⟩)).trans (hβ_pos _ (norm_nonneg _) _ (sub_pos.mpr ht_strict))
+  · rintro ⟨β₀, hβ₀_bound⟩
+    -- A radially unbounded majorant `β ≥ β₀`, so that `β(·, 0)` can be inverted.
+    obtain ⟨β, hβ_le, hβ_unbdd⟩ := β₀.exists_le_radiallyUnbounded
+    have hβ_bound : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+        s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
+          ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) :=
+      fun t₀ ht₀ t₁ x hx t ht => (hβ₀_bound t₀ ht₀ t₁ x hx t ht).trans
+        (hβ_le _ (norm_nonneg _) _)
+    let α : ClassKInfty := ClassKInfty.of_strictMono (fun r => β.toFun r 0) (β.map_zero 0 le_rfl)
+      ((β.continuous.comp (continuousOn_id.prodMk continuousOn_const)
         (fun r hr => mk_mem_prod hr (mem_Ici.mpr le_rfl))).congr (fun r _ => rfl))
-      (hβ_mono 0 le_rfl) hβ_rtendsto
+      (β.strict_mono_r 0 le_rfl) hβ_unbdd
     refine ⟨⟨α.invFun, fun ε hε => (α.symm.pos_iff hε.le).mpr hε, α.symm.tendsto_atTop,
       fun ε hε t₀ ht₀ t₁ x hx h_init t ht => ?_⟩, fun r hr => ?_⟩
     · -- Global uniform stability, with `δ = α⁻¹` for `α = β(·, 0)`.
       have ht_sub : 0 ≤ t - t₀ := sub_nonneg.mpr ht.1
       calc ‖x t - x_eq‖
-          ≤ β ‖x t₀ - x_eq‖ (t - t₀) := hβ_bound t₀ ht₀ t₁ x hx t ht
-        _ ≤ β ‖x t₀ - x_eq‖ 0 := hβ_anti _ (mem_Ici.mpr (norm_nonneg _)) (mem_Ici.mpr le_rfl)
+          ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) := hβ_bound t₀ ht₀ t₁ x hx t ht
+        _ ≤ β.toFun ‖x t₀ - x_eq‖ 0 := β.anti_s _ (norm_nonneg _) (mem_Ici.mpr le_rfl)
             (mem_Ici.mpr ht_sub) ht_sub
         _ = α.toFun ‖x t₀ - x_eq‖ := rfl
         _ < α.toFun (α.invFun ε) := (α.strict_mono_iff (mem_Ici.mpr (norm_nonneg _))
             (α.symm.maps_to (mem_Ici.mpr hε.le))).mpr h_init
         _ = ε := α.right_inv_apply (mem_Ici.mpr hε.le)
     · -- From the `r`-ball every deviation is at most `β(r, ·) → 0`.
-      refine hasUniformConvergenceTime_of_tendsto (hβ_stendsto r hr.le)
+      refine hasUniformConvergenceTime_of_tendsto (β.tendsto_zero r hr.le)
         fun t₀ ht₀ t₁ x hx h_init t ht => ?_
       calc ‖x t - x_eq‖
-          ≤ β ‖x t₀ - x_eq‖ (t - t₀) := hβ_bound t₀ ht₀ t₁ x hx t ht
-        _ ≤ β r (t - t₀) := (hβ_mono (t - t₀) (sub_nonneg.mpr ht.1)
+          ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) := hβ_bound t₀ ht₀ t₁ x hx t ht
+        _ ≤ β.toFun r (t - t₀) := (β.strict_mono_r (t - t₀) (sub_nonneg.mpr ht.1)
             (mem_Ici.mpr (norm_nonneg _)) (mem_Ici.mpr hr.le) h_init).le
 
 
@@ -1091,19 +1072,12 @@ segment. -/
 theorem GloballyUniformlyAsymptoticallyStable.exists_classKL_Ici
     {s : ContinuousSystem E Unit Y} {x_eq : E}
     (h : s.GloballyUniformlyAsymptoticallyStable x_eq) :
-    ∃ β : ℝ → ℝ → ℝ,
-      (∀ σ ≥ 0, β 0 σ = 0) ∧
-      ContinuousOn (Function.uncurry β) (Ici 0 ×ˢ Ici 0) ∧
-      (∀ σ ≥ 0, StrictMonoOn (fun r => β r σ) (Ici 0)) ∧
-      Tendsto (fun r => β r 0) atTop atTop ∧
-      (∀ r ≥ 0, AntitoneOn (fun σ => β r σ) (Ici 0)) ∧
-      (∀ r ≥ 0, Tendsto (fun σ => β r σ) atTop (𝓝 0)) ∧
+    ∃ β : ClassKLGlobal,
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝ → E, s.IsTrajectoryOn (fun _ => ()) x (Ici t₀) →
-        ∀ t : ℝ, t₀ ≤ t → ‖x t - x_eq‖ ≤ β ‖x t₀ - x_eq‖ (t - t₀) := by
-  obtain ⟨β, h0, hc, hm, ht, ha, hz, hβ⟩ :=
-    (globallyUniformlyAsymptoticallyStable_iff_classKL s x_eq).mp h
-  exact ⟨β, h0, hc, hm, ht, ha, hz, fun t₀ ht₀ x hx => ray_of_segment (P := fun _ _ => True)
-    (Q := fun t₀ t x₀ x => ‖x - x_eq‖ ≤ β ‖x₀ - x_eq‖ (t - t₀))
+        ∀ t : ℝ, t₀ ≤ t → ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) := by
+  obtain ⟨β, hβ⟩ := (globallyUniformlyAsymptoticallyStable_iff_classKL s x_eq).mp h
+  exact ⟨β, fun t₀ ht₀ x hx => ray_of_segment (P := fun _ _ => True)
+    (Q := fun t₀ t x₀ x => ‖x - x_eq‖ ≤ β.toFun ‖x₀ - x_eq‖ (t - t₀))
     (fun t₀ ht₀ t₁ x hx _ => hβ t₀ ht₀ t₁ x hx) t₀ ht₀ x hx trivial⟩
 
 /-- **Class `K` characterization of uniform stability, over `[t₀, ∞)`**: if the system is
@@ -1189,8 +1163,8 @@ completeness (`GloballyUniformlyAsymptoticallyStable.exists_classKL_Ici`). -/
   (latexEnv := "lemma")
   (statement := /-- Let the system be forward complete
     (\cref{def:continuousSystem-isForwardComplete}).  Then $x_{\mathrm{eq}}$ is globally
-    uniformly asymptotically stable if and only if there is a $\beta$ with the properties of
-    \cref{lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL} and
+    uniformly asymptotically stable if and only if there is a global class $\mathcal{KL}$
+    function $\beta$ (\cref{def:isClassKLGlobal}) with
     $\|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0)$ for every
     solution $x$ on $[t_0, \infty)$ with $t_0 \ge 0$, and every $t \ge t_0$.  The forward
     direction holds without completeness. -/)
@@ -1199,21 +1173,148 @@ completeness (`GloballyUniformlyAsymptoticallyStable.exists_classKL_Ici`). -/
     \cref{lem:continuousSystem-uniformlyStable-iff-classK-of-isForwardCompleteOn}. -/)]
 theorem globallyUniformlyAsymptoticallyStable_iff_classKL_of_isForwardComplete
     {s : ContinuousSystem E Unit Y} {x_eq : E} (hfc : s.IsForwardComplete (fun _ => ())) :
-    s.GloballyUniformlyAsymptoticallyStable x_eq ↔ ∃ β : ℝ → ℝ → ℝ,
-      (∀ σ ≥ 0, β 0 σ = 0) ∧
-      ContinuousOn (Function.uncurry β) (Ici 0 ×ˢ Ici 0) ∧
-      (∀ σ ≥ 0, StrictMonoOn (fun r => β r σ) (Ici 0)) ∧
-      Tendsto (fun r => β r 0) atTop atTop ∧
-      (∀ r ≥ 0, AntitoneOn (fun σ => β r σ) (Ici 0)) ∧
-      (∀ r ≥ 0, Tendsto (fun σ => β r σ) atTop (𝓝 0)) ∧
+    s.GloballyUniformlyAsymptoticallyStable x_eq ↔ ∃ β : ClassKLGlobal,
       ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝ → E, s.IsTrajectoryOn (fun _ => ()) x (Ici t₀) →
-        ∀ t : ℝ, t₀ ≤ t → ‖x t - x_eq‖ ≤ β ‖x t₀ - x_eq‖ (t - t₀) := by
+        ∀ t : ℝ, t₀ ≤ t → ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) := by
   refine ⟨GloballyUniformlyAsymptoticallyStable.exists_classKL_Ici,
-    fun ⟨β, h0, hc, hm, ht, ha, hz, hβ⟩ =>
-      (globallyUniformlyAsymptoticallyStable_iff_classKL s x_eq).mpr
-        ⟨β, h0, hc, hm, ht, ha, hz, ?_⟩⟩
+    fun ⟨β, hβ⟩ => (globallyUniformlyAsymptoticallyStable_iff_classKL s x_eq).mpr ⟨β, ?_⟩⟩
   exact fun t₀ ht₀ t₁ x hx => segment_of_ray (P := fun _ _ => True)
-    (Q := fun t₀ t x₀ x => ‖x - x_eq‖ ≤ β ‖x₀ - x_eq‖ (t - t₀)) (fun t₀ _ => hfc t₀)
+    (Q := fun t₀ t x₀ x => ‖x - x_eq‖ ≤ β.toFun ‖x₀ - x_eq‖ (t - t₀)) (fun t₀ _ => hfc t₀)
     (fun t₀ ht₀ x hx _ => hβ t₀ ht₀ x hx) t₀ ht₀ t₁ x hx trivial
+
+
+/-! ## Boundedness from a class `KL` estimate with an ultimate bound -/
+
+section Boundedness
+
+variable {s : ContinuousSystem E Unit Y} {x_c : E} {b : ℝ}
+
+/-- **Uniform boundedness from a class `KL` estimate with an ultimate bound.**  If the
+trajectories from the `c`-ball obey `‖x(t) - x_c‖ ≤ max (β(‖x(t₀) - x_c‖, t - t₀)) b`, they are
+uniformly bounded around `x_c`. -/
+@[blueprint "lem:continuousSystem-uniformlyBounded-of-classKL-bound"
+  (title := "Uniform boundedness from a class $\\mathcal{KL}$ estimate")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\beta$ be class $\mathcal{KL}$ on $[0, c)$ (\cref{def:isClassKL}).  If
+    every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, with $\|x(t_0) - x_c\| < c$ obeys
+    $\|x(t) - x_c\| \le \max\{\beta(\|x(t_0) - x_c\|, t - t_0), b\}$, the trajectories are
+    uniformly bounded around $x_c$ (\cref{def:continuousSystem-uniformlyBounded}). -/)
+  (proof := /-- Starting within $a < c$, the bound is
+    $\max\{\beta(a, 0), b\}$, as $\beta$ is increasing in its first argument and decreasing in
+    its second. -/)]
+theorem uniformlyBounded_of_classKL_bound {c : ℝ} (β : ClassKL c)
+    (h : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+      s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
+        ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) b) :
+    s.UniformlyBounded x_c := by
+  refine ⟨c, β.ha, fun a ha hac => ⟨max (β.toFun a 0) b, ?_, ?_⟩⟩
+  · refine lt_max_of_lt_left ?_
+    have h : β.toFun 0 0 < β.toFun a 0 := β.strict_mono_r 0 le_rfl ⟨le_rfl, β.ha⟩ ⟨ha.le, hac⟩ ha
+    rwa [β.map_zero_r le_rfl] at h
+  intro t₀ ht₀ t₁ x hx h_init t ht
+  have hx₀_mem : ‖x t₀ - x_c‖ ∈ Ico 0 c := ⟨norm_nonneg _, h_init.trans_lt hac⟩
+  refine (h t₀ ht₀ t₁ x hx hx₀_mem.2 t ht).trans (max_le_max ?_ le_rfl)
+  calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
+      ≤ β.toFun ‖x t₀ - x_c‖ 0 :=
+        β.anti_s_mono hx₀_mem (mem_Ici.mpr le_rfl) (mem_Ici.mpr (sub_nonneg.mpr ht.1))
+          (sub_nonneg.mpr ht.1)
+    _ ≤ β.toFun a 0 := β.mono_r hx₀_mem ⟨ha.le, hac⟩ le_rfl h_init
+
+/-- **Uniform ultimate boundedness from a class `KL` estimate with an ultimate bound.**  If the
+system is forward complete from the `c`-ball and its trajectories from there obey
+`‖x(t) - x_c‖ ≤ max (β(‖x(t₀) - x_c‖, t - t₀)) b` with `b > 0`, they are uniformly ultimately
+bounded around `x_c` with ultimate bound `b`. -/
+@[blueprint "lem:continuousSystem-uniformlyUltimatelyBounded-of-classKL-bound"
+  (title := "Uniform ultimate boundedness from a class $\\mathcal{KL}$ estimate")
+  (latexEnv := "lemma")
+  (statement := /-- Under the estimate of
+    \cref{lem:continuousSystem-uniformlyBounded-of-classKL-bound} with $b > 0$, if the system is
+    forward complete from the $c$-ball about $x_c$ at every $t_0 \ge 0$
+    (\cref{def:continuousSystem-isForwardCompleteOn}), its trajectories are uniformly
+    ultimately bounded around $x_c$ with ultimate bound $b$
+    (\cref{def:continuousSystem-uniformlyUltimatelyBounded}). -/)
+  (proof := /-- $\beta(a, s) \to 0$, so $\beta(a, s) \le b$ for $s \ge T(a)$.  Restrict a
+    trajectory on $[t_0, \infty)$ to $[t_0, t]$ and apply the estimate. -/)]
+theorem uniformlyUltimatelyBounded_of_classKL_bound {c : ℝ} (β : ClassKL c) (hb : 0 < b)
+    (h_complete : ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ (Metric.ball x_c c))
+    (h : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+      s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ < c →
+        ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) b) :
+    s.UniformlyUltimatelyBounded x_c b := by
+  refine ⟨c, β.ha, h_complete, fun a ha hac => ?_⟩
+  have ha_mem : a ∈ Ico 0 c := ⟨ha.le, hac⟩
+  -- `β(a, s) → 0`, so it drops below the ultimate bound after some time `T`.
+  obtain ⟨T, hT⟩ := eventually_atTop.mp ((β.tendsto_zero a ha_mem).eventually (gt_mem_nhds hb))
+  refine ⟨max T 0, le_max_right _ _, fun t₀ ht₀ x hx h_init t ht => ?_⟩
+  have hT_le : max T 0 ≤ t - t₀ := by linarith
+  have hx₀_mem : ‖x t₀ - x_c‖ ∈ Ico 0 c := ⟨norm_nonneg _, h_init.trans_lt hac⟩
+  refine (h t₀ ht₀ t x (hx.mono Icc_subset_Ici_self) hx₀_mem.2 t
+    ⟨by linarith [le_max_right T 0], le_rfl⟩).trans (max_le ?_ le_rfl)
+  calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
+      ≤ β.toFun a (t - t₀) := β.mono_r hx₀_mem ha_mem (by linarith [le_max_right T 0]) h_init
+    _ ≤ b := (hT _ ((le_max_left T 0).trans hT_le)).le
+
+/-- **Global uniform boundedness from a global class `KL` estimate with an ultimate bound.**  If
+every trajectory obeys `‖x(t) - x_c‖ ≤ max (β(‖x(t₀) - x_c‖, t - t₀)) b`, the trajectories are
+globally uniformly bounded around `x_c`. -/
+@[blueprint "lem:continuousSystem-globallyUniformlyBounded-of-classKL-bound"
+  (title := "Global uniform boundedness from a class $\\mathcal{KL}$ estimate")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\beta$ be global class $\mathcal{KL}$ (\cref{def:isClassKLGlobal}).  If
+    every trajectory on a segment $[t_0, t_1]$, $t_0 \ge 0$, obeys
+    $\|x(t) - x_c\| \le \max\{\beta(\|x(t_0) - x_c\|, t - t_0), b\}$, the trajectories are
+    globally uniformly bounded around $x_c$
+    (\cref{def:continuousSystem-globallyUniformlyBounded}). -/)
+  (proof := /-- Starting within $a$, the bound is $\max\{\beta(a, 0), b\}$. -/)]
+theorem globallyUniformlyBounded_of_classKL_bound (β : ClassKLGlobal)
+    (h : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+      s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
+        ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) b) :
+    s.GloballyUniformlyBounded x_c := by
+  refine fun a ha => ⟨max (β.toFun a 0) b, ?_, ?_⟩
+  · refine lt_max_of_lt_left ?_
+    have h : β.toFun 0 0 < β.toFun a 0 := β.strict_mono_r 0 le_rfl (mem_Ici.mpr le_rfl) ha.le ha
+    rwa [β.map_zero 0 le_rfl] at h
+  intro t₀ ht₀ t₁ x hx h_init t ht
+  have hθ : 0 ≤ t - t₀ := sub_nonneg.mpr ht.1
+  refine (h t₀ ht₀ t₁ x hx t ht).trans (max_le_max ?_ le_rfl)
+  calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
+      ≤ β.toFun ‖x t₀ - x_c‖ 0 := β.anti_s _ (norm_nonneg _) (mem_Ici.mpr le_rfl) hθ hθ
+    _ ≤ β.toFun a 0 := (β.strict_mono_r 0 le_rfl).monotoneOn (norm_nonneg _) ha.le h_init
+
+/-- **Global uniform ultimate boundedness from a global class `KL` estimate with an ultimate
+bound.**  If the system is forward complete and every trajectory obeys
+`‖x(t) - x_c‖ ≤ max (β(‖x(t₀) - x_c‖, t - t₀)) b` with `b > 0`, the trajectories are globally
+uniformly ultimately bounded around `x_c` with ultimate bound `b`. -/
+@[blueprint "lem:continuousSystem-globallyUniformlyUltimatelyBounded-of-classKL-bound"
+  (title := "Global uniform ultimate boundedness from a class $\\mathcal{KL}$ estimate")
+  (latexEnv := "lemma")
+  (statement := /-- Under the estimate of
+    \cref{lem:continuousSystem-globallyUniformlyBounded-of-classKL-bound} with $b > 0$, if the
+    system is forward complete from every state at every $t_0 \ge 0$
+    (\cref{def:continuousSystem-isForwardCompleteOn}), its trajectories are globally uniformly
+    ultimately bounded around $x_c$ with ultimate bound $b$
+    (\cref{def:continuousSystem-globallyUniformlyUltimatelyBounded}). -/)
+  (proof := /-- $\beta(a, s) \to 0$, so $\beta(a, s) \le b$ for $s \ge T(a)$; apply the estimate
+    on $[t_0, t]$. -/)]
+theorem globallyUniformlyUltimatelyBounded_of_classKL_bound (β : ClassKLGlobal) (hb : 0 < b)
+    (h_complete : ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ univ)
+    (h : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
+      s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
+        ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ ≤ max (β.toFun ‖x t₀ - x_c‖ (t - t₀)) b) :
+    s.GloballyUniformlyUltimatelyBounded x_c b := by
+  refine ⟨h_complete, fun a ha => ?_⟩
+  -- `β(a, θ) → 0`, so it drops below the ultimate bound after some time `T`.
+  obtain ⟨T, hT⟩ := eventually_atTop.mp ((β.tendsto_zero a ha.le).eventually (gt_mem_nhds hb))
+  refine ⟨max T 0, le_max_right _ _, fun t₀ ht₀ x hx h_init t ht => ?_⟩
+  have hT_le : max T 0 ≤ t - t₀ := by linarith
+  have hθ : 0 ≤ t - t₀ := (le_max_right T 0).trans hT_le
+  refine (h t₀ ht₀ t x (hx.mono Icc_subset_Ici_self) t ⟨by linarith, le_rfl⟩).trans
+    (max_le ?_ le_rfl)
+  calc β.toFun ‖x t₀ - x_c‖ (t - t₀)
+      ≤ β.toFun a (t - t₀) := (β.strict_mono_r _ hθ).monotoneOn (norm_nonneg _) ha.le h_init
+    _ ≤ b := (hT _ ((le_max_left T 0).trans hT_le)).le
+
+end Boundedness
 
 end ContinuousSystem

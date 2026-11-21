@@ -7,8 +7,8 @@ import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 
-import LeanForControl.MatrixAlgebra.Complex
-import LeanForControl.MatrixAlgebra.Eigenpair
+import LeanForControl.MatrixAlgebra.Complexify
+import LeanForControl.MatrixAlgebra.Spectrum
 
 import Architect
 
@@ -37,7 +37,7 @@ out on eigenpairs instead.
 Reference: standard properties of the matrix exponential.
 -/
 
-namespace MatrixAlgebra
+namespace Matrix
 
 open Matrix NormedSpace
 open scoped Matrix.Norms.Frobenius
@@ -134,7 +134,7 @@ Reference: standard power-series functional calculus for the exponential. -/
 theorem exp_mulVec_of_mulVec_eq_smul (M : Matrix X X 𝕜) (μ : 𝕜) (v : X → 𝕜)
     (h : M *ᵥ v = μ • v) :
     exp M *ᵥ v = exp μ • v := by
-  have hpow := MatrixAlgebra.pow_mulVec_of_mulVec_eq_smul h
+  have hpow := Matrix.pow_mulVec_of_mulVec_eq_smul h
   rw [congrFun (NormedSpace.exp_eq_tsum 𝕜) M]
   change mulVecRightL v (∑' k : ℕ, ((k.factorial : 𝕜)⁻¹) • M ^ k) = _
   rw [(mulVecRightL v).map_tsum (NormedSpace.expSeries_summable' M)]
@@ -487,4 +487,4 @@ lemma spectralRadius_exp_complexify_lt_one {X : Type*} [Fintype X] [DecidableEq 
 
 end
 
-end MatrixAlgebra
+end Matrix

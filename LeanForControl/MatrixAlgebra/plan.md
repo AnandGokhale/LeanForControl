@@ -109,7 +109,7 @@ This keeps the sigma index off `X` entirely. Similarity for a concrete `A : Matr
 then one `reindex` away, paid once rather than threaded through every statement.
 
 **Scalars.** `[Field K] [IsAlgClosed K]` for the general theory. Real matrices enter by
-complexification — which wants the `MatrixAlgebra/Complex.lean` tech-debt item done first,
+complexification — which wants the `MatrixAlgebra/Complexify.lean` tech-debt item done first,
 since this development would otherwise spell `A.map (algebraMap R C)` hundreds of times.
 
 **Location.** `MatrixAlgebra/Jordan.lean`, as `L` already anticipates. No control content, so

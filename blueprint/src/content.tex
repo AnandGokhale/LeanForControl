@@ -26,52 +26,42 @@ open region. First sphere crossing is the open-ball specialization of the genera
 
 \inputleannode{thm:exists-first-sphere-hit}
 
-\section{Limits superior}
+A field cut off outside a set stays Lipschitz.
 
-Real-valued $\limsup$ is an infimum of upper bounds, so it is only well-behaved where the
-function is bounded. The facts collected here are stated over an arbitrary filter and have no
-differential-equation content; the Dini derivative of the next section is the only current
-consumer.
-
-\inputleannode{lem:limsup-add-tendsto-zero}
+\inputleannode{lem:lipschitzWith-smul-of-lipschitzOnWith}
 
 \section{Dini derivatives}
 
 The upper right Dini derivative replaces the ordinary derivative where a function is only known
-to be continuous, which is the situation the comparison lemma is in. It is defined here as a
-$\limsup$ valued in $\mathbb{R}$ rather than in $[-\infty, +\infty]$, so most results below carry
-a hypothesis that the forward difference quotients are bounded: without it an unbounded quotient
-makes the $\limsup$ an infimum over the empty set, which $\mathbb{R}$ reports as $0$.
+to be continuous, which is the situation of the comparison lemma. As in the literature it takes
+values in $[-\infty, +\infty]$: the forward difference quotients may be unbounded, and the
+extended-real $\limsup$ always exists, so no boundedness hypotheses are needed. Bounds against a
+real number are characterized by the difference quotients themselves.
 
 \inputleannode{def:diniDerivRight}
 
 \subsection{Relationship to the classical derivative}
 
-\inputleannode{lem:hasDerivWithinAt-tendsto-forward-slope}
+\inputleannode{lem:hasDerivWithinAt-tendsto-slope-zero-right}
+
+\inputleannode{lem:hasDerivWithinAt-tendsto-slope-zero-left}
 
 \inputleannode{lem:diniDerivRight-of-hasDerivWithinAt}
 
-\subsection{Characterization by difference quotients}
+\subsection{Upper bounds}
 
 \inputleannode{lem:diniDerivRight-le-iff}
 
-\inputleannode{lem:le-diniDerivRight-iff}
+\inputleannode{lem:diniDerivRight-le-norm-of-hasDerivWithinAt}
 
-\subsection{Linearity properties}
+\inputleannode{lem:diniDerivRight-mono}
+\inputleannode{lem:hasDerivWithinAt-le-of-le-of-eq}
 
-\inputleannode{lem:diniDerivRight-add-le}
+\subsection{Gr\"onwall's inequality in Dini form}
 
-\inputleannode{lem:diniDerivRight-add-differentiable}
+\inputleannode{thm:le-mul-exp-of-diniDerivRight-le}
 
-\inputleannode{lem:diniDerivRight-add-linear}
-
-\inputleannode{lem:diniDerivRight-const-mul-pos}
-
-\inputleannode{lem:neg-diniDerivRight-neg-le}
-
-\subsection{The comparison step}
-
-\inputleannode{lem:le-diniDerivRight-of-upper-bound}
+\inputleannode{lem:diniDerivRight-le-of-add-integral-le}
 
 \section{Interval integrals}
 
@@ -93,6 +83,10 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:hasDerivAt-integral}
 
+\inputleannode{lem:continuous-hasDerivAt-integral-comp}
+
+\inputleannode{lem:setIntegral-Ioi-comp-add-right}
+
 \inputleannode{lem:continuousOn-integral-Icc}
 
 \inputleannode{lem:continuousOn-integral-endpoints}
@@ -101,6 +95,18 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:tendsto-integral-average-atTop-zero}
 
+\section{Monotonicity above a level}
+
+\inputleannode{lem:le-max-of-hasDerivWithinAt-nonpos-above}
+
+\section{Norm inequalities}
+
+\inputleannode{lem:abs-norm-sq-sub-norm-sq-le}
+
+\inputleannode{lem:prod-norm-le-norm-fst-add-norm-snd}
+\inputleannode{lem:hasDerivWithinAt-norm-add-smul}
+\inputleannode{lem:derivWithin-norm-add-smul-le}
+
 \section{Positive definite functions}
 
 Positive definiteness in the sense of functions, not matrices: a function that vanishes at a
@@ -108,6 +114,12 @@ point and is positive elsewhere.  It is the shape every Lyapunov function and ev
 bound takes.
 
 \inputleannode{def:isPositiveDefiniteOn}
+
+\inputleannode{lem:isPositiveDefiniteOn-comp}
+
+\inputleannode{lem:isPositiveDefiniteOn-norm-sub}
+
+\inputleannode{lem:isPositiveDefiniteOn-mul-norm-sub-sq}
 
 \chapter{Ordinary differential equations}
 
@@ -163,6 +175,8 @@ $0$.
 
 \inputleannode{lem:isIntegralCurveOn-shift-to-zero}
 
+\inputleannode{lem:isIntegralCurveOn-const}
+
 \inputleannode{lem:contDiffAt-exists-isIntegralCurveOn-Icc}
 
 \inputleannode{thm:exists-isIntegralCurveOn-Icc}
@@ -172,6 +186,8 @@ $0$.
 \inputleannode{lem:dist-le-of-isIntegralCurveOn-Icc}
 
 \inputleannode{lem:eqOn-of-isIntegralCurveOn-Icc}
+
+\inputleannode{lem:isIntegralCurveOn-norm-sub-le}
 
 \inputleannode{thm:exists-isIntegralCurveOn-Ici}
 
@@ -185,6 +201,9 @@ of the field. Everything downstream that needs uniqueness gets it from here, by 
 solutions to agree initially and the perturbation to vanish, which collapses the bound to zero.
 
 \inputleannode{thm:continuous-dependence-ODE}
+
+The same mechanism bounds a single solution from below: an equilibrium cannot be approached
+faster than exponentially.
 
 \inputleannode{thm:continuous-dependence-parameters}
 
@@ -213,7 +232,15 @@ and invariance argument differentiates.
 
 \inputleannode{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}
 
+\inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-hasDerivWithinAt}
+
+\inputleannode{lem:isIntegralCurveOn-lieDerivative-eq-of-eq-add-integral}
+
+\inputleannode{lem:lieDerivative-eq-add-fderiv-sub}
+
 \inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
+
+\inputleannode{lem:isIntegralCurveOn-add-integral-le-of-lieDerivative-le}
 
 \inputleannode{lem:isIntegralCurveOn-le-exp-mul-of-lieDerivative-le}
 
@@ -272,9 +299,17 @@ for time invariance instead.
 
 \inputleannode{lem:continuousSystem-isAutonomous-exists}
 
+\inputleannode{def:continuousSystem-constInput}
+
 \inputleannode{def:continuousSystem-zeroInput}
 
 \inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
+
+\inputleannode{def:continuousSystem-cascade}
+
+\inputleannode{lem:continuousSystem-cascade-isTrajectoryOn-iff}
+
+\inputleannode{lem:continuousSystem-cascade-isRightTrajectoryOn-iff}
 
 Well-posedness is kept apart from stability. The stability notions quantify over every solution,
 so they need no uniqueness; forward completeness enters only where a limit as $t \to \infty$ is
@@ -290,6 +325,32 @@ taken. Theorems that need either property assume it.
 
 \inputleannode{thm:continuousSystem-isForwardComplete-of-lipschitz}
 
+\inputleannode{thm:continuousSystem-isTrajectoryOn-eqOn-of-equilibrium}
+
+\inputleannode{thm:continuousSystem-isTrajectoryOn-norm-exp-bounds}
+
+\subsection{The state transition map}
+
+The state transition map $\varphi(t; t_0, x_0)$ is the solution from $x_0$ at time $t_0$,
+evaluated at time $t$, on its maximal interval of existence.  The state transition matrix of a
+linear system is its linear case.
+
+\inputleannode{def:continuousSystem-existenceInterval}
+
+\inputleannode{def:continuousSystem-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-existenceInterval-eq-Ici}
+
+\inputleannode{lem:continuousSystem-eq-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-stateTransitionMap-semigroup}
+
+\inputleannode{thm:continuousSystem-dist-stateTransitionMap-le}
+
+\inputleannode{thm:continuousSystem-norm-stateTransitionMap-sub-le}
+
 \inputleannode{def:continuousSystem-vectorField}
 
 \inputleannode{def:continuousSystem-outputMap}
@@ -301,6 +362,15 @@ taken. Theorems that need either property assume it.
 \inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
 
 \inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+Inputs that switch — steps, sample-and-hold, bang-bang — produce solutions with corners at the
+switching times.  With the input taken right-continuous, such a solution still has a right
+derivative everywhere, given by the new value of the input; these right trajectories are the
+solution concept for input-to-state stability, and every trajectory is one.
+
+\inputleannode{def:continuousSystem-isRightTrajectoryOn}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-isRightTrajectoryOn}
 
 A set is forward invariant when trajectories that start in it stay in it.
 
@@ -372,6 +442,144 @@ escapes in finite time, and nothing like forward completeness is ever needed.
 
 \inputleannode{lem:discreteSystem-zeroInput-isTrajectoryOn-iff}
 
+\chapter{Contraction theory}
+
+A \emph{pairing} replaces the inner product in contraction analysis for norms that come from no
+inner product.  Regular pairings are the pairings for which the norm of a curve can be
+differentiated through the pairing, which is what contraction arguments use.
+
+\section{Regular pairings}
+
+\inputleannode{def:regularPairing}
+\inputleannode{lem:regularPairing-abs-le-norm-mul-norm}
+\inputleannode{lem:regularPairing-abs-sub-le}
+\inputleannode{lem:regularPairing-add-smul-self}
+
+Every normed space carries a regular pairing, built from the norm alone; on an inner product space
+the inner product is another.
+
+\inputleannode{def:regularPairing-ofInner}
+\inputleannode{def:regularPairing-ofNorm}
+\inputleannode{lem:normPairing-eq-inner}
+
+\section{What a regular pairing says about the norm}
+
+Every regular pairing lies between the left and right derivatives of the norm, and so it computes
+the derivative of the norm along any curve.  This is what makes $\frac12 \|x\|^2$ usable as a
+Lyapunov function for every norm.
+
+\inputleannode{thm:regularPairing-le-ofNorm}
+\inputleannode{lem:hasDerivWithinAt-norm-sq}
+\inputleannode{thm:hasDerivAt-norm-sq}
+\inputleannode{thm:norm-le-exp-integral-of-pairing-le}
+\inputleannode{thm:norm-le-exp-integral-add-of-pairing-le}
+
+\section{The logarithmic norm}
+
+\inputleannode{def:logNorm}
+\inputleannode{thm:regularPairing-pairing-le-logNorm}
+\inputleannode{thm:regularPairing-logNorm-le}
+
+With Lumer's property, each basic property of the log norm reduces to a property of a pairing.
+
+\inputleannode{lem:logNorm-add-le}
+\inputleannode{lem:logNorm-smul}
+\inputleannode{lem:logNorm-add-smul-one}
+\inputleannode{lem:abs-logNorm-sub-logNorm-le}
+\inputleannode{lem:neg-logNorm-mul-norm-le}
+\inputleannode{lem:opNorm-symm-le-of-logNorm-neg}
+\inputleannode{thm:logNorm-le-sup-of-mem-convexHull}
+\inputleannode{lem:logNorm-conj}
+
+On an inner product space the pairing is the inner product, so a log-norm bound is a quadratic-form
+inequality.
+
+\inputleannode{thm:logNorm-le-iff-inner-le}
+
+\section{Weighted norms}
+
+A weighted norm is an ordinary norm, so every result above applies to it; the one new fact is how
+its operator and log norms relate to the unweighted ones.
+
+\inputleannode{def:weightedNorm}
+\inputleannode{thm:weightedNorm-logNorm-eq}
+
+A weight also carries a regular pairing to the weighted norm.
+
+\inputleannode{def:regularPairing-weighted}
+
+\section{Log norms of matrices}
+
+\inputleannode{thm:logNormLpWeight-eq}
+\inputleannode{thm:logNorm-linfty}
+\inputleannode{thm:logNorm-l1}
+\inputleannode{thm:logNorm-l1-diagonal}
+\inputleannode{thm:logNorm-linfty-diagonal}
+\inputleannode{thm:logNorm-l1-diagonal-le-iff}
+\inputleannode{thm:logNorm-linfty-diagonal-le-iff}
+
+The $\ell_1$ and $\ell_\infty$ norms have regular pairings in closed form, and through them a
+weighted log-norm bound is an inequality for every vector.
+
+\inputleannode{def:regularPairing-sign}
+\inputleannode{def:regularPairing-max}
+\inputleannode{thm:logNormLpWeight-le-iff-pairing}
+
+For the norm $\sqrt{x^\top P x}$ the log norm is a quadratic-form bound and an eigenvalue; the
+Euclidean norm is the case $P = I$.
+
+\inputleannode{def:isSymmetrizable}
+\inputleannode{def:lambdaMax}
+\inputleannode{thm:logNormL2PosDef-le-iff}
+\inputleannode{thm:logNormL2PosDef-eq-lambdaMax}
+\inputleannode{thm:logNormL2PosDef-le-iff-lmi}
+\inputleannode{thm:logNorm-euclidean-le-iff}
+\inputleannode{thm:logNorm-euclidean-eq-lambdaMax}
+
+\section{One-sided Lipschitz maps}
+
+The one-sided Lipschitz constant extends the log norm from linear to nonlinear maps.  For a
+differentiable map it is the largest log norm of the Jacobian, which is how
+contractivity of a nonlinear system is checked in practice.
+
+\inputleannode{def:oneSidedLipschitz}
+
+\inputleannode{thm:oneSidedLipschitz-le-iff}
+\inputleannode{thm:regularPairing-pairing-le-of-oneSidedLipschitz-le}
+\inputleannode{thm:oneSidedLipschitz-le-iff-inner}
+\inputleannode{thm:oneSidedLipschitz-affine}
+\inputleannode{thm:oneSidedLipschitz-le-of-lipschitzOnWith}
+\inputleannode{thm:oneSidedLipschitz-properties}
+\inputleannode{thm:oneSidedLipschitz-eq-iSup-logNorm}
+\inputleannode{thm:regularPairing-logNorm-fderiv-le-iff}
+\inputleannode{thm:norm-sub-le-exp-integral-of-oneSidedLipschitz}
+
+For maps of $\mathbb{R}^n$ the Jacobian test combines with the matrix log norms above.
+
+\inputleannode{def:hasJacobianAt}
+\inputleannode{thm:oneSidedLipschitzLpWeight-eq-iSup}
+\inputleannode{thm:oneSidedLipschitzL2PosDef-le-iff}
+\inputleannode{thm:oneSidedLipschitzLpWeight-le-iff-pairing}
+\inputleannode{thm:row-test-iff-ordered-increments}
+
+\section{Contracting systems}
+
+A system is contracting when the distance between any two of its trajectories decays
+exponentially.  In a norm, a one-sided Lipschitz bound on the vector field is a certificate for
+it, as a Lyapunov function is for stability.
+
+\inputleannode{def:continuousSystem-isContractingOn}
+\inputleannode{def:continuousSystem-isInfinitesimallyContractingOn}
+\inputleannode{thm:continuousSystem-isContractingOn-of-oneSidedLipschitz-conj}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-of-oneSidedLipschitz}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-of-logNorm}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-of-affine}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-eqOn}
+\inputleannode{thm:continuousSystem-isInfinitesimallyContractingOn-hasUniqueSolutions}
+\inputleannode{thm:continuousSystem-isContractingOn-of-logNormLpWeight}
+\inputleannode{thm:continuousSystem-isContractingOn-of-logNormL2PosDef}
+\inputleannode{thm:continuousSystem-exists-isContractingOn-of-isHurwitz}
+
 \chapter{Linear systems}
 
 \section{The linear system objects}
@@ -421,7 +629,6 @@ chapter, by definition.
 
 \inputleannode{lem:continuousLTI-isTimeInvariant-toLTV}
 
-\inputleannode{lem:continuousLTV-isTimeInvariant-exists-eq}
 
 \inputleannode{def:continuousLTI-toContinuousSystem}
 
@@ -465,15 +672,15 @@ chapter, by definition.
 
 \section{Peano--Baker series and the state transition matrix}
 
-For a genuinely time-varying state matrix $A(t)$, this section constructs the state transition
-matrix $\Phi(t,t_0)$ as the Peano--Baker series and proves Theorem 5.1: $\Phi$ solves the
-matrix ODE $\dot\Phi(t,t_0) = A(t)\Phi(t,t_0)$ with $\Phi(t_0,t_0) = I$, and consequently
-$x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
+For a genuinely time-varying coefficient $A(t)$ in a real Banach algebra --- matrices under
+any submultiplicative norm, or the bounded operators on a Banach space --- this section
+constructs the state transition matrix $\Phi(t,t_0)$ as the Peano--Baker series and proves
+Theorem 5.1: $\Phi$ solves $\dot\Phi(t,t_0) = A(t)\Phi(t,t_0)$ with $\Phi(t_0,t_0) = 1$, and
+consequently $x(t) := \Phi(t,t_0)x_0$ solves $\dot x = A(t)x$, $x(t_0) = x_0$.
 
-\emph{Standing hypotheses.} Throughout this section $A$ is continuous and satisfies
-$\|A(s)\| \le M$ for all $s$ on the segment between the two times named in each statement. Both
-are needed: continuity to differentiate the series term by term, the bound to make it converge
-at all. Statements below do not repeat them.
+\emph{Standing hypothesis.} Throughout this section $A$ is continuous. The term-wise estimates
+additionally assume a bound $\|A(s)\| \le M$ on the segment between the two times named; the
+results about $\Phi$ itself need none, since $A$ is bounded on every compact interval.
 
 \inputleannode{def:peanoBakerTerm}
 
@@ -483,48 +690,44 @@ at all. Statements below do not repeat them.
 
 \inputleannode{lem:norm-peanoBakerTerm-le}
 
-\inputleannode{lem:norm-peanoBakerTerm-le-of-mem}
-
 \inputleannode{lem:summable-peanoBakerTerm}
-
-\inputleannode{lem:continuousOn-stateTransitionMatrix}
 
 \inputleannode{thm:hasDerivAt-stateTransitionMatrix}
 
+
 \inputleannode{thm:stateTransitionMatrix-self}
 
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-mulVec}
 
-\inputleannode{thm:hasDerivAt-stateTransitionMatrix-mul}
 
-\inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mulVec}
-
-\inputleannode{lem:isIntegralSolution-stateTransitionMatrix-mul}
 
 \subsection{Uniqueness}
 
-\inputleannode{thm:stateTransitionMatrix-mulVec-unique}
+\inputleannode{thm:ODE-solution-unique-linear}
 
-\inputleannode{thm:stateTransitionMatrix-col-unique}
 
-\inputleannode{thm:stateTransitionMatrix-mul-unique}
+
 
 \subsection{Semigroup, invertibility and composition}
 
 Uniqueness is what makes these available: two expressions that solve the same matrix initial
 value problem must agree, and each identity below is an instance of that.
 
-\inputleannode{thm:stateTransitionMatrix-semigroup}
+\inputleannode{thm:stateTransitionMatrix-mul}
 
-\inputleannode{thm:stateTransitionMatrix-inv}
+\inputleannode{thm:stateTransitionMatrix-mul-swap}
 
-\inputleannode{lem:stateTransitionMatrix-comp-of-mem}
+\inputleannode{thm:hasDerivAt-stateTransitionMatrix-snd}
 
-\inputleannode{thm:stateTransitionMatrix-comp}
+\inputleannode{lem:norm-stateTransitionMatrix-le}
 
-\inputleannode{lem:stateTransitionMatrix-comp-base}
+The matrix-level forms below, with the times ordered, predate the general results above and
+are being retired.
 
-\inputleannode{lem:continuousOn-stateTransitionMatrix-snd}
+
+
+
+
+
 
 \subsection{Variation of constants}
 
@@ -533,11 +736,8 @@ difficulty is that the elapsed time appears both as the upper limit of integrati
 integrand; the proof factors the two apart rather than differentiating $\Phi$ in its second
 argument.
 
-\inputleannode{thm:hasDerivAt-forcedResponse}
 
-\inputleannode{lem:forcedResponse-self}
 
-\inputleannode{thm:variationOfConstants-unique}
 
 \subsection{The forced response as a trajectory}
 
@@ -549,27 +749,38 @@ quantifies over.
 
 \inputleannode{def:forcedResponse}
 
-\inputleannode{def:homogeneousResponse}
 
-\inputleannode{lem:homogeneousResponse-self}
 
-\inputleannode{lem:continuousOn-forcedResponse}
 
-\inputleannode{thm:isIntegralSolution-forcedResponse}
 
 \inputleannode{thm:isTrajectory-forcedResponse}
 
-\inputleannode{lem:forcedResponse-zero-input}
+\inputleannode{thm:eq-forcedResponse-of-isTrajectoryOn}
+
+
+\inputleannode{def:continuousLTV-stateTransition}
+
+\inputleannode{thm:continuousLTV-stateTransition-comp}
 
 \inputleannode{thm:isTrajectory-homogeneousResponse}
 
-\inputleannode{thm:eq-homogeneousResponse-of-isIntegralCurveOn}
 
 \inputleannode{thm:isTrajectoryOn-homogeneousResponse}
 
 \inputleannode{thm:eq-homogeneousResponse-of-isTrajectoryOn}
 
+The log norm of $A(t)$, for any norm on the state space, bounds the growth of solutions.
+
+\inputleannode{thm:continuousLTV-norm-stateTransition-le}
+\inputleannode{thm:continuousLTV-le-norm-stateTransition}
+\inputleannode{thm:continuousLTV-norm-forcedResponse-le}
+\inputleannode{thm:continuousLTV-norm-forcedResponse-le-of-const}
+
 \inputleannode{thm:continuousLTV-isForwardComplete-zeroInput}
+
+\inputleannode{thm:continuousLTV-hasUniqueSolutions-zero}
+
+\inputleannode{thm:continuousLTV-stateTransitionMap-zero}
 
 \subsection{The time-invariant case: the matrix exponential}
 
@@ -586,9 +797,11 @@ $\exp$ and $A$ alone.
 
 \inputleannode{thm:stateTransitionMatrix-const}
 
-\inputleannode{thm:exp-mulVec-unique}
+\inputleannode{thm:continuousLTI-stateTransition-toLTV}
 
-\inputleannode{thm:exp-col-unique}
+\inputleannode{thm:continuousLTI-eq-exp-of-isTrajectoryOn}
+
+
 
 \subsection{The forced response of a time-invariant system}
 
@@ -599,7 +812,6 @@ variation-of-constants formula collapses to the closed form every textbook write
 
 \inputleannode{thm:isTrajectory-timeInvariant}
 
-\inputleannode{lem:forcedResponse-output}
 
 \section{The matrix exponential and complexification}
 
@@ -731,6 +943,10 @@ they say nothing the definition above does not.
 
 \inputleannode{lem:classK-restrictTo}
 
+\inputleannode{lem:classK-le-invFun-iff}
+
+\inputleannode{def:classK-compSymm}
+
 \inputleannode{lem:classK-symm}
 
 \inputleannode{lem:classK-comp}
@@ -749,6 +965,10 @@ functions as the standard examples, and the restriction back to class $\mathcal{
 
 \inputleannode{lem:classKInfty-add}
 
+\inputleannode{lem:classKInfty-addMonotone}
+
+\inputleannode{lem:monotoneOn-weak-triangle}
+
 \inputleannode{lem:classKInfty-smul}
 
 \inputleannode{lem:classKInfty-min-fn}
@@ -756,6 +976,8 @@ functions as the standard examples, and the restriction back to class $\mathcal{
 \inputleannode{lem:classKInfty-power}
 
 \inputleannode{lem:classKInfty-toClassK}
+
+\inputleannode{def:classKInfty-integral}
 
 \inputleannode{lem:exists-classKInfty-upper-bound}
 
@@ -790,6 +1012,8 @@ mean-value bound and its inverse supplies the decay rate.
 
 \inputleannode{def:isClassKLGlobal}
 
+\inputleannode{lem:classKLGlobal-exists-le-radiallyUnbounded}
+
 \subsection{Building class \texorpdfstring{$\mathcal{KL}$}{KL} functions}
 
 Two constructions and the two composition rules, in the bounded and the global setting. The
@@ -819,6 +1043,14 @@ of that particular expression is recorded first.
 
 \inputleannode{lem:classKLGlobal-comp-right}
 
+\inputleannode{lem:classKLGlobal-comp-antitone}
+
+\inputleannode{lem:classKLGlobal-add}
+
+\inputleannode{lem:classKLGlobal-smul}
+
+\inputleannode{lem:classKLGlobal-timeScale}
+
 \inputleannode{lem:classKL-min-classK}
 
 \inputleannode{lem:classKLGlobal-min-KInfty}
@@ -835,7 +1067,7 @@ The first lemma below is the continuity criterion the construction rests on.
 
 \inputleannode{lem:exists-classKL-upper-bound}
 
-\inputleannode{lem:classKLGlobal-of-KInfty-LSingular-family}
+\inputleannode{lem:classKLGlobal-exists-ge-min-of-decay}
 
 \section{Class \texorpdfstring{$\mathcal{K}$}{K} bounds for positive definite functions}
 
@@ -866,6 +1098,16 @@ Lyapunov function along a trajectory is a subsolution of it.
 \inputleannode{lem:exists-classK-minorant-lipschitz}
 
 \inputleannode{thm:classK-dini-bound}
+
+\inputleannode{thm:classK-bound-above-level}
+
+\section{Massera's lemma}
+
+A class $\mathcal{K}$ function with class $\mathcal{K}$ derivative can flatten any decay rate
+enough to make a Lyapunov integral along the solutions converge, together with its derivative
+in the initial state.
+
+\inputleannode{lem:classKInfty-massera}
 
 \chapter{Stability of continuous-time systems}
 
@@ -904,6 +1146,17 @@ $[t_0, \infty)$.
 
 \inputleannode{def:continuousSystem-globallyExponentiallyStable}
 
+Boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories stay, or end up and stay, within a prescribed distance of it.
+
+\inputleannode{def:continuousSystem-uniformlyBounded}
+
+\inputleannode{def:continuousSystem-globallyUniformlyBounded}
+
+\inputleannode{def:continuousSystem-uniformlyUltimatelyBounded}
+
+\inputleannode{def:continuousSystem-globallyUniformlyUltimatelyBounded}
+
 \section{Implications}
 
 \inputleannode{lem:continuousSystem-unstable-of-escape}
@@ -923,6 +1176,8 @@ $[t_0, \infty)$.
 \inputleannode{lem:continuousSystem-globallyExponentiallyStable-local}
 
 \inputleannode{lem:continuousSystem-globallyExponentiallyStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-locallyExponentiallyStable-of-semiconj}
 
 \section{Comparison-function characterizations}
 
@@ -995,6 +1250,8 @@ flatten as $t \to \infty$. Sandwiching $V$ between two positive-definite functio
 alone is what restores uniformity. Only trajectories on segments $[t_0, t_1]$ are used, so no
 solution is assumed to exist for all time.
 
+\inputleannode{lem:continuousSystem-isRightTrajectoryOn-trapped-in-ball}
+
 \inputleannode{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}
 
 \inputleannode{thm:continuousSystem-isStrictUniformLyapunovFunction-uniformlyAsymptoticallyStable}
@@ -1008,7 +1265,74 @@ they follow from radial unboundedness.
 
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable}
 
+\inputleannode{lem:continuousSystem-isExponentialLyapunovFunction-of-norm-sub-le-sq}
+
 \inputleannode{thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable}
+
+\section{Converse Lyapunov theorems}
+
+Exponential stability has a quadratic Lyapunov function, built by integrating the squared distance
+along solutions over a fixed horizon.  Its gradient is of the order of the distance to the
+equilibrium, which is what lets it absorb perturbations of the vector field.
+
+\inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable}
+
+\inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate}
+
+\inputleannode{thm:continuousSystem-exists-lyapunov-of-KLBounded}
+
+\section{Ultimate boundedness}
+
+A Lyapunov-like function whose derivative is negative only outside a ball does not certify
+stability, but it does bound the trajectories: they decay like a class $\mathcal{KL}$ function
+until they reach a neighbourhood of the ball, and stay there.
+
+\inputleannode{def:continuousSystem-isUltimateBoundLyapunovFunction}
+
+\inputleannode{def:continuousSystem-isGlobalUltimateBoundLyapunovFunction}
+
+\inputleannode{lem:continuousSystem-uniformlyBounded-of-classKL-bound}
+
+\inputleannode{lem:continuousSystem-uniformlyUltimatelyBounded-of-classKL-bound}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyBounded-of-classKL-bound}
+
+\inputleannode{lem:continuousSystem-globallyUniformlyUltimatelyBounded-of-classKL-bound}
+
+\inputleannode{thm:continuousSystem-exists-classKL-ultimateBound-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-uniformlyBounded-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-uniformlyUltimatelyBounded-of-lyapunov}
+
+\inputleannode{thm:continuousSystem-exists-classKLGlobal-ultimateBound-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-globallyUniformlyBounded-of-lyapunov}
+
+\inputleannode{cor:continuousSystem-globallyUniformlyUltimatelyBounded-of-lyapunov}
+
+\section{Input-to-state stability}
+
+Input-to-state stability bounds the state by a decaying function of the initial condition plus a
+gain of the size of the input.  An ISS-Lyapunov function certifies it through the global
+ultimate boundedness theorem, applied once per input: its class $\mathcal{KL}$ function does not
+depend on the input.
+
+\inputleannode{def:continuousSystem-inputToStateStable}
+
+\inputleannode{thm:continuousSystem-inputToStateStable-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{def:continuousSystem-isISSLyapunovFunction}
+
+\inputleannode{thm:continuousSystem-norm-le-of-isISSLyapunov}
+
+\inputleannode{thm:continuousSystem-inputToStateStable-of-isISSLyapunov}
+
+\inputleannode{lem:continuousSystem-inputToStateStable-of-globallyExponentiallyStable}
+
+\inputleannode{lem:continuousSystem-cascade-globallyUniformlyAsymptoticallyStable}
+
+\inputleannode{lem:continuousSystem-cascade-inputToStateStable}
 
 \section{LaSalle's invariance principle}
 
@@ -1077,8 +1401,12 @@ geometric, $\rho^{k - k_0}$ with $0 \le \rho < 1$, in place of $e^{-\gamma(t - t
 
 \inputleannode{def:discreteSystem-globallyExponentiallyStable}
 
-Ultimate boundedness is a property of the system near a point that need not be an equilibrium:
-trajectories end up, and stay, within a prescribed distance of it.
+Boundedness is a property of the system near a point that need not be an equilibrium:
+trajectories stay, or end up and stay, within a prescribed distance of it.
+
+\inputleannode{def:discreteSystem-uniformlyBounded}
+
+\inputleannode{def:discreteSystem-globallyUniformlyBounded}
 
 \inputleannode{def:discreteSystem-uniformlyUltimatelyBounded}
 
@@ -1164,6 +1492,30 @@ region of attraction, recorded as
 
 \inputleannode{cor:continuousLTV-locallyExponentiallyStable-iff-globallyExponentiallyStable}
 
+For a linear system, uniform asymptotic stability already forces exponential decay of the state
+transition matrix: splitting time into windows of a uniform convergence time, each window
+contracts by a fixed factor.
+
+\inputleannode{thm:continuousLTV-uniformlyAsymptoticallyStable-iff-decayingStateTransition}
+
+\inputleannode{cor:continuousLTV-globallyUniformlyAsymptoticallyStable-iff-decayingStateTransition}
+
+The time-varying form of the Lyapunov equation.
+
+\inputleannode{def:differentialLyapunovEquation}
+
+\inputleannode{lem:toEuclideanCLM-transpose}
+
+\inputleannode{lem:differentialLyapunovEquation-const-iff}
+
+\inputleannode{def:continuousLTV-lyapunovIntegrand}
+
+\inputleannode{def:continuousLTV-lyapunovIntegral}
+
+\inputleannode{thm:continuousLTV-exists-differentialLyapunovEquation}
+
+\inputleannode{thm:continuousLTV-isExponentialLyapunovFunction-of-differentialLyapunovEquation}
+
 \inputleannode{thm:continuousLTV-unstable-iff-unboundedHomogeneousResponse}
 
 \section{Linear time-invariant systems}
@@ -1223,9 +1575,7 @@ matrix. Two generic facts about exponential envelopes are recorded first.
 
 \inputleannode{lem:tendsto-zero-of-norm-le-envelope}
 
-\inputleannode{thm:isHurwitz-exists-norm-exp-le}
-
-\inputleannode{thm:isHurwitz-exists-norm-exp-mulVec-le}
+\inputleannode{thm:isHurwitz-exists-norm-toEuclideanCLM-exp-le}
 
 \inputleannode{thm:isHurwitz-of-tendsto-exp}
 
@@ -1233,7 +1583,7 @@ matrix. Two generic facts about exponential envelopes are recorded first.
 
 \inputleannode{thm:isHurwitz-iff-tendsto-exp}
 
-\inputleannode{thm:isHurwitz-iff-exists-norm-exp-le}
+\inputleannode{thm:isHurwitz-iff-exists-tendsto-exp}
 
 \subsection{Hespanha's Theorem 8.1}
 
@@ -1289,6 +1639,16 @@ is written in, so it is recorded as a sixth equivalent.
 \inputleannode{thm:isHurwitz-iff-exists-posDef-lyapunovRate}
 
 \inputleannode{thm:lyapunovStability-tfae}
+
+\subsection{Weighted Euclidean log norms}
+
+Read through the LMI form of the weighted Euclidean log norm
+(\cref{thm:logNormL2PosDef-le-iff-lmi}), a Lyapunov certificate is a norm in which $A$ is
+contracting.
+
+\inputleannode{thm:isHurwitz-iff-exists-logNormL2PosDef-neg}
+
+\inputleannode{thm:isHurwitzWithRate-iff-exists-logNormL2PosDef-lt}
 
 \subsection{Quadratic forms along a linear vector field}
 
@@ -1413,7 +1773,13 @@ as well, once the linearization error is absorbed near the equilibrium.
 
 \section{The linearization error}
 
-\inputleannode{thm:frechet-linearization-error-bound}
+\inputleannode{thm:contDiff-exists-uniform-linearization-error-bound}
+
+\inputleannode{thm:convex-norm-image-sub-sub-le-of-lipschitzOnWith}
+
+\inputleannode{lem:norm-fderiv-inner-apply-self-le}
+
+\inputleannode{lem:hasFDerivAt-apply-le-of-increment-le}
 
 \inputleannode{lem:exists-abs-fderiv-centeredQuadraticForm-remainder-le}
 
@@ -1424,6 +1790,21 @@ forward solution segment, without silently excluding solutions that are not
 globally defined.
 
 \inputleannode{thm:hurwitz-linearization-locally-exponentially-stable}
+
+\section{Time-varying systems}
+
+For a time-varying system the linearization is itself time-varying, and exponential stability
+transfers between the two in both directions.  The converse Lyapunov function of the nonlinear
+system serves for its linearization; conversely, the solution of the differential Lyapunov
+equation of the linearization serves for the nonlinear system.
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-linearization}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-of-linearization-zero}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-of-linearization}
+
+\inputleannode{thm:continuousSystem-locallyExponentiallyStable-iff-linearization}
 
 \section{The unstable branch}
 
