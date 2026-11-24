@@ -40,7 +40,7 @@ lemma IsSchur.spectralRadius_lt_one [Nonempty X] {A : Matrix X X ℝ} (hA : IsSc
     spectralRadius ℂ A.complexify < 1 := by
   refine spectrum.spectralRadius_lt_of_forall_lt _ fun z hz => ?_
   obtain ⟨v, hv, hAv⟩ := (Matrix.mem_spectrum_iff_exists_eigenpair _ _).1 hz
-  simpa only [ENNReal.coe_lt_coe] using hA z v hv hAv
+  exact_mod_cast hA z v hv hAv
 
 /-- Under the Schur condition some positive power of `A` is a strict contraction. -/
 private lemma IsSchur.exists_pow_norm_lt_one {A : Matrix X X ℝ} (hA : IsSchur A) :

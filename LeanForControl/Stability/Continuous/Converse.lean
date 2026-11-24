@@ -88,9 +88,9 @@ private theorem IsIntegralCurveOn.exists_dist_le_of_contDiff {g : E → E} (hg :
     (r := 1) |>.exists_bound_of_continuousOn (hg.continuous_fderiv one_ne_zero).continuousOn
   set K : ℝ≥0 := M.toNNReal
   have hlip : ∀ t ∈ Icc 0 T, LipschitzOnWith K g (closedBall (γ t) 1) := fun t ht =>
-    (convex_closedBall _ _).lipschitzOnWith_of_nnnorm_fderiv_le
+    (convex_closedBall _ _).lipschitzOnWith_of_nnNorm_fderiv_le
       (fun u _ => hg.differentiable one_ne_zero u) fun u hu => by
-        rw [← NNReal.coe_le_coe, coe_nnnorm]
+        rw [← NNReal.coe_le_coe, coe_nnNorm]
         exact (hM u (closedBall_subset_cthickening (mem_image_of_mem γ ht) 1 hu)).trans
           (Real.le_coe_toNNReal M)
   -- Step 2. Gronwall's inequality for two solutions that stay in those balls up to time `τ`.
@@ -220,7 +220,7 @@ private theorem IsIntegralCurveOn.exists_norm_sub_sub_variational_le {g : E → 
     intro u hu
     have hN : Icc 0 T ∈ 𝓝[≥] u := Icc_mem_nhdsGE_of_mem hu
     have hu' : u ∈ Icc 0 T := Ico_subset_Icc_self hu
-    simpa using (((hβ u hu').mono_of_mem_nhdsWithin hN).sub
+    simpa [e, Pi.sub_def] using (((hβ u hu').mono_of_mem_nhdsWithin hN).sub
       ((hγ u hu').mono_of_mem_nhdsWithin hN)).sub
         (((hΦ u hu').mono_of_mem_nhdsWithin hN).clm_apply (hasDerivWithinAt_const u _ h))
   -- Step 5. That derivative is `Dg(γ) e` plus a Taylor remainder.
@@ -320,7 +320,7 @@ private lemma isIntegralCurveOn_timeAugmented {f : ℝ → E → E} {φ : ℝ ×
     (hasDerivWithinAt_id σ _).const_add z.1
   have hφσ := (hφ z (z.1 + σ) (by simpa using hσ.1)).scomp σ hshift
     fun u hu => by simpa using hu.1
-  exact hshift.prodMk (by simpa using hφσ)
+  exact hshift.prodMk (by simpa [Function.comp_def] using hφσ)
 
 /-- **Solutions are differentiable and locally Lipschitz in their initial time and state.**  On
 `[0, δ]`, `z ↦ (z.1 + σ, φ z (z.1 + σ))` has derivative `Φ σ` at `z₀`, with `Φ` continuous in
@@ -977,7 +977,9 @@ private lemma klRate_spec {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr
       rw [mul_zero] at h
       refine h.congr fun σ => ?_
       rw [mul_assoc, ← Real.exp_add, sub_eq_add_neg]
-    simpa using h_β.add h_exp
+    have h := h_β.add h_exp
+    rw [add_zero] at h
+    exact h
   · intro ρ hρ σ σ' hσ' h
     have hρ_mem : ρ ∈ Ico 0 a := ⟨hρ.1, hρ.2.trans_lt hr₀a⟩
     calc β.toFun ρ σ'
@@ -1275,7 +1277,7 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
     have h_at : ContinuousAt (fun σ => (ContinuousLinearMap.snd ℝ ℝ E).comp (Φ σ)) σ₀ :=
       (continuousOn_const.clm_comp hΦ_cont).continuousAt (Icc_mem_nhds hσ₀ (lt_add_one σ₀))
     refine (h_at.congr ?_).continuousWithinAt
-    filter_upwards [Ioo_mem_nhds hσ₀ (lt_add_one σ₀)] with σ hσ
+    filter_upwards [Ioo_mem_nhds (mem_Ioi.1 hσ₀) (lt_add_one σ₀)] with σ hσ
     exact ((hasFDerivAt_snd.comp z₀ (hΦ σ ⟨hσ.1.le, hσ.2.le⟩)).fderiv).symm
   have hF'_cont : ∀ z₀, ContinuousOn (F' z₀) (Ioi 0) := fun z₀ =>
     (hD_cont.comp_continuousOn ((hu_cont z₀).mono Ioi_subset_Ici_self)).clm_comp (hDu_cont z₀)
@@ -1408,7 +1410,7 @@ private lemma le_integral_comp_flow {s : ContinuousSystem E Unit Y} {L : ℝ≥0
           (hF_int.mono_set Ioc_subset_Ioi_self) measurableSet_Ioc h_pt
     _ ≤ ∫ σ in Ioi 0, G (‖flow s (t, x) (t + σ) - x_eq‖ ^ 2) := setIntegral_mono_set hF_int
         (ae_restrict_of_forall_mem measurableSet_Ioi fun σ _ => G.maps_to (mem_Ici.2 (sq_nonneg _)))
-        Ioc_subset_Ioi_self.eventuallyLE
+        (ae_of_all _ Ioc_subset_Ioi_self)
 
 omit [FiniteDimensional ℝ E] in
 /-- **The derivative of an integral along the solutions, infinite horizon.**  If
@@ -1574,7 +1576,7 @@ private lemma exists_lyapunov_of_KLBoundedOn {s : ContinuousSystem E Unit Y}
       (G.continuous.comp_continuous (by fun_prop) fun y => mem_Ici.2 (sq_nonneg _))
       (hF_int t ht x hx) (hV_diff t ht x hx)
   exact ⟨V, hV_diff, hV_zero, W₁, W₂, fun x => G (‖x - x_eq‖ ^ 2), hW₁, hW₂,
-    by simpa only [one_mul] using
+    by simpa only [one_mul, Function.comp_def] using
       G.isPositiveDefiniteOn.comp (isPositiveDefiniteOn_mul_norm_sub_sq one_pos x_eq _),
     fun t ht x hx => ⟨h_lower t ht x hx, h_upper t ht x hx, (h_lie t ht x hx).le⟩, _, α₄,
     h_grad⟩

@@ -4,7 +4,7 @@ import LeanForControl.MatrixAlgebra.Spectrum
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Algebra.Group.Pi.Units
-import Mathlib.Data.Real.StarOrdered
+import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Analysis.Matrix.Order
 import Mathlib.Analysis.Convex.Quasiconvex
 import Architect
@@ -73,7 +73,7 @@ invertible weight `R`. -/
   (proof := /-- \cref{thm:weightedNorm-logNorm-eq}, with $R$ carrying $A$ to $R A R^{-1}$. -/)]
 theorem logNormLpWeight_eq {R : Matrix n n ℝ} (hR : IsUnit R) (A : Matrix n n ℝ) :
     μ_{p, R} A = μ_{p} (R * A * R⁻¹) := by
-  rw [logNormLpWeight, dif_pos hR, WeightedNorm.logNorm_eq, logNormLp]
+  rw [logNormLpWeight, dite_eq_left hR, WeightedNorm.logNorm_eq, logNormLp]
   -- the weight carries `A` to `R A R⁻¹`
   congr 1
   ext x
@@ -137,15 +137,16 @@ theorem linfty_opNorm_eq_sup' (M : Matrix n n ℝ) :
         (Classical.arbitrary n))).trans' (by positivity)⟩ := by
       rw [linfty_opNNNorm_def]
       refine Finset.sup_le fun i _ => ?_
-      rw [← NNReal.coe_le_coe, NNReal.coe_sum]
-      simp only [coe_nnnorm, Real.norm_eq_abs]
+      refine NNReal.coe_le_coe.1 ?_
+      rw [NNReal.coe_sum]
+      simp only [coe_nnNorm, Real.norm_eq_abs]
       exact Finset.le_sup' (fun i => ∑ j, |M i j|) (Finset.mem_univ i)
     exact NNReal.coe_le_coe.2 h
   · have h : ∑ j, ‖M i j‖₊ ≤ ‖M‖₊ := by
       rw [linfty_opNNNorm_def]
       exact Finset.le_sup (f := fun i => ∑ j, ‖M i j‖₊) (Finset.mem_univ i)
     have h' := NNReal.coe_le_coe.2 h
-    simpa only [NNReal.coe_sum, coe_nnnorm, Real.norm_eq_abs] using h'
+    simpa only [NNReal.coe_sum, coe_nnNorm, Real.norm_eq_abs] using h'
 
 /-- **The ℓ∞ log norm of a matrix acting on `n → ℝ`**, `maxᵢ (aᵢᵢ + ∑_{j ≠ i} |aᵢⱼ|)`.  The sup norm
 is the native norm of `n → ℝ`, so this is the form a Jacobian `LinearMap.toMatrix' (fderiv ℝ f x)`
@@ -160,7 +161,7 @@ theorem logNorm_toCLM (A : Matrix n n ℝ) :
   have hrow (h : ℝ) (hh : 0 ≤ h) (i : n) (hi : 0 ≤ 1 + h * A i i) :
       ∑ j, |((1 : Matrix n n ℝ) + h • A) i j| = 1 + h * c i := by
     rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
-    simp only [add_apply, one_apply_eq, smul_apply, smul_eq_mul]
+    simp only [Matrix.add_apply, Matrix.one_apply_eq, Matrix.smul_apply, smul_eq_mul]
     rw [abs_of_nonneg hi, Finset.sum_congr rfl fun j hj => by
       rw [one_apply_ne (Finset.ne_of_mem_erase hj).symm, zero_add, abs_mul, abs_of_nonneg hh],
       ← Finset.mul_sum]
@@ -177,8 +178,8 @@ theorem logNorm_toCLM (A : Matrix n n ℝ) :
         (Finset.mem_univ i)) hh.le
       nlinarith [neg_abs_le (A i i)]
     rw [← linfty_opNorm_toMatrix]
-    simp only [ContinuousLinearMap.coe_add, ContinuousLinearMap.coe_smul, map_add, map_smul,
-      Matrix.toCLM, LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin']
+    simp only [ContinuousLinearMap.toLinearMap_add, ContinuousLinearMap.toLinearMap_smul, map_add,
+      map_smul, Matrix.toCLM, LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin']
     rw [show LinearMap.toMatrix' ((1 : (n → ℝ) →L[ℝ] (n → ℝ)) : (n → ℝ) →ₗ[ℝ] (n → ℝ)) = 1 from
       LinearMap.toMatrix'_id, linfty_opNorm_eq_sup']
     refine le_antisymm (Finset.sup'_le _ _ fun i _ => ?_) ?_
@@ -267,9 +268,9 @@ theorem logNorm_l1 (A : Matrix n n ℝ) :
       h • LinearMap.toContinuousLinearMap (toLpLin 1 1 A) =
       LinearMap.toContinuousLinearMap (toLpLin 1 1 (1 + h • A)) by ext; simp,
     l1_opNorm_eq_linfty_transpose, ← linfty_opNorm_toMatrix]
-  simp only [ContinuousLinearMap.coe_add, ContinuousLinearMap.coe_smul, map_add, map_smul,
-    Matrix.toCLM, LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin', transpose_add,
-    transpose_smul, transpose_one]
+  simp only [ContinuousLinearMap.toLinearMap_add, ContinuousLinearMap.toLinearMap_smul, map_add,
+    map_smul, Matrix.toCLM, LinearMap.coe_toContinuousLinearMap, LinearMap.toMatrix'_toLin',
+    transpose_add, transpose_smul, transpose_one]
   rw [show LinearMap.toMatrix' ((1 : (n → ℝ) →L[ℝ] (n → ℝ)) : (n → ℝ) →ₗ[ℝ] (n → ℝ)) = 1 from
     LinearMap.toMatrix'_id]
 
@@ -361,7 +362,7 @@ theorem logNorm_l1_diagonal_le_iff {η : n → ℝ} (hη : ∀ i, 0 < η i) (A :
     · simp [metzlerMajorant]
     · refine Finset.sum_congr rfl fun i hi => ?_
       have := (hη j).ne'
-      simp only [metzlerMajorant, if_neg (Finset.ne_of_mem_erase hi)]
+      simp only [metzlerMajorant, ite_eq_right (Finset.ne_of_mem_erase hi)]
       field_simp
   simp only [Finset.mem_univ, true_implies, hsum]
   constructor <;> intro h <;> nlinarith [hη j]
@@ -386,7 +387,7 @@ theorem logNorm_linfty_diagonal_le_iff {η : n → ℝ} (hη : ∀ i, 0 < η i) 
     · simp [metzlerMajorant, mul_comm]
     · refine Finset.sum_congr rfl fun j hj => ?_
       have := (hη i).ne'
-      simp only [metzlerMajorant, if_neg (Finset.ne_of_mem_erase hj).symm]
+      simp only [metzlerMajorant, ite_eq_right (Finset.ne_of_mem_erase hj).symm]
       field_simp
   simp only [Finset.mem_univ, true_implies, hsum]
   constructor <;> intro h <;> nlinarith [hη i]
@@ -439,7 +440,7 @@ open scoped RealInnerProductSpace
 theorem logNormL2PosDef_le_iff {P : Matrix n n ℝ} (hP : P.PosDef) (A : Matrix n n ℝ) (c : ℝ) :
     μ_{2,P^½} A ≤ c ↔ ∀ v : n → ℝ, v ⬝ᵥ ((P * A) *ᵥ v) ≤ c * (v ⬝ᵥ (P *ᵥ v)) := by
   have hPt : Pᵀ = P := by simpa using hP.isHermitian.eq
-  rw [logNormL2PosDef, dif_pos hP, logNorm_le_iff_inner_le]
+  rw [logNormL2PosDef, dite_eq_left hP, logNorm_le_iff_inner_le]
   refine (WeightedEuclidean.equivE hP).forall_congr fun v => ?_
   rcases v with ⟨v⟩
   rw [← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def, WeightedEuclidean.inner_def]
@@ -518,7 +519,8 @@ theorem logNormL2PosDef_isGreatest {P : Matrix n n ℝ} (hP : P.PosDef) (A : Mat
       transpose_nonsing_inv, hPt, Matrix.mul_assoc, Matrix.mul_assoc, nonsing_inv_mul P hdet,
       Matrix.mul_one]
   -- the identity `ℝⁿ → (ℝⁿ, √(xᵀ P x))` conjugates the matrix to the operator, keeping the spectrum
-  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP := ((WeightedEuclidean.equivE hP).linearEquiv ℝ).symm
+  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP :=
+    ((WeightedEuclidean.addEquivE hP).linearEquiv ℝ).symm
   have hS : ((((2⁻¹ : ℝ) • (WeightedEuclidean.toCLM hP A +
       ContinuousLinearMap.adjoint (WeightedEuclidean.toCLM hP A))) :
       WeightedEuclidean hP →L[ℝ] WeightedEuclidean hP) :
@@ -539,10 +541,11 @@ theorem logNormL2PosDef_isGreatest {P : Matrix n n ℝ} (hP : P.PosDef) (A : Mat
     rw [hu, show (u : Matrix n n ℝ) = P from rfl]
     simp only [Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_add, Matrix.add_mul, Matrix.mul_assoc,
       mul_nonsing_inv P hdet, Matrix.mul_one, ← Matrix.mul_assoc P P⁻¹, Matrix.one_mul]
-  rw [logNormL2PosDef, dif_pos hP, key, spectrum.units_conjugate]
+  rw [logNormL2PosDef, dite_eq_left hP, key, spectrum.units_conjugate]
   convert logNorm_isGreatest_inner (WeightedEuclidean.toCLM hP A) using 1
   ext a
-  rw [Set.mem_setOf_eq, hS, Module.End.hasEigenvalue_iff_mem_spectrum, AlgEquiv.spectrum_eq,
+  simp only [Set.mem_ofPred_eq]
+  rw [hS, Module.End.hasEigenvalue_iff_mem_spectrum, AlgEquiv.spectrum_eq,
     ← AlgEquiv.spectrum_eq (Matrix.toLinAlgEquiv' (R := ℝ) (n := n))]
   rfl
 
@@ -573,7 +576,7 @@ theorem logNormLpWeight_two_eq {R : Matrix n n ℝ} (hR : IsUnit R) (A : Matrix 
       PosDef.conjTranspose_mul_self R (mulVec_injective_iff_isUnit.2 hR)
   -- `x ↦ R x`, from `√(xᵀ Rᵀ R x)` to the Euclidean norm
   let e : WeightedEuclidean hP ≃L[ℝ] EuclideanSpace ℝ n := LinearEquiv.toContinuousLinearEquiv
-    (((WeightedEuclidean.equivE hP).linearEquiv ℝ).trans
+    (((WeightedEuclidean.addEquivE hP).linearEquiv ℝ).trans
       ((WithLp.linearEquiv 2 ℝ (n → ℝ)).symm.trans (toWeight 2 hR).toLinearEquiv))
   have he (x : WeightedEuclidean hP) : ‖e x‖ = ‖x‖ := by
     refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
@@ -581,7 +584,7 @@ theorem logNormLpWeight_two_eq {R : Matrix n n ℝ} (hR : IsUnit R) (A : Matrix 
     change (R *ᵥ x.ofWE) ⬝ᵥ star (R *ᵥ x.ofWE) = _
     rw [star_trivial]
     rw [← mulVec_mulVec, dotProduct_mulVec x.ofWE Rᵀ, vecMul_transpose]
-  rw [logNormLpWeight_eq 2 hR, logNormL2PosDef, dif_pos hP, logNormLp, ← logNorm_conj e he]
+  rw [logNormLpWeight_eq 2 hR, logNormL2PosDef, dite_eq_left hP, logNormLp, ← logNorm_conj e he]
   congr 1
   ext x : 1
   change WithLp.toLp 2 ((R * A * R⁻¹) *ᵥ x.ofLp) = WithLp.toLp 2 (R *ᵥ (A *ᵥ (R⁻¹ *ᵥ x.ofLp)))
@@ -595,13 +598,13 @@ lemma logNormL2PosDef_one (A : Matrix n n ℝ) : μ_{2,(1 : Matrix n n ℝ)^½} 
   -- `ℝⁿ` with the Euclidean norm, viewed in the inner product `xᵀ I y`
   let e : EuclideanSpace ℝ n ≃L[ℝ] WeightedEuclidean PosDef.one :=
     LinearEquiv.toContinuousLinearEquiv ((WithLp.linearEquiv 2 ℝ (n → ℝ)).trans
-      ((WeightedEuclidean.equivE PosDef.one).linearEquiv ℝ).symm)
+      ((WeightedEuclidean.addEquivE PosDef.one).linearEquiv ℝ).symm)
   have he (x : EuclideanSpace ℝ n) : ‖e x‖ = ‖x‖ := by
     refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
     rw [← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def,
       one_mulVec]
     rfl
-  rw [logNormL2PosDef, dif_pos PosDef.one, logNormLp, ← logNorm_conj e he]
+  rw [logNormL2PosDef, dite_eq_left PosDef.one, logNormLp, ← logNorm_conj e he]
   rfl
 
 /-- **The Euclidean log norm of a matrix as a quadratic-form bound**: `μ₂(A) ≤ c` iff

@@ -232,13 +232,13 @@ private lemma average_antitone_right {f : ℝ → ℝ} {a b₁ b₂ : ℝ}
   -- `f b₁` is a lower bound for `f` on `[a, b₁]`, hence for the mean there.
   have hlow : (b₁ - a) * f b₁ ≤ ∫ x in a..b₁, f x := by
     have h := intervalIntegral.integral_mono_on (f := fun _ => f b₁) (g := f) hab.le
-      intervalIntegral.intervalIntegrable_const (hf_int a b₁ ha hb₁)
+      intervalIntegrable_const (hf_int a b₁ ha hb₁)
       (fun x hx => hf_anti (Set.mem_Ioi.mpr (ha.trans_le hx.1)) (Set.mem_Ioi.mpr hb₁) hx.2)
     rwa [intervalIntegral.integral_const_eq] at h
   -- and an upper bound for `f` on `[b₁, b₂]`.
   have hhigh : (∫ x in b₁..b₂, f x) ≤ (b₂ - b₁) * f b₁ := by
     have h := intervalIntegral.integral_mono_on (f := f) (g := fun _ => f b₁) hb
-      (hf_int b₁ b₂ hb₁ hb₂) intervalIntegral.intervalIntegrable_const
+      (hf_int b₁ b₂ hb₁ hb₂) intervalIntegrable_const
       (fun x hx => hf_anti (Set.mem_Ioi.mpr hb₁) (Set.mem_Ioi.mpr (hb₁.trans_le hx.1)) hx.1)
     rwa [intervalIntegral.integral_const_eq] at h
   have hsplit := intervalIntegral.integral_add_adjacent_intervals
@@ -258,13 +258,13 @@ private lemma average_antitone_left {f : ℝ → ℝ} {a₁ a₂ b : ℝ}
   -- `f a₂` is an upper bound for the mean on `[a₂, b]`.
   have hhigh : (∫ x in a₂..b, f x) ≤ (b - a₂) * f a₂ := by
     have h := intervalIntegral.integral_mono_on (f := f) (g := fun _ => f a₂) hab.le
-      (hf_int a₂ b ha₂ hb) intervalIntegral.intervalIntegrable_const
+      (hf_int a₂ b ha₂ hb) intervalIntegrable_const
       (fun x hx => hf_anti (Set.mem_Ioi.mpr ha₂) (Set.mem_Ioi.mpr (ha₂.trans_le hx.1)) hx.1)
     rwa [intervalIntegral.integral_const_eq] at h
   -- and a lower bound for `f` on `[a₁, a₂]`.
   have hlow : (a₂ - a₁) * f a₂ ≤ ∫ x in a₁..a₂, f x := by
     have h := intervalIntegral.integral_mono_on (f := fun _ => f a₂) (g := f) ha₁₂
-      intervalIntegral.intervalIntegrable_const (hf_int a₁ a₂ ha ha₂)
+      intervalIntegrable_const (hf_int a₁ a₂ ha ha₂)
       (fun x hx => hf_anti (Set.mem_Ioi.mpr (ha.trans_le hx.1)) (Set.mem_Ioi.mpr ha₂) hx.2)
     rwa [intervalIntegral.integral_const_eq] at h
   have hsplit := intervalIntegral.integral_add_adjacent_intervals
@@ -334,7 +334,7 @@ lemma tendsto_integral_average_atTop_zero {f a b : ℝ → ℝ}
     calc (∫ x in (a η)..(b η), f x)
         ≤ ∫ _ in (a η)..(b η), f (a η) :=
           integral_mono_on hlt.le (hf_int _ _ hη (hη.trans hlt))
-            intervalIntegral.intervalIntegrable_const
+            intervalIntegrable_const
             fun s hs => hf_anti hη (hη.trans_le hs.1) hs.1
       _ = f (a η) * (b η - a η) := by
           rw [intervalIntegral.integral_const_eq]; ring

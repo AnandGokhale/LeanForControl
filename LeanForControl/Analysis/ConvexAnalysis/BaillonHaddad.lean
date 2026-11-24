@@ -35,9 +35,9 @@ theorem ConvexOn.add_inner_add_norm_sq_div_le {E : X → ℝ} {ℓ : NNReal}
     have := convex_univ.norm_image_sub_sub_le_of_lipschitzOnWith (L := ℓ)
       (fun w _ => (hd w).hasFDerivAt.hasFDerivWithinAt)
       (by rw [h_fderiv]
-          simpa using (InnerProductSpace.toDual ℝ X).isometry.lipschitz.comp hL)
+          simpa using (InnerProductSpace.toDual ℝ X).isometry.lipschitzWith.comp hL)
       (Set.mem_univ y) (Set.mem_univ z)
-    rw [← inner_gradient_left (hd y)] at this
+    rw [← inner_gradient_left] at this
     linarith [le_abs_self (E z - E y - ⟪∇ E y, z - y⟫),
       Real.norm_eq_abs (E z - E y - ⟪∇ E y, z - y⟫)]
   -- First-order inequality at `x`: `E x + ⟪∇E x, z - x⟫ ≤ E z`.

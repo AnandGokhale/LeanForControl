@@ -29,6 +29,15 @@ namespace LinearSystems
 open Filter Matrix MeasureTheory Set
 open scoped Matrix.Norms.Frobenius RealInnerProductSpace Topology BigOperators ComplexOrder
 
+-- Workaround for Mathlib v4.36: `instTopologicalSpaceMatrix` is built with `inferInstanceAs`,
+-- whose auxiliary body is not instance-reducible, so the Pi topology on `Matrix` no longer
+-- unifies with the Frobenius-norm topology and e.g. `Norm (Matrix X X ℝ →L[ℝ] Matrix X X ℝ)`
+-- fails to synthesize (also in plain Mathlib). Reducibility of a Mathlib declaration can only
+-- be changed locally. Remove once Mathlib fixes the instance; if `_aux_1` is renamed this
+-- line fails loudly with "unknown constant".
+set_option linter.auxLemma false in
+attribute [local instance_reducible] instTopologicalSpaceMatrix._aux_1
+
 section General
 
 variable {X : Type*} [Fintype X] [DecidableEq X]
@@ -78,7 +87,9 @@ private lemma hasDerivAt_lyapunovKernel_operator
       (lyapunovKernel A (W * A + Aᵀ * W) t) t := by
   have hleft := (hasDerivAt_exp_smul_const Aᵀ t).mul_const W
   have hright := hasDerivAt_exp_smul_const' A t
-  simpa only [lyapunovKernel, mul_add, add_mul, mul_assoc, add_comm] using hleft.mul hright
+  convert hleft.mul hright using 1
+  · rfl
+  simp only [lyapunovKernel, mul_add, add_mul, mul_assoc, add_comm]
 
 private lemma hasDerivAt_lyapunovKernel
     (A Q : Matrix X X ℝ) (t : ℝ) :
@@ -86,7 +97,9 @@ private lemma hasDerivAt_lyapunovKernel
       (Aᵀ * lyapunovKernel A Q t + lyapunovKernel A Q t * A) t := by
   have hleft := (hasDerivAt_exp_smul_const' Aᵀ t).mul_const Q
   have hright := hasDerivAt_exp_smul_const A t
-  simpa only [lyapunovKernel, mul_assoc] using hleft.mul hright
+  convert hleft.mul hright using 1
+  · rfl
+  simp only [lyapunovKernel, mul_assoc]
 
 private lemma continuous_lyapunovKernel
     (A Q : Matrix X X ℝ) : Continuous (lyapunovKernel A Q) := by
@@ -163,7 +176,7 @@ private lemma eq_zero_of_conjugationOperator_fixed
     | zero => simp
     | succ k ih =>
         rw [pow_succ']
-        simp only [ContinuousLinearMap.mul_apply, ih, hfixed]
+        simp only [mul_apply_eq_comp, ih, hfixed]
   have hzero := tendsto_conjugationOperator_pow_apply_zero C W hC
   have hconst : Tendsto (fun _ : ℕ ↦ W) atTop (nhds 0) := by
     exact hzero.congr' (Eventually.of_forall fun k ↦ hpow k)
@@ -198,7 +211,7 @@ private lemma finiteLyapunovIntegral_posDef
       finiteLyapunovIntegral A Q m i j =
         ∫ t in (0 : ℝ)..(m : ℝ), lyapunovKernel A Q t i j := by
     have h := (entryCLM i j).intervalIntegral_comp_comm hint
-    simpa [entryCLM, Function.comp_def, finiteLyapunovIntegral] using h.symm
+    exact h.symm
   have hkernelHermitian (t : ℝ) : (lyapunovKernel A Q t).IsHermitian := by
     let B := NormedSpace.exp (t • A)
     have hleft : NormedSpace.exp (t • Aᵀ) = Bᴴ := by
@@ -295,7 +308,7 @@ private lemma lyapunovOperator_conjugationOperator_pow
   | zero => simp
   | succ k ih =>
       rw [pow_succ']
-      simp only [ContinuousLinearMap.mul_apply]
+      simp only [mul_apply_eq_comp]
       rw [lyapunovOperator_conjugationOperator A C _ hAC, ih]
 
 private lemma tsum_conjugationOperator_pow_apply_posDef
@@ -309,7 +322,7 @@ private lemma tsum_conjugationOperator_pow_apply_posDef
     | zero => simpa [term] using hR
     | succ k ih =>
         rw [show term (k + 1) = conjugationOperator C (term k) by
-          simp only [term, pow_succ', ContinuousLinearMap.mul_apply]]
+          simp only [term, pow_succ', mul_apply_eq_comp]]
         exact posDef_conjugationOperator C (term k) hCunit ih
   change (∑' k : ℕ, term k).PosDef
   rw [hs.tsum_eq_zero_add]

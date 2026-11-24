@@ -188,7 +188,7 @@ theorem RegularPairing.logNorm_fderiv_le_iff (p : RegularPairing E) (hCo : IsOpe
   -- the pairing is Lipschitz, hence continuous, in its first argument
   have hpc (w : E) : Continuous fun u => p u w :=
     (LipschitzWith.of_dist_le_mul (K := ‖w‖₊) fun u u' => by
-      rw [Real.dist_eq, dist_eq_norm, coe_nnnorm, mul_comm]
+      rw [Real.dist_eq, dist_eq_norm, coe_nnNorm, mul_comm]
       exact p.abs_sub_le u u' w).continuous
   constructor
   · intro hb x hx y hy
@@ -196,7 +196,7 @@ theorem RegularPairing.logNorm_fderiv_le_iff (p : RegularPairing E) (hCo : IsOpe
     have hz (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) : y + t • w ∈ C := hCc.add_smul_sub_mem hy hx ht
     have hd (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
         HasDerivAt (fun s : ℝ => F (y + s • w)) (DF (y + t • w) w) t := by
-      simpa using (hF _ (hz t ht)).comp_hasDerivAt t
+      simpa [Function.comp_def] using (hF _ (hz t ht)).comp_hasDerivAt t
         (((hasDerivAt_id t).smul_const w).const_add y)
     -- along the segment, `ψ t = ⟦F (y + t w) - F y; w⟧ - t b ‖w‖²` starts at `0` and has right
     -- slopes `≤ 0`, so the mean value inequality gives `ψ 1 ≤ 0`
@@ -495,11 +495,12 @@ theorem oneSidedLipschitzLpWeight_eq_iSup (p : ℝ≥0∞) [Fact (1 ≤ p)] {R :
     (hset ▸ e.isOpenMap C hCo) (hset ▸ hCc.linear_image e.toLinearEquiv.toLinearMap)
     (by rw [hset]; rintro _ ⟨x, hx, rfl⟩; simpa using (hF x hx).conj e)
   conv at key => rhs; rw [hset, iSup_image]
-  rw [oneSidedLipschitzLpWeight, dif_pos hR, WeightedNorm.oneSidedLipschitz]
+  rw [oneSidedLipschitzLpWeight, dite_eq_left hR, WeightedNorm.oneSidedLipschitz]
   convert key using 2
+  · rfl
   -- `μ_{p,R}(J x)` is, by definition, the log norm of the operator `e J(x) e⁻¹`
   funext x
-  simp only [logNormLpWeight, dif_pos hR, WeightedNorm.logNorm, e.symm_apply_apply]
+  simp only [logNormLpWeight, dite_eq_left hR, WeightedNorm.logNorm, e.symm_apply_apply]
   rfl
 
 /-- **The Jacobian test in the norm `√(xᵀ P x)`**: on an open convex set, for `F` differentiable
@@ -511,13 +512,12 @@ theorem oneSidedLipschitzL2PosDef_eq_iSup {P : Matrix n n ℝ} (hP : P.PosDef)
   -- the general test in the norm `√(xᵀ P x)`, with `F` and its derivative moved there by the
   -- identity `e`
   set e := WeightedEuclidean.equiv hP
-  rw [oneSidedLipschitzL2PosDef, dif_pos hP]
-  simp only [logNormL2PosDef, dif_pos hP]
+  rw [oneSidedLipschitzL2PosDef, dite_eq_left hP]
+  simp only [logNormL2PosDef, dite_eq_left hP]
   rw [oneSidedLipschitz_eq_iSup_logNorm (e.isOpenMap C hCo)
     (hCc.linear_image e.toLinearEquiv.toLinearMap)
     (DF := fun z => WeightedEuclidean.toCLM hP (J (e.symm z))) (by
       rintro _ ⟨x, hx, rfl⟩
-      beta_reduce
       rw [e.symm_apply_apply]
       exact (hF x hx).conj e), iSup_image]
   simp only [e.symm_apply_apply]
@@ -539,7 +539,7 @@ theorem oneSidedLipschitzL2PosDef_le_iff {P : Matrix n n ℝ} (hP : P.PosDef)
     osL_{2,P^½} F on C ≤ b ↔
       ∀ x ∈ C, ∀ y ∈ C, (F x - F y) ⬝ᵥ (P *ᵥ (x - y)) ≤ b * ((x - y) ⬝ᵥ (P *ᵥ (x - y))) := by
   -- the inner-product form in `xᵀ P y`, whose norm squared is `xᵀ P x`
-  rw [oneSidedLipschitzL2PosDef, dif_pos hP, oneSidedLipschitz_le_iff_inner b]
+  rw [oneSidedLipschitzL2PosDef, dite_eq_left hP, oneSidedLipschitz_le_iff_inner b]
   simp only [forall_mem_image, ContinuousLinearEquiv.symm_apply_apply]
   refine forall₂_congr fun x _ => forall₂_congr fun y _ => ?_
   rw [← real_inner_self_eq_norm_sq, WeightedEuclidean.inner_def, WeightedEuclidean.inner_def]
@@ -580,7 +580,7 @@ theorem oneSidedLipschitzLpWeight_le_iff_pairing (p : ℝ≥0∞) [Fact (1 ≤ p
   rw [oneSidedLipschitzLpWeight_eq_iSup p hR hCo hCc hF]
   simp only [iSup₂_le_iff, EReal.coe_le_coe_iff]
   convert key using 4 with x hx
-  · simp only [logNormLpWeight, dif_pos hR, WeightedNorm.logNorm]
+  · simp only [logNormLpWeight, dite_eq_left hR, WeightedNorm.logNorm]
     rfl
   · -- `⟦e u; e v⟧_{q,R} = ⟦R u; R v⟧_q` and `‖e v‖ = ‖R v‖ₚ`
     simp only [e, ContinuousLinearEquiv.trans_apply, RegularPairing.weighted_equiv,
@@ -653,7 +653,9 @@ theorem row_le_iff_ordered_increments (η : n → ℝ) (b : ℝ) (hCo : IsOpen C
           (smul_nonneg ht.le (Pi.single_nonneg.2 zero_le_one)))
         rw [add_sub_cancel_left, dotProduct_smul, dotProduct_single, mul_one, smul_eq_mul] at hinc
         simpa [ℓ, mul_left_comm] using hinc
-    simpa [ℓ, dotProduct_mulVec, dotProduct_single] using key
+    have key' : η ⬝ᵥ (J x).col j ≤ b * η j := by
+      simpa [ℓ, dotProduct_mulVec, dotProduct_single] using key
+    exact key'
 
 omit [Nonempty n] in
 /-- **The weighted ℓ∞ test along increments in the direction `η`**: on an open convex set, for `F`

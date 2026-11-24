@@ -47,7 +47,7 @@ theorem ConvexOn.gradient_mem_subdifferential [CompleteSpace X] {E : X → ℝ} 
   refine ⟨hx, fun y hy => ?_⟩
   -- The slope of `E` from `x` towards `y` is at most `E y - E x`, and tends to `⟪∇E x, y - x⟫`.
   have h_slope : ⟪∇ E x, y - x⟫ ≤ E y - E x := by
-    rw [inner_gradient_left hd]
+    rw [inner_gradient_left]
     refine le_of_tendsto (hd.hasFDerivAt.hasLineDerivAt (y - x)).tendsto_slope_zero_right ?_
     filter_upwards [Ioo_mem_nhdsGT one_pos] with θ hθ
     rw [smul_eq_mul, inv_mul_le_iff₀ hθ.1]
@@ -79,7 +79,7 @@ theorem neg_gradient_mem_subdifferential_of_isMinOn [CompleteSpace X] {E R : X �
   -- Along the segment towards `y`, `E + R` does not drop below its value at `x`; the slope of
   -- `E` tends to `⟪∇E x, y - x⟫` and that of `R` is at most `R y - R x`.
   have h_slope : 0 ≤ ⟪∇ E x, y - x⟫ + (R y - R x) := by
-    rw [inner_gradient_left hd]
+    rw [inner_gradient_left]
     refine ge_of_tendsto ((hd.hasFDerivAt.hasLineDerivAt (y - x)).tendsto_slope_zero_right.add
       tendsto_const_nhds) ?_
     filter_upwards [Ioo_mem_nhdsGT one_pos] with θ hθ

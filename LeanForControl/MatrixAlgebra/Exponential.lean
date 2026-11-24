@@ -64,9 +64,9 @@ variable {n : ℕ}
 lemma complexification_exp {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X X ℝ) :
     (exp A).complexify = exp A.complexify := by
   simp only [Matrix.complexify_eq_map]
-  letI : NormedAlgebra ℚ (Matrix X X ℝ) :=
+  let : NormedAlgebra ℚ (Matrix X X ℝ) :=
     NormedAlgebra.restrictScalars ℚ ℝ _
-  letI : NormedAlgebra ℚ (Matrix X X ℂ) :=
+  let : NormedAlgebra ℚ (Matrix X X ℂ) :=
     NormedAlgebra.restrictScalars ℚ ℂ _
   let φ : Matrix X X ℝ →+* Matrix X X ℂ :=
     (algebraMap ℝ ℂ).mapMatrix
@@ -77,7 +77,7 @@ lemma complexification_exp {X : Type*} [Fintype X] [DecidableEq X] (A : Matrix X
     intro j
     exact Complex.continuous_ofReal.comp
       ((continuous_apply j).comp (continuous_apply i))
-  simpa [φ] using NormedSpace.map_exp φ hφ A
+  exact NormedSpace.map_exp φ hφ A
 
 section Eigenpair
 
@@ -276,8 +276,8 @@ private theorem powModCharpoly_coeff_growth (i : Fin n) :
   have hcoeff : ∀ k m : ℕ, (X ^ (k + 1) %ₘ p).coeff m
       = ∑ j ∈ Finset.range n, (X ^ k %ₘ p).coeff j * (X ^ (j + 1) %ₘ p).coeff m := by
     intro k m
-    rw [hexp k, Polynomial.finset_sum_coeff]
-    exact Finset.sum_congr rfl fun j _ => by rw [Polynomial.coeff_smul, smul_eq_mul]
+    rw [hexp k, Polynomial.finsetSum_coeff]
+    exact Finset.sum_congr rfl fun j _ => by rw [AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul]
   -- `N k` is the `ℓ¹` size of the coefficient vector; `M` that of the `n` fixed polynomials.
   set N : ℕ → ℝ := fun k => ∑ m ∈ Finset.range n, |(X ^ k %ₘ p).coeff m| with hN
   set M : ℝ := ∑ j ∈ Finset.range n, ∑ m ∈ Finset.range n, |(X ^ (j + 1) %ₘ p).coeff m| with hM
@@ -421,8 +421,8 @@ lemma exists_eigenpair_of_mem_spectrum_exp
     rw [Module.End.hasEigenvalue_iff_mem_spectrum, Matrix.spectrum_toLin']
     exact hz
   let W : Submodule ℂ (X → ℂ) := Module.End.eigenspace (NormedSpace.exp A).toLin' z
-  have hW : W ≠ ⊥ := by simpa [W] using hz'
-  letI : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW
+  have hW : W ≠ ⊥ := Module.End.hasEigenvalue_iff.mp hz'
+  let : Nontrivial W := Submodule.nontrivial_iff_ne_bot.mpr hW
   have hcommMatrix : Commute (NormedSpace.exp A) A := (Commute.refl A).exp_left
   have hcomm : Commute (NormedSpace.exp A).toLin' A.toLin' :=
     hcommMatrix.map Matrix.toLinAlgEquiv'
@@ -483,7 +483,7 @@ lemma spectralRadius_exp_complexify_lt_one {X : Type*} [Fintype X] [DecidableEq 
       obtain ⟨μ, v, hv, hAv, rfl⟩ := exists_eigenpair_of_mem_spectrum_exp _ hz
       rw [Complex.norm_exp]
       exact Real.exp_lt_one_iff.mpr (hA μ v hv hAv)
-    simpa only [ENNReal.coe_lt_coe] using hz1
+    exact_mod_cast hz1
 
 end
 

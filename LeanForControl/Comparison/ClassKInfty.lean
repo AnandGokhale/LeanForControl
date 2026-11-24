@@ -449,7 +449,7 @@ noncomputable def ClassKInfty.integral (α : ClassKInfty) : ClassKInfty :=
           calc (r - 1) * α 1
               = ∫ _s in (1 : ℝ)..r, α 1 := by simp
             _ ≤ ∫ s in (1 : ℝ)..r, α (max s 0) :=
-                integral_mono_on hr intervalIntegral.intervalIntegrable_const
+                integral_mono_on hr intervalIntegrable_const
                   (α.continuous_max.intervalIntegrable 1 r)
                   fun s hs => α.mono zero_le_one (hs.1.trans (le_max_left s 0))
         linarith

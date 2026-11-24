@@ -146,7 +146,7 @@ private lemma hasDerivWithinAt_norm_add_mul_smul {a : ℝ} (ha : 0 < a) (x y : E
   have := HasDerivWithinAt.scomp (g₁ := fun h : ℝ => ‖y + h • x‖) 0
     (by simp only [mul_zero]; exact hasDerivWithinAt_norm_add_smul x y)
     ((hasDerivAt_id' 0).const_mul a).hasDerivWithinAt
-    (fun h (hh : 0 < h) => mul_pos ha hh : MapsTo (a * ·) (Ioi 0) (Ioi 0))
+    (show MapsTo (a * ·) (Ioi 0) (Ioi 0) from fun _ hh => mul_pos ha hh)
   simp only [Function.comp_def, mul_one, smul_eq_mul] at this
   exact this
 
@@ -308,7 +308,7 @@ noncomputable def weighted (p : RegularPairing F) (R : E ≃L[ℝ] F) :
   neg_neg x y := by rw [map_neg, map_neg]; exact p.neg_neg _ _
   self x := by rw [p.self, WeightedNorm.norm_weight]
   le_norm_mul_norm x y := by
-    simpa only [WeightedNorm.norm_weight] using p.le_norm_mul_norm _ _
+    exact p.le_norm_mul_norm _ _
   neg_self x := by rw [map_neg, p.neg_self, WeightedNorm.norm_weight]
 
 /-- `⟦x; y⟧_R = ⟦R x; R y⟧`, for vectors `x, y` of `E` measured in the weighted norm. -/

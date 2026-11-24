@@ -214,13 +214,13 @@ private lemma W_ge_Tbar {sys : ContinuousSystem E Unit Y} {x_eq : E} {c : ℝ}
     Tbar_fn sys x_eq η r + r / η ≤ W_fn sys x_eq r η := by
   have h_int_sum : IntervalIntegrable (fun s => Tbar_fn sys x_eq s r + r / η) volume (η / 2) η :=
     (Tbar_intervalIntegrable hconv hr (by linarith : η / 2 ≤ η) (half_pos hη)).add
-      intervalIntegral.intervalIntegrable_const
+      intervalIntegrable_const
   have h_anti := Tbar_antitone hconv hr
   have h_integral_bound :
       ∫ s in (η / 2)..η, Tbar_fn sys x_eq η r + r / η ≤
       ∫ s in (η / 2)..η, Tbar_fn sys x_eq s r + r / η := by
     refine intervalIntegral.integral_mono_on (by linarith)
-      intervalIntegral.intervalIntegrable_const h_int_sum (fun s hs => ?_)
+      intervalIntegrable_const h_int_sum (fun s hs => ?_)
     have hs_pos : 0 < s := by linarith [hs.1]
     linarith [h_anti (Set.mem_Ioi.mpr hs_pos) (Set.mem_Ioi.mpr hη) hs.2]
   have h_const_int :
@@ -243,7 +243,7 @@ private lemma W_fn_eq {sys : ContinuousSystem E Unit Y} {x_eq : E} {c : ℝ}
   simp only [W_fn]
   rw [intervalIntegral.integral_add
     (Tbar_intervalIntegrable hconv hr (le_of_lt (half_lt_self hη)) (half_pos hη))
-    intervalIntegral.intervalIntegrable_const,
+    intervalIntegrable_const,
     intervalIntegral.integral_const, smul_eq_mul]
   have h_const : (η - η / 2) * (r / η) = r / 2 := by field_simp; ring
   rw [h_const]; field_simp [hη.ne']
@@ -373,8 +373,9 @@ private lemma invFunOn_mono_r {sys : ContinuousSystem E Unit Y} {x_eq : E} {c : 
   obtain ⟨hc₂, ha₂, hz₂, ht₂⟩ := W_fn_invertible hconv α hα_bound ha_le_c ha_lt_aα hr₂
   -- By contradiction: if the inverses were out of order, `W r₁` would exceed itself at `U₂`.
   by_contra h_contra
-  have h_strict := ha₁ (invFunOn_pos hc₂ hz₂ ht₂ hs) (invFunOn_pos hc₁ hz₁ ht₁ hs)
-    (not_le.mp h_contra)
+  have h_strict : W_fn sys x_eq r₁ (Function.invFunOn (W_fn sys x_eq r₁) (Set.Ioi 0) s) <
+      W_fn sys x_eq r₁ (Function.invFunOn (W_fn sys x_eq r₂) (Set.Ioi 0) s) :=
+    ha₁ (invFunOn_pos hc₂ hz₂ ht₂ hs) (invFunOn_pos hc₁ hz₁ ht₁ hs) (not_le.mp h_contra)
   rw [apply_invFunOn_eq hc₁ hz₁ ht₁ hs] at h_strict
   linarith [h_strict, W_fn_mono_r hconv ⟨hr₁.1, hr₁.2.trans ha_le_c⟩
     ⟨hr₂.1, hr₂.2.trans ha_le_c⟩ h_le (invFunOn_pos hc₂ hz₂ ht₂ hs),
@@ -897,7 +898,7 @@ theorem uniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem E Unit Y
     simp only [ClassKL.mk_singular_cap]
     rcases ht.1.eq_or_lt with rfl | ht_strict
     · simp [h_α]
-    · rw [if_neg (sub_pos.mpr ht_strict).ne']
+    · rw [ite_eq_right (sub_pos.mpr ht_strict).ne']
       exact le_min h_α (le_sqrt_mul_of_le_of_le (norm_nonneg _) h_α
         (hU t₀ ht₀ t₁ x hx h_init t ⟨ht_strict, ht.2⟩))
   · rintro ⟨a, β, hβ⟩

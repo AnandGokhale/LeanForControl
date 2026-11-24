@@ -238,6 +238,7 @@ lemma IsIntegralCurveOn.add_integral_le_of_lieDerivative_le {V : ℝ → E → �
     (fun τ hτ => ((hγ.hasDerivWithinAt_lieDerivative hV (Ioo_subset_Icc_self hτ)).neg
       ).mono_of_mem_nhdsWithin (mem_nhdsWithin_of_mem_nhds (Icc_mem_nhds hτ.1 hτ.2)))
     hW.integrableOn_Icc (fun τ hτ => le_neg_of_le_neg (h_le τ hτ))
+  simp only [Pi.neg_apply] at this
   linarith
 
 /-- **Integrating factor along an integral curve.**  If `L_v V ≤ -c V` along an integral curve on

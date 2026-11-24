@@ -16,9 +16,9 @@ lemma ContinuousOn.exists_greatest_zero_of_nonpos_of_pos {g : ℝ → ℝ} {t₀
     (hg_cont : ContinuousOn g (Icc t₀ t₁))
     (ht : t₀ < t₁) (hg_start : g t₀ ≤ 0) (hg_end : 0 < g t₁) :
     ∃ a ∈ Ico t₀ t₁, g a = 0 ∧ ∀ t ∈ Ioc a t₁, 0 < g t := by
-  haveI : CompactSpace ↥(Icc t₀ t₁) := isCompact_iff_compactSpace.mp isCompact_Icc
+  have : CompactSpace ↥(Icc t₀ t₁) := isCompact_iff_compactSpace.mp isCompact_Icc
   let f : Icc t₀ t₁ → ℝ := fun x => g x.val
-  have h_pre_closed : IsClosed (f ⁻¹' {0}) := isClosed_singleton.preimage hg_cont.restrict
+  have h_pre_closed : IsClosed (f ⁻¹' {0}) := isClosed_singleton.preimage hg_cont.domRestrict
   -- 2. Prove the preimage is nonempty via IVT
   obtain ⟨c, hc_mem, hc_eq⟩ := intermediate_value_Icc ht.le hg_cont ⟨hg_start, hg_end.le⟩
   have h_pre_nonempty : (f ⁻¹' {0}).Nonempty := ⟨⟨c, hc_mem⟩, hc_eq⟩
@@ -80,7 +80,7 @@ theorem exists_boundary_hit_on_continuous_segment
       rintro hxf
       obtain ⟨t, htI, rfl⟩ := hx.2
       exact hno t htI hxf
-    rw [frontier, mem_diff] at hxnot
+    rw [frontier, Set.mem_sdiff] at hxnot
     simp only [not_and, not_not] at hxnot
     exact interior_subset (hxnot hx.1)
   have himage_in_region : curveImage ⊆ D :=

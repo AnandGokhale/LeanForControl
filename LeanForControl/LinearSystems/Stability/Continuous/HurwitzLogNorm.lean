@@ -65,7 +65,7 @@ theorem isHurwitzWithRate_iff_exists_logNormL2PosDef_lt (A : Matrix n n ℝ) (b 
   rw [LinearSystems.isHurwitzWithRate_iff_add_smul_one, isHurwitz_iff_exists_logNormL2PosDef_neg]
   refine exists_congr fun P => and_congr_right fun hP => ?_
   have h : μ_{2,P^½} (A + (-b) • 1) = μ_{2,P^½} A + -b := by
-    rw [logNormL2PosDef, logNormL2PosDef, dif_pos hP, dif_pos hP, ← logNorm_add_smul_one]
+    rw [logNormL2PosDef, logNormL2PosDef, dite_eq_left hP, dite_eq_left hP, ← logNorm_add_smul_one]
     congr 1
     ext x : 1
     apply WeightedEuclidean.ext

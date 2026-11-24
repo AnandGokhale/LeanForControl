@@ -71,7 +71,7 @@ lemma finiteHorizonResponse_mem_reachableSubspace
   rw [Fintype.sum_eq_single k]
   · simp
   · intro k' hk'
-    simp only [hk', if_false]
+    simp only [hk', ite_false]
     change (A ^ (k' : ℕ) * B) *ᵥ (0 : Fin m → 𝕜) = 0
     exact Matrix.mulVec_zero _
 
@@ -131,7 +131,7 @@ theorem reachableSubspace_eq_top_iff_isControllable
   rw [isControllable_iff_controllabilityMatrix_rank_eq]
   unfold reachableSubspace
   rw [LinearMap.range_eq_top]
-  simpa using
+  simpa [Function.Surjective] using
     (Matrix.mulVec_range_top_iff_rank_eq_card_rows
       (controllabilityMatrix A B))
 

@@ -37,7 +37,7 @@ lemma exists_pow_norm_lt_one_of_spectralRadius_lt_one
     ∃ m : ℕ, 0 < m ∧ ‖a ^ m‖ < 1 := by
   have heventually : ∀ᶠ m : ℕ in atTop,
       ((↑‖a ^ m‖₊ : ENNReal) ^ (1 / (m : ℝ))) < 1 :=
-    (spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius a)
+    (spectrum.pow_nnNorm_pow_one_div_tendsto_nhds_spectralRadius a)
       (Iio_mem_nhds ha)
   have hnonzero : ∀ᶠ m : ℕ in atTop, m ≠ 0 := eventually_ne_atTop 0
   obtain ⟨m, hmroot, hm0⟩ := (heventually.and hnonzero).exists

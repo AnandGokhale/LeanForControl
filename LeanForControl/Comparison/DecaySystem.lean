@@ -117,7 +117,7 @@ private lemma eta_hasDerivAt (α : ClassK a b) (base : ℝ)
   change HasDerivAt (fun u => -(∫ x in base..u, 1 / α.toFun x)) (-1 / α.toFun y) y
   -- Negate: η is minus the primitive, so its derivative is `-(1/α(y))`.
   have hderiv_neg := hderiv.neg
-  simp only at hderiv_neg
+  simp only [Pi.neg_def] at hderiv_neg
   convert hderiv_neg using 1
   ring
 
@@ -169,14 +169,14 @@ private lemma eta_add_mem_range (α : ClassK a b) (base : ℝ)
 private lemma etaInv_mem_Ioo (α : ClassK a b) (base : ℝ)
     {t : ℝ} (ht : ∃ r ∈ Ioo 0 a, α.eta base r = t) :
     α.etaInv base t ∈ Ioo 0 a := by
-  simp only [ClassK.etaInv, dif_pos ht]
+  simp only [ClassK.etaInv, dite_eq_left ht]
   exact (Classical.choose_spec ht).1
 
 /-- Left inverse: `η(η⁻¹(t)) = t` whenever `t` is in the range of η. -/
 private lemma eta_etaInv (α : ClassK a b) (base : ℝ)
     {t : ℝ} (ht : ∃ r ∈ Set.Ioo 0 a, α.eta base r = t) :
     α.eta base (α.etaInv base t) = t := by
-  simp only [ClassK.etaInv, dif_pos ht]
+  simp only [ClassK.etaInv, dite_eq_left ht]
   exact (Classical.choose_spec ht).2
 
 /-- Right inverse: `η⁻¹(η(r)) = r` for any `r ∈ (0, a)`. -/
@@ -226,7 +226,7 @@ private lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
     refine ⟨0, fun t _ => ?_⟩
     rcases Classical.em (∃ r ∈ Set.Ioo 0 a, α.eta base r = t) with hrange | hrange
     · linarith [(etaInv_mem_Ioo α base hrange).1]
-    · simp only [ClassK.etaInv, dif_neg hrange]; linarith
+    · simp only [ClassK.etaInv, dite_eq_right hrange]; linarith
   · -- b > 0: use threshold M = η(δ) where δ = min(b/2, a/2)
     set δ := min (b / 2) (a / 2)
     have hδ_pos  : 0 < δ := lt_min (by linarith) (by linarith [α.ha])
@@ -243,7 +243,7 @@ private lemma etaInv_tendsto_zero (α : ClassK a b) (base : ℝ)
         -- but η(etaInv(t)) = t ≥ η(δ). Contradiction.
         linarith [eta_strictAntiOn α base hbase hδ_ioo hmem h, heq]
       linarith
-    · simp only [ClassK.etaInv, dif_neg hrange]; linarith
+    · simp only [ClassK.etaInv, dite_eq_right hrange]; linarith
 
 /-- η⁻¹ is continuous at any point in the range of η.
     Proved via the order topology: for each one-sided bound on the output, IVT on a compact
@@ -370,11 +370,11 @@ private lemma ClassK.etaDiverges_of_le_linear {a b : ℝ} (α : ClassK a b) (bas
 /-- Away from `r = 0`, `σ` is given by its defining formula `σ(r, s) = η⁻¹(η(r) + s)`. -/
 private lemma sigma_of_pos (α : ClassK a b) (base : ℝ) {r : ℝ} (hr : 0 < r) {s : ℝ} :
     α.sigma base r s = α.etaInv base (α.eta base r + s) :=
-  if_neg hr.ne'
+  ite_eq_right hr.ne'
 
 /-- `σ(0, s) = 0`: the solution started at the origin stays there. -/
 private lemma sigma_zero_left (α : ClassK a b) (base s : ℝ) : α.sigma base 0 s = 0 :=
-  if_pos rfl
+  ite_eq_left rfl
 
 /-- `σ(r, 0) = r`: at time zero the solution is at its initial state. -/
 private lemma sigma_zero_right (α : ClassK a b) (base : ℝ) (hbase : base ∈ Ioo 0 a)
@@ -550,7 +550,7 @@ private lemma ClassK.sigma_hasDerivAt {a b : ℝ} (α : ClassK a b) (base : ℝ)
     (hLip : ∀ x ∈ Set.Ioc 0 base, α.toFun x ≤ L * x)
     (r : ℝ) (hr : r ∈ Set.Ioo 0 a) (s : ℝ) (hs : 0 < s) :
     HasDerivAt (fun x => α.sigma base r x) (- α.toFun (α.sigma base r s)) s := by
-  simp only [ClassK.sigma, if_neg hr.1.ne']
+  simp only [ClassK.sigma, ite_eq_right hr.1.ne']
   -- Establish η(r) + s is in the range of η
   have hdiv := etaDiverges_of_le_linear α base hbase L hL_pos hLip
   have ht₀_range : ∃ r' ∈ Set.Ioo 0 a, α.eta base r' = α.eta base r + s :=
@@ -569,7 +569,7 @@ private lemma ClassK.sigma_hasDerivAt {a b : ℝ} (α : ClassK a b) (base : ℝ)
       filter_upwards [h_cont.preimage_mem_nhds (Ioo_mem_nhds hy₀_mem.1 hy₀_mem.2)] with y hy
       have h_in_range : ∃ r' ∈ Set.Ioo 0 a, α.eta base r' = y := by
         by_contra h
-        simp  [ClassK.etaInv, dif_neg h, Set.mem_Ioo, false_and] at hy
+        simp  [ClassK.etaInv, dite_eq_right h, Set.mem_Ioo, false_and] at hy
       exact eta_etaInv α base h_in_range
     convert h_eta_der.of_local_left_inverse h_cont h_ne h_local_inv using 1
     simp only [neg_div, neg_inv, one_div, inv_inv]
@@ -609,16 +609,16 @@ private theorem ClassK.exists_classKL_decaySolution (α : ClassK a b) (base : �
     -- because `α 0 = 0`; away from `0` it is the Osgood construction.
     rcases eq_or_lt_of_le hr.1 with h_eq | hr_pos
     · have hconst : (fun x => σ.toFun r x) =ᶠ[nhds s] (fun _ : ℝ => (0 : ℝ)) :=
-        Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hs)
-          fun x hx => by rw [← h_eq]; exact hσ_zero_s x hx.le
+        Filter.eventually_of_mem (isOpen_Ioi.mem_nhds (Set.mem_Ioi.2 hs))
+          fun x (hx : x ∈ Set.Ioi 0) => by rw [← h_eq]; exact hσ_zero_s x (Set.mem_Ioi.1 hx).le
       have hzero : σ.toFun r s = 0 := by rw [← h_eq]; exact hσ_zero_s s hs.le
       rw [hzero, α.map_zero, neg_zero]
       exact (hasDerivAt_const s (0 : ℝ)).congr_of_eventuallyEq hconst
     · have hr' : r ∈ Set.Ioo 0 a := ⟨hr_pos, hr.2⟩
       have hderiv := ClassK.sigma_hasDerivAt α base hbase L hL_pos hLip r hr' s hs
       have hfun : (fun x => σ.toFun r x) =ᶠ[nhds s] (fun x => α.sigma base r x) :=
-        Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hs)
-          fun x hx => hσ_eq r hr' x (le_of_lt hx)
+        Filter.eventually_of_mem (isOpen_Ioi.mem_nhds (Set.mem_Ioi.2 hs))
+          fun x (hx : x ∈ Set.Ioi 0) => hσ_eq r hr' x (le_of_lt (Set.mem_Ioi.1 hx))
       have hval : -α.toFun (α.sigma base r s) = -α.toFun (σ.toFun r s) := by
         rw [hσ_eq r hr' s hs.le]
       exact (hval ▸ hderiv).congr_of_eventuallyEq hfun
@@ -683,7 +683,8 @@ theorem ClassK.exists_classKL_trajectory_decaySystem (α : ClassK a b) (base : �
   -- `s ↦ σ(r, s)` is continuous at `0` from the right, and stays in `[0, a)`.
   have h_cont : ContinuousWithinAt (fun s => σ.toFun r s) (Set.Ici 0) 0 :=
     (σ.continuous (r, 0) ⟨hr, Set.self_mem_Ici⟩).comp
-      (continuousWithinAt_const.prodMk continuousWithinAt_id) fun s hs => ⟨hr, hs⟩
+      (continuousWithinAt_const.prodMk continuousWithinAt_id)
+        fun s (hs : s ∈ Set.Ici 0) => ⟨hr, hs⟩
   have h_mem : ∀ s > 0, σ.toFun r s ∈ Set.Ico 0 a := fun s hs =>
     ⟨σ.nonneg r hr s hs.le, ((σ.anti_s r hr (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr hs.le)
       hs.le).trans_eq (hσ_init r hr)).trans_lt hr.2⟩
@@ -704,8 +705,11 @@ theorem ClassK.exists_classKL_trajectory_decaySystem (α : ClassK a b) (base : �
       filter_upwards [self_mem_nhdsWithin] with s hs
       exact ((hσ_deriv r hr s hs).deriv).symm
     · exact (hσ_deriv r hr _ h_pos).hasDerivWithinAt
-  have h_traj := h_sec.comp t ((hasDerivWithinAt_id t _).sub_const t₀)
-    fun x hx => Set.mem_Ici.mpr (sub_nonneg.mpr hx)
+  have h_traj : HasDerivWithinAt (fun x => σ.toFun r (x - t₀))
+      (-α.toFun (σ.toFun r (t - t₀)) * 1) (Set.Ici t₀) t :=
+    HasDerivWithinAt.comp (h₂ := fun s => σ.toFun r s) (h := fun x => x - t₀) t h_sec
+      ((hasDerivWithinAt_id t _).sub_const t₀)
+      fun x (hx : x ∈ Set.Ici t₀) => Set.mem_Ici.mpr (sub_nonneg.mpr hx)
   rw [mul_one] at h_traj
   exact h_traj
 
@@ -775,12 +779,13 @@ theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b)
         -- σ(v t₀, ·) solves the decay ODE; compose with the shift `· - t₀`
         have h_comp := (hσ_deriv (v t₀) hv₀ (s - t₀) hs_sub_pos).comp s
           ((hasDerivAt_id s).sub_const t₀)
-        simpa only [mul_one] using h_comp
+        simpa only [mul_one, Function.comp_def, id] using h_comp
       -- σ is continuous on [t₀, t]
       have hu_cont : ContinuousOn (fun s => σ.toFun (v t₀) (s - t₀)) (Set.Icc t₀ t) :=
         (σ.continuous.comp
           (continuousOn_const.prodMk (continuousOn_id.sub continuousOn_const))
-          (fun s hs => ⟨hv₀, Set.mem_Ici.mpr (sub_nonneg.mpr hs.1)⟩)).congr
+          (fun s (hs : s ∈ Set.Icc t₀ t) =>
+            ⟨hv₀, Set.mem_Ici.mpr (sub_nonneg.mpr hs.1)⟩)).congr
           (fun s _ => rfl)
       -- σ(v t₀, 0) = v t₀ (initial condition)
       have hu₀ : (fun s => σ.toFun (v t₀) (s - t₀)) t₀ = v t₀ := by

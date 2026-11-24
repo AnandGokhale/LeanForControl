@@ -110,7 +110,7 @@ theorem Convex.norm_image_sub_sub_le_of_lipschitzOnWith {f : E → F} {f' : E �
       ‖f' (x₀ + τ • (x - x₀)) (x - x₀) - f' x₀ (x - x₀)‖ ≤ L * τ * ‖x - x₀‖ ^ 2 := by
     intro τ hτ
     calc ‖f' (x₀ + τ • (x - x₀)) (x - x₀) - f' x₀ (x - x₀)‖
-        = ‖(f' (x₀ + τ • (x - x₀)) - f' x₀) (x - x₀)‖ := by rw [ContinuousLinearMap.sub_apply]
+        = ‖(f' (x₀ + τ • (x - x₀)) - f' x₀) (x - x₀)‖ := by rw [sub_apply]
       _ ≤ ‖f' (x₀ + τ • (x - x₀)) - f' x₀‖ * ‖x - x₀‖ := ContinuousLinearMap.le_opNorm _ _
       _ ≤ L * ‖x₀ + τ • (x - x₀) - x₀‖ * ‖x - x₀‖ := by
           gcongr
@@ -185,7 +185,7 @@ theorem HasFDerivAt.apply_le_of_increment_le {f : E → F} {f' : E →L[ℝ] F} 
     (h : ∀ t : ℝ, 0 < t → x + t • v ∈ C → φ (f (x + t • v) - f x) ≤ t * c) :
     φ (f' v) ≤ c := by
   have hd : HasDerivAt (fun t : ℝ => f (x + t • v)) (f' v) 0 := by
-    simpa using hf.comp_hasDerivAt_of_eq (0 : ℝ)
+    simpa [Function.comp_def] using hf.comp_hasDerivAt_of_eq (0 : ℝ)
       (((hasDerivAt_id 0).smul_const v).const_add x) (by simp)
   have hmem : ∀ᶠ t in 𝓝[>] (0 : ℝ), x + t • v ∈ C :=
     nhdsWithin_le_nhds (((continuous_const.add (continuous_id.smul continuous_const)).tendsto' 0

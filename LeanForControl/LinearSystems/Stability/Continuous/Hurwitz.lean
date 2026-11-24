@@ -204,7 +204,7 @@ theorem IsHurwitz.exists_pos_isHurwitzWithRate {A : Matrix X X ℝ} (hA : IsHurw
   have hmem : μ ∈ spectrum ℂ A.complexify :=
     (Matrix.mem_spectrum_iff_exists_eigenpair _ _).2 ⟨v, hv, heig⟩
   have := hμ₀max hmem
-  simp only [Set.mem_setOf_eq] at this
+  simp only [Set.mem_ofPred_eq] at this
   linarith
 
 /-! ## Equivalent analytic conditions

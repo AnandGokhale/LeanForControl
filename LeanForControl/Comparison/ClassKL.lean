@@ -181,7 +181,7 @@ lemma tendsto_min_sqrt_mul_zero {c : ℝ} (hc : 0 ≤ c)
     ?_
   have h_mul : Filter.Tendsto (fun s => c * U s) Filter.atTop (nhds 0) := by
     simpa using Filter.Tendsto.const_mul c hU
-  simpa [Real.sqrt_zero] using (Real.continuous_sqrt.tendsto 0).comp h_mul
+  simpa [Real.sqrt_zero, Function.comp_def] using (Real.continuous_sqrt.tendsto 0).comp h_mul
 
 /-- If `0 ≤ x ≤ u` then `x ≤ √(x u)`, so `min x (√(x u)) = x`: once `U` dominates `α`, the
     geometric-mean cap is inactive. -/
@@ -223,8 +223,8 @@ private lemma continuousWithinAt_singularCap_of_pos {a b : ℝ} (α : ClassK a b
     have h_snd : Tendsto (fun p : ℝ × ℝ => p.2) (𝓝[Ico 0 a ×ˢ Ici 0] (r₀, s₀)) (𝓝 s₀) :=
       continuous_snd.continuousWithinAt
     filter_upwards [h_snd.eventually (Ioi_mem_nhds hs₀)] with p hp_pos
-    exact if_neg hp_pos.ne'
-  exact h_min.congr_of_eventuallyEq h_eq (if_neg hs₀.ne')
+    exact ite_eq_right hp_pos.ne'
+  exact h_min.congr_of_eventuallyEq h_eq (ite_eq_right hs₀.ne')
 
 /-- Continuity of the singular cap at a point `(r₀, 0)` of the edge `s = 0`.
 
@@ -263,7 +263,7 @@ private lemma continuousWithinAt_singularCap_of_zero {a b : ℝ} (α : ClassK a 
       have h_alpha_le_U : α.toFun r ≤ U.toFun s :=
         (α.strict_mono hr hr₁ hr_lt).le.trans (hs_U hs_pos).le
       exact min_sqrt_mul_eq_left (α.maps_to hr).1 h_alpha_le_U
-  exact h_alpha.congr_of_eventuallyEq h_eq (if_pos rfl)
+  exact h_alpha.congr_of_eventuallyEq h_eq (ite_eq_left rfl)
 
 /-- Sontag-style KL construction from a class K spatial bound and a singular class L time decay.
     `β(r, 0) = α(r)` and `β(r, s) = min(α(r), √(α(r) * U(s)))` for `s > 0`. -/
@@ -319,11 +319,11 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
     rcases (Set.mem_Ici.mp hs₁).eq_or_lt with rfl | hs₁pos
     · rcases (Set.mem_Ici.mp hs₂).eq_or_lt with rfl | hs₂pos
       · exact le_rfl
-      · simp only [if_true, if_neg hs₂pos.ne']
+      · simp only [ite_true, ite_eq_right hs₂pos.ne']
         exact min_le_left _ _
     · rcases (Set.mem_Ici.mp hs₂).eq_or_lt with rfl | hs₂pos
       · linarith
-      · simp only [if_neg hs₁pos.ne', if_neg hs₂pos.ne']
+      · simp only [ite_eq_right hs₁pos.ne', ite_eq_right hs₂pos.ne']
         gcongr
         · exact (α.maps_to hr).1
         · exact U.anti (Set.mem_Ioi.mpr hs₁pos) (Set.mem_Ioi.mpr hs₂pos) hle
@@ -332,7 +332,7 @@ noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : Cla
     have h_α : 0 ≤ α.toFun r := (α.maps_to hr).1
     apply (tendsto_min_sqrt_mul_zero h_α U.tendsto_zero).congr'
     filter_upwards [Filter.eventually_ne_atTop 0] with s hs
-    exact (if_neg hs).symm
+    exact (ite_eq_right hs).symm
 
   continuous := by
     -- Two regimes, according to whether (r₀, s₀) lies on the edge s = 0:
@@ -476,8 +476,9 @@ def ClassKL.comp_right {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL 
   map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]
   continuous s hs  := by
     apply β.continuous.comp
-      ((α.continuous.comp continuousOn_fst (fun p hp => hp.1)).prodMk continuousOn_snd)
-      (fun p hp => ⟨α.maps_to hp.1, hp.2⟩)
+      ((α.continuous.comp continuousOn_fst
+        (fun p (hp : p ∈ Set.Ico 0 a ×ˢ Set.Ici 0) => hp.1)).prodMk continuousOn_snd)
+      (fun p (hp : p ∈ Set.Ico 0 a ×ˢ Set.Ici 0) => ⟨α.maps_to hp.1, hp.2⟩)
     exact hs
 
   strict_mono_r s hs x hx y hy hxy :=
@@ -607,7 +608,7 @@ theorem ClassKLGlobal.anti_s_mono (β : ClassKLGlobal) {r s₁ s₂ : ℝ} (hr :
 theorem ClassKLGlobal.continuous_r {a : ℝ} (β : ClassKLGlobal) {s : ℝ} (hs : 0 ≤ s) :
     ContinuousOn (fun r => β.toFun r s) (Set.Ico 0 a) := by
   apply (β.continuous.comp (continuousOn_id.prodMk continuousOn_const)
-        (fun x hx => Set.mk_mem_prod hx.1 hs)).congr
+        (fun x (hx : x ∈ Set.Ico 0 a) => Set.mk_mem_prod hx.1 hs)).congr
   intro x _
   simp
 
@@ -711,8 +712,9 @@ def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGl
   map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]
   continuous s hs :=   by
     apply β.continuous.comp
-      ((α.continuous.comp continuousOn_fst (fun p hp => hp.1)).prodMk continuousOn_snd)
-      (fun p hp => ⟨α.maps_to hp.1, hp.2⟩)
+      ((α.continuous.comp continuousOn_fst
+        (fun p (hp : p ∈ Set.Ici 0 ×ˢ Set.Ici 0) => hp.1)).prodMk continuousOn_snd)
+      (fun p (hp : p ∈ Set.Ici 0 ×ˢ Set.Ici 0) => ⟨α.maps_to hp.1, hp.2⟩)
     exact hs
   strict_mono_r s hs x hx y hy hxy :=
     β.strict_mono_r s hs (α.maps_to hx) (α.maps_to hy) (α.strict_mono hx hy hxy)

@@ -239,10 +239,10 @@ theorem continuousOn_of_strictMonoOn_of_surjOn {g : ℝ → ℝ} {s t : Set ℝ}
     [OrdConnected s] [ht : OrdConnected t] (hg_mono : StrictMonoOn g s)
     (hg_maps : MapsTo g s t) (hg_surj : SurjOn g s t) : ContinuousOn g s := by
   have h_image : g '' s = t := hg_surj.image_eq_of_mapsTo hg_maps
-  haveI : OrdConnected (g '' s) := h_image ▸ ht
+  have : OrdConnected (g '' s) := h_image ▸ ht
   -- `g` restricted to `s` is the order isomorphism `s ≃o g '' s`, followed by `Subtype.val`.
   let e : s ≃o g '' s := hg_mono.orderIso g s
-  rw [continuousOn_iff_continuous_restrict]
+  rw [continuousOn_iff_continuous_domRestrict]
   exact continuous_subtype_val.comp e.continuous
 
 /-- The inverse of a class K function is zero at zero: `α⁻¹ 0 = α⁻¹ (α 0) = 0`. -/
@@ -487,10 +487,9 @@ function of the comparison argument in Khalil's Theorems 4.9 and 4.18. -/
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proofs of Theorems 4.9 and 4.18. -/)]
 noncomputable def ClassK.compSymm {r b₂ b₃ : ℝ} (α₃ : ClassK r b₃) (α₂ : ClassK r b₂) {c : ℝ}
     (hc_pos : 0 < c) (hcr : c < r) : ClassK (α₂.toFun c) (α₃.toFun c) :=
+  have hinv : α₂.symm.toFun (α₂.toFun c) = c := α₂.left_inv ⟨hc_pos.le, hcr⟩
   (α₃.restrictTo (c := α₂.symm.toFun (α₂.toFun c))
-    (show 0 < α₂.invFun (α₂.toFun c) by rw [α₂.left_inv ⟨hc_pos.le, hcr⟩]; exact hc_pos)
-    (show α₂.invFun (α₂.toFun c) < r by rw [α₂.left_inv ⟨hc_pos.le, hcr⟩]; exact hcr)
-    (by change α₃.toFun (α₂.invFun (α₂.toFun c)) = _; rw [α₂.left_inv ⟨hc_pos.le, hcr⟩])).comp
+    (by rw [hinv]; exact hc_pos) (by rw [hinv]; exact hcr) (congrArg α₃.toFun hinv)).comp
     (α₂.symm.restrict ((α₂.pos_iff ⟨hc_pos.le, hcr⟩).mpr hc_pos)
       (α₂.maps_to ⟨hc_pos.le, hcr⟩).2)
 

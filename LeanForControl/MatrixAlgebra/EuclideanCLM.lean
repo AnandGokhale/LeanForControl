@@ -33,10 +33,11 @@ open scoped Matrix.Norms.Operator in
 map between finite-dimensional spaces is continuous.  No explicit constant is needed. -/
 theorem exists_norm_toEuclideanCLM_le :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ M : Matrix X X ℝ, ‖toEuclideanCLM (n := X) (𝕜 := ℝ) M‖ ≤ C * ‖M‖ := by
-  let T : Matrix X X ℝ →L[ℝ] (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
-    LinearMap.toContinuousLinearMap
-      (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearEquiv.toLinearMap
-  exact ⟨‖T‖, norm_nonneg _, fun M => T.le_opNorm M⟩
+  let f : Matrix X X ℝ →ₗ[ℝ] (EuclideanSpace ℝ X →L[ℝ] EuclideanSpace ℝ X) :=
+    (toEuclideanCLM (n := X) (𝕜 := ℝ)).toAlgEquiv.toLinearEquiv.toLinearMap
+  obtain ⟨C, hC, hf⟩ :=
+    SemilinearMapClass.bound_of_continuous f (LinearMap.continuous_of_finiteDimensional f)
+  exact ⟨C, hC.le, hf⟩
 
 /-- The transpose of a matrix is the adjoint of the operator it defines on Euclidean space. -/
 @[blueprint "lem:toEuclideanCLM-transpose"

@@ -2,7 +2,7 @@ import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Analysis.Normed.Module.FiniteDimension
-import Mathlib.Data.Real.StarOrdered
+import Mathlib.Algebra.Order.Star.Real
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
 import Mathlib.Topology.Order.Compact
 import LeanForControl.MatrixAlgebra.EuclideanCLM
@@ -20,7 +20,7 @@ equation.
 Positive-definiteness-dependent facts (`quadraticForm_pos`,
 `exists_pos_mul_norm_sq_le_quadraticForm`) and the matrix-linearity facts
 (`quadraticForm_matrix_add`, `quadraticForm_matrix_smul`) are bridged to Mathlib's
-`Matrix.toQuadraticMap'`/`QuadraticMap` API via `quadraticForm_eq_toQuadraticMap'` rather
+`Matrix.toQuadraticForm'`/`QuadraticMap` API via `quadraticForm_eq_toQuadraticMap'` rather
 than reproved from scratch.
 
 Reference: standard quadratic Lyapunov-function construction; Khalil, *Nonlinear Systems*.
@@ -63,15 +63,15 @@ lemma quadraticForm_contDiff (P : Matrix (Fin n) (Fin n) ℝ) :
     ContDiff ℝ ∞ (quadraticForm P) := by
   exact contDiff_id.inner ℝ (Matrix.toEuclideanCLM (𝕜 := ℝ) P).contDiff
 
-/-- A matrix quadratic form is the same real number as Mathlib's `Matrix.toQuadraticMap'`,
+/-- A matrix quadratic form is the same real number as Mathlib's `Matrix.toQuadraticForm'`,
 evaluated on the underlying `Fin n → ℝ` data. This is the bridge that lets the
 matrix-linearity and positive-definiteness lemmas below cite Mathlib's `QuadraticMap` API
 instead of reproving it.
 
-Reference: `Matrix.toQuadraticMap'` and `LinearMap.BilinMap.toQuadraticMap`. -/
+Reference: `Matrix.toQuadraticForm'` and `LinearMap.BilinMap.toQuadraticMap`. -/
 lemma quadraticForm_eq_toQuadraticMap' (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝⁿ) :
-    quadraticForm P x = P.toQuadraticMap' (WithLp.ofLp x) := by
-  rw [quadraticForm, Matrix.toQuadraticMap', LinearMap.BilinMap.toQuadraticMap_apply,
+    quadraticForm P x = P.toQuadraticForm' (WithLp.ofLp x) := by
+  rw [quadraticForm, Matrix.toQuadraticForm', LinearMap.BilinMap.toQuadraticMap_apply,
     Matrix.toLinearMap₂'_apply']
   simp only [PiLp.inner_apply, dotProduct]
   exact Finset.sum_congr rfl (fun i _ => mul_comm _ _)
@@ -114,20 +114,20 @@ lemma abs_quadraticForm_le
 
 /-- A matrix quadratic form is additive in its representing matrix.
 
-Reference: linearity of `Matrix.toQuadraticMap'` (via `Matrix.toLinearMap₂'`). -/
+Reference: linearity of `Matrix.toQuadraticForm'` (via `Matrix.toLinearMap₂'`). -/
 lemma quadraticForm_matrix_add
     (P Q : Matrix (Fin n) (Fin n) ℝ) (x : ℝⁿ) :
     quadraticForm (P + Q) x = quadraticForm P x + quadraticForm Q x := by
-  simp only [quadraticForm_eq_toQuadraticMap', Matrix.toQuadraticMap', map_add]
+  simp only [quadraticForm_eq_toQuadraticMap', Matrix.toQuadraticForm', map_add]
   rfl
 
 /-- A matrix quadratic form is homogeneous in its representing matrix.
 
-Reference: linearity of `Matrix.toQuadraticMap'` (via `Matrix.toLinearMap₂'`). -/
+Reference: linearity of `Matrix.toQuadraticForm'` (via `Matrix.toLinearMap₂'`). -/
 lemma quadraticForm_matrix_smul
     (c : ℝ) (P : Matrix (Fin n) (Fin n) ℝ) (x : ℝⁿ) :
     quadraticForm (c • P) x = c * quadraticForm P x := by
-  simp only [quadraticForm_eq_toQuadraticMap', Matrix.toQuadraticMap', map_smul]
+  simp only [quadraticForm_eq_toQuadraticMap', Matrix.toQuadraticForm', map_smul]
   rfl
 
 /-- In positive dimension, a positive-definite matrix quadratic form uniformly dominates

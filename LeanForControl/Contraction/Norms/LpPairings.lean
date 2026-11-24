@@ -123,18 +123,31 @@ noncomputable def max : RegularPairing (WithLp ∞ (n → ℝ)) where
     exact add_le_add (Finset.le_sup' (fun i => y i * x₁ i) hi)
       (Finset.le_sup' (fun i => y i * x₂ i) hi)
   smul_left a ha x y := by
-    rw [Finset.comp_sup'_eq_sup'_comp _ (a * ·) fun _ _ => mul_max_of_nonneg _ _ ha]
+    rw [Finset.apply_sup'_eq_sup'_comp _ (a * ·) fun _ _ => mul_max_of_nonneg _ _ ha]
     exact Finset.sup'_congr _ rfl fun i _ => by
       simp only [PiLp.smul_apply, smul_eq_mul, Function.comp_apply]
       ring
   smul_right a ha x y := by
     rcases ha.eq_or_lt with rfl | ha
     · simp
-    rw [Finset.comp_sup'_eq_sup'_comp _ (a * ·) fun _ _ => mul_max_of_nonneg _ _ ha.le]
-    exact Finset.sup'_congr _ (maxIndices_smul ha y) fun i _ => by
-      simp only [PiLp.smul_apply, smul_eq_mul, Function.comp_apply]
-      ring
-  neg_neg x y := Finset.sup'_congr _ (maxIndices_neg y) fun i _ => by simp
+    rw [Finset.apply_sup'_eq_sup'_comp _ (a * ·) fun _ _ => mul_max_of_nonneg _ _ ha.le]
+    -- generalize the index set rather than use `Finset.sup'_congr` with a nontrivial set equality,
+    -- whose cast of the nonemptiness proof makes the kernel time out
+    have h : ∀ (s : Finset n) (H : s.Nonempty), s = maxIndices n y →
+        s.sup' H (fun i => (a • y) i * x i) =
+          (maxIndices n y).sup' (maxIndices_nonempty y) ((a * ·) ∘ fun i => y i * x i) := by
+      rintro s H rfl
+      exact Finset.sup'_congr _ rfl fun i _ => by
+        simp only [PiLp.smul_apply, smul_eq_mul, Function.comp_apply]
+        ring
+    exact h _ _ (maxIndices_smul ha y)
+  neg_neg x y := by
+    have h : ∀ (s : Finset n) (H : s.Nonempty), s = maxIndices n y →
+        s.sup' H (fun i => (-y) i * (-x) i) =
+          (maxIndices n y).sup' (maxIndices_nonempty y) fun i => y i * x i := by
+      rintro s H rfl
+      simp only [PiLp.neg_apply, mul_neg, neg_mul, _root_.neg_neg]
+    exact h _ _ (maxIndices_neg y)
   self x := by
     rw [← Finset.sup'_const (maxIndices_nonempty x) (‖x‖ ^ 2)]
     exact Finset.sup'_congr _ rfl fun i hi => by
