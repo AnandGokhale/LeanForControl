@@ -649,7 +649,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2. -/
     $\delta(\eta)$-ball, $\nabla V \cdot f \le -\gamma < 0$.  So $V$ falls at rate $\gamma$
     while the trajectory is outside, and since $V \ge 0$ it enters the $\delta(\eta)$-ball by
     time $t_0 + M/\gamma + 1$; from then on it stays in the $\eta$-ball. -/)]
-theorem globallyUniformlyAsymptoticallyStable_of_lyapunov [Nontrivial E]
+theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
     {s : ContinuousSystem E Unit Y} {f : E → E} (hF : ∀ t x, s.F t x () = f x)
     (hf : Continuous f) {V : E → ℝ} {x_eq : E} (hV_c1 : ContDiff ℝ 1 V)
     (hV_pos : IsPositiveDefiniteOn V x_eq univ) (hV_sub : ∀ c, IsCompact {x | V x ≤ c})

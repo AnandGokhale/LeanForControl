@@ -22,7 +22,7 @@ Reference: Rudin, *Functional Analysis* (Gelfand's spectral-radius formula). -/
 @[blueprint "lem:exists-pow-norm-lt-one"
   (title := "A contractive power from a spectral radius below one")
   (latexEnv := "lemma")
-  (statement := /-- Let $\mathbb{A}$ be a nontrivial complete normed algebra over $\mathbb{C}$
+  (statement := /-- Let $\mathbb{A}$ be a complete normed algebra over $\mathbb{C}$
     and let $a \in \mathbb{A}$ have spectral radius $r(a) < 1$.  Then there is an $m > 0$ with
     $\|a^m\| < 1$.
 
@@ -33,7 +33,7 @@ Reference: Rudin, *Functional Analysis* (Gelfand's spectral-radius formula). -/
     power $1/m$ would give $\|a^m\|^{1/m} \ge 1$, a contradiction. -/)]
 lemma exists_pow_norm_lt_one_of_spectralRadius_lt_one
     {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℂ 𝔸] [CompleteSpace 𝔸]
-    [Nontrivial 𝔸] (a : 𝔸) (ha : spectralRadius ℂ a < 1) :
+    (a : 𝔸) (ha : spectralRadius ℂ a < 1) :
     ∃ m : ℕ, 0 < m ∧ ‖a ^ m‖ < 1 := by
   have heventually : ∀ᶠ m : ℕ in atTop,
       ((↑‖a ^ m‖₊ : ENNReal) ^ (1 / (m : ℝ))) < 1 :=

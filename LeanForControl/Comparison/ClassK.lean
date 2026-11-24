@@ -179,7 +179,7 @@ private lemma ClassK.surjOn_of_boundary {a b : ℝ} (ha : 0 < a)
   (statement := /-- Let $f : \mathbb{R} \to \mathbb{R}$ satisfy $f(0) = 0$ and $f(a) = b$ and be
     continuous and strictly increasing on $[0, a]$, with $a, b > 0$.  Then $f$ is a class
     $\mathcal{K}$. -/)]
-noncomputable def ClassK.of_strictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
+noncomputable def ClassK.ofStrictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
     (f : ℝ → ℝ) (hf_zero : f 0 = 0) (hf_a : f a = b)
     (hf_cont : ContinuousOn f (Set.Icc 0 a))
     (hf_mono : StrictMonoOn f (Set.Icc 0 a)) : ClassK a b where
@@ -211,7 +211,7 @@ noncomputable def ClassK.restrict {a b : ℝ} (α : ClassK a b) {c : ℝ}
     calc 0 = α.toFun 0 := α.map_zero.symm
          _ < α.toFun c := α.strict_mono ⟨le_rfl, α.ha⟩ ⟨hc_pos.le, hc_lt⟩ hc_pos
   have h_sub : Set.Icc 0 c ⊆ Set.Ico 0 a := fun x hx => ⟨hx.1, hx.2.trans_lt hc_lt⟩
-  exact ClassK.of_strictMono hc_pos hd_pos α.toFun α.map_zero rfl
+  exact ClassK.ofStrictMono hc_pos hd_pos α.toFun α.map_zero rfl
     (α.continuous.mono h_sub) (α.strict_mono.mono h_sub)
 
 /-- Variant of `ClassK.restrict` where the upper bound `e` is given explicitly via a proof
@@ -421,7 +421,7 @@ theorem exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) :
   -- Step 3. Package `f` as a class `K` function onto `[0, f a)`.
   have hb' : 0 < f a :=
     hf_zero ▸ hf_mono (left_mem_Icc.mpr α.ha.le) (right_mem_Icc.mpr α.ha.le) α.ha
-  refine ⟨f a, a⁻¹ * b, ClassK.of_strictMono α.ha hb' f hf_zero rfl
+  refine ⟨f a, a⁻¹ * b, ClassK.ofStrictMono α.ha hb' f hf_zero rfl
     hf_lip.continuous.continuousOn hf_mono, hL, hf_le, fun x hx => ?_, hf_lip⟩
   -- the linear bound is the Lipschitz bound against `f 0 = 0`
   have h := hf_lip.dist_le_mul x 0

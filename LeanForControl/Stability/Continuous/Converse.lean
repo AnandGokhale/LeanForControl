@@ -1201,7 +1201,7 @@ private lemma exists_classK_ge_integral_gradRate {a r₀ : ℝ} (β : ClassKL a)
   have hα₄_pos : 0 < α₄f r₀ := add_pos_of_nonneg_of_pos
     (setIntegral_nonneg measurableSet_Ioi fun σ hσ =>
       ((h_spec r₀ ⟨hr₀.le, le_rfl⟩).1 σ (le_of_lt hσ)).1) hr₀
-  exact ⟨_, ClassK.of_strictMono hr₀ hα₄_pos α₄f hα₄_zero rfl hα₄_cont hα₄_mono,
+  exact ⟨_, ClassK.ofStrictMono hr₀ hα₄_pos α₄f hα₄_zero rfl hα₄_cont hα₄_mono,
     fun ρ hρ => le_add_of_nonneg_right hρ.1⟩
 
 /-- **Differentiation under the integral sign.**  At `t ≥ 0` and `x ∈ D₀`,

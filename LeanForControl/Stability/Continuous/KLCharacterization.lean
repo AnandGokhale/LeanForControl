@@ -478,7 +478,7 @@ theorem exists_classLSingular_decayBound {sys : ContinuousSystem E Unit Y} {x_eq
 /-- Construct a `ClassK b (α b)` from a `ClassKInfty` by restriction to `[0, b]`. -/
 private noncomputable def mk_ClassK_from_KInfty (α : ClassKInfty) {b : ℝ} (hb : 0 < b) :
     ClassK b (α.toFun b) :=
-  ClassK.of_strictMono hb
+  ClassK.ofStrictMono hb
     ((α.pos_iff (Set.mem_Ici.mpr hb.le)).mpr hb)
     α.toFun α.map_zero rfl
     (α.continuous.mono Set.Icc_subset_Ici_self)
@@ -676,7 +676,7 @@ private lemma exists_classK_of_stableOn (h : StableOn s x_eq T) :
   obtain ⟨g, b, hb, hg_zero, hg_a, hg_cont, hg_mono, hg_bound⟩ :=
     exists_strictMono_upper_bound a ha ω (worstDeviation_zero h) hω_mono
       (worstDeviation_continuousWithinAt h _)
-  refine ⟨a, b, ClassK.of_strictMono ha hb g hg_zero hg_a hg_cont hg_mono,
+  refine ⟨a, b, ClassK.ofStrictMono ha hb g hg_zero hg_a hg_cont hg_mono,
     fun t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
   calc ‖x t - x_eq‖
       ≤ ω ‖x t₀ - x_eq‖ := le_worstDeviation (hbdd_of_le _ h_init.le) ht₀ hx le_rfl ht
@@ -892,10 +892,10 @@ theorem uniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem E Unit Y
     -- initial deviation, the second the decay in elapsed time.
     let α_res : ClassK a (α.toFun a) := α.restrict ha ha_lt_aα
     obtain ⟨U, hU⟩ := exists_classLSingular_decayBound hconv α hα_bound ha ha_le_c ha_lt_aα
-    refine ⟨a, ClassKL.mk_singular_cap α_res U, fun t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
+    refine ⟨a, ClassKL.mkSingularCap α_res U, fun t₀ ht₀ t₁ x hx h_init t ht => ?_⟩
     have h_α : ‖x t - x_eq‖ ≤ α_res.toFun ‖x t₀ - x_eq‖ :=
       hα_bound t₀ ht₀ t₁ x hx (h_init.trans ha_lt_aα) t ht
-    simp only [ClassKL.mk_singular_cap]
+    simp only [ClassKL.mkSingularCap]
     rcases ht.1.eq_or_lt with rfl | ht_strict
     · simp [h_α]
     · rw [ite_eq_right (sub_pos.mpr ht_strict).ne']
@@ -978,7 +978,7 @@ theorem globallyUniformlyAsymptoticallyStable_iff_classKL (s : ContinuousSystem 
           ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) :=
       fun t₀ ht₀ t₁ x hx t ht => (hβ₀_bound t₀ ht₀ t₁ x hx t ht).trans
         (hβ_le _ (norm_nonneg _) _)
-    let α : ClassKInfty := ClassKInfty.of_strictMono (fun r => β.toFun r 0) (β.map_zero 0 le_rfl)
+    let α : ClassKInfty := ClassKInfty.ofStrictMono (fun r => β.toFun r 0) (β.map_zero 0 le_rfl)
       ((β.continuous.comp (continuousOn_id.prodMk continuousOn_const)
         (fun r hr => mk_mem_prod hr (mem_Ici.mpr le_rfl))).congr (fun r _ => rfl))
       (β.strict_mono_r 0 le_rfl) hβ_unbdd

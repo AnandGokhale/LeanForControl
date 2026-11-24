@@ -174,7 +174,7 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
               (hh_mono (mem_Ici.2 (hθ_pos b hb_pos).le) (mem_Ici.2 (hθ_pos a ha_pos).le)
                 (hθ_anti ha_pos hb_pos hab).le)
     exact add_lt_add_of_lt_of_le h₀ (max_le_max (by linarith) le_rfl)
-  set H' : ClassKInfty := ClassKInfty.of_strictMono H hH_zero hH_cont.continuousOn hH_mono (by
+  set H' : ClassKInfty := ClassKInfty.ofStrictMono H hH_zero hH_cont.continuousOn hH_mono (by
     -- `H(s) ≥ s - g(0) → ∞`.
     refine tendsto_atTop_mono (fun s => ?_) (tendsto_atTop_add_const_right _ (-g 0) tendsto_id)
     calc id s + -g 0

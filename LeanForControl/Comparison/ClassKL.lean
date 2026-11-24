@@ -105,7 +105,7 @@ theorem ClassKL.anti_s_mono {a : ℝ} (β : ClassKL a) {r : ℝ} {s₁ s₂ : �
   (statement := /-- If $\alpha$ is class $\mathcal{K}$ on $[0,a)$ and $\gamma$ is class
     $\mathcal{L}$, then $\beta(r, s) := \alpha(r)\gamma(s)$ is class $\mathcal{KL}$ on
     $[0,a)$. -/)]
-noncomputable def ClassKL.mk_mul {a b : ℝ} (α : ClassK a b) (γ : ClassL) : ClassKL a where
+noncomputable def ClassKL.mkMul {a b : ℝ} (α : ClassK a b) (γ : ClassL) : ClassKL a where
   ha := α.ha
   toFun r s := α.toFun r * γ.toFun s
   map_zero s _ := by simp [α.map_zero]
@@ -130,7 +130,7 @@ class KL: `min(β(r,s), α(r))`.
 
 Capping a class KL bound by a function of the initial condition alone preserves the class, and
 lets a bound obtained only as a *majorant* — from a smoothing construction, say — be pulled back
-inside a prescribed range. The bounded-domain twin of `ClassKLGlobal.min_KInfty`. -/
+inside a prescribed range. The bounded-domain twin of `ClassKLGlobal.minKInfty`. -/
 @[blueprint "lem:classKL-min-classK"
   (title := "Capping a class $\\mathcal{KL}$ function by a class $\\mathcal{K}$ function")
   (statement := /-- If $\beta$ is class $\mathcal{KL}$ on $[0,a)$ and $\alpha$ is class
@@ -146,7 +146,7 @@ inside a prescribed range. The bounded-domain twin of `ClassKLGlobal.min_KInfty`
     $r$ is strictly increasing; $\alpha$ does not depend on $s$, so antitonicity in $s$ survives
     the minimum; and $\min(\beta(r,s), \alpha(r)) \to \min(0, \alpha(r)) = 0$ as
     $s \to \infty$ because $\alpha \ge 0$. -/)]
-noncomputable def ClassKL.min_classK {a b : ℝ} (β : ClassKL a) (α : ClassK a b) : ClassKL a where
+noncomputable def ClassKL.minClassK {a b : ℝ} (β : ClassKL a) (α : ClassK a b) : ClassKL a where
   ha            := β.ha
   toFun r s     := min (β.toFun r s) (α.toFun r)
   map_zero s hs := by rw [β.map_zero s hs, α.map_zero, min_self]
@@ -193,7 +193,7 @@ private lemma min_sqrt_mul_eq_left {x u : ℝ} (hx : 0 ≤ x) (hxu : x ≤ u) :
   calc x = Real.sqrt (x * x) := (Real.sqrt_mul_self hx).symm
     _ ≤ Real.sqrt (x * u) := Real.sqrt_le_sqrt h_sq_le
 
-/-- The function behind `ClassKL.mk_singular_cap`: `α(r)` at `s = 0`, and
+/-- The function behind `ClassKL.mkSingularCap`: `α(r)` at `s = 0`, and
     `min(α(r), √(α(r) U(s)))` for `s ≠ 0`.  Definitionally equal to that structure's `toFun`. -/
 private noncomputable def singularCap {a b : ℝ} (α : ClassK a b) (U : ClassLSingular)
     (r s : ℝ) : ℝ :=
@@ -286,7 +286,7 @@ private lemma continuousWithinAt_singularCap_of_zero {a b : ℝ} (α : ClassK a 
     $s \to 0^{+}$, on a neighbourhood we have $\alpha(r_1) < U(s)$, hence
     $\alpha(r') \le U(s)$ and so $\alpha(r') \le \sqrt{\alpha(r')U(s)}$ — the minimum is
     locally just $\alpha$, which is continuous. -/)]
-noncomputable def ClassKL.mk_singular_cap {a b : ℝ} (α : ClassK a b) (U : ClassLSingular) :
+noncomputable def ClassKL.mkSingularCap {a b : ℝ} (α : ClassK a b) (U : ClassLSingular) :
     ClassKL a where
   ha := α.ha
 
@@ -385,7 +385,7 @@ private lemma tendsto_zero_comp_of_continuousWithinAt {α f : ℝ → ℝ} {S : 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet, with $\alpha_1$
     of class $\mathcal{K}_{\infty}$; no range hypothesis is then needed.
   -/)]
-def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : ClassKL a where
+def ClassKL.compLeftKInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : ClassKL a where
   ha            := β.ha
   toFun r s     := α.toFun (β.toFun r s)
   map_zero s hs := by simp only [β.map_zero s hs, α.map_zero]
@@ -425,7 +425,7 @@ def ClassKL.comp_left_KInfty {a : ℝ} (β : ClassKL a) (α : ClassKInfty) : Cla
     $\alpha_1$).  The range hypothesis is additional: $\alpha_1$ is defined only on $[0,b)$, so
     $\beta$'s values must land there, which Khalil leaves implicit.
   -/)]
-def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
+def ClassKL.compLeftK {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
     (h_range : ∀ r ∈ Set.Ico 0 a, ∀ s ≥ 0, β.toFun r s < b) : ClassKL a where
   ha            := β.ha
   toFun r s     := α.toFun (β.toFun r s)
@@ -470,7 +470,7 @@ def ClassKL.comp_left_K {a b c : ℝ} (β : ClassKL a) (α : ClassK b c)
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the inner
     $\alpha_2$).
   -/)]
-def ClassKL.comp_right {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL a where
+def ClassKL.compRight {a b : ℝ} (β : ClassKL b) (α : ClassK a b) : ClassKL a where
   ha            := α.ha
   toFun r s     := β.toFun (α.toFun r) s
   map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]
@@ -511,10 +511,10 @@ theorem ClassKL.exists_comp_sandwich {r b₁ b₂ c d : ℝ}
     (hσ_zero : ∀ y ∈ Set.Ico 0 d, σ.toFun y 0 ≤ y)
     (hc_pos : 0 < c) (hc_lt_r : c < r) (h_α₂_c : α₂.toFun c = d) (hd_lt_b₁ : d < b₁) :
     ∃ β : ClassKL c, ∀ ρ s, β.toFun ρ s = α₁.invFun (σ.toFun (α₂.toFun ρ) s) := by
-  /- `ClassKL.comp_left` takes a `ClassKInfty`, so `β` is assembled in two steps: first
-     `σ ∘ α₂` by `comp_right`, then `α₁⁻¹ ∘ (σ ∘ α₂)` by `comp_left_K`. -/
+  /- `ClassKL.compLeft` takes a `ClassKInfty`, so `β` is assembled in two steps: first
+     `σ ∘ α₂` by `compRight`, then `α₁⁻¹ ∘ (σ ∘ α₂)` by `compLeftK`. -/
   -- Step 1. The inner composite `σ(α₂(ρ), s)`, with `α₂` restricted to `[0, c) → [0, d)`.
-  set inner := σ.comp_right (α₂.restrictTo hc_pos hc_lt_r h_α₂_c)
+  set inner := σ.compRight (α₂.restrictTo hc_pos hc_lt_r h_α₂_c)
   have h_inner_eq : ∀ ρ s, inner.toFun ρ s = σ.toFun (α₂.toFun ρ) s := fun ρ s =>
     congrArg (fun y => σ.toFun y s) (α₂.restrictTo_toFun hc_pos hc_lt_r h_α₂_c ρ)
   -- Step 2. Its values stay below `d < b₁`, inside the domain of `α₁⁻¹`.
@@ -522,7 +522,7 @@ theorem ClassKL.exists_comp_sandwich {r b₁ b₂ c d : ℝ}
     rw [h_inner_eq]
     exact (σ.toFun_mem_Ico hσ_zero (α₂.toFun_mem_Ico hc_lt_r h_α₂_c hρ) hs).2.trans hd_lt_b₁
   -- Step 3. Post-compose with `α₁⁻¹`.
-  exact ⟨inner.comp_left_K α₁.symm h_range, fun ρ s => congrArg α₁.invFun (h_inner_eq ρ s)⟩
+  exact ⟨inner.compLeftK α₁.symm h_range, fun ρ s => congrArg α₁.invFun (h_inner_eq ρ s)⟩
 
 
 
@@ -626,7 +626,7 @@ in the global case `a = ∞`. -/
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the outer
     $\alpha_1$), in the global case $a = \infty$. -/)]
-def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
+def ClassKLGlobal.compLeft (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
   toFun r s     := α.toFun (β.toFun r s)
   map_zero s hs := by simp only [β.map_zero s hs, α.map_zero]
   continuous s hs := by
@@ -653,7 +653,7 @@ def ClassKLGlobal.comp_left (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlo
   (statement := /-- If $\alpha$ is class $\mathcal{K}_{\infty}$ and $\gamma$ is class
     $\mathcal{L}$, then $\beta(r, s) := \alpha(r)\gamma(s)$ is global class
     $\mathcal{KL}$. -/)]
-noncomputable def ClassKLGlobal.mk_mul (α : ClassKInfty) (γ : ClassL) : ClassKLGlobal where
+noncomputable def ClassKLGlobal.mkMul (α : ClassKInfty) (γ : ClassL) : ClassKLGlobal where
   toFun r s     := α.toFun r * γ.toFun s
   map_zero s hs := by simp [α.map_zero]
   continuous    := ContinuousOn.mul
@@ -675,7 +675,7 @@ noncomputable def ClassKLGlobal.mk_mul (α : ClassKInfty) (γ : ClassL) : ClassK
     $\mathcal{K}_{\infty}$, then $(r, s) \mapsto \min\bigl(\beta(r, s), \alpha(r)\bigr)$ is
     global class $\mathcal{KL}$ — capping a $\mathcal{KL}$ bound by a function of the initial
     condition alone preserves the class. -/)]
-noncomputable def ClassKLGlobal.min_KInfty (β : ClassKLGlobal) (α : ClassKInfty) :
+noncomputable def ClassKLGlobal.minKInfty (β : ClassKLGlobal) (α : ClassKInfty) :
     ClassKLGlobal where
   toFun r s     := min (β.toFun r s) (α.toFun r)
   map_zero s hs := by rw [β.map_zero s hs, α.map_zero, min_self]
@@ -707,7 +707,7 @@ in the global case `a = ∞`. -/
 
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.2, fifth bullet (the inner
     $\alpha_2$), in the global case $a = \infty$. -/)]
-def ClassKLGlobal.comp_right (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
+def ClassKLGlobal.compRight (β : ClassKLGlobal) (α : ClassKInfty) : ClassKLGlobal where
   toFun r s     := β.toFun (α.toFun r) s
   map_zero s hs := by simp only [α.map_zero, β.map_zero s hs]
   continuous s hs :=   by
@@ -771,7 +771,7 @@ noncomputable def ClassKLGlobal.timeScale (β : ClassKLGlobal) (c : ℝ) (hc : 0
 /-- **Composition with a radius that may shrink in time.**  If `β` is global class KL and
 `a(r, s)` is continuous, vanishes at `r = 0`, is strictly increasing in `r` and nonincreasing in
 `s`, then `β(a(r, s), s)` is global class KL: it decays because `β(a(r, s), s) ≤ β(a(r, 0), s)`.
-This generalizes `comp_right`, where `a(r, s) = α(r)`. -/
+This generalizes `compRight`, where `a(r, s) = α(r)`. -/
 @[blueprint "lem:classKLGlobal-comp-antitone"
   (title := "Composition with a nonincreasing radius")
   (statement := /-- Let $\beta$ be global class $\mathcal{KL}$ and let
@@ -780,7 +780,7 @@ This generalizes `comp_right`, where `a(r, s) = α(r)`. -/
     $\mathcal{KL}$. -/)
   (proof := /-- Each property of $\beta$ transfers, using $a \ge 0$; for the limit,
     $0 \le \beta(a(r, s), s) \le \beta(a(r, 0), s) \to 0$. -/)]
-noncomputable def ClassKLGlobal.comp_antitone (β : ClassKLGlobal) (a : ℝ → ℝ → ℝ)
+noncomputable def ClassKLGlobal.compAntitone (β : ClassKLGlobal) (a : ℝ → ℝ → ℝ)
     (ha_zero : ∀ s ≥ 0, a 0 s = 0) (ha_cont : ContinuousOn (Function.uncurry a) (Ici 0 ×ˢ Ici 0))
     (ha_mono : ∀ s ≥ 0, StrictMonoOn (fun r => a r s) (Ici 0))
     (ha_anti : ∀ r ≥ 0, AntitoneOn (fun s => a r s) (Ici 0)) : ClassKLGlobal :=

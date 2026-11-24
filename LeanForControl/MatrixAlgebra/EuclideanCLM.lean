@@ -51,7 +51,8 @@ theorem toEuclideanCLM_transpose (M : Matrix X X ℝ) :
   exact (toEuclideanCLM (n := X) (𝕜 := ℝ)).map_star' M
 
 /-- A real matrix acts on `ℝⁿ` with the Euclidean norm: `A • x` is `A x`. -/
-noncomputable scoped instance : Module (Matrix X X ℝ) (EuclideanSpace ℝ X) :=
+noncomputable scoped instance instModuleEuclideanSpaceReal :
+    Module (Matrix X X ℝ) (EuclideanSpace ℝ X) :=
   Module.compHom _ (toEuclideanCLM (n := X) (𝕜 := ℝ)).toRingEquiv.toRingHom
 
 theorem smul_euclidean_def (A : Matrix X X ℝ) (x : EuclideanSpace ℝ X) :
