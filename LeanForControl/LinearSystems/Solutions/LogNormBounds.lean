@@ -81,24 +81,31 @@ theorem le_norm_stateTransition [Nontrivial E] (s : ContinuousLTV E U Y) (hA : C
   have hN (r : ℝ) : HasDerivAt (fun r => exp (2 * N r)) (exp (2 * N r) * (2 * μ (-s.A r))) r :=
     ((hμ.integral_hasStrictDerivAt t₀ r).hasDerivAt.const_mul 2).exp
   -- `-e^{2N} ‖x‖²` has a nonpositive right derivative, so `e^{2N t} ‖x t‖² ≥ ‖x₀‖²`
-  have hle := image_le_of_deriv_right_le_deriv_boundary
-    (f := fun r => -(exp (2 * N r) * ‖x r‖ ^ 2)) (B := fun _ => -‖x₀‖ ^ 2) (B' := fun _ => 0)
-    (a := t₀) (b := t)
-    (fun r _ => ((hN r).continuousAt.mul ((hx r).continuousAt.norm.pow 2)).neg.continuousWithinAt)
-    (fun r _ => ((hN r).hasDerivWithinAt.mul (hasDerivWithinAt_Ioi_iff_Ici.1
-      (RegularPairing.hasDerivWithinAt_norm_sq (hx r).hasDerivWithinAt))).neg)
-    (by simp [N, x]) continuousOn_const (fun r _ => hasDerivWithinAt_const _ _ _) (fun r _ => by
-      have h₁ := (RegularPairing.ofNorm E).pairing_le_logNorm (-s.A r) (x r)
-      have h₂ := (RegularPairing.ofNorm E).neg_ofNorm_neg_le (s.A r (x r)) (x r)
-      have he := exp_pos (2 * N r)
-      simp only [ContinuousLinearMap.neg_apply] at h₁
-      nlinarith) (right_mem_Icc.2 ht)
+  have hle : -(exp (2 * N t) * ‖x t‖ ^ 2) ≤ -‖x₀‖ ^ 2 :=
+    image_le_of_deriv_right_le_deriv_boundary
+    (f := fun r => -(exp (2 * N r) * ‖x r‖ ^ 2))
+    (f' := fun r => -(exp (2 * N r) * (2 * μ (-s.A r)) * ‖x r‖ ^ 2 +
+      exp (2 * N r) * (2 * ⟦s.A r (x r); x r⟧)))
+    (B := fun _ => -‖x₀‖ ^ 2) (B' := fun _ => 0)
+    (a := t₀) (b := t) ?_ ?_ ?_ continuousOn_const (fun r _ => hasDerivWithinAt_const _ _ _) ?_
+    (right_mem_Icc.2 ht)
+  rotate_left
+  · exact fun r _ =>
+      ((hN r).continuousAt.mul ((hx r).continuousAt.norm.pow 2)).neg.continuousWithinAt
+  · exact fun r _ => ((hN r).hasDerivWithinAt.mul (hasDerivWithinAt_Ioi_iff_Ici.1
+      (RegularPairing.hasDerivWithinAt_norm_sq (hx r).hasDerivWithinAt))).neg
+  · simp [N, x]
+  · intro r _
+    have h₁ := (RegularPairing.ofNorm E).pairing_le_logNorm (-s.A r) (x r)
+    have h₂ := (RegularPairing.ofNorm E).neg_ofNorm_neg_le (s.A r (x r)) (x r)
+    have he := exp_pos (2 * N r)
+    simp only [neg_apply] at h₁
+    nlinarith
   -- `e^{-N t} ‖x₀‖ ≤ ‖x t‖ ≤ ‖Φ(t, t₀)‖ ‖x₀‖`
   have hsq : (exp (-N t) * ‖x₀‖) ^ 2 ≤ ‖x t‖ ^ 2 := by
     have h2 : exp (2 * N t) * exp (-N t) ^ 2 = 1 := by
       rw [← exp_nat_mul, ← exp_add]; norm_num
     have he := exp_pos (2 * N t)
-    simp only at hle
     nlinarith
   have hxt := (pow_le_pow_iff_left₀ (by positivity) (norm_nonneg _) two_ne_zero).1 hsq
   exact le_of_mul_le_mul_right (hxt.trans ((s.stateTransition t t₀).le_opNorm x₀))

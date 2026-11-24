@@ -37,7 +37,7 @@ lemma mem_image_Ioi_of_tendsto {W : ℝ → ℝ}
   obtain ⟨a, ha_pos, ha_lt_b, ha_gt⟩ := ha_full.exists
   -- Step 3: Apply IVT to -W on [a, b]
   have h_cont_neg : ContinuousOn (fun x => -W x) (Set.Icc a b) :=
-    (hW_cont.mono fun _ hx => ha_pos.trans_le hx.1).neg
+    (hW_cont.mono fun x (hx : x ∈ Set.Icc a b) => ha_pos.trans_le hx.1).neg
   obtain ⟨c, hc_Icc, hc_eq⟩ := intermediate_value_Icc ha_lt_b.le h_cont_neg
     ⟨neg_le_neg ha_gt.le, neg_le_neg hb_lt.le⟩
   exact ⟨c, ha_pos.trans_le hc_Icc.1, by linarith⟩
@@ -132,7 +132,7 @@ lemma invFunOn_tendsto_zero {W : ℝ → ℝ}
     by_contra h_contra
     push Not at h_contra
     rcases h_contra.lt_or_eq with h_lt | h_eq
-    · linarith [hW_anti hε hU_pos h_lt]
+    · linarith [hW_anti (Set.mem_Ioi.mpr hε) (Set.mem_Ioi.mpr hU_pos) h_lt]
     · rw [h_eq] at hs_gt_Wε; linarith
   rw [Real.dist_eq, sub_zero, abs_of_pos hU_pos]
   exact hU_lt_ε
@@ -181,9 +181,9 @@ lemma invFunOn_continuousOn {W : ℝ → ℝ}
   · -- `z < invFunOn W _ s₀`: either `z ≤ 0`, where positivity alone suffices, or `z > 0` and
     -- the comparison transports to `s₀ < W z`, which is an open condition on `s`.
     rcases le_or_gt z 0 with hz0 | hz0
-    · filter_upwards [Ioi_mem_nhds hs₀] with s hs using hz0.trans_lt (hpos hs)
+    · filter_upwards [isOpen_Ioi.mem_nhds hs₀] with s hs using hz0.trans_lt (hpos hs)
     · have h_gt : s₀ < W z := by rw [← heq hs₀]; exact hW_anti hz0 (hpos hs₀) hz
-      filter_upwards [Iio_mem_nhds h_gt, Ioi_mem_nhds hs₀] with s hs_lt hs_pos
+      filter_upwards [Iio_mem_nhds h_gt, isOpen_Ioi.mem_nhds hs₀] with s hs_lt hs_pos
       by_contra h_le
       push Not at h_le
       have := hW_anti.antitoneOn (Set.mem_Ioi.mpr (hpos hs_pos)) (Set.mem_Ioi.mpr hz0) h_le
@@ -191,7 +191,7 @@ lemma invFunOn_continuousOn {W : ℝ → ℝ}
       exact absurd this (not_le.mpr hs_lt)
   · have hz_pos : 0 < z := (hpos hs₀).trans hz
     have h_lt : W z < s₀ := by rw [← heq hs₀]; exact hW_anti (hpos hs₀) hz_pos hz
-    filter_upwards [Ioi_mem_nhds h_lt, Ioi_mem_nhds hs₀] with s hs_gt hs_pos
+    filter_upwards [Ioi_mem_nhds h_lt, isOpen_Ioi.mem_nhds hs₀] with s hs_gt hs_pos
     by_contra h_ge
     push Not at h_ge
     have := hW_anti.antitoneOn (Set.mem_Ioi.mpr hz_pos) (Set.mem_Ioi.mpr (hpos hs_pos)) h_ge
@@ -298,7 +298,7 @@ theorem exists_strictMono_lower_bound (r : ℝ) (hr : 0 < r) (ψ : ℝ → ℝ)
   have hf_le : ∀ s, 0 ≤ s → s ≤ r → f s ≤ ψ s := fun s hs hsr => by
     have h_int : ∫ x in (0 : ℝ)..s, χ x ≤ s * ψ s := by
       have h := intervalIntegral.integral_mono_on hs (hχ_int 0 s)
-        intervalIntegral.intervalIntegrable_const fun x hx => hχ_mono hx.2
+        intervalIntegrable_const fun x hx => hχ_mono hx.2
       simpa [hχ_eq s hs hsr] using h
     have h_nonneg : 0 ≤ ψ s := hψ_zero ▸ hψ_mono 0 s le_rfl hs hsr
     rw [inv_mul_le_iff₀ hr]
@@ -370,13 +370,13 @@ theorem exists_strictMono_upper_bound_global (φ : ℝ → ℝ)
   -- length `1`.
   have hg_ge : ∀ s ≥ 0, φ s ≤ g s := fun s hs => by
     have h := intervalIntegral.integral_mono_on (by norm_num : (1 : ℝ) ≤ 2)
-      intervalIntegral.intervalIntegrable_const (hg_int s hs) fun u hu =>
+      intervalIntegrable_const (hg_int s hs) fun u hu =>
         hψ_mono (le_mul_of_one_le_right hs hu.1)
     norm_num [hψ_eq s hs] at h
     exact h
   have hg_le : ∀ s ≥ 0, g s ≤ φ (2 * s) := fun s hs => by
     have h := intervalIntegral.integral_mono_on (by norm_num : (1 : ℝ) ≤ 2)
-      (hg_int s hs) intervalIntegral.intervalIntegrable_const fun u hu =>
+      (hg_int s hs) intervalIntegrable_const fun u hu =>
         hψ_mono (by nlinarith [hu.2] : s * u ≤ 2 * s)
     norm_num [hψ_eq (2 * s) (by linarith)] at h
     exact h
@@ -387,8 +387,8 @@ theorem exists_strictMono_upper_bound_global (φ : ℝ → ℝ)
   have hg_cont_zero : ContinuousWithinAt g (Ici 0) 0 := by
     have h_upper : Tendsto (fun s => φ (2 * s)) (𝓝[≥] 0) (𝓝 0) := by
       have h := hφ_cont.comp_of_eq (continuousWithinAt_id.const_mul 2)
-        (fun s (hs : 0 ≤ s) => by simp only [mem_Ici, id]; linarith) (mul_zero 2)
-      simpa [hφ_zero] using h.tendsto
+        (fun s (hs : s ∈ Ici 0) => by simp only [mem_Ici, id] at hs ⊢; linarith) (mul_zero 2)
+      simpa [hφ_zero, Function.comp_def] using h.tendsto
     rw [ContinuousWithinAt, hg_zero]
     exact tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h_upper
       (eventually_nhdsWithin_of_forall hg_nonneg) (eventually_nhdsWithin_of_forall hg_le)
@@ -463,7 +463,7 @@ lemma exists_strictMono_upper_bound (r : ℝ) (hr : 0 < r) (φ : ℝ → ℝ)
     · exact le_refl _                        -- both > r
   -- φ_ext agrees with φ on [0, r], which is a neighbourhood of 0 within [0, ∞)
   have hφ_ext_cont : ContinuousWithinAt φ_ext (Set.Ici 0) 0 :=
-    (hφ_cont.congr (fun s hs => if_pos hs.2) (if_pos hr.le)).mono_of_mem_nhdsWithin
+    (hφ_cont.congr (fun s hs => ite_eq_left hs.2) (ite_eq_left hr.le)).mono_of_mem_nhdsWithin
       (Icc_mem_nhdsGE hr)
   -- Apply the global version to φ_ext
   obtain ⟨f, hf_zero, hf_cont, hf_mono, _, hf_bound⟩ :=
@@ -477,7 +477,7 @@ lemma exists_strictMono_upper_bound (r : ℝ) (hr : 0 < r) (φ : ℝ → ℝ)
     linarith [hf_zero ▸ h]
   · -- φ s ≤ φ_ext s ≤ f s for s ≤ r
     have h := hf_bound s hs₁
-    simp only [φ_ext, if_pos hs₂] at h
+    simp only [φ_ext, ite_eq_left hs₂] at h
     exact h
 
 /-! ## Joint continuity of separately monotone functions -/

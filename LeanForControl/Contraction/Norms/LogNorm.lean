@@ -159,7 +159,7 @@ variable [Nontrivial E]
     \cref{thm:regularPairing-logNorm-le}. -/)]
 theorem logNorm_add_le (A B : E →L[ℝ] E) : μ (A + B) ≤ μ A + μ B :=
   RegularPairing.logNorm_le (ofNorm E) fun x => by
-    rw [ContinuousLinearMap.add_apply, add_mul]
+    rw [add_apply, add_mul]
     exact ((ofNorm E).add_left_le _ _ _).trans (add_le_add
       ((ofNorm E).pairing_le_logNorm A x) ((ofNorm E).pairing_le_logNorm B x))
 
@@ -177,7 +177,7 @@ theorem logNorm_add_le (A B : E →L[ℝ] E) : μ (A + B) ≤ μ A + μ B :=
 theorem logNorm_smul (A : E →L[ℝ] E) {a : ℝ} (ha : 0 ≤ a) : μ (a • A) = a * μ A := by
   have hle : ∀ {a : ℝ}, 0 ≤ a → ∀ B : E →L[ℝ] E, μ (a • B) ≤ a * μ B := fun ha B =>
     RegularPairing.logNorm_le (ofNorm E) fun x => by
-      rw [ContinuousLinearMap.smul_apply, (ofNorm E).smul_left _ ha, mul_assoc]
+      rw [smul_apply, (ofNorm E).smul_left _ ha, mul_assoc]
       exact mul_le_mul_of_nonneg_left ((ofNorm E).pairing_le_logNorm B x) ha
   refine le_antisymm (hle ha A) ?_
   rcases ha.eq_or_lt with rfl | ha
@@ -208,8 +208,7 @@ theorem logNorm_add_smul_one (A : E →L[ℝ] E) (c : ℝ) :
     μ (A + c • (1 : E →L[ℝ] E)) = μ A + c := by
   have hle (B : E →L[ℝ] E) (c : ℝ) : μ (B + c • (1 : E →L[ℝ] E)) ≤ μ B + c :=
     RegularPairing.logNorm_le (ofNorm E) fun x => by
-      rw [ContinuousLinearMap.add_apply, ContinuousLinearMap.smul_apply,
-        ContinuousLinearMap.one_apply, (ofNorm E).add_smul_self, add_mul]
+      rw [add_apply, smul_apply, one_apply_eq_self, (ofNorm E).add_smul_self, add_mul]
       exact add_le_add_left ((ofNorm E).pairing_le_logNorm B x) _
   refine le_antisymm (hle A c) ?_
   have h := hle (A + c • 1) (-c)
@@ -398,15 +397,14 @@ theorem logNorm_isGreatest_inner [FiniteDimensional ℝ E] (A : E →L[ℝ] E) :
       (μ A) := by
   set S : E →L[ℝ] E := (2⁻¹ : ℝ) • (A + ContinuousLinearMap.adjoint A)
   have hS (x : E) : ⟪S x, x⟫ = ⟪A x, x⟫ := by
-    simp only [S, ContinuousLinearMap.smul_apply, ContinuousLinearMap.add_apply,
-      real_inner_smul_left, inner_add_left, ContinuousLinearMap.adjoint_inner_left,
-      real_inner_comm (A x)]
+    simp only [S, smul_apply, add_apply, real_inner_smul_left, inner_add_left,
+      ContinuousLinearMap.adjoint_inner_left, real_inner_comm (A x)]
     ring
   have hsymm : (S : E →ₗ[ℝ] E).IsSymmetric := fun x y => by
-    simp only [ContinuousLinearMap.coe_coe, S, ContinuousLinearMap.smul_apply,
-      ContinuousLinearMap.add_apply, real_inner_smul_left, real_inner_smul_right, inner_add_left,
-      inner_add_right, ContinuousLinearMap.adjoint_inner_left,
-      ContinuousLinearMap.adjoint_inner_right, real_inner_comm (A y)]
+    simp only [ContinuousLinearMap.coe_coe, S, smul_apply, add_apply, real_inner_smul_left,
+      real_inner_smul_right, inner_add_left, inner_add_right,
+      ContinuousLinearMap.adjoint_inner_left, ContinuousLinearMap.adjoint_inner_right,
+      real_inner_comm (A y)]
     ring
   -- every eigenvalue of `S` is at most `μ(A)`
   have hub (a : ℝ) (ha : Module.End.HasEigenvalue (S : E →ₗ[ℝ] E) a) : a ≤ μ A := by

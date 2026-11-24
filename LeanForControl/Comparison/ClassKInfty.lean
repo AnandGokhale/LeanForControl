@@ -166,7 +166,7 @@ private lemma ClassKInfty.surjOn_of_basic (f : ℝ → ℝ) (hf_zero : f 0 = 0)
     strictly increasing on $[0, \infty)$, and have $f(r) \to \infty$ as $r \to \infty$.  Then
     $f$ is a class $\mathcal{K}_{\infty}$ function, its inverse being the inverse of $f$ on
     $[0,\infty)$. -/)]
-noncomputable def ClassKInfty.of_strictMono (f : ℝ → ℝ)
+noncomputable def ClassKInfty.ofStrictMono (f : ℝ → ℝ)
     (hf_zero : f 0 = 0) (hf_cont : ContinuousOn f (Set.Ici 0))
     (hf_mono : StrictMonoOn f (Set.Ici 0))
     (hf_tendsto : Filter.Tendsto f Filter.atTop Filter.atTop) : ClassKInfty where
@@ -283,7 +283,7 @@ def ClassKInfty.comp (β α : ClassKInfty) : ClassKInfty where
   (statement := /-- For every $p > 0$, the map $r \mapsto r^{p}$ is class
     $\mathcal{K}_{\infty}$. -/)]
 noncomputable def ClassKInfty.power (p : ℝ) (hp : 0 < p) : ClassKInfty :=
-  ClassKInfty.of_strictMono (fun r => r ^ p)
+  ClassKInfty.ofStrictMono (fun r => r ^ p)
     (Real.zero_rpow hp.ne')
     (continuousOn_id.rpow_const fun _ _ => Or.inr hp.le)
     (fun _ hx _ _ hxy => Real.rpow_lt_rpow hx hxy hp)
@@ -296,7 +296,7 @@ noncomputable def ClassKInfty.power (p : ℝ) (hp : 0 < p) : ClassKInfty :=
     $a > 0$, to a class $\mathcal{K}$ function on $[0, a) \to [0, \alpha(a))$. -/)]
 noncomputable def ClassKInfty.toClassK (α : ClassKInfty) {a : ℝ} (ha : 0 < a) :
     ClassK a (α.toFun a) :=
-  ClassK.of_strictMono ha
+  ClassK.ofStrictMono ha
     ((α.pos_iff (Set.mem_Ici.mpr ha.le)).mpr ha)
     α.toFun
     α.map_zero
@@ -322,7 +322,7 @@ theorem ClassKInfty.toClassK_invFun (α : ClassKInfty) {a : ℝ} (ha : 0 < a) {y
     $\alpha$ and $\beta$ are class $\mathcal{K}_{\infty}$, so is $\alpha + \beta$. -/)]
 noncomputable def ClassKInfty.add (α : ClassKInfty) (β : ClassKInfty) :
     ClassKInfty :=
-  ClassKInfty.of_strictMono (fun x => α x + β x)
+  ClassKInfty.ofStrictMono (fun x => α x + β x)
     (by simp [α.map_zero, β.map_zero])
     (α.continuous.add β.continuous)
     (α.strict_mono.add β.strict_mono)
@@ -338,7 +338,7 @@ second is nonnegative. -/
     $\mathcal{K}_{\infty}$. -/)]
 noncomputable def ClassKInfty.addMonotone (α : ClassKInfty) (f : ℝ → ℝ) (hf0 : f 0 = 0)
     (hf_cont : ContinuousOn f (Set.Ici 0)) (hf_mono : MonotoneOn f (Set.Ici 0)) : ClassKInfty :=
-  ClassKInfty.of_strictMono (fun x => α x + f x)
+  ClassKInfty.ofStrictMono (fun x => α x + f x)
     (by simp [α.map_zero, hf0])
     (α.continuous.add hf_cont)
     (fun x hx y hy hxy => add_lt_add_of_lt_of_le (α.strict_mono hx hy hxy) (hf_mono hx hy hxy.le))
@@ -358,7 +358,7 @@ noncomputable def ClassKInfty.addMonotone (α : ClassKInfty) (f : ℝ → ℝ) (
     constant: if $\alpha$ is class $\mathcal{K}_{\infty}$ and $c > 0$, so is $c\alpha$. -/)]
 noncomputable def ClassKInfty.smul (α : ClassKInfty) (c : ℝ) (hc : 0 < c) :
     ClassKInfty :=
-  ClassKInfty.of_strictMono (fun x => c * α x)
+  ClassKInfty.ofStrictMono (fun x => c * α x)
     (by simp [α.map_zero])
     (continuousOn_const.mul α.continuous)
     (fun x hx y hy hxy => mul_lt_mul_of_pos_left (α.strict_mono hx hy hxy) hc)
@@ -369,9 +369,9 @@ noncomputable def ClassKInfty.smul (α : ClassKInfty) (c : ℝ) (hc : 0 < c) :
   (title := "Minimum of class $\\mathcal{K}_{\\infty}$ functions")
   (statement := /-- Class $\mathcal{K}_{\infty}$ is closed under pointwise minimum: if $\alpha$
     and $\beta$ are class $\mathcal{K}_{\infty}$, so is $\min(\alpha, \beta)$. -/)]
-noncomputable def ClassKInfty.min_fn (α : ClassKInfty) (β : ClassKInfty) :
+noncomputable def ClassKInfty.minFn (α : ClassKInfty) (β : ClassKInfty) :
     ClassKInfty :=
-  ClassKInfty.of_strictMono (fun x => min (α x) (β x))
+  ClassKInfty.ofStrictMono (fun x => min (α x) (β x))
     (by
     simp [α.map_zero, β.map_zero]
     )
@@ -406,7 +406,7 @@ lemma exists_classKInfty_upper_bound (ω : ℝ → ℝ)
     ∃ α : ClassKInfty, ∀ r ≥ 0, ω r ≤ α.toFun r := by
   obtain ⟨f, hf_zero, hf_cont, hf_mono, hf_top, hf_bound⟩ :=
     exists_strictMono_upper_bound_global ω hω_zero hω_mono hω_cont
-  exact ⟨ClassKInfty.of_strictMono f hf_zero hf_cont hf_mono hf_top,
+  exact ⟨ClassKInfty.ofStrictMono f hf_zero hf_cont hf_mono hf_top,
          fun r hr => hf_bound r hr⟩
 
 /-! ### The integral of a class `K∞` function -/
@@ -432,7 +432,7 @@ integrand is read as `α(0) = 0`, so the integral is `0` there and differentiabl
 noncomputable def ClassKInfty.integral (α : ClassKInfty) : ClassKInfty :=
   have h_cont : Continuous fun r => ∫ s in (0 : ℝ)..r, α (max s 0) :=
     continuous_iff_continuousAt.2 fun r => (α.hasDerivAt_integral_max r).continuousAt
-  ClassKInfty.of_strictMono (fun r => ∫ s in (0 : ℝ)..r, α (max s 0)) integral_same
+  ClassKInfty.ofStrictMono (fun r => ∫ s in (0 : ℝ)..r, α (max s 0)) integral_same
     h_cont.continuousOn
     (strictMonoOn_of_deriv_pos (convex_Ici 0) h_cont.continuousOn fun r hr => by
       rw [interior_Ici] at hr
@@ -449,7 +449,7 @@ noncomputable def ClassKInfty.integral (α : ClassKInfty) : ClassKInfty :=
           calc (r - 1) * α 1
               = ∫ _s in (1 : ℝ)..r, α 1 := by simp
             _ ≤ ∫ s in (1 : ℝ)..r, α (max s 0) :=
-                integral_mono_on hr intervalIntegral.intervalIntegrable_const
+                integral_mono_on hr intervalIntegrable_const
                   (α.continuous_max.intervalIntegrable 1 r)
                   fun s hs => α.mono zero_le_one (hs.1.trans (le_max_left s 0))
         linarith

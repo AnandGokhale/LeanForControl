@@ -1,7 +1,7 @@
 import LeanForControl.ODEs.DefsPeanoBaker
 import Mathlib.Analysis.Calculus.SmoothSeries
 import Mathlib.Analysis.Normed.Algebra.Exponential
-import Mathlib.Analysis.ODE.Gronwall
+import Mathlib.Analysis.ODE.ExistUnique
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Data.Nat.Factorial.Basic
 import Architect
@@ -180,12 +180,17 @@ theorem hasDerivAt_stateTransitionMatrix (hA : Continuous A) (t t₀ : ℝ) :
     rw [Metric.mem_ball, Real.dist_eq]; exact lt_add_one _
   have hshifted :
       HasDerivAt (fun z => ∑' k, peanoBakerTerm A (k + 1) z t₀)
-        (∑' k, A t * peanoBakerTerm A k t t₀) t :=
-    hasDerivAt_tsum_of_isPreconnected
-      (by simpa [mul_div_assoc] using
-        ((Real.summable_pow_div_factorial (M * r)).mul_left ‖(1 : 𝔸)‖).mul_left M)
+        (∑' k, A t * peanoBakerTerm A k t t₀) t := by
+    -- `g`, `g'` are given explicitly: inferring them by higher-order unification times out.
+    refine hasDerivAt_tsum_of_isPreconnected
+      (u := fun k => M * (‖(1 : 𝔸)‖ * (M * r) ^ k / (k)!))
+      (g := fun k z => peanoBakerTerm A (k + 1) z t₀)
+      (g' := fun k z => A z * peanoBakerTerm A k z t₀) ?_
       Metric.isOpen_ball (convex_ball t₀ r).isPreconnected (fun k z _ => hderiv k z) hbound ht
-      ((summable_nat_add_iff 1 (f := fun k => peanoBakerTerm A k t t₀)).2 (hsummable t ht)) ht
+      ?_ ht
+    · simpa [mul_div_assoc] using
+        ((Real.summable_pow_div_factorial (M * r)).mul_left ‖(1 : 𝔸)‖).mul_left M
+    · exact (summable_nat_add_iff 1 (f := fun k => peanoBakerTerm A k t t₀)).2 (hsummable t ht)
   rw [(hsummable t ht).tsum_mul_left (A t)] at hshifted
   have hone_plus :
       HasDerivAt (fun z => (1 : 𝔸) + ∑' k, peanoBakerTerm A (k + 1) z t₀)
@@ -237,7 +242,7 @@ theorem ODE_solution_unique_linear {F : Type*} [NormedAddCommGroup F] [NormedSpa
   obtain ⟨K, hK⟩ := IsCompact.exists_bound_of_continuousOn
     (isCompact_Icc (a := min t t₀ - 1) (b := max t t₀ + 1)) hL.continuousOn
   exact ODE_solution_unique_of_mem_Ioo (K := K.toNNReal) (s := fun _ => Set.univ)
-    (fun r hr => ((L r).lipschitz.weaken (by
+    (fun r hr => ((L r).lipschitzWith.weaken (by
       rw [← NNReal.coe_le_coe, Real.coe_toNNReal']
       exact (hK r (Set.Ioo_subset_Icc_self hr)).trans (le_max_left _ _))).lipschitzOnWith)
     ⟨by linarith [min_le_right t t₀], by linarith [le_max_right t t₀]⟩

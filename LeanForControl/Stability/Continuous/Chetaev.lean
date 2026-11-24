@@ -159,7 +159,7 @@ private theorem exists_pos_lieDerivative_lower_bound_on_superlevel
     intro x hx
     by_contra hxD
     have hx_boundary : x ∈ frontier D := by
-      rw [frontier, mem_diff]
+      rw [frontier, Set.mem_sdiff]
       exact ⟨hx.1.1, fun hxint ↦ hxD (interior_subset hxint)⟩
     have hxzero : V x = 0 := hboundary x hx_boundary (by
       simpa [Metric.mem_closedBall, dist_eq_norm, norm_sub_rev] using hx.1.2)
@@ -217,7 +217,7 @@ private theorem solution_stays_in_region_and_above_initial_certificate
       rw [interior_Icc] at ht
       rw [lieDerivative_const (V := fun x ↦ -V x)
         (hV.differentiable one_ne_zero (φ t)).neg, fderiv_fun_neg]
-      simp only [ContinuousLinearMap.neg_apply]
+      simp only [neg_apply]
       exact neg_nonpos.mpr (hLie_nonneg t (Ioo_subset_Icc_self ht)
         (hstay_region t (Ioo_subset_Icc_self ht))))
   intro t ht
@@ -296,7 +296,7 @@ private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
           rw [lieDerivative_add_mul (V := fun x ↦ -V x) γ
               (hV.differentiable one_ne_zero (φ t)).neg,
             fderiv_fun_neg]
-          simp only [ContinuousLinearMap.neg_apply]
+          simp only [neg_apply]
           linarith [hLie_γ t (Ioo_subset_Icc_self ht)])
     have hlin := hlinear_growth (left_mem_Icc.mpr hT) (right_mem_Icc.mpr hT) hT
     dsimp only at hlin

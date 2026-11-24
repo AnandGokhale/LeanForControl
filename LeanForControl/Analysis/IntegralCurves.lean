@@ -145,7 +145,8 @@ lemma IsIntegralSolution.reflect {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {F
     · exact Set.mem_uIcc.mpr (Or.inl ⟨by linarith, by linarith⟩)
   refine ⟨?_, ?_⟩
   · have h := ((hx _ hmem).1.comp_sub_left (t₀ + t₁)).neg
-    simpa only [show t₀ + t₁ - t₀ = t₁ by ring, show t₀ + t₁ - (t₀ + t₁ - σ) = σ by ring] using h
+    simpa only [show t₀ + t₁ - t₀ = t₁ by ring, show t₀ + t₁ - (t₀ + t₁ - σ) = σ by ring,
+      Pi.neg_def] using h
   · dsimp only
     rw [(hx _ hmem).2, intervalIntegral.integral_neg, hkey (fun w => F w (x w)) σ, neg_neg]
 
@@ -227,7 +228,7 @@ theorem IsIntegralSolution.isIntegralCurveOn
     (hFx : ContinuousOn (fun s => F s (x s)) (uIcc t₀ t₁)) :
     IsIntegralCurveOn x F (uIcc t₀ t₁) := by
   intro t ht
-  haveI : Fact (t ∈ uIcc t₀ t₁) := ⟨ht⟩
+  have : Fact (t ∈ uIcc t₀ t₁) := ⟨ht⟩
   have hint : IntervalIntegrable (fun s => F s (x s)) volume t₀ t :=
     (hFx.mono (uIcc_subset_uIcc_left ht)).intervalIntegrable
   have hderiv : HasDerivWithinAt (fun u => ∫ s in t₀..u, F s (x s)) (F t (x t)) (uIcc t₀ t₁) t :=

@@ -87,7 +87,10 @@ theorem IsInfinitesimallyContractingOn.of_oneSidedLipschitz
     (hF : ∀ t, osL (s.vectorField u t) on C ≤ ((-c : ℝ) : EReal)) :
     s.IsInfinitesimallyContractingOn u C c := by
   simpa using IsContractingOn.of_oneSidedLipschitz_conj (ContinuousLinearEquiv.refl ℝ E)
-    (by simpa using hF)
+    (by
+      simp only [ContinuousLinearEquiv.refl_apply, ContinuousLinearEquiv.coe_refl', image_id_eq,
+        id_eq, ContinuousLinearEquiv.refl_symm, vectorField_apply, EReal.coe_neg]
+      exact hF)
 
 /-- **The Jacobian form of the contraction bound**: on an open convex `C`, if the vector field has
 derivative `DF t x` with `μ(DF t x) ≤ -c` at every `x ∈ C`, the system is infinitesimally

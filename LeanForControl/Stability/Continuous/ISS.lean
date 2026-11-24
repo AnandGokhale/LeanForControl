@@ -337,7 +337,7 @@ theorem inputToStateStable_of_globallyExponentiallyStable {H : Type*} [NormedAdd
   obtain ⟨-, -, h_lie⟩ := hV_bd t ht y (mem_univ y)
   rw [Real.rpow_two] at h_lie
   have hw' : k * ‖w - u_eq‖ ≤ ‖y - x_c‖ := by simpa [ρ, ClassKInfty.smul, ClassKInfty.power,
-    ClassKInfty.of_strictMono, Real.rpow_one] using hw
+    ClassKInfty.ofStrictMono, Real.rpow_one] using hw
   calc _root_.lieDerivative V (fun t y => s.F t y w) t y
       ≤ (s.constInput u_eq).lieDerivative V t y () +
           ‖fderiv ℝ (V t) y‖ * ‖s.F t y w - s.F t y u_eq‖ :=

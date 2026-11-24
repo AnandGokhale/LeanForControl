@@ -130,7 +130,7 @@ private theorem exists_eigenvector_of_unobservableSubspace_neBot
     (A : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin p) (Fin n) ℂ)
     (h : unobservableSubspace A C ≠ ⊥) :
     ∃ μ : ℂ, ∃ v : Fin n → ℂ, v ≠ 0 ∧ A *ᵥ v = μ • v ∧ C *ᵥ v = 0 := by
-  haveI hNontriv : Nontrivial (unobservableSubspace A C) :=
+  have hNontriv : Nontrivial (unobservableSubspace A C) :=
     (Submodule.nontrivial_iff_ne_bot).mpr h
   -- The ambient space `Fin n → ℂ` must itself be non-trivial, hence `0 < n`.
   have hn_pos : 0 < n := by
@@ -156,7 +156,7 @@ private theorem exists_eigenvector_of_unobservableSubspace_neBot
   · -- Lift the eigenvalue equation through `Submodule.subtype`.
     have heig : A_res w = μ • w := hw.apply_eq_smul
     have hval := congrArg Subtype.val heig
-    simpa [A_res, LinearMap.restrict_apply, Matrix.mulVecLin_apply] using hval
+    exact hval
   · -- Membership at `k = 0` reads off `C *ᵥ w.val = 0`.
     have hmem : w.val ∈ unobservableSubspace A C := w.2
     rw [mem_unobservableSubspace_iff] at hmem

@@ -219,7 +219,7 @@ lemma inner_lyapunovIntegral (hA : Continuous s.A) (hQ : Continuous Q) {q : ℝ}
   have hℓ : ∀ τ, ℓ (s.lyapunovIntegrand Q t τ) = inner ℝ (s.stateTransition τ t x)
       (Q τ (s.stateTransition τ t x)) := fun τ => by
     simp only [ℓ, lyapunovIntegrand, ContinuousLinearMap.comp_apply,
-      ContinuousLinearMap.apply_apply, innerSL_apply_apply, ContinuousLinearMap.mul_apply,
+      ContinuousLinearMap.apply_apply, innerSL_apply_apply, mul_apply_eq_comp,
       ContinuousLinearMap.star_eq_adjoint, ContinuousLinearMap.adjoint_inner_right]
   have h_int := integrableOn_lyapunovIntegrand hA hQ hQ_bdd h_exp t t
   rw [← funext hℓ]
@@ -411,8 +411,7 @@ theorem isExponentialLyapunovFunction_of_differentialLyapunovEquation
   rw [ContinuousSystem.lieDerivative, h_lie, hF]
   have h_adj : inner ℝ x (star (s.A t) (P t x)) = inner ℝ w (P t x) := by
     rw [ContinuousLinearMap.star_eq_adjoint, ContinuousLinearMap.adjoint_inner_right]
-  simp only [ContinuousLinearMap.add_apply, ContinuousLinearMap.neg_apply,
-    ContinuousLinearMap.mul_apply, inner_add_right, inner_neg_right, h_adj]
+  simp only [add_apply, neg_apply, mul_apply_eq_comp, inner_add_right, inner_neg_right, h_adj]
   linarith [hQ_pos t ht x]
 
 end LinearSystems

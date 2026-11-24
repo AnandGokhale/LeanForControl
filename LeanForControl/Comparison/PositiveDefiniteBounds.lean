@@ -36,7 +36,7 @@ on `[0, r)`.
    `psi_fn_pos`, `psi_fn_mono`); similarly for `φ` (`phi_fn_zero`, `phi_fn_mono`).
 4. Apply the smoothing lemmas from `LeanForControl.Analysis.MonotoneFunctions` to obtain
    strictly monotone continuous functions `f ≤ ψ` and `φ ≤ g`.
-5. Package via `ClassK.of_strictMono` to get the class K bounds `α₁ ≤ ψ ≤ V` and
+5. Package via `ClassK.ofStrictMono` to get the class K bounds `α₁ ≤ ψ ≤ V` and
    `V ≤ φ ≤ α₂`.
 -/
 
@@ -91,13 +91,13 @@ private lemma psi_fn_pos {r : ℝ} {V : E → ℝ} [Nontrivial E]
   unfold psi_fn
   have h_comp : IsCompact (annulus s r) :=
     IsCompact.diff (isCompact_closedBall (0 : E) r) isOpen_ball
-  have h_sub : annulus s r ⊆ closedBall (0 : E) r := Set.diff_subset
+  have h_sub : annulus s r ⊆ closedBall (0 : E) r := Set.sdiff_subset
   have hV_contA : ContinuousOn V (annulus s r) := hV_cont.mono h_sub
   -- The annulus is non-empty: E is nontrivial, so it has a vector of norm s
   have h_nonempty : (annulus s r : Set E).Nonempty := by
     obtain ⟨x, hx_norm⟩ := exists_norm_eq E hs_pos.le
     use x
-    simp only [annulus, Set.mem_diff, Metric.mem_closedBall, Metric.mem_ball, dist_zero_right,
+    simp only [annulus, Set.mem_sdiff, Metric.mem_closedBall, Metric.mem_ball, dist_zero_right,
       hx_norm]
     exact ⟨hs_le, not_lt_of_ge le_rfl⟩
   -- EVT: attain the infimum at some x ∈ annulus
@@ -139,17 +139,17 @@ private lemma psi_fn_mono {r : ℝ} {V : E → ℝ} [Nontrivial E]
   · -- The image over the full closed ball (a superset) is bounded below
     have h_comp : IsCompact (closedBall (0 : E) r) := isCompact_closedBall _ _
     have h_bdd := (h_comp.image_of_continuousOn hV_cont).bddBelow
-    exact h_bdd.mono (Set.image_mono Set.diff_subset)
+    exact h_bdd.mono (Set.image_mono Set.sdiff_subset)
   · -- annulus s₁ r is non-empty: exhibit a point at radius s₂ ≥ s₁
     obtain ⟨x, hx_norm⟩ := exists_norm_eq E (hs1_nonneg.trans h_le)
     refine ⟨V x, x, ?_, rfl⟩
-    simp only [annulus, Set.mem_diff, Metric.mem_closedBall, Metric.mem_ball, dist_zero_right,
+    simp only [annulus, Set.mem_sdiff, Metric.mem_closedBall, Metric.mem_ball, dist_zero_right,
       hx_norm]
     exact ⟨h_bound, not_lt_of_ge le_rfl⟩
   · -- annulus s₂ r ⊆ annulus s₁ r (larger inner radius ⟹ smaller set ⟹ larger infimum)
     rintro _ ⟨x, hx, rfl⟩
     refine ⟨x, ?_, rfl⟩
-    simp only [annulus, Set.mem_diff, Metric.mem_closedBall, dist_zero_right,
+    simp only [annulus, Set.mem_sdiff, Metric.mem_closedBall, dist_zero_right,
       Metric.mem_ball, not_lt] at hx ⊢
     exact ⟨hx.1, h_le.trans hx.2⟩
 
@@ -167,7 +167,7 @@ private lemma V_ge_psi {r : ℝ} {V : E → ℝ}
   · -- 0 is a lower bound: V ≥ 0 on the annulus (positive-definiteness + V(0) = 0)
     use 0
     rintro _ ⟨y, hy_annulus, rfl⟩
-    simp only [annulus, Set.mem_diff] at hy_annulus
+    simp only [annulus, Set.mem_sdiff] at hy_annulus
     rcases eq_or_ne y 0 with rfl | hne
     · exact le_of_eq hV_zero.symm
     · exact (hV_pos y hy_annulus.1 hne).le
@@ -282,7 +282,7 @@ private lemma exists_classK_lower_bound [Nontrivial E] {r : ℝ} {V : E → ℝ}
   -- Apply the smoothing lemma to get a strictly monotone continuous f ≤ ψ
   rcases exists_strictMono_lower_bound r hr (psi_fn r V) hψ_zero hψ_pos hψ_mono
     with ⟨f, b₁, hb₁_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
-  exact ⟨b₁, ClassK.of_strictMono hr hb₁_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
+  exact ⟨b₁, ClassK.ofStrictMono hr hb₁_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
 
 /-- There exists a class K function `α₂ : ClassK r b₂` (class K on `[0, r)`) with
     `φ(s) ≤ α₂(s)` for every `s ∈ [0, r]`. The comparison includes the endpoint `s = r`, where
@@ -301,7 +301,7 @@ private lemma exists_classK_upper_bound {r : ℝ} {V : E → ℝ} (hr : 0 < r)
   -- Apply the smoothing lemma to get a strictly monotone continuous φ ≤ f
   rcases exists_strictMono_upper_bound r hr (phi_fn V) hφ_zero hφ_mono hφ_cont
     with ⟨f, b₂, hb₂_pos, hf_zero, hf_r, hf_cont, hf_mono, hf_bound⟩
-  exact ⟨b₂, ClassK.of_strictMono hr hb₂_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
+  exact ⟨b₂, ClassK.ofStrictMono hr hb₂_pos f hf_zero hf_r hf_cont hf_mono, hf_bound⟩
 
 -- ─── 7. Main Theorem ──────────────────────────────────────────────────────────
 

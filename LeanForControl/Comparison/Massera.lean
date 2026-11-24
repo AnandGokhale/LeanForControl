@@ -114,8 +114,8 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
   -- the integrals look and makes `H` unbounded.  Its key property is the bound `hH_le`.
   set H₀ : ℝ → ℝ := fun s => if 0 < s then Real.exp (-θ s) / h (θ s) else 0
   set H : ℝ → ℝ := fun s => H₀ s + max (s - g 0) 0
-  have hH₀_pos : ∀ s, 0 < s → H₀ s = Real.exp (-θ s) / h (θ s) := fun s hs => if_pos hs
-  have hH₀_zero : ∀ s, s ≤ 0 → H₀ s = 0 := fun s hs => if_neg (not_lt.2 hs)
+  have hH₀_pos : ∀ s, 0 < s → H₀ s = Real.exp (-θ s) / h (θ s) := fun s hs => ite_eq_left hs
+  have hH₀_zero : ∀ s, s ≤ 0 → H₀ s = 0 := fun s hs => ite_eq_right (not_lt.2 hs)
   have hhθ : ∀ s, 0 < s → 0 < h (θ s) := fun s hs => hh_pos _ (hθ_pos s hs).le
   -- The key bound: below `g(t)`, `H ≤ e^{-t} / h(t)`.
   have hH_le : ∀ t, 0 < t → ∀ s, 0 ≤ s → s ≤ g t → H s ≤ Real.exp (-t) / h t := by
@@ -139,7 +139,8 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
     refine ContinuousOn.if' (fun a ha => ?_) (fun a ha => ?_) ?_ continuousOn_const
     · -- At `0⁺` the formula is squeezed to `0` by `e^{-θ(s)} / h(0) → 0`.
       obtain rfl : a = 0 := by simpa [show {x : ℝ | 0 < x} = Ioi 0 from rfl] using ha.2
-      suffices h : Tendsto (fun s => Real.exp (-θ s) / h (θ s)) (𝓝[>] 0) (𝓝 0) by simpa using h
+      suffices h : Tendsto (fun s => Real.exp (-θ s) / h (θ s)) (𝓝[>] 0) (𝓝 0) by
+        simpa [← Set.Ioi_def] using h
       refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
         (by simpa using (Real.tendsto_exp_neg_atTop_nhds_zero.comp hθ_top).div_const (h 0)) ?_ ?_
       · filter_upwards [self_mem_nhdsWithin] with s (hs : 0 < s)
@@ -173,7 +174,7 @@ theorem ClassKInfty.massera {g h : ℝ → ℝ}
               (hh_mono (mem_Ici.2 (hθ_pos b hb_pos).le) (mem_Ici.2 (hθ_pos a ha_pos).le)
                 (hθ_anti ha_pos hb_pos hab).le)
     exact add_lt_add_of_lt_of_le h₀ (max_le_max (by linarith) le_rfl)
-  set H' : ClassKInfty := ClassKInfty.of_strictMono H hH_zero hH_cont.continuousOn hH_mono (by
+  set H' : ClassKInfty := ClassKInfty.ofStrictMono H hH_zero hH_cont.continuousOn hH_mono (by
     -- `H(s) ≥ s - g(0) → ∞`.
     refine tendsto_atTop_mono (fun s => ?_) (tendsto_atTop_add_const_right _ (-g 0) tendsto_id)
     calc id s + -g 0

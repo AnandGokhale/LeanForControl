@@ -113,7 +113,7 @@ theorem exists_isMinOn_prox_objective [FiniteDimensional ℝ X] (hR : IsClosedCo
   · exact hzmin hK
   -- Off `K`, the objective exceeds `c`.
   refine hzc.trans ?_
-  simp only [mem_inter_iff, mem_setOf_eq, hy, true_and, mem_closedBall_iff_norm, not_and_or,
+  simp only [mem_inter_iff, mem_ofPred_eq, hy, true_and, mem_closedBall_iff_norm, not_and_or,
     not_le] at hK
   rcases hK with hRy | hr
   · linarith [div_nonneg (sq_nonneg ‖y - v‖) (by positivity : (0 : ℝ) ≤ 2 * γ)]
@@ -199,14 +199,14 @@ section Properties
 domain. -/
 theorem prox_mem [FiniteDimensional ℝ X] (hR : IsClosedConvexProper R D) (hγ : 0 < γ) (v : X) :
     prox γ R D v ∈ D := by
-  rw [prox, dif_pos (exists_isMinOn_prox_objective hR hγ v)]
+  rw [prox, dite_eq_left (exists_isMinOn_prox_objective hR hγ v)]
   exact (exists_isMinOn_prox_objective hR hγ v).choose_spec.1
 
 /-- **Existence.**  For closed, convex, proper `R` and `γ > 0`, the proximal point minimizes
 `R y + ‖y - v‖² / (2γ)` over the domain. -/
 theorem isMinOn_prox [FiniteDimensional ℝ X] (hR : IsClosedConvexProper R D) (hγ : 0 < γ)
     (v : X) : IsMinOn (fun y => R y + ‖y - v‖ ^ 2 / (2 * γ)) D (prox γ R D v) := by
-  rw [prox, dif_pos (exists_isMinOn_prox_objective hR hγ v)]
+  rw [prox, dite_eq_left (exists_isMinOn_prox_objective hR hγ v)]
   exact (exists_isMinOn_prox_objective hR hγ v).choose_spec.2
 
 /-- **Uniqueness.**  Every minimizer of `R y + ‖y - v‖² / (2γ)` over the domain is the proximal

@@ -179,7 +179,7 @@ private lemma ClassK.surjOn_of_boundary {a b : ℝ} (ha : 0 < a)
   (statement := /-- Let $f : \mathbb{R} \to \mathbb{R}$ satisfy $f(0) = 0$ and $f(a) = b$ and be
     continuous and strictly increasing on $[0, a]$, with $a, b > 0$.  Then $f$ is a class
     $\mathcal{K}$. -/)]
-noncomputable def ClassK.of_strictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
+noncomputable def ClassK.ofStrictMono {a b : ℝ} (ha : 0 < a) (hb : 0 < b)
     (f : ℝ → ℝ) (hf_zero : f 0 = 0) (hf_a : f a = b)
     (hf_cont : ContinuousOn f (Set.Icc 0 a))
     (hf_mono : StrictMonoOn f (Set.Icc 0 a)) : ClassK a b where
@@ -211,7 +211,7 @@ noncomputable def ClassK.restrict {a b : ℝ} (α : ClassK a b) {c : ℝ}
     calc 0 = α.toFun 0 := α.map_zero.symm
          _ < α.toFun c := α.strict_mono ⟨le_rfl, α.ha⟩ ⟨hc_pos.le, hc_lt⟩ hc_pos
   have h_sub : Set.Icc 0 c ⊆ Set.Ico 0 a := fun x hx => ⟨hx.1, hx.2.trans_lt hc_lt⟩
-  exact ClassK.of_strictMono hc_pos hd_pos α.toFun α.map_zero rfl
+  exact ClassK.ofStrictMono hc_pos hd_pos α.toFun α.map_zero rfl
     (α.continuous.mono h_sub) (α.strict_mono.mono h_sub)
 
 /-- Variant of `ClassK.restrict` where the upper bound `e` is given explicitly via a proof
@@ -239,10 +239,10 @@ theorem continuousOn_of_strictMonoOn_of_surjOn {g : ℝ → ℝ} {s t : Set ℝ}
     [OrdConnected s] [ht : OrdConnected t] (hg_mono : StrictMonoOn g s)
     (hg_maps : MapsTo g s t) (hg_surj : SurjOn g s t) : ContinuousOn g s := by
   have h_image : g '' s = t := hg_surj.image_eq_of_mapsTo hg_maps
-  haveI : OrdConnected (g '' s) := h_image ▸ ht
+  have : OrdConnected (g '' s) := h_image ▸ ht
   -- `g` restricted to `s` is the order isomorphism `s ≃o g '' s`, followed by `Subtype.val`.
   let e : s ≃o g '' s := hg_mono.orderIso g s
-  rw [continuousOn_iff_continuous_restrict]
+  rw [continuousOn_iff_continuous_domRestrict]
   exact continuous_subtype_val.comp e.continuous
 
 /-- The inverse of a class K function is zero at zero: `α⁻¹ 0 = α⁻¹ (α 0) = 0`. -/
@@ -421,7 +421,7 @@ theorem exists_classK_minorant_lipschitz {a b : ℝ} (α : ClassK a b) :
   -- Step 3. Package `f` as a class `K` function onto `[0, f a)`.
   have hb' : 0 < f a :=
     hf_zero ▸ hf_mono (left_mem_Icc.mpr α.ha.le) (right_mem_Icc.mpr α.ha.le) α.ha
-  refine ⟨f a, a⁻¹ * b, ClassK.of_strictMono α.ha hb' f hf_zero rfl
+  refine ⟨f a, a⁻¹ * b, ClassK.ofStrictMono α.ha hb' f hf_zero rfl
     hf_lip.continuous.continuousOn hf_mono, hL, hf_le, fun x hx => ?_, hf_lip⟩
   -- the linear bound is the Lipschitz bound against `f 0 = 0`
   have h := hf_lip.dist_le_mul x 0
@@ -487,10 +487,9 @@ function of the comparison argument in Khalil's Theorems 4.9 and 4.18. -/
     Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proofs of Theorems 4.9 and 4.18. -/)]
 noncomputable def ClassK.compSymm {r b₂ b₃ : ℝ} (α₃ : ClassK r b₃) (α₂ : ClassK r b₂) {c : ℝ}
     (hc_pos : 0 < c) (hcr : c < r) : ClassK (α₂.toFun c) (α₃.toFun c) :=
+  have hinv : α₂.symm.toFun (α₂.toFun c) = c := α₂.left_inv ⟨hc_pos.le, hcr⟩
   (α₃.restrictTo (c := α₂.symm.toFun (α₂.toFun c))
-    (show 0 < α₂.invFun (α₂.toFun c) by rw [α₂.left_inv ⟨hc_pos.le, hcr⟩]; exact hc_pos)
-    (show α₂.invFun (α₂.toFun c) < r by rw [α₂.left_inv ⟨hc_pos.le, hcr⟩]; exact hcr)
-    (by change α₃.toFun (α₂.invFun (α₂.toFun c)) = _; rw [α₂.left_inv ⟨hc_pos.le, hcr⟩])).comp
+    (by rw [hinv]; exact hc_pos) (by rw [hinv]; exact hcr) (congrArg α₃.toFun hinv)).comp
     (α₂.symm.restrict ((α₂.pos_iff ⟨hc_pos.le, hcr⟩).mpr hc_pos)
       (α₂.maps_to ⟨hc_pos.le, hcr⟩).2)
 

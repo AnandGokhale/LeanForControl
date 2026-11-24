@@ -47,8 +47,8 @@ theorem stateTransition_toLTV (sys : ContinuousLTI X U Y ℝ) (t t₀ : ℝ) :
       toEuclideanCLM (n := X) (𝕜 := ℝ) (exp ((t - t₀) • sys.A)) := by
   rw [ContinuousLTV.stateTransition,
     show sys.toLTV.A = fun _ => toEuclideanCLM (n := X) (𝕜 := ℝ) sys.A from funext sys.toLTV_A,
-    stateTransitionMatrix_const,
-    NormedSpace.map_exp _ continuous_toEuclideanCLM, map_smul]
+    stateTransitionMatrix_const, ← map_smul]
+  exact (NormedSpace.map_exp _ continuous_toEuclideanCLM _).symm
 
 /-- **LTI uniqueness** (Hespanha, P6.1): every trajectory of the unforced LTI system is
 `e^{A(t-t₀)} x(t₀)`. -/

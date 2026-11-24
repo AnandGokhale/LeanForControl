@@ -118,7 +118,7 @@ private theorem isExponentialLyapunovFunction_of_continuousLyapunovEquation
     (hP : P.PosDef) (hLyap : ContinuousLyapunovEquation A P 1) :
     ∃ r > 0, sys.IsExponentialLyapunovFunction (fun _ => centeredQuadraticForm P x_eq) x_eq
       (Metric.ball x_eq r) 2 := by
-  letI : NeZero n := ⟨Nat.ne_of_gt hn⟩
+  let : NeZero n := ⟨Nat.ne_of_gt hn⟩
   obtain ⟨r, hr, hdecay⟩ := exists_centeredQuadraticForm_decay A P hf heq hJac hLyap
   obtain ⟨m, hm, hm_lower⟩ := exists_pos_mul_norm_sq_le_quadraticForm P hP
   let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
@@ -244,7 +244,7 @@ private theorem unstable_of_quadratic_certificate {Y : Type*} {s : ContinuousSys
     intro hnzero
     subst n
     exact hw (Subsingleton.elim w 0)
-  letI : NeZero n := ⟨hn⟩
+  let : NeZero n := ⟨hn⟩
   let G : Matrix (Fin n) (Fin n) ℝ := H * A + Aᵀ * H - (2 * α) • H
   have hG : G.PosDef := by simpa [G] using hshift
   obtain ⟨m, hm, hm_lower⟩ :=
@@ -367,8 +367,8 @@ theorem unstable_linear_of_eigenvalue_re_pos {Y : Type*} {s : ContinuousSystem �
     (hmu : 0 < mu.re) :
     s.Unstable 0 :=
   unstable_of_exists_complex_eigenvalue_re_pos hF A
-    (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A).contDiff (map_zero _)
-    (ContinuousLinearMap.fderiv _) ⟨mu, v, hv, hAv, hmu⟩
+    (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A).contDiff (smul_zero A)
+    (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A).fderiv ⟨mu, v, hv, hAv, hmu⟩
 
 end Unstable
 
@@ -529,7 +529,7 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization_zero {Y : T
   -- Step 2. Theorem 4.12 with `Q = I` gives `P(t)`; `V(t, x) = ⟪x, P(t) x⟫` is an exponential
   -- Lyapunov function for the linear system (Example 4.21).
   have hQ_pos : ∀ v : ℝⁿ, 1 * ‖v‖ ^ 2 ≤ inner ℝ v ((1 : ℝⁿ →L[ℝ] ℝⁿ) v) := fun v => by
-    rw [ContinuousLinearMap.one_apply, real_inner_self_eq_norm_sq, one_mul]
+    rw [one_apply_eq_self, real_inner_self_eq_norm_sq, one_mul]
   obtain ⟨P, hP, -, ⟨p, hP_bdd⟩, c₁, hc₁, hP_low⟩ := exists_differentialLyapunovEquation sl
     hJ_cont (fun t => norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds 0 hr) (hL t))
     (Q := fun _ => 1) continuous_const (q := 1) (fun _ => ContinuousLinearMap.norm_id_le)
@@ -594,8 +594,10 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
     (fun t => by simpa [s'] using h_eq t)
     (hf.comp (contDiff_fst.prodMk (contDiff_snd.add contDiff_const)).contDiffOn
       fun p hp => ⟨mem_univ _, h_maps hp.2⟩)
-    ⟨L, fun t => by simpa using (hL t).comp h_shift.lipschitzOnWith h_maps⟩
-    ⟨L₁, fun t => by rw [h_jac]; simpa using (hL₁ t).comp h_shift.lipschitzOnWith h_maps⟩
+    ⟨L, fun t => by
+      simpa [Function.comp_def] using (hL t).comp h_shift.lipschitzOnWith h_maps⟩
+    ⟨L₁, fun t => by
+      rw [h_jac]; simpa [Function.comp_def] using (hL₁ t).comp h_shift.lipschitzOnWith h_maps⟩
     (h_lin.of_semiconj (x_eq := (0 : ℝⁿ)) (ContinuousLinearMap.id ℝ ℝⁿ) one_pos one_pos
       (fun v => by simp) (fun v => by simp) fun t y => by
         change fderiv ℝ (fun x => s.F t x ()) x_eq (x_eq + (y - 0) - x_eq) =

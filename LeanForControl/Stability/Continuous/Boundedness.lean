@@ -447,7 +447,7 @@ theorem exists_classKLGlobal_ultimateBound_of_lyapunov [Nontrivial E] {x_c : E}
     Finset.sum_le_sum fun k _ => (β k).anti_s _ (hk_mem k) (mem_Ici.mpr (mem_Ioi.mp hθ₁).le)
       (mem_Ici.mpr (mem_Ioi.mp hθ₂).le) hθ
   have hU_tendsto : ∀ r > 0, Tendsto (U r) atTop (𝓝 0) := fun r _ => by
-    simpa using tendsto_finset_sum (Finset.range (⌈r⌉₊ + 1))
+    simpa using tendsto_finsetSum (Finset.range (⌈r⌉₊ + 1))
       fun k _ => (β k).tendsto_zero _ (hk_mem k)
   have hU_mono : ∀ θ > 0, MonotoneOn (fun r => U (r + 1) θ) (Ici 0) :=
     fun θ hθ r₁ _ r₂ _ hr => Finset.sum_le_sum_of_subset_of_nonneg

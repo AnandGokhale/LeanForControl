@@ -3,7 +3,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.ODE.Basic
-import Mathlib.Analysis.ODE.Gronwall
+import Mathlib.Analysis.ODE.ExistUnique
 import Mathlib.Analysis.ODE.PicardLindelof
 import Mathlib.Analysis.ODE.Transform
 import Mathlib.Order.Interval.Set.UnorderedInterval
@@ -143,8 +143,9 @@ private lemma continuous_dependence_forward [CompleteSpace E] (hL : 0 < L) {a b 
       intervalIntegral.norm_integral_le_of_norm_le_mul hτ.1
         (hfuv_int.mono_set hsub)
         (huv_int.mono_set hsub)
-        (fun s hs => by simpa [dist_eq_norm] using
-          (hLip s (Icc_subset_Icc_right hτ.2 hs)).dist_le_mul (u s) (v s))
+        (fun s hs => by
+          have h := (hLip s (Icc_subset_Icc_right hτ.2 hs)).dist_le_mul (u s) (v s)
+          rwa [dist_eq_norm, dist_eq_norm] at h)
     -- Combine the three pieces with the triangle inequality.
     have h_tri1 := norm_sub_le ((u0 - v0) + ∫ s in a..τ, F s (u s) - F s (v s))
                                 (∫ s in a..τ, G s (v s))
@@ -160,7 +161,8 @@ private lemma continuous_dependence_forward [CompleteSpace E] (hL : 0 < L) {a b 
     have h_int_eq : ∫ s in a..τ, L * (‖u s - v s‖ + μ / L) = (L * ∫ s in a..τ, ‖u s - v s‖)
       + μ * (τ - a) := by
       simp_rw [mul_add, mul_div_cancel₀ _ hL.ne']
-      rw [intervalIntegral.integral_add (hv_sub2.const_mul L) intervalIntegrable_const]
+      rw [intervalIntegral.integral_add (f := fun s => L * ‖u s - v s‖) (hv_sub2.const_mul L)
+        intervalIntegrable_const]
       rw [intervalIntegral.integral_const_mul, intervalIntegral.integral_const_eq]
       ring
     linarith [hineq_base τ hτ]
@@ -296,7 +298,6 @@ theorem continuous_dependence_ODE [CompleteSpace E]
     have hσ_elapsed : t₀ + t₁ - t - t₁ = |t - t₀| := by
       rw [abs_of_nonpos (sub_nonpos.mpr ht.2)]; ring
     have hbt := hb (t₀ + t₁ - t) hσ_mem
-    dsimp only at hbt
     rwa [hσ_back, hσ_elapsed] at hbt
 
 /-- **Continuous dependence on parameters.**

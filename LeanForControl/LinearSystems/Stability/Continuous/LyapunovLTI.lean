@@ -84,12 +84,12 @@ theorem locallyAsymptoticallyStable_iff_isHurwitz
     sys.toContinuousSystem.zeroInput.LocallyAsymptoticallyStable (0 : EuclideanSpace ℝ X) ↔
       IsHurwitz sys.A := by
   rw [locallyAsymptoticallyStable_iff_decayingHomogeneousResponse _
-    (by simpa using continuous_const)]
+    continuous_const]
   simp only [stateTransition_toLTV]
   constructor
   · rintro ⟨-, hconv⟩
     refine isHurwitz_of_tendsto_exp_mulVec sys.A fun x => ?_
-    simpa [ofLp_toEuclideanCLM] using
+    simpa [ofLp_toEuclideanCLM, Function.comp_def] using
       ((PiLp.continuous_ofLp 2 _).tendsto 0).comp (hconv 0 le_rfl (WithLp.toLp 2 x))
   · intro hA
     obtain ⟨k, -, γ, hγ, hbd⟩ := hA.exists_norm_toEuclideanCLM_exp_le
@@ -142,7 +142,7 @@ theorem locallyExponentiallyStable_iff_isHurwitz
     (sys : ContinuousLTI X U Y ℝ) :
     sys.toContinuousSystem.zeroInput.LocallyExponentiallyStable (0 : EuclideanSpace ℝ X) ↔
       IsHurwitz sys.A := by
-  rw [locallyExponentiallyStable_iff_decayingStateTransition _ (by simpa using continuous_const)]
+  rw [locallyExponentiallyStable_iff_decayingStateTransition _ continuous_const]
   simp only [stateTransition_toLTV]
   constructor
   · rintro ⟨k, hk, γ, hγ, hbd⟩
@@ -151,7 +151,8 @@ theorem locallyExponentiallyStable_iff_isHurwitz
         (exp ((t - 0) • sys.A)) (WithLp.toLp 2 x)) atTop (𝓝 0) :=
       tendsto_zero_of_norm_le_envelope k ‖WithLp.toLp 2 x‖ 0 hγ
         ((eventually_ge_atTop 0).mono fun t ht => hbd 0 le_rfl t ht _)
-    simpa [ofLp_toEuclideanCLM] using ((PiLp.continuous_ofLp 2 _).tendsto 0).comp h
+    simpa [ofLp_toEuclideanCLM, Function.comp_def] using
+      ((PiLp.continuous_ofLp 2 _).tendsto 0).comp h
   · intro hA
     obtain ⟨k, hk, γ, hγ, hbd⟩ := hA.exists_norm_toEuclideanCLM_exp_le
     exact ⟨k, hk, γ, hγ, fun t₀ _ t ht x => (ContinuousLinearMap.le_opNorm _ _).trans

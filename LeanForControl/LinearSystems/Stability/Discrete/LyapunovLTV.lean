@@ -211,8 +211,9 @@ theorem locallyAsymptoticallyStable_iff_decayingHomogeneousResponse (s : Discret
     have hlim := hconv _ (isTrajectoryOn_discHomogeneousResponse s t₀ (r • x₀)) (by
       simpa [discHomogeneousResponse_self, hnorm] using (by linarith : c / 2 < c))
     have h2 := hlim.const_smul r⁻¹
-    simpa [discHomogeneousResponse, Matrix.mulVec_smul, smul_smul,
-      inv_mul_cancel₀ hr0.ne'] using h2
+    rw [smul_zero] at h2
+    refine h2.congr fun t => ?_
+    simp [discHomogeneousResponse, Matrix.mulVec_smul, smul_smul, inv_mul_cancel₀ hr0.ne']
   · rintro ⟨hbd, hconv⟩
     refine ⟨(stable_iff_boundedHomogeneousResponse s).2 hbd,
       fun t₀ => ⟨1, one_pos, fun φ hφ _ => ?_⟩⟩

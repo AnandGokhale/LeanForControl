@@ -540,7 +540,7 @@ lemma mem_existenceInterval_of_le {t₀ t τ : ℝ} {x₀ : E} (ht : t ∈ s.exi
 @[simp]
 lemma stateTransitionMap_self (t₀ : ℝ) (x₀ : E) : s.stateTransitionMap u t₀ t₀ x₀ = x₀ := by
   have h := mem_existenceInterval_self (s := s) (u := u) t₀ x₀
-  rw [stateTransitionMap, dif_pos h]
+  rw [stateTransitionMap, dite_eq_left h]
   exact h.2.choose_spec.1
 
 /-- **Forward completeness means global existence**: if every trajectory extends to `[t₀, ∞)`,
@@ -579,7 +579,7 @@ lemma eq_stateTransitionMap (hu : s.HasUniqueSolutions u) {t₀ t₁ : ℝ} {x :
   have hx_t : s.IsTrajectoryOn u x (Set.Icc t₀ t) :=
     IsIntegralCurveOn.mono hx (Set.Icc_subset_Icc_right ht.2)
   have hmem : t ∈ s.existenceInterval u t₀ (x t₀) := ⟨ht.1, x, rfl, hx_t⟩
-  rw [stateTransitionMap, dif_pos hmem]
+  rw [stateTransitionMap, dite_eq_left hmem]
   obtain ⟨hy₀, hy⟩ := hmem.2.choose_spec
   exact (hu t₀ t _ x hy hx_t hy₀ ⟨ht.1, le_rfl⟩).symm
 

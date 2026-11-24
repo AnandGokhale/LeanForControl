@@ -15,7 +15,7 @@ open Set Filter Topology MeasureTheory intervalIntegral
 A *class L* function `σ(s)` is continuous, positive and strictly decreasing on `[0, ∞)`, and
 tends to zero as `s → ∞`. It is the pure time-decay factor of an asymptotic stability
 estimate: multiplying one by a class K function gives a class KL bound
-(`ClassKL.mk_mul`). -/
+(`ClassKL.mkMul`). -/
 
 /-- A class L function `σ : [0,∞) → ℝ`: continuous, strictly positive, strictly decreasing,
     and tending to `0` at `+∞`. -/

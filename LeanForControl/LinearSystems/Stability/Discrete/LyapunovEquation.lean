@@ -92,7 +92,7 @@ theorem IsSchur.exists_posDef_unique_solution_discrete_lyapunov {A : Matrix X X 
   have hs : Summable term := by
     refine Summable.of_norm_bounded (g := fun k => C' * ‖Q‖ * C * (ρ' * ρ) ^ k)
       ((summable_geometric_of_lt_one (by positivity)
-        (mul_lt_one_of_nonneg_of_lt_one_left hρ0' hρ1' hρ1.le)).mul_left _) fun k => ?_
+        ((mul_le_of_le_one_right hρ0' hρ1.le).trans_lt hρ1')).mul_left _) fun k => ?_
     calc ‖term k‖ ≤ ‖(Aᵀ) ^ k‖ * ‖Q‖ * ‖A ^ k‖ := by
           simp only [hterm]
           exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right (norm_mul_le _ _)

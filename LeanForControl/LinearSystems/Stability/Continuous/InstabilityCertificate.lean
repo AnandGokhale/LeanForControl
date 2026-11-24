@@ -60,7 +60,7 @@ lemma bilinear_eq_zero_on_genEigenspaces
       y ∈ T.genEigenspace ν l → B x y = 0 := by
   intro k l
   induction hsum : k + l using Nat.strong_induction_on generalizing k l with
-  | h s ih =>
+  | ind s ih =>
       intro x y hx hy
       rcases k with _ | k
       · have hx' : x ∈ T.genEigenspace ξ (0 : ℕ∞) := by simpa using hx
@@ -78,10 +78,10 @@ lemma bilinear_eq_zero_on_genEigenspaces
       let Ny := (T - ν • (1 : Module.End ℂ V)) y
       have hxN : Nx ∈ T.genEigenspace ξ k := by
         rw [Module.End.mem_genEigenspace_nat] at hx ⊢
-        simpa only [Nx, pow_succ, Module.End.mul_apply] using hx
+        simpa only [Nx, pow_succ, LinearMap.mem_ker, mul_apply_eq_comp] using hx
       have hyN : Ny ∈ T.genEigenspace ν l := by
         rw [Module.End.mem_genEigenspace_nat] at hy ⊢
-        simpa only [Ny, pow_succ, Module.End.mul_apply] using hy
+        simpa only [Ny, pow_succ, LinearMap.mem_ker, mul_apply_eq_comp] using hy
       have hNx : B Nx y = 0 := by
         apply ih (k + (l + 1)) (by omega) k (l + 1) rfl Nx y hxN hy
       have hNy : B x Ny = 0 := by

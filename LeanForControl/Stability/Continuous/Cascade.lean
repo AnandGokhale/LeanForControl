@@ -44,9 +44,9 @@ private noncomputable def cascadeKL (β₁ : ClassKLGlobal) (γ₁ : ClassKInfty
     {c : ℝ} (hc : 0 < c) : ClassKLGlobal :=
   -- `κ(r, s) = γ₁(cβ₂(r, s))`, and `a(r, σ) = c(β₁(r, σ/2) + κ(r, 0))` bounds the driven state
   -- at the midpoint.
-  let κ := (β₂.smul c hc).comp_left γ₁
+  let κ := (β₂.smul c hc).compLeft γ₁
   let β₁' := β₁.timeScale 2 two_pos
-  (β₁'.comp_antitone (fun r σ => c * (β₁'.toFun r σ + κ.toFun r 0))
+  (β₁'.compAntitone (fun r σ => c * (β₁'.toFun r σ + κ.toFun r 0))
     (fun σ hσ => by simp [β₁'.map_zero σ hσ, κ.map_zero 0 le_rfl])
     (continuousOn_const.mul (β₁'.continuous.add (κ.continuous.comp
       (continuousOn_fst.prodMk continuousOn_const) fun p hp => ⟨hp.1, mem_Ici.2 le_rfl⟩)))
@@ -54,7 +54,7 @@ private noncomputable def cascadeKL (β₁ : ClassKLGlobal) (γ₁ : ClassKInfty
       (β₁'.strict_mono_r σ hσ hr hr' h) (κ.mono_r hr le_rfl h.le)) hc)
     (fun r hr σ hσ σ' hσ' h => mul_le_mul_of_nonneg_left
       (add_le_add (β₁'.anti_s r hr hσ hσ' h) le_rfl) hc.le)).add
-    ((β₂.timeScale 2 two_pos).smul c hc |>.comp_left γ₁) |>.add β₂
+    ((β₂.timeScale 2 two_pos).smul c hc |>.compLeft γ₁) |>.add β₂
 
 /-- **The driven state of a cascade.**  Let `s₁` be input-to-state stable about `(x_c, x_e)` with
 data `β₁, γ₁`, and let the driving state obey
@@ -62,7 +62,7 @@ data `β₁, γ₁`, and let the driving state obey
 input-to-state stability on `[t₀, m]` and on `[m, t]`, `m = (t₀ + t)/2`,
 `‖x₁(t) - x_c‖ ≤ β₁(β₁(r, s/2) + γ₁(β₂(r, 0) + g), s/2) + γ₁(β₂(r, s/2) + g)`, `s = t - t₀`. -/
 private lemma norm_fst_sub_le_of_cascade {E₁ E₂ Y₁ : Type*} [NormedAddCommGroup E₁]
-    [NormedSpace ℝ E₁] [NormedAddCommGroup E₂] [NormedSpace ℝ E₂]
+    [NormedSpace ℝ E₁] [NormedAddCommGroup E₂]
     {s₁ : ContinuousSystem E₁ E₂ Y₁} {x_c : E₁} {x_e : E₂} {β₁ : ClassKLGlobal}
     {γ₁ : ClassKInfty}
     (hISS : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (u : ℝ → E₂) (x : ℝ → E₁),
@@ -143,7 +143,7 @@ theorem cascade_globallyUniformlyAsymptoticallyStable {s₁ : ContinuousSystem E
       β₁.toFun (β₁.toFun r (σ / 2) + γ₁.toFun (β₂.toFun r 0)) (σ / 2) +
         γ₁.toFun (β₂.toFun r (σ / 2)) + β₂.toFun r σ := fun r σ => by
       simp [β, cascadeKL, ClassKLGlobal.add, ClassKLGlobal.smul, ClassKLGlobal.timeScale,
-        ClassKLGlobal.comp_left, ClassKLGlobal.comp_antitone]
+        ClassKLGlobal.compLeft, ClassKLGlobal.compAntitone]
   refine (globallyUniformlyAsymptoticallyStable_iff_classKL _ _).2 ⟨β, ?_⟩
   -- The estimate along a trajectory.
   intro t₀ ht₀ t₁ x hx t ht
@@ -257,9 +257,9 @@ theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
         add_le_add (add_le_add h_term₁ (h_split _ _ (hβ₂r s hs) hg)) le_rfl
     _ = (cascadeKL β₁ γ₁ β₂ two_pos).toFun r (t - t₀) + γ.toFun M := by
         simp only [γ, δ, cascadeKL, ClassKLGlobal.add, ClassKLGlobal.smul,
-          ClassKLGlobal.timeScale, ClassKLGlobal.comp_left, ClassKLGlobal.comp_antitone,
+          ClassKLGlobal.timeScale, ClassKLGlobal.compLeft, ClassKLGlobal.compAntitone,
           ClassKInfty.addMonotone_apply, ClassKInfty.add,
-          ClassKInfty.comp, ClassKInfty.smul, ClassKInfty.of_strictMono, Function.comp_apply, s, g]
+          ClassKInfty.comp, ClassKInfty.smul, ClassKInfty.ofStrictMono, Function.comp_apply, s, g]
         ring
 
 end ContinuousSystem

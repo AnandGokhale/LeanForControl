@@ -1,7 +1,7 @@
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.Normed.Lp.Matrix
 import Mathlib.Analysis.Matrix.PosDef
-import Mathlib.Data.Real.StarOrdered
+import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Algebra.Module.TransferInstance
 import Mathlib.Topology.Algebra.Module.FiniteDimension
 import LeanForControl.Analysis.Jacobian
@@ -230,13 +230,17 @@ protected def equivE : WeightedNorm R ≃ E where
 
 instance : AddCommGroup (WeightedNorm R) := (WeightedNorm.equivE R).addCommGroup
 
-instance : Module ℝ (WeightedNorm R) := (WeightedNorm.equivE R).module ℝ
+/-- `WeightedNorm.equivE` as an additive equivalence. -/
+protected def addEquivE : WeightedNorm R ≃+ E :=
+  { WeightedNorm.equivE R with map_add' := fun _ _ => rfl }
+
+instance : Module ℝ (WeightedNorm R) := (WeightedNorm.addEquivE R).module ℝ
 
 instance [Nontrivial E] : Nontrivial (WeightedNorm R) := (WeightedNorm.equivE R).nontrivial
 
 /-- `R` on the weighted space, as a linear map: the norm is pulled back along it. -/
 private def weightₗ : WeightedNorm R ≃ₗ[ℝ] F :=
-  ((WeightedNorm.equivE R).linearEquiv ℝ).trans R.toLinearEquiv
+  ((WeightedNorm.addEquivE R).linearEquiv ℝ).trans R.toLinearEquiv
 
 noncomputable instance : NormedAddCommGroup (WeightedNorm R) :=
   NormedAddCommGroup.induced _ _ (weightₗ R) (weightₗ R).injective
@@ -374,7 +378,12 @@ protected def equivE : WeightedEuclidean hP ≃ (n → ℝ) where
 
 instance : AddCommGroup (WeightedEuclidean hP) := (WeightedEuclidean.equivE hP).addCommGroup
 
-noncomputable instance : Module ℝ (WeightedEuclidean hP) := (WeightedEuclidean.equivE hP).module ℝ
+/-- `WeightedEuclidean.equivE` as an additive equivalence. -/
+protected def addEquivE : WeightedEuclidean hP ≃+ (n → ℝ) :=
+  { WeightedEuclidean.equivE hP with map_add' := fun _ _ => rfl }
+
+noncomputable instance : Module ℝ (WeightedEuclidean hP) :=
+  (WeightedEuclidean.addEquivE hP).module ℝ
 
 omit [Fintype n] [DecidableEq n] in
 @[simp] lemma ofWE_add (x y : WeightedEuclidean hP) : (x + y).ofWE = x.ofWE + y.ofWE := rfl
@@ -418,11 +427,12 @@ noncomputable instance : InnerProductSpace ℝ (WeightedEuclidean hP) :=
 
 omit [Fintype n] [DecidableEq n] in
 instance [Finite n] : FiniteDimensional ℝ (WeightedEuclidean hP) :=
-  LinearEquiv.finiteDimensional ((WeightedEuclidean.equivE hP).linearEquiv ℝ).symm
+  LinearEquiv.finiteDimensional ((WeightedEuclidean.addEquivE hP).linearEquiv ℝ).symm
 
 /-- The identity of `ℝⁿ`, from the sup norm of `n → ℝ` to the norm `√(xᵀ P x)`. -/
 noncomputable def equiv : (n → ℝ) ≃L[ℝ] WeightedEuclidean hP :=
-  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP := ((WeightedEuclidean.equivE hP).linearEquiv ℝ).symm
+  let e : (n → ℝ) ≃ₗ[ℝ] WeightedEuclidean hP :=
+    ((WeightedEuclidean.addEquivE hP).linearEquiv ℝ).symm
   { e with
     continuous_toFun := e.toLinearMap.continuous_of_finiteDimensional
     continuous_invFun := e.symm.toLinearMap.continuous_of_finiteDimensional }

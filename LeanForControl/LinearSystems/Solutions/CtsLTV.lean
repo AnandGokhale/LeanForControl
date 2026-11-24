@@ -134,9 +134,10 @@ theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLTV E U Y)
     intro r hr
     convert (s.hasDerivAt_stateTransition_snd hA t₀ r).hasDerivWithinAt.clm_apply (hx r hr)
       using 1
-    simp only [ContinuousLinearMap.neg_apply, ContinuousLinearMap.coe_mul', Function.comp_apply,
-      ContinuousSystem.vectorField_apply, Pi.zero_apply, toContinuousSystem_F, map_zero, add_zero]
+    simp only [neg_apply, ContinuousSystem.vectorField_apply,
+      Pi.zero_apply, toContinuousSystem_F, map_zero, add_zero]
     rw [eq_comm, neg_add_eq_zero]
+    rfl
   have h_const : s.stateTransition t₀ t (x t) = x t₀ := by
     simpa using constant_of_has_deriv_right_zero (fun r hr => (hd r hr).continuousWithinAt)
       (fun r hr => (hd r (Set.Ico_subset_Icc_self hr)).mono_of_mem_nhdsWithin

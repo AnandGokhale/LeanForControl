@@ -229,7 +229,7 @@ private lemma iterate_stable [ProperSpace E] {f : E → E} {x_eq : E} {V : E →
   have hs_lt_ε' : s < ε' := (half_lt_self (lt_min hr' hε')).trans_le (min_le_right _ _)
   -- Step 2. `V` has a positive lower bound `m` on the annulus `A = {s ≤ ‖x - x_eq‖ ≤ ε'}`.
   set A := closedBall x_eq ε' \ ball x_eq s with hA_def
-  have hA_D : A ⊆ D := diff_subset.trans h_closedBall_D
+  have hA_D : A ⊆ D := sdiff_subset.trans h_closedBall_D
   have hA_ne : ∀ x ∈ A, x ≠ x_eq := fun x hx h_eq => hx.2 (h_eq ▸ mem_ball_self hs)
   obtain ⟨m, hm_pos, hm_le⟩ : ∃ m > 0, ∀ x ∈ A, m ≤ V x := by
     by_cases hA : A.Nonempty

@@ -53,7 +53,7 @@ theorem IsContractingOn.of_logNormLpWeight (p : ℝ≥0∞) [Fact (1 ≤ p)]
     fun t => by
       have hb := (oneSidedLipschitzLpWeight_eq_iSup p hR hCo hCc (hF t)).trans_le
         (iSup₂_le fun x hx => EReal.coe_le_coe_iff.2 (hμ t x hx))
-      rw [oneSidedLipschitzLpWeight, dif_pos hR, WeightedNorm.oneSidedLipschitz,
+      rw [oneSidedLipschitzLpWeight, dite_eq_left hR, WeightedNorm.oneSidedLipschitz,
         Set.image_image] at hb
       exact hb
   convert h using 3 with x y
@@ -80,7 +80,7 @@ theorem IsContractingOn.of_logNormL2PosDef {P : Matrix n n ℝ} (hP : P.PosDef)
     (WeightedEuclidean.equiv hP) fun t => by
       have hb := (oneSidedLipschitzL2PosDef_eq_iSup hP hCo hCc (hF t)).trans_le
         (iSup₂_le fun x hx => EReal.coe_le_coe_iff.2 (hμ t x hx))
-      rw [oneSidedLipschitzL2PosDef, dif_pos hP] at hb
+      rw [oneSidedLipschitzL2PosDef, dite_eq_left hP] at hb
       exact hb
   -- the norm of `equiv hP (x - y)` is `‖x - y‖_{2,P^½}` by definition
   exact h

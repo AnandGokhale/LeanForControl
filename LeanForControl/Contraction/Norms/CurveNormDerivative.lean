@@ -42,7 +42,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     $\pair{x}{y} \le \|y\| \, (\|y + h x\| - \|y\|)/h$; let $h \to 0^+$.  The lower bound is the
     upper bound for $-x$, with $0 = \pair{0}{y} \le \pair{x}{y} + \pair{-x}{y}$. -/)]
 theorem le_ofNorm (p : RegularPairing E) (x y : E) : ⟦x; y⟧_p ≤ ⟦x; y⟧ := by
-  refine ge_of_tendsto (((hasDerivWithinAt_iff_tendsto_slope' (s := Ioi 0)
+  refine ge_of_tendsto (((hasDerivWithinAt_iff_tendsto_slope' (x := (0 : ℝ)) (s := Ioi 0)
     (lt_irrefl (0 : ℝ))).1 (hasDerivWithinAt_norm_add_smul x y)).const_mul ‖y‖) ?_
   filter_upwards [self_mem_nhdsWithin] with h (hh : 0 < h)
   have h1 := p.add_smul_self (h • x) y 1
@@ -82,7 +82,7 @@ theorem hasDerivWithinAt_norm_sq {x : ℝ → E} {v : E} {t : ℝ}
     have := HasDerivWithinAt.scomp t
       (by rw [sub_self]; exact hasDerivWithinAt_norm_add_smul v (x t))
       ((hasDerivAt_id' t).sub_const t).hasDerivWithinAt
-      (fun s (hs : t < s) => sub_pos.2 hs : MapsTo (· - t) (Ioi t) (Ioi 0))
+      (show MapsTo (· - t) (Ioi t) (Ioi 0) from fun _ hs => mem_Ioi.2 (sub_pos.2 hs))
     simpa only [Function.comp_def, one_smul] using this
   have hn : HasDerivWithinAt (fun s => ‖x s‖) D (Ioi t) t := by
     rw [hasDerivWithinAt_iff_isLittleO] at hx hk ⊢
