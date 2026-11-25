@@ -35,6 +35,16 @@ jobs:
           docker-images: false
           swap-storage: false
 
+      # Building the API docs of all dependencies (Mathlib included) runs out of memory without it.
+      - name: Add swap space
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 16G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
+
       - name: Checkout project
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
