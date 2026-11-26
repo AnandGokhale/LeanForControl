@@ -43,6 +43,10 @@ jobs:
           sudo swapon /mnt/swapfile
           free -h
 
+      # Under memory pressure, spawning `git` (for source links) failed with ENOMEM.
+      - name: Allow memory overcommit
+        run: sudo sysctl -w vm.overcommit_memory=1
+
       - name: Checkout project
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
@@ -53,6 +57,9 @@ jobs:
           lint: false
 
       - name: Build API documentation
+        # A cold build documents all of Lean core at once and exhausts memory; two jobs at a time fit.
+        env:
+          LEAN_NUM_THREADS: 2
         uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05: lists the project after doc-gen4 in the docbuild lakefile, so our pinned doc-gen4 wins
         with:
           api-docs: true

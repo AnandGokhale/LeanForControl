@@ -14,11 +14,6 @@ on:
     branches: [main]
   workflow_dispatch:        # Allow manual triggering of the workflow from the GitHub Actions interface
 
-# One deployment at a time; a newer run replaces an older one.
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read          # Read access to repository contents
@@ -30,6 +25,11 @@ jobs:
   build_project:
     # Skip when triggered by a failed docs run: there is nothing new to deploy.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # One deployment at a time, queued rather than cancelled. Set on the job, not the workflow,
+    # so that a skipped run (after a failed docs run) does not cancel a running deployment.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     # Pinned with Ruby 3.1 below: home_page/Gemfile.lock (nokogiri 1.13.6) does not install on Ruby 3.4.
     runs-on: ubuntu-24.04
     name: Build project
