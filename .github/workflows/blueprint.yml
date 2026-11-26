@@ -1,50 +1,39 @@
 name: Compile blueprint
 
+# Builds the blueprint and the home page and deploys the site to GitHub Pages. The API docs are
+# built by the "API documentation" workflow (docs.yml); this workflow copies in the docs from
+# its latest successful run, and runs again whenever that workflow succeeds.
+
 on:
   push:
     branches:
       - main # Trigger on pushes to the default branch
+  workflow_run:
+    workflows: ["API documentation"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:        # Allow manual triggering of the workflow from the GitHub Actions interface
 
-# Cancel previous runs if a new commit is pushed to the same PR or branch
+# One deployment at a time; a newer run replaces an older one.
 concurrency:
-  group: ${{ github.ref }}  # Group runs by the ref (branch or PR)
-  cancel-in-progress: true  # Cancel any ongoing runs in the same group
+  group: pages
+  cancel-in-progress: true
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read          # Read access to repository contents
+  actions: read           # Download the API docs artifact
   pages: write            # Write access to GitHub Pages
   id-token: write         # Write access to ID tokens
-  issues: write           # Write access to issues
-  pull-requests: write    # Write access to pull requests
 
 jobs:
   build_project:
-    runs-on: ubuntu-latest
+    # Skip when triggered by a failed docs run: there is nothing new to deploy.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # Pinned with Ruby 3.1 below: home_page/Gemfile.lock (nokogiri 1.13.6) does not install on Ruby 3.4.
+    runs-on: ubuntu-24.04
     name: Build project
     steps:
-      - name: Cleanup to free disk space
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
-        with:
-          tool-cache: false
-          android: true
-          dotnet: false
-          haskell: false
-          large-packages: false
-          docker-images: false
-          swap-storage: false
-
-      # Building the API docs of all dependencies (Mathlib included) runs out of memory without it.
-      - name: Add swap space
-        run: |
-          sudo swapoff -a
-          sudo fallocate -l 16G /mnt/swapfile
-          sudo chmod 600 /mnt/swapfile
-          sudo mkswap /mnt/swapfile
-          sudo swapon /mnt/swapfile
-          free -h
-
       - name: Checkout project
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -63,8 +52,32 @@ jobs:
       - name: Build blueprint nodes
         run: lake build :blueprint
 
-      - name: Compile blueprint and documentation
+      - name: Compile blueprint and home page
         uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05: lists the project after doc-gen4 in the docbuild lakefile, so our pinned doc-gen4 wins
         with:
+          api-docs: false
           blueprint: true
+          deploy: false
           homepage: home_page
+          ruby-version: "3.1"
+
+      # Copied after Jekyll so that Jekyll does not process the thousands of doc pages.
+      - name: Add API documentation from the latest successful docs run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow docs.yml --branch main \
+            --status success --limit 1 --json databaseId -q '.[0].databaseId')
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --repo "$GITHUB_REPOSITORY" -n api-docs -D home_page/_site/docs
+          else
+            echo "::warning::No successful API documentation run found; deploying without /docs."
+          fi
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: home_page/_site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

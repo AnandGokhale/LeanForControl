@@ -1,0 +1,76 @@
+name: API documentation
+
+# Builds the API documentation, keeps only LeanForControl's pages (scripts/prune_api_docs.py)
+# and stores them as an artifact. It does not deploy: the
+# "Compile blueprint" workflow deploys the site and copies in the docs from the latest
+# successful run of this workflow, so a failure here never blocks the blueprint.
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    name: Build API documentation
+    steps:
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      # Building the API docs of all dependencies (Mathlib included) runs out of memory without it.
+      - name: Add swap space
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 32G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
+
+      - name: Checkout project
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Build project
+        uses: leanprover/lean-action@434f25c2f80ded67bba02502ad3a86f25db50709 # 2025-07-02
+        with:
+          build: true
+          lint: false
+
+      - name: Build API documentation
+        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05: lists the project after doc-gen4 in the docbuild lakefile, so our pinned doc-gen4 wins
+        with:
+          api-docs: true
+          blueprint: false
+          build-page: false
+          deploy: false
+          homepage: home_page
+
+      # Keep only LeanForControl's pages; links to everything else go to the Mathlib docs.
+      - name: Prune documentation to LeanForControl
+        run: |
+          du -sh home_page/docs
+          python3 scripts/prune_api_docs.py home_page/docs
+          du -sh home_page/docs
+
+      - name: Upload API documentation
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: api-docs
+          path: home_page/docs
+          retention-days: 90
