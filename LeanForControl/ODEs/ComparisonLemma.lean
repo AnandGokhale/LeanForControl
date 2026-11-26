@@ -7,6 +7,7 @@ import LeanForControl.ODEs.ODE_properties
 import Mathlib.Topology.Order.IntermediateValue
 import Mathlib.Topology.ContinuousOn
 import LeanForControl.Analysis.Continuity
+import LeanForControl.Analysis.AbsolutelyContinuous
 import Architect
 
 /-!
@@ -16,7 +17,7 @@ The comparison lemma for scalar ODEs: if `u` is an exact solution of `u̇ = f(t,
 `u(t₀) = u₀`, and `v` is continuous with upper Dini derivative satisfying
 `D⁺v(t) ≤ f(t, v(t))` and `v(t₀) ≤ u₀`, then `v(t) ≤ u(t)` for all `t ∈ [t₀, t₁]`.
 
-## Proof strategy (Khalil, Appendix C.2)
+## Proof strategy (Khalil)
 
 * **Claim 1** (`comparison_claim_1`): For any perturbed solution `z` of `ż = f(t, z) + λ`
   with `λ > 0`, we have `v(t) ≤ z(t)` on `[t₀, t₁]`. Proved by contradiction: assuming
@@ -26,7 +27,7 @@ The comparison lemma for scalar ODEs: if `u` is an exact solution of `u̇ = f(t,
 
 * **Claim 2** (`comparison_lemma`): `v(t) ≤ u(t)` follows by sending `λ → 0`. For each
   `λ > 0`, `v(t) ≤ z_λ(t)` by Claim 1, and `z_λ(t) ≤ u(t) + ε/2` by the
-  continuous-dependence estimate (Khalil, Theorem 3.5). Since `ε > 0` is arbitrary,
+  continuous-dependence estimate (`continuous_dependence_parameters`). Since `ε > 0` is arbitrary,
   `v(t) ≤ u(t)`.
 
 ## Main declarations
@@ -34,11 +35,16 @@ The comparison lemma for scalar ODEs: if `u` is an exact solution of `u̇ = f(t,
 * `isIntegralSolution_of_hasDerivAt` — converts a pointwise derivative condition into an
   integral solution.
 * `comparison_lemma` — the full comparison inequality `v ≤ u`.
+* `AbsolutelyContinuousOnInterval.comparison_lemma` — the comparison lemma for absolutely
+  continuous functions, with the differential inequalities holding almost everywhere.  Neither
+  form implies the other: this one asks more of `v` (absolute continuity) and less of the
+  inequality (almost everywhere, classical derivative) and of `f` (a one-sided Lipschitz bound
+  along the two curves, no continuity).
 
-`comparison_claim_1` is a private step of the latter's proof.
+`comparison_claim_1` is a private step of the proof of `comparison_lemma`.
 -/
 
-open Set Filter Topology
+open Set Filter Topology MeasureTheory
 
 /-! ## Integral solution helper -/
 
@@ -137,15 +143,16 @@ Hypotheses:
   `exists_isIntegralSolution_Icc_of_lipschitz`).
 
 The proof uses `comparison_claim_1` to get `v ≤ z_λ`, then `continuous_dependence_parameters`
-(Khalil, Theorem 3.5) to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all
-`ε > 0`.
+to bound `‖u - z_λ‖ ≤ ε/2`, and concludes `v(t) < u(t) + ε` for all `ε > 0`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 3.4. Note this is Khalil's *Lemma* 3.4;
-his *Theorem* 3.4 is the continuous-dependence result `continuous_dependence_ODE`. -/
+For an absolutely continuous `v` satisfying the inequality only almost everywhere, as along a
+Carathéodory trajectory, see `AbsolutelyContinuousOnInterval.comparison_lemma`.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison lemma. -/
 @[blueprint "thm:comparison-lemma"
   (title := "Comparison lemma")
-  (statement := /-- Khalil, Lemma 3.4.  Let $f$ be jointly
-    continuous and $L$-Lipschitz in its state argument on $[t_0, t_1]$, and suppose
+  (statement := /-- The comparison lemma of Khalil, \emph{Nonlinear Systems} (3rd ed.).  Let
+    $f$ be jointly continuous and $L$-Lipschitz in its state argument on $[t_0, t_1]$, and suppose
     \begin{enumerate}
       \item $u$ is continuous on $[t_0,t_1]$ and solves $\dot u = f(t,u)$ with $u(t_0) = u_0$;
       \item $v$ is continuous on $[t_0,t_1]$ with $v(t_0) \le u_0$, satisfies the Dini
@@ -216,7 +223,75 @@ theorem comparison_lemma
       intro τ _ x
       rw [Real.norm_eq_abs, abs_of_pos hlam_pos]
     have hz₀_bound : ‖u₀ - u₀‖ ≤ lam := by simp [hlam_pos.le]
-    exact continuous_dependence_parameters (le_of_lt ht) hL hlam_pos hlam_cond
-      hu_sol hz_sol hu_cont hz_cont hf_cont hg_cont hLip hg_bound hz₀_bound t ht_mem
+    exact continuous_dependence_parameters (K := ⟨L, hL.le⟩) (le_of_lt ht) hL hlam_cond
+      hu_sol hz_sol hLip hg_bound hz₀_bound t ht_mem
   linarith [half_lt_self hε,
     (abs_le.mp (by rwa [← Real.norm_eq_abs] : |u t - z t| ≤ ε/2)).1]
+
+/-! ## The comparison lemma for absolutely continuous functions -/
+
+/-- **Comparison lemma, absolutely continuous form.**  Let `v` and `u` be absolutely continuous on
+`[a, b]` with `v̇ ≤ f(t, v)` and `f(t, u) ≤ u̇` almost everywhere, and `v(a) ≤ u(a)`.  If `f` is
+one-sided Lipschitz along the two curves, `f(t, v(t)) - f(t, u(t)) ≤ L (v(t) - u(t))` for almost
+every `t` with `u(t) < v(t)`, then `v ≤ u` on `[a, b]`.
+
+The one-sided bound holds when `f t` is `L`-Lipschitz; `L` is any real, and `f` needs no
+regularity in time.  In particular `u` may be a solution, `u̇ = f(t, u)`.
+
+This is the form that applies along Carathéodory trajectories.  The textbook form,
+`comparison_lemma`, asks `v` only continuous with the Dini inequality `D⁺v ≤ f(t, v)` at every
+point, and `f` continuous and Lipschitz; neither form implies the other.
+
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison lemma, there for a continuous
+`v` and the upper right Dini derivative. -/
+@[blueprint "thm:absolutelyContinuousOnInterval-comparison-lemma"
+  (title := "Comparison lemma for absolutely continuous functions")
+  (statement := /-- Let $v, u$ be real and absolutely continuous on $[a, b]$ with
+    $v(a) \le u(a)$, and let $f : \mathbb{R} \times \mathbb{R} \to \mathbb{R}$ and
+    $L \in \mathbb{R}$ be such that, for almost every $t \in (a, b)$,
+    \[
+      v'(t) \le f(t, v(t)), \qquad f(t, u(t)) \le u'(t), \qquad
+      f(t, v(t)) - f(t, u(t)) \le L\,\bigl(v(t) - u(t)\bigr) \ \text{ if } u(t) < v(t).
+    \]
+    Then $v(t) \le u(t)$ for all $t \in [a, b]$.
+
+    The last condition holds when $f(t, \cdot)$ is $L$-Lipschitz.  The textbook comparison lemma
+    (\cref{thm:comparison-lemma}) asks $v$ only continuous, with the Dini inequality at every
+    point; neither implies the other.
+
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the comparison lemma. -/)
+  (proof := /-- The function $w(t) = e^{-L(t - a)}(v(t) - u(t))$ is absolutely continuous with
+    $w(a) \le 0$, and for almost every $t$ with $w(t) > 0$, that is, $u(t) < v(t)$,
+    \[
+      w'(t) = e^{-L(t-a)}\bigl(v'(t) - u'(t) - L(v(t) - u(t))\bigr)
+      \le e^{-L(t-a)}\bigl(f(t, v(t)) - f(t, u(t)) - L(v(t) - u(t))\bigr) \le 0.
+    \]
+    By \cref{lem:absolutelyContinuousOnInterval-le-max-of-deriv-nonpos}, $w \le 0$ on $[a, b]$,
+    that is, $v \le u$. -/)]
+theorem AbsolutelyContinuousOnInterval.comparison_lemma {f : ℝ → ℝ → ℝ} {u v : ℝ → ℝ}
+    {a b L : ℝ} (hv : AbsolutelyContinuousOnInterval v a b)
+    (hu : AbsolutelyContinuousOnInterval u a b)
+    (hf : ∀ᵐ t, t ∈ Ioo a b → u t < v t → f t (v t) - f t (u t) ≤ L * (v t - u t))
+    (hv' : ∀ᵐ t, t ∈ Ioo a b → deriv v t ≤ f t (v t))
+    (hu' : ∀ᵐ t, t ∈ Ioo a b → f t (u t) ≤ deriv u t)
+    (h₀ : v a ≤ u a) :
+    ∀ t ∈ Icc a b, v t ≤ u t := by
+  -- `w(t) = e^{-L(t - a)} (v(t) - u(t))` starts nonpositive and cannot rise above `0`.
+  have hw : AbsolutelyContinuousOnInterval
+      (fun t => Real.exp (-L * (t - a)) * (v t - u t)) a b :=
+    (ContDiff.contDiffOn (by fun_prop)).absolutelyContinuousOnInterval.fun_mul (hv.sub hu)
+  intro t ht
+  have key := hw.le_max_of_deriv_nonpos (η := 0) ?_ t ht
+  · rw [sub_self, mul_zero, Real.exp_zero, one_mul, max_eq_right (sub_nonpos.2 h₀)] at key
+    exact sub_nonpos.mp (nonpos_of_mul_nonpos_right key (Real.exp_pos _))
+  filter_upwards [hf, hv', hu', hv.ae_differentiableAt, hu.ae_differentiableAt]
+    with s hfs hvs hus hdv hdu hmem hpos
+  have hmem' : s ∈ uIcc a b := Icc_subset_uIcc (Ioo_subset_Icc_self hmem)
+  have hd := ((((hasDerivAt_id s).sub_const a).const_mul (-L)).exp).mul
+    ((hdv hmem').hasDerivAt.sub (hdu hmem').hasDerivAt)
+  rw [show deriv (fun t => Real.exp (-L * (t - a)) * (v t - u t)) s = _ from hd.deriv]
+  have hvu : 0 < v s - u s := pos_of_mul_pos_right hpos (Real.exp_pos _).le
+  have h_rate : deriv v s - deriv u s - L * (v s - u s) ≤ 0 := by
+    linarith [hfs hmem (sub_pos.1 hvu), hvs hmem, hus hmem]
+  simp only [id, mul_one, Pi.sub_apply]
+  nlinarith [mul_nonpos_of_nonneg_of_nonpos (Real.exp_pos (-L * (s - a))).le h_rate]

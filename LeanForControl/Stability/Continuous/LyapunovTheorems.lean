@@ -3,7 +3,6 @@ import LeanForControl.Stability.Continuous.KLCharacterization
 import LeanForControl.Comparison.PositiveDefiniteBounds
 import LeanForControl.Comparison.DecaySystem
 import LeanForControl.Analysis.Continuity
-import LeanForControl.Analysis.DiniDeriv
 import Architect
 
 /-!
@@ -13,14 +12,16 @@ Lyapunov's direct method for `ẋ = f(t, x)`: the certificates of
 `Stability.Continuous.LyapunovFunctions` imply the stability notions of
 `Stability.Continuous.Defs`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorems 4.8 and 4.9.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lyapunov's uniform stability and uniform
+asymptotic stability theorems for time-varying systems.
 
 ## Main results
 
 * `IsUniformLyapunovFunction.uniformlyStable` — a uniform Lyapunov function certifies uniform
-  stability (Khalil, Theorem 4.8).
+  stability (Khalil's uniform stability theorem).
 * `IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable` — a strict uniform Lyapunov
-  function certifies uniform asymptotic stability (Khalil, Theorem 4.9).
+  function certifies uniform asymptotic stability (Khalil's uniform asymptotic stability
+  theorem).
 
 ## The two arguments
 
@@ -29,7 +30,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorems 4.8 and 4.9.
   small, and so `W₁` small: it cannot reach a sphere on which `W₁` is large.  This gives uniform
   stability directly: to stay in the `ε`-ball, run the argument on a radius below `ε`.
 * **Decay.**  With `V̇ ≤ -W₃`, the sandwich turns this into the scalar inequality
-  `D⁺v ≤ -α(v)` for `v(t) = V(t, x(t))` and a class `K` function `α`.  The comparison lemma bounds
+  `v̇ ≤ -α(v)`, almost everywhere, for the absolutely continuous `v(t) = V(t, x(t))` and a class
+  `K` function `α`.  The comparison lemma bounds
   `v` by a class `KL` function, and the sandwich turns that into a class `KL` bound on
   `‖x(t) - x_eq‖`, from which the uniform convergence time follows.
 
@@ -42,67 +44,50 @@ open Set Filter Topology Metric
 
 namespace ContinuousSystem
 
-variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
 /-! ## Lyapunov's exponential stability theorem -/
 
-/-- Taking `a`-th roots: `u^a ≤ C w^a` gives `u ≤ C^{1/a} w`, for nonnegative `u, w, C`. -/
-private lemma le_rpow_inv_mul {u w C a : ℝ} (hu : 0 ≤ u) (hw : 0 ≤ w) (hC : 0 ≤ C) (ha : 0 < a)
-    (h : u ^ a ≤ C * w ^ a) : u ≤ C ^ (1 / a) * w := by
-  have h_root := Real.rpow_le_rpow (Real.rpow_nonneg hu a) h (one_div_nonneg.mpr ha.le)
-  rwa [← Real.rpow_mul hu, mul_one_div_cancel ha.ne', Real.rpow_one,
-    Real.mul_rpow hC (Real.rpow_nonneg hw a), ← Real.rpow_mul hw, mul_one_div_cancel ha.ne',
-    Real.rpow_one] at h_root
-
 /-- **The exponential estimate** of an exponential Lyapunov function, along any trajectory segment
 that stays in its region `D`: `‖x(t) - x_eq‖ ≤ K ‖x(t₀) - x_eq‖ e^{-γ(t - t₀)}` with
-`K = (k₂/k₁)^{1/a}` and `γ = k₃/(a k₂)`. -/
+`K = (k₂/k₁)^{1/a}` and `γ = c/a`, where `c` is the decay rate of `V` along trajectories
+(`IsExponentialLyapunovFunction.exists_comp_le_mul_exp`). -/
 private lemma IsExponentialLyapunovFunction.exists_estimate {s : ContinuousSystem E Unit Y}
     {V : ℝ → E → ℝ} {x_eq : E} {D : Set E} {a : ℝ}
     (hV : s.IsExponentialLyapunovFunction V x_eq D a) :
     ∃ K > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
       s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → (∀ τ ∈ Icc t₀ t₁, x τ ∈ D) →
         ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ K * ‖x t₀ - x_eq‖ * Real.exp (-γ * (t - t₀)) := by
-  obtain ⟨k₁, hk₁, k₂, hk₂, k₃, hk₃, hb⟩ := hV.bounds
+  obtain ⟨k₁, hk₁, k₂, hk₂, _, _, hb⟩ := hV.bounds
+  obtain ⟨c, hc, h_decay⟩ := hV.exists_comp_le_mul_exp
   have ha := hV.exponent_pos
-  refine ⟨(k₂ / k₁) ^ (1 / a), Real.rpow_pos_of_pos (div_pos hk₂ hk₁) _, k₃ / k₂ / a,
-    div_pos (div_pos hk₃ hk₂) ha, fun t₀ ht₀ t₁ x hx h_in t ht => ?_⟩
-  set c := k₃ / k₂
-  -- `V ≤ k₂ ‖x - x_eq‖ᵃ` turns `V̇ ≤ -k₃ ‖x - x_eq‖ᵃ` into `V̇ ≤ -(k₃/k₂) V`.
-  have h_decay := IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le (c := c) hx
-    (fun τ hτ => hV.differentiableAt τ (ht₀.trans hτ.1) _ (h_in τ hτ))
-    (fun τ hτ => by
-      change s.lieDerivative V τ (x τ) () ≤ -c * V τ (x τ)
-      obtain ⟨-, h_up, h_lie⟩ := hb τ (ht₀.trans hτ.1.le) (x τ) (h_in τ (Ioo_subset_Icc_self hτ))
-      have h_cV : c * V τ (x τ) ≤ k₃ * ‖x τ - x_eq‖ ^ a := by
-        rw [div_mul_eq_mul_div, div_le_iff₀ hk₂]
-        nlinarith [h_up]
-      linarith) t ht
-  -- `k₁ ‖x(t) - x_eq‖ᵃ ≤ V(t, x(t)) ≤ e^{-c(t - t₀)} V(t₀, x(t₀))`
+  refine ⟨(k₂ / k₁) ^ (1 / a), Real.rpow_pos_of_pos (div_pos hk₂ hk₁) _, c / a,
+    div_pos hc ha, fun t₀ ht₀ t₁ x hx h_in t ht => ?_⟩
+  -- `k₁ ‖x(t) - x_eq‖ᵃ ≤ V(t, x(t)) ≤ V(t₀, x(t₀)) e^{-c(t - t₀)}`
   -- `≤ e^{-c(t - t₀)} k₂ ‖x(t₀) - x_eq‖ᵃ`.
   obtain ⟨h_low, -, -⟩ := hb t (ht₀.trans ht.1) (x t) (h_in t ht)
   obtain ⟨-, h_up, -⟩ := hb t₀ ht₀ (x t₀) (h_in t₀ ⟨le_rfl, ht.1.trans ht.2⟩)
   have h_main : k₁ * ‖x t - x_eq‖ ^ a ≤ Real.exp (-c * (t - t₀)) * (k₂ * ‖x t₀ - x_eq‖ ^ a) :=
-    h_low.trans (h_decay.trans (mul_le_mul_of_nonneg_left h_up (Real.exp_pos _).le))
+    h_low.trans ((h_decay t₀ ht₀ t₁ x hx h_in t ht).trans ((mul_comm _ _).trans_le
+      (mul_le_mul_of_nonneg_left h_up (Real.exp_pos _).le)))
   have h_pow : ‖x t - x_eq‖ ^ a ≤ k₂ / k₁ * Real.exp (-c * (t - t₀)) * ‖x t₀ - x_eq‖ ^ a := by
     have h_eq : k₁ * (k₂ / k₁ * Real.exp (-c * (t - t₀)) * ‖x t₀ - x_eq‖ ^ a) =
         Real.exp (-c * (t - t₀)) * (k₂ * ‖x t₀ - x_eq‖ ^ a) := by
       field_simp
     exact le_of_mul_le_mul_left (h_main.trans_eq h_eq.symm) hk₁
   -- Take `a`-th roots.
-  have h_root := le_rpow_inv_mul (norm_nonneg _) (norm_nonneg _)
-    (mul_nonneg (div_pos hk₂ hk₁).le (Real.exp_pos _).le) ha h_pow
-  rw [Real.mul_rpow (div_pos hk₂ hk₁).le (Real.exp_pos _).le, ← Real.exp_mul] at h_root
-  calc ‖x t - x_eq‖ ≤ _ := h_root
-    _ = (k₂ / k₁) ^ (1 / a) * ‖x t₀ - x_eq‖ * Real.exp (-(c / a) * (t - t₀)) := by
-      rw [show -c * (t - t₀) * (1 / a) = -(c / a) * (t - t₀) by ring]
-      ring
+  refine (Real.rpow_le_rpow_iff (norm_nonneg _) (by positivity) ha).1 (h_pow.trans_eq ?_)
+  rw [Real.mul_rpow (by positivity) (Real.exp_pos _).le,
+    Real.mul_rpow (by positivity) (norm_nonneg _), ← Real.rpow_mul (div_pos hk₂ hk₁).le,
+    one_div_mul_cancel ha.ne', Real.rpow_one, ← Real.exp_mul,
+    show -(c / a) * (t - t₀) * a = -c * (t - t₀) by field_simp]
+  ring
 
 /-- **Lyapunov's exponential stability theorem**: an exponential Lyapunov function certifies local
 exponential stability, with
 `‖x(t) - x_eq‖ ≤ (k₂/k₁)^{1/a} ‖x(t₀) - x_eq‖ e^{-(k₃/(a k₂))(t - t₀)}` near `x_eq`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the exponential stability theorem. -/
 @[blueprint "thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable"
   (title := "Lyapunov's exponential stability theorem")
   (statement := /-- If $V$ is an exponential Lyapunov function for $x_{\mathrm{eq}}$
@@ -113,13 +98,15 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10. -/
       \|x(t) - x_{\mathrm{eq}}\| \le \Bigl(\frac{k_2}{k_1}\Bigr)^{1/a}
         \|x(t_0) - x_{\mathrm{eq}}\|\, e^{-(k_3/(a k_2))(t - t_0)}.
     \]
-    The state space is any normed space.
+    The state space is any Banach space.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.10. -/)
-  (proof := /-- The bounds give $\dot V \le -(k_3/k_2) V$, so $e^{(k_3/k_2)t} V(t, x(t))$ does not
-    increase and $V(t, x(t)) \le V(t_0, x(t_0))\, e^{-(k_3/k_2)(t - t_0)}$ while the trajectory
-    stays in $D$; the sandwich and an $a$-th root give the estimate.  To stay in $D$, start
-    within $r/(K + 1)$ of $x_{\mathrm{eq}}$, where $\overline{B}(x_{\mathrm{eq}}, r) \subseteq D$
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the exponential stability theorem. -/)
+  (proof := /-- The bounds give $\dot V \le -(k_3/k_2) V$, so
+    $V(t, x(t)) \le V(t_0, x(t_0))\, e^{-(k_3/k_2)(t - t_0)}$ while the trajectory stays in $D$
+    (\cref{lem:continuousSystem-isExponentialLyapunovFunction-exists-comp-le-mul-exp}); the
+    sandwich
+    and an $a$-th root give the estimate.  To stay in $D$, start within $r/(K + 1)$ of
+    $x_{\mathrm{eq}}$, where $\overline{B}(x_{\mathrm{eq}}, r) \subseteq D$
     and $K = (k_2/k_1)^{1/a}$: at the first time the trajectory reached the sphere of radius $r$
     the estimate would put it strictly inside. -/)]
 theorem IsExponentialLyapunovFunction.locallyExponentiallyStable {s : ContinuousSystem E Unit Y}
@@ -141,10 +128,9 @@ theorem IsExponentialLyapunovFunction.locallyExponentiallyStable {s : Continuous
     push Not at h_out
     have h_start : ‖x t₀ - x_eq‖ < r := h_init.trans (div_lt_self hr (by linarith))
     obtain ⟨τ, hτ, hτ_eq, h_before⟩ := exists_first_sphere_hit
-      ((IsIntegralCurveOn.continuousOn hx).mono (Icc_subset_Icc_right ht.2)) h_start
+      ((hx.continuousOn ordConnected_Icc).mono (Icc_subset_Icc_right ht.2)) h_start
       ⟨ht.1, le_rfl⟩ h_out
-    have h_seg := h_est t₀ ht₀ τ x
-      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right (hτ.2.trans ht.2)))
+    have h_seg := h_est t₀ ht₀ τ x (hx.mono (Icc_subset_Icc_right (hτ.2.trans ht.2)))
       (fun u hu => hD _ (h_before u hu)) τ ⟨hτ.1, le_rfl⟩
     have h_exp : Real.exp (-γ * (τ - t₀)) ≤ 1 :=
       Real.exp_le_one_iff.mpr (mul_nonpos_of_nonpos_of_nonneg (by linarith) (by linarith [hτ.1]))
@@ -156,6 +142,7 @@ theorem IsExponentialLyapunovFunction.locallyExponentiallyStable {s : Continuous
     exact h_inside.ne hτ_eq
   exact h_est t₀ ht₀ t₁ x hx (fun u hu => hD _ (h_trap u hu).le)
 
+omit [CompleteSpace E] in
 /-- **An exponential Lyapunov function survives a quadratically small change of the field.**  Let
 `V` be an exponential Lyapunov function with exponent `2` for `s` on `D`, with
 `‖∂V/∂x‖ ≤ c‖x - x_eq‖`, and let the field of `s'` differ from that of `s` by at most
@@ -163,8 +150,9 @@ theorem IsExponentialLyapunovFunction.locallyExponentiallyStable {s : Continuous
 `x_eq`, at half the decay rate: the change in `V̇` is cubic, and absorbed by `-k₃‖x - x_eq‖²` on a
 small ball.
 
-This is the step shared by both directions of Khalil's Theorem 4.15 (Theorem 4.13 and its
-converse), where one field is the linearization of the other. -/
+This is the step shared by both directions of Khalil's theorem that the linearization
+decides exponential stability (Lyapunov's indirect method and its converse), where one field is
+the linearization of the other. -/
 @[blueprint "lem:continuousSystem-isExponentialLyapunovFunction-of-norm-sub-le-sq"
   (title := "Exponential Lyapunov functions under a quadratically small change of the field")
   (latexEnv := "lemma")
@@ -188,9 +176,9 @@ theorem IsExponentialLyapunovFunction.of_norm_sub_le_sq {Y' : Type*} {s : Contin
     ∃ ρ > 0, s'.IsExponentialLyapunovFunction V x_eq (D ∩ ball x_eq ρ) 2 := by
   obtain ⟨k₁, hk₁, k₂, hk₂, k₃, hk₃, h_bounds⟩ := hV.bounds
   have hρ : 0 < min r (k₃ / (2 * (c * L + 1))) := lt_min hr (by positivity)
-  refine ⟨_, hρ, inter_mem hV.nhds (ball_mem_nhds x_eq hρ),
-    fun t ht x hx => hV.differentiableAt t ht x hx.1, two_pos, k₁, hk₁, k₂, hk₂, k₃ / 2,
-    by positivity, fun t ht x hx => ?_⟩
+  have hV' := hV.mono (inter_mem hV.nhds (ball_mem_nhds x_eq hρ)) inter_subset_left
+  refine ⟨_, hρ, hV'.nhds, hV'.differentiableAt, hV'.locallyLipschitzOn, two_pos, k₁, hk₁, k₂,
+    hk₂, k₃ / 2, by positivity, fun t ht x hx => ?_⟩
   obtain ⟨h_low, h_up, h_lie⟩ := h_bounds t ht x hx.1
   refine ⟨h_low, h_up, ?_⟩
   rw [Real.rpow_two] at h_lie ⊢
@@ -216,7 +204,7 @@ theorem IsExponentialLyapunovFunction.of_norm_sub_le_sq {Y' : Type*} {s : Contin
 /-- **Lyapunov's global exponential stability theorem**: an exponential Lyapunov function on the
 whole space certifies global exponential stability; no trapping is needed.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10, global case. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the exponential stability theorem, global case. -/
 @[blueprint "thm:continuousSystem-isExponentialLyapunovFunction-globallyExponentiallyStable"
   (title := "Lyapunov's global exponential stability theorem")
   (statement := /-- If $V$ is an exponential Lyapunov function for $x_{\mathrm{eq}}$ on the whole
@@ -224,7 +212,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.10, global case. -/
     $x_{\mathrm{eq}}$ is globally exponentially stable
     (\cref{def:continuousSystem-globallyExponentiallyStable}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.10, global case. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the exponential stability theorem,
+    global case. -/)
   (proof := /-- The estimate of
     \cref{thm:continuousSystem-isExponentialLyapunovFunction-locallyExponentiallyStable} holds on
     every trajectory segment, since every segment stays in $D = E$. -/)]
@@ -262,44 +251,49 @@ omit [FiniteDimensional ℝ E] in
 /-- **Trapping by a level set.**  Let `x` be a trajectory on `[t₀, t₁]` starting strictly inside
 the `ρ`-sphere about `x_c`, on which `V ≥ d`.  If `V̇ ≤ 0` wherever the trajectory is inside the
 sphere and above a level `η`, and `V(t₀, x(t₀))` and `η` are both below `d`, the trajectory never
-reaches the sphere. -/
-@[blueprint "lem:continuousSystem-isRightTrajectoryOn-trapped-in-ball"
+reaches the sphere.  Here `V` is locally Lipschitz and differentiable on
+`[t₀, t₁] × closedBall x_c ρ`. -/
+@[blueprint "lem:continuousSystem-isTrajectoryOn-trapped-in-ball"
   (title := "Trapping by a level set")
   (latexEnv := "lemma")
-  (statement := /-- Let $x$ be a right trajectory on $[t_0, t_1]$
-    (\cref{def:continuousSystem-isRightTrajectoryOn}) with $\|x(t_0) - x_c\| < \rho$, and let
-    $V$ be differentiable along it while $\|x - x_c\| \le \rho$.  Suppose $V \ge d$ on the sphere
-    $\|x - x_c\| = \rho$, $\max\{V(t_0, x(t_0)), \eta\} < d$, and $\dot V \le 0$ wherever
+  (statement := /-- Let $x$ be a trajectory on $[t_0, t_1]$
+    (\cref{def:continuousSystem-isTrajectoryOn}) with $\|x(t_0) - x_c\| < \rho$, and let $V$ be
+    locally Lipschitz on $[t_0, t_1] \times \overline{B}(x_c, \rho)$ and differentiable at its
+    points.  Suppose that along the trajectory $V \ge d$ on the sphere $\|x - x_c\| = \rho$,
+    $\max\{V(t_0, x(t_0)), \eta\} < d$, and $\dot V \le 0$ at the times of $(t_0, t_1)$ at which
     $\|x - x_c\| \le \rho$ and $V > \eta$.  Then $\|x(t) - x_c\| < \rho$ for all
     $t \in [t_0, t_1]$. -/)
   (proof := /-- At the first time $\tau$ the trajectory reached the sphere, $V \ge d$.  Up to
     $\tau$, $V$ can only fall while above $\eta$
-    (\cref{lem:le-max-of-hasDerivWithinAt-nonpos-above}), so
+    (\cref{lem:continuousSystem-isTrajectoryOn-le-max-of-lieDerivative-nonpos}), so
     $V(\tau, x(\tau)) \le \max\{V(t_0, x(t_0)), \eta\} < d$. -/)]
-lemma IsRightTrajectoryOn.trapped_in_ball {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ} {x_c : E}
-    {ρ d η t₀ t₁ : ℝ} {x : ℝ → E} (hx : s.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
-    (hV : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ ≤ ρ → DifferentiableAt ℝ (Function.uncurry V) (τ, x τ))
+lemma IsTrajectoryOn.trapped_in_ball {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ}
+    {x_c : E} {ρ d η t₀ t₁ : ℝ} {x : ℝ → E}
+    (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
+    (hV_lip : LocallyLipschitzOn (Icc t₀ t₁ ×ˢ closedBall x_c ρ) (Function.uncurry V))
+    (hV : ∀ τ ∈ Icc t₀ t₁, ∀ y ∈ closedBall x_c ρ, DifferentiableAt ℝ (Function.uncurry V) (τ, y))
     (h_start : ‖x t₀ - x_c‖ < ρ)
     (h_level : max (V t₀ (x t₀)) η < d)
     (h_sphere : ∀ τ ∈ Icc t₀ t₁, ‖x τ - x_c‖ = ρ → d ≤ V τ (x τ))
-    (h_dec : ∀ τ ∈ Ico t₀ t₁, ‖x τ - x_c‖ ≤ ρ → η < V τ (x τ) →
+    (h_dec : ∀ τ ∈ Ioo t₀ t₁, ‖x τ - x_c‖ ≤ ρ → η < V τ (x τ) →
       s.lieDerivative V τ (x τ) () ≤ 0) :
     ∀ t ∈ Icc t₀ t₁, ‖x t - x_c‖ < ρ := by
   intro t ht
   by_contra h_out
   -- The first time `τ ∈ [t₀, t]` at which `x` reaches the `ρ`-sphere.
   obtain ⟨τ, hτ, hτ_norm, h_before⟩ := exists_first_sphere_hit
-    (hx.1.mono (Icc_subset_Icc_right ht.2)) h_start ⟨ht.1, le_rfl⟩ (not_lt.mp h_out)
+    ((hx.continuousOn ordConnected_Icc).mono (Icc_subset_Icc_right ht.2)) h_start ⟨ht.1, le_rfl⟩
+    (not_lt.mp h_out)
   have hτ_mem : τ ∈ Icc t₀ t₁ := ⟨hτ.1, hτ.2.trans ht.2⟩
   -- Up to `τ`, `V` falls whenever it is above `η`, so it stays below `d`.
-  have hx_τ := hx.mono (Icc_subset_Icc_right hτ_mem.2)
-  have hV_τ : ∀ u ∈ Icc t₀ τ, DifferentiableAt ℝ (Function.uncurry V) (u, x u) := fun u hu =>
-    hV u ⟨hu.1, hu.2.trans hτ_mem.2⟩ (h_before u hu)
-  have h_le := le_max_of_hasDerivWithinAt_nonpos_above
-    (hx_τ.1.comp_uncurry_of_differentiableAt hV_τ)
-    (fun u hu => (hx_τ.hasDerivWithinAt_Ici hu).hasDerivWithinAt_lieDerivative
-      (hV_τ u (Ico_subset_Icc_self hu)))
-    (fun u hu => h_dec u ⟨hu.1, hu.2.trans_le hτ_mem.2⟩ (h_before u (Ico_subset_Icc_self hu)))
+  have h_ball : ∀ u ∈ Icc t₀ τ, x u ∈ closedBall x_c ρ := fun u hu =>
+    mem_closedBall_iff_norm.2 (h_before u hu)
+  have h_le := (hx.mono (Icc_subset_Icc_right hτ_mem.2)).le_max_of_lieDerivative_nonpos hV_lip
+    (fun u hu => ⟨⟨hu.1, hu.2.trans hτ_mem.2⟩, h_ball u hu⟩)
+    (.of_forall fun u hu =>
+      hV u ⟨hu.1.le, hu.2.le.trans hτ_mem.2⟩ _ (h_ball u (Ioo_subset_Icc_self hu)))
+    (.of_forall fun u hu => h_dec u ⟨hu.1, hu.2.trans_le hτ_mem.2⟩
+      (h_before u (Ioo_subset_Icc_self hu)))
     τ ⟨hτ.1, le_rfl⟩
   exact (h_le.trans_lt h_level).not_ge (h_sphere τ hτ_mem hτ_norm)
 
@@ -310,7 +304,7 @@ omit [FiniteDimensional ℝ E] in
 `V(t₀, x(t₀)) < d` stays inside the ball.
 
 On a sphere `‖x - x_eq‖ = ρ` with `α₁⁻¹(d) < ρ < r`, `V ≥ W₁ ≥ α₁(ρ) > d`, and `V̇ ≤ 0` inside
-it, so `IsRightTrajectoryOn.trapped_in_ball` keeps the trajectory inside that sphere. -/
+it, so `IsTrajectoryOn.trapped_in_ball` keeps the trajectory inside that sphere. -/
 private lemma norm_lt_of_trapped {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ}
     {W₁ : E → ℝ} {x_eq : E} {D : Set E} (hV : s.IsLyapunovFunction V x_eq D)
     (hV_lb : ∀ t : ℝ, 0 ≤ t → ∀ y ∈ D, W₁ y ≤ V t y)
@@ -337,14 +331,17 @@ private lemma norm_lt_of_trapped {s : ContinuousSystem E Unit Y} {V : ℝ → E 
           (α₁.strict_mono hd_inv_mem ⟨norm_nonneg _, hτ_lt_r⟩ (hτ_norm ▸ hρ_gt)).le
       _ ≤ W₁ (x τ) := hW₁ _ hτ_lt_r
       _ ≤ V τ (x τ) := hV_lb τ (ht₀.trans hτ.1) _ (hD _ hτ_lt_r.le)
+  have hρD : closedBall x_eq ρ ⊆ D := (closedBall_subset_closedBall hρ_lt.le).trans hrD
   intro t ht
-  exact (hx.isRightTrajectoryOn.trapped_in_ball (η := V t₀ (x t₀))
-    (fun τ hτ hτ_norm => hV.differentiableAt τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
+  exact (hx.trapped_in_ball (η := V t₀ (x t₀))
+    (hV.locallyLipschitzOn.mono (prod_mono (fun τ hτ => ht₀.trans hτ.1) hρD))
+    (fun τ hτ y hy => hV.differentiableAt τ (ht₀.trans hτ.1) y (hρD hy))
     h_start_ρ (by rwa [max_self]) h_sphere
-    (fun τ hτ hτ_norm _ => hV.lie_nonpos τ (ht₀.trans hτ.1) _ (hD _ (hτ_norm.trans hρ_lt.le)))
+    (fun τ hτ hτ_norm _ =>
+      hV.lie_nonpos τ (ht₀.trans hτ.1.le) _ (hρD (mem_closedBall_iff_norm.2 hτ_norm)))
     t ht).trans hρ_lt
 
-omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
+omit [NormedSpace ℝ E] [CompleteSpace E] [FiniteDimensional ℝ E] in
 /-- The bound `V(t, y) < d = α₂(c)` from the `c`-ball: `V ≤ W₂ ≤ α₂(‖y - x_eq‖) < α₂(c)`. -/
 private lemma lt_level_of_norm_lt {V : ℝ → E → ℝ} {W₂ : E → ℝ} {x_eq : E} {D : Set E}
     (hV_ub : ∀ t : ℝ, 0 ≤ t → ∀ y ∈ D, V t y ≤ W₂ y)
@@ -366,7 +363,7 @@ private lemma lt_level_of_norm_lt {V : ℝ → E → ℝ} {W₂ : E → ℝ} {x_
 /-- **Lyapunov's uniform stability theorem**: a uniform Lyapunov function certifies uniform
 stability.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the uniform stability theorem. -/
 @[blueprint "thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable"
   (title := "Lyapunov's uniform stability theorem")
   (statement := /-- If $V$ is a uniform Lyapunov function for $x_{\mathrm{eq}}$
@@ -378,14 +375,14 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.8. -/
     $W_1$ and $W_2$ do not depend on $t$, so neither does the $\delta(\varepsilon)$ extracted
     from them.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.8. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the uniform stability theorem. -/)
   (proof := /-- Given $\varepsilon$, work on a radius $r \le \varepsilon$ whose closed ball lies
     in the region of the certificate.  Bound $W_1$ below and $W_2$ above by class $\mathcal{K}$
     functions $\alpha_1, \alpha_2$ on it (\cref{thm:lyapunov-class-K-bounds}), fix a level $d$
     below both ranges, and take $\delta = \alpha_2^{-1}(d)$: starting within $\delta$ of
     $x_{\mathrm{eq}}$ forces $V(t_0, x(t_0)) < d$.  To leave the $r$-ball the trajectory would
     first cross a sphere on which $W_1 > d$; up to that time $V$ has not increased
-    (\cref{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}), so it is
+    (\cref{lem:continuousSystem-isTrajectoryOn-trapped-in-ball}), so it is
     still below $d$, a contradiction. -/)]
 theorem IsUniformLyapunovFunction.uniformlyStable [Nontrivial E] {s : ContinuousSystem E Unit Y}
     {V : ℝ → E → ℝ} {x_eq : E} {D : Set E} (hV : s.IsUniformLyapunovFunction V x_eq D) :
@@ -409,50 +406,13 @@ theorem IsUniformLyapunovFunction.uniformlyStable [Nontrivial E] {s : Continuous
     (lt_level_of_norm_lt hV_ub hrD (fun y hy => (hW₂_bd y hy).2) hδ_lt_r h_α₂_δ ht₀ h_init)
   exact (h_trapped t ht).trans_le (min_le_left ε R)
 
-/-! ## The comparison lemma along a trajectory -/
-
-omit [FiniteDimensional ℝ E] in
-/-- **The comparison lemma along a trajectory.**  Let `σ` be the class `KL` bound that
-`ClassK.exists_classKL_bound_of_subsolution` attaches to a class `K` function `α`.  If
-`v(τ) = V(τ, x(τ))` stays in `[0, d)` on `[t₀, t]` and `V̇ ≤ -α(V)` there, then `v` is a
-subsolution of the decay system of `α`, so `V(t, x(t)) ≤ σ(V(t₀, x(t₀)), t - t₀)`.
-
-This only checks the side conditions: `v` is continuous and its Dini derivative is the
-derivative along the system. -/
-private lemma comp_trajectory_le_classKL {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ}
-    {d e : ℝ} {α : ClassK d e} {σ : ClassKL d}
-    (hσ : ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Icc t₀ t) →
-        v t₀ ∈ Ico 0 d →
-        (∀ s ∈ Ico t₀ t, v s ∈ Ico 0 d) →
-        (∀ s ∈ Ico t₀ t, D⁺ v s ≤ (-α.toFun (v s) : ℝ)) →
-        v t ≤ σ.toFun (v t₀) (t - t₀))
-    {x : ℝ → E} {t₀ t₁ t : ℝ} (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁))
-    (hV : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, x τ))
-    (ht : t ∈ Icc t₀ t₁)
-    (hv_range : ∀ τ ∈ Icc t₀ t, V τ (x τ) ∈ Ico 0 d)
-    (hlie : ∀ τ ∈ Ico t₀ t, s.lieDerivative V τ (x τ) () ≤ -α.toFun (V τ (x τ))) :
-    V t (x t) ≤ σ.toFun (V t₀ (x t₀)) (t - t₀) := by
-  -- Before `t ≤ t₁`, the derivative within `[t₀, t₁]` is a right derivative.
-  have hderiv : ∀ τ ∈ Ico t₀ t, HasDerivWithinAt (fun u => V u (x u))
-      (s.lieDerivative V τ (x τ) ()) (Ici τ) τ := fun τ hτ =>
-    (IsIntegralCurveOn.hasDerivWithinAt_lieDerivative hx hV
-      ⟨hτ.1, hτ.2.le.trans ht.2⟩).mono_of_mem_nhdsWithin
-        (Icc_mem_nhdsGE_of_mem ⟨hτ.1, hτ.2.trans_le ht.2⟩)
-  have hv_cont : ContinuousOn (fun u => V u (x u)) (Icc t₀ t) :=
-    ((IsIntegralCurveOn.continuousOn hx).comp_uncurry_of_differentiableAt hV).mono
-      (Icc_subset_Icc_right ht.2)
-  exact hσ ht.1 (fun u => V u (x u)) hv_cont (hv_range t₀ ⟨le_rfl, ht.1⟩)
-    (fun τ hτ => hv_range τ (Ico_subset_Icc_self hτ))
-    (fun τ hτ => by
-      rw [diniDerivRight_of_hasDerivWithinAt (hderiv τ hτ)]
-      exact EReal.coe_le_coe_iff.2 (hlie τ hτ))
-
 /-! ## Lyapunov's uniform asymptotic stability theorem -/
 
 /-- **Lyapunov's uniform asymptotic stability theorem**: a strict uniform Lyapunov function
 certifies uniform asymptotic stability.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.9.  Khalil's two "moreover" clauses
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the uniform asymptotic stability
+theorem.  Khalil's two "moreover" clauses
 are not part of this conclusion: the explicit class `KL` bound, which the proof constructs, and
 the global case, when `D` is the whole space and `W₁` is radially unbounded. -/
 @[blueprint "thm:continuousSystem-isStrictUniformLyapunovFunction-uniformlyAsymptoticallyStable"
@@ -465,7 +425,8 @@ the global case, when `D` is the whole space and `W₁` is radially unbounded. -
     A strictly negative $\dot V$ alone would not do: $W_3$ must be bounded away from zero on
     each annulus, which is exactly what positive definiteness of a function of $x$ alone buys.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.9.  Khalil's two
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the uniform asymptotic
+    stability theorem.  Khalil's two
     ``moreover'' clauses are not part of this conclusion: the explicit class $\mathcal{KL}$
     bound, which the proof constructs, and the global case. -/)
   (proof := /-- Uniform stability is
@@ -474,9 +435,12 @@ the global case, when `D` is the whole space and `W₁` is radially unbounded. -
     in the region of the certificate, and the trapping radius $c$ of that proof.  Along a
     trajectory from the $c$-ball,
     $\dot V \le -W_3(x) \le -\alpha_3(\|x - x_{\mathrm{eq}}\|) \le -\alpha_3(\alpha_2^{-1}(V))$,
-    so $v(t) = V(t, x(t))$ satisfies $D^+ v \le -\alpha(v)$ with
-    $\alpha = \alpha_3 \circ \alpha_2^{-1}$ of class $\mathcal{K}$.
-    \cref{thm:classK-dini-bound} gives a class $\mathcal{KL}$ $\sigma$ with
+    so $v(t) = V(t, x(t))$, which is absolutely continuous
+    (\cref{lem:continuousSystem-isLyapunovFunction-absolutelyContinuousOnInterval-comp}) with
+    derivative $\dot V$ almost everywhere
+    (\cref{lem:continuousSystem-isLyapunovFunction-ae-deriv-comp-eq-lieDerivative}), satisfies
+    $\dot v \le -\alpha(v)$ almost everywhere, with $\alpha = \alpha_3 \circ \alpha_2^{-1}$ of
+    class $\mathcal{K}$.  \cref{thm:classK-ae-bound} gives a class $\mathcal{KL}$ $\sigma$ with
     $v(t) \le \sigma(v(t_0), t - t_0)$; unwinding the sandwich,
     \[
       \|x(t) - x_{\mathrm{eq}}\| \le
@@ -488,7 +452,7 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [Nontrivia
     {s : ContinuousSystem E Unit Y} {V : ℝ → E → ℝ} {x_eq : E} {D : Set E}
     (hV : s.IsStrictUniformLyapunovFunction V x_eq D) :
     s.UniformlyAsymptoticallyStable x_eq := by
-  /- Along a trajectory `v(t) = V(t, x(t))` obeys `D⁺v ≤ -α₃(α₂⁻¹(v))`, so the comparison lemma
+  /- Along a trajectory `v(t) = V(t, x(t))` obeys `v̇ ≤ -α₃(α₂⁻¹(v))` a.e., so the comparison lemma
      bounds it by a class KL `σ(v(t₀), t - t₀)`; the sandwich turns this into the class KL
      bound `‖x(t) - x_eq‖ ≤ α₁⁻¹(σ(α₂(‖x(t₀) - x_eq‖), t - t₀))`. -/
   refine ⟨hV.toIsUniformLyapunovFunction.uniformlyStable, ?_⟩
@@ -517,16 +481,11 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [Nontrivia
   have hV_range : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
       s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_eq‖ < c →
         ∀ t ∈ Icc t₀ t₁, V t (x t) ∈ Ico 0 d := fun t₀ ht₀ t₁ x hx h_init t ht => by
-    have h_ball := h_in_ball t₀ ht₀ t₁ x hx h_init
-    have h_anti := IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos hx (convex_Icc _ _)
-      (fun u hu => hV.differentiableAt u (ht₀.trans hu.1) _ (hD _ (h_ball u hu).le))
-      fun u hu => by
-        rw [interior_Icc] at hu
-        exact hV.lie_nonpos u (ht₀.trans hu.1.le) (x u)
-          (hD _ (h_ball u (Ioo_subset_Icc_self hu)).le)
-    have hx_D : x t ∈ D := hD _ (h_ball t ht).le
-    exact ⟨(hW₁.nonneg hx_D).trans (hV_lb t (ht₀.trans ht.1) _ hx_D),
-      (h_anti ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1).trans_lt (hV_lt_d t₀ ht₀ _ h_init)⟩
+    have h_in : ∀ u ∈ Icc t₀ t₁, x u ∈ D := fun u hu =>
+      hD _ (h_in_ball t₀ ht₀ t₁ x hx h_init u hu).le
+    exact ⟨(hW₁.nonneg (h_in t ht)).trans (hV_lb t (ht₀.trans ht.1) _ (h_in t ht)),
+      (hV.antitoneOn_comp ht₀ hx h_in ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1).trans_lt
+        (hV_lt_d t₀ ht₀ _ h_init)⟩
   -- Step 4. The comparison function `α₃ ∘ α₂⁻¹` on `[0, d)` and its class KL bound `σ`.
   have h_α : ∃ α : ClassK d (α₃.toFun c), ∀ y ∈ Ico 0 d, α.toFun y = α₃.toFun (α₂.invFun y) := by
     -- Compose `α₂⁻¹ : [0, d) → [0, c)` with `α₃` restricted to `[0, c)`.  As `c` is by
@@ -536,7 +495,7 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [Nontrivia
     let α₃_res : ClassK (α₂.symm.toFun d) (α₃.toFun c) := α₃.restrict hc_pos hc_lt_r
     exact ⟨ClassK.comp α₃_res α₂_inv_res, fun _ _ => rfl⟩
   obtain ⟨α, hα_eq⟩ := h_α
-  obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_of_subsolution
+  obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_of_deriv_le
   -- In the `r`-ball, `V̇ ≤ -W₃(y) ≤ -α₃(‖y - x_eq‖) ≤ -α₃(α₂⁻¹(V))`.
   have hlie_comp : ∀ t : ℝ, 0 ≤ t → ∀ y : E, ‖y - x_eq‖ < r → V t y ∈ Ico 0 d →
       s.lieDerivative V t y () ≤ -α.toFun (V t y) := fun t ht y hy hVy => by
@@ -556,13 +515,16 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [Nontrivia
   have h_xt_lt_r : ‖x t - x_eq‖ < r := h_ball t ht
   have ht_sub : 0 ≤ t - t₀ := sub_nonneg.mpr ht.1
   have ht₀_mem : t₀ ∈ Icc t₀ t₁ := ⟨le_rfl, ht.1.trans ht.2⟩
-  -- `V(t, x(t)) ≤ σ(V(t₀, x(t₀)), t - t₀)`, by the comparison lemma.
-  have h_σ_bound : V t (x t) ≤ σ.toFun (V t₀ (x t₀)) (t - t₀) :=
-    comp_trajectory_le_classKL hσ hx
-      (fun u hu => hV.differentiableAt u (ht₀.trans hu.1) _ (hD _ (h_ball u hu).le)) ht
-      (fun τ hτ => h_range τ ⟨hτ.1, hτ.2.trans ht.2⟩)
-      (fun τ hτ => hlie_comp τ (ht₀.trans hτ.1) _ (h_ball τ ⟨hτ.1, hτ.2.le.trans ht.2⟩)
-        (h_range τ ⟨hτ.1, hτ.2.le.trans ht.2⟩))
+  -- `V(t, x(t)) ≤ σ(V(t₀, x(t₀)), t - t₀)`, by the comparison lemma: on `[t₀, t]`,
+  -- `v(τ) = V(τ, x(τ))` is absolutely continuous, with derivative `V̇ ≤ -α(v)` almost everywhere.
+  have h_σ_bound : V t (x t) ≤ σ.toFun (V t₀ (x t₀)) (t - t₀) := by
+    have h_sub : Icc t₀ t ⊆ Icc t₀ t₁ := Icc_subset_Icc_right ht.2
+    have h_in : ∀ τ ∈ Icc t₀ t, x τ ∈ D := fun τ hτ => hD _ (h_ball τ (h_sub hτ)).le
+    refine hσ ht.1 _ (hV.absolutelyContinuousOnInterval_comp ht₀ (hx.mono h_sub) ht.1 h_in)
+      (h_range t₀ ht₀_mem) (fun τ hτ => h_range τ (h_sub (Ico_subset_Icc_self hτ))) ?_
+    filter_upwards [hV.ae_deriv_comp_eq_lieDerivative ht₀ (hx.mono h_sub) h_in] with τ hτ hmem
+    have hτ' := h_sub (Ioo_subset_Icc_self hmem)
+    exact (hτ hmem).trans_le (hlie_comp τ (ht₀.trans hτ'.1) _ (h_ball τ hτ') (h_range τ hτ'))
   -- `V(t₀, x(t₀))` and `α₂(‖x(t₀) - x_eq‖)` lie in `[0, d)`, and `σ(·, t - t₀)` keeps `[0, d)`.
   have hV_t₀_mem : V t₀ (x t₀) ∈ Ico 0 d := h_range t₀ ht₀_mem
   have h_α₂_t₀_mem : α₂.toFun ‖x t₀ - x_eq‖ ∈ Ico 0 d :=
@@ -588,35 +550,6 @@ theorem IsStrictUniformLyapunovFunction.uniformlyAsymptoticallyStable [Nontrivia
 
 /-! ## Global asymptotic stability of a time-invariant system -/
 
-omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- A continuous function positive on a compact set is bounded below there by a positive
-constant. -/
-private lemma exists_pos_le_of_isCompact {K : Set E} (hK : IsCompact K) {g : E → ℝ}
-    (hg : ContinuousOn g K) (h_pos : ∀ y ∈ K, 0 < g y) : ∃ m > 0, ∀ y ∈ K, m ≤ g y := by
-  rcases K.eq_empty_or_nonempty with rfl | hne
-  · exact ⟨1, one_pos, fun _ h => h.elim⟩
-  obtain ⟨y₀, hy₀, h_min⟩ := hK.exists_isMinOn hne hg
-  exact ⟨g y₀, h_pos y₀ hy₀, fun y hy => h_min hy⟩
-
-omit [FiniteDimensional ℝ E] in
-/-- **Rate-bounded decrease** for a time-invariant system: if `∇V · f ≤ -c` along a trajectory on
-`[a, b]`, then `V(x(b)) + c b ≤ V(x(a)) + c a`.  This is monotonicity of `V(x) + c t`, whose Lie
-derivative is `∇V · f + c` (`lieDerivative_add_mul`). -/
-private lemma add_mul_le_of_lie_le {s : ContinuousSystem E Unit Y} {f : E → E}
-    (hF : ∀ t x, s.F t x () = f x) {V : E → ℝ} (hV : Differentiable ℝ V) {c a b : ℝ}
-    {x : ℝ → E} (hx : s.IsTrajectoryOn (fun _ => ()) x (Icc a b)) (hab : a ≤ b)
-    (hlie : ∀ t ∈ Ioo a b, fderiv ℝ V (x t) (f (x t)) ≤ -c) :
-    V (x b) + c * b ≤ V (x a) + c * a :=
-  IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos (V := fun t y => V y + c * t) hx
-    (convex_Icc a b) (fun t _ => ((hV.comp differentiable_snd).add
-      (differentiable_fst.const_mul c) : Differentiable ℝ fun p : ℝ × E => V p.2 + c * p.1) _)
-    (fun t ht => by
-      rw [interior_Icc] at ht
-      rw [lieDerivative_add_mul c (hV _)]
-      simp only [ContinuousSystem.vectorField_apply, hF]
-      linarith [hlie t ht])
-    (left_mem_Icc.mpr hab) (right_mem_Icc.mpr hab) hab
-
 /-- **Lyapunov's global asymptotic stability theorem** for a time-invariant system
 `ẋ = f(x)`: a `C¹` function `V`, positive definite on the whole space, with compact sublevel sets
 and `∇V · f < 0` away from `x_eq`, makes `x_eq` globally uniformly asymptotically stable.
@@ -624,7 +557,7 @@ and `∇V · f < 0` away from `x_eq`, makes `x_eq` globally uniformly asymptotic
 In `E`, compact sublevel sets is radial unboundedness of the continuous `V`.  No hypothesis
 `f(x_eq) = 0` is needed: `x_eq` minimizes `V`, so `∇V(x_eq) = 0`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the Barbashin–Krasovskii theorem. -/
 @[blueprint "thm:continuousSystem-globallyUniformlyAsymptoticallyStable-of-lyapunov"
   (title := "Lyapunov's global asymptotic stability theorem")
   (statement := /-- Let the state equation be $\dot x = f(x)$ with $f$ continuous, on
@@ -635,7 +568,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2. -/
     globally uniformly asymptotically stable
     (\cref{def:continuousSystem-globallyUniformlyAsymptoticallyStable}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.2. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the Barbashin--Krasovskii
+    theorem. -/)
   (proof := /-- $V$ does not increase along trajectories: $\nabla V \cdot f \le 0$ everywhere,
     since $\nabla V(x_{\mathrm{eq}}) = 0$ at the minimum.  So a trajectory starting below every
     value $V$ takes outside the $\varepsilon$-ball never leaves it.  Take $\delta(\varepsilon)$
@@ -647,8 +581,10 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.2. -/
     For convergence from the $c$-ball, trajectories stay in the compact set $\{V \le M\}$,
     $M = \max_{\overline B(x_{\mathrm{eq}}, c)} V$, on which, outside the
     $\delta(\eta)$-ball, $\nabla V \cdot f \le -\gamma < 0$.  So $V$ falls at rate $\gamma$
-    while the trajectory is outside, and since $V \ge 0$ it enters the $\delta(\eta)$-ball by
-    time $t_0 + M/\gamma + 1$; from then on it stays in the $\eta$-ball. -/)]
+    while the trajectory is outside
+    (\cref{lem:continuousSystem-isTrajectoryOn-sub-le-integral-of-fderiv-le}), and since
+    $V \ge 0$ it enters the $\delta(\eta)$-ball by time $t_0 + M/\gamma + 1$; from then on it
+    stays in the $\eta$-ball. -/)]
 theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
     {s : ContinuousSystem E Unit Y} {f : E → E} (hF : ∀ t x, s.F t x () = f x)
     (hf : Continuous f) {V : E → ℝ} {x_eq : E} (hV_c1 : ContDiff ℝ 1 V)
@@ -656,6 +592,7 @@ theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
     (hV_neg : ∀ x, x ≠ x_eq → fderiv ℝ V x (f x) < 0) :
     s.GloballyUniformlyAsymptoticallyStable x_eq := by
   have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
+  have hV_lip : LocallyLipschitzOn univ V := hV_c1.locallyLipschitz.locallyLipschitzOn
   have hV_cont : Continuous V := hV.continuous
   have hV_nonneg : ∀ y, 0 ≤ V y := fun y => hV_pos.nonneg (mem_univ y)
   have h_far_closed : ∀ r : ℝ, IsClosed {y : E | r ≤ ‖y - x_eq‖} := fun r =>
@@ -671,9 +608,10 @@ theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
   -- `V` does not increase along trajectories.
   have h_dec : ∀ {a b : ℝ} {x : ℝ → E}, s.IsTrajectoryOn (fun _ => ()) x (Icc a b) →
       ∀ t ∈ Icc a b, V (x t) ≤ V (x a) := fun {a b x} hx t ht => by
-    simpa using add_mul_le_of_lie_le hF hV (c := 0)
-      (IsIntegralCurveOn.mono hx (Icc_subset_Icc_right ht.2)) ht.1
-      fun τ _ => by simpa using h_nonpos (x τ)
+    exact hx.antitoneOn_of_fderiv_nonpos hV_lip (fun _ _ => mem_univ _)
+      (.of_forall fun τ _ => hV _)
+      (.of_forall fun τ _ => (congrArg _ (hF τ _)).trans_le (h_nonpos _))
+      ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1
   -- Step 2. Trapping: a trajectory that starts below every value `V` takes outside the
   -- `ε`-ball never leaves it.
   have h_trap : ∀ {ε a b : ℝ} {x : ℝ → E}, s.IsTrajectoryOn (fun _ => ()) x (Icc a b) →
@@ -686,8 +624,8 @@ theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
   have hS_bdd : ∀ ε, BddAbove (S ε) := fun ε => ⟨ε, fun _ hρ => hρ.1.2⟩
   -- Outside the `ε`-ball `V` is bounded below by some `m > 0` ...
   have h_far_pos : ∀ ε > 0, ∃ m > 0, ∀ z : E, ε ≤ ‖z - x_eq‖ → m ≤ V z := fun ε hε => by
-    obtain ⟨m₀, hm₀, h_le⟩ := exists_pos_le_of_isCompact ((hV_sub 1).inter_right (h_far_closed ε))
-      hV_cont.continuousOn fun z hz => hV_pos.2.2 z (mem_univ z) fun h => by
+    obtain ⟨m₀, hm₀, h_le⟩ := ((hV_sub 1).inter_right (h_far_closed ε)).exists_forall_le'
+      hV_cont.continuousOn (a := 0) fun z hz => hV_pos.2.2 z (mem_univ z) fun h => by
         subst h
         simp at hz
         linarith [hz.2]
@@ -744,9 +682,9 @@ theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
     (Real.le_norm_self _).trans (hM y (mem_closedBall_iff_norm.mpr hy))
   have hM_nonneg : 0 ≤ M := (hV_nonneg x_eq).trans (hM_ball x_eq (by simpa using hc.le))
   -- ... on which, outside the `δ(η)`-ball, `∇V · f ≤ -γ < 0`.
-  obtain ⟨γ, hγ, h_rate⟩ := exists_pos_le_of_isCompact (g := fun y => -fderiv ℝ V y (f y))
-    ((hV_sub M).inter_right (h_far_closed (δ η)))
-    ((hV_c1.continuous_fderiv one_ne_zero).clm_apply hf).neg.continuousOn
+  obtain ⟨γ, hγ, h_rate⟩ := ((hV_sub M).inter_right (h_far_closed (δ η))).exists_forall_le'
+    (f := fun y => -fderiv ℝ V y (f y))
+    ((hV_c1.continuous_fderiv one_ne_zero).clm_apply hf).neg.continuousOn (a := 0)
     fun y hy => neg_pos.mpr (hV_neg y fun h => by
       subst h
       simp at hy
@@ -754,22 +692,26 @@ theorem globallyUniformlyAsymptoticallyStable_of_lyapunov
   have hT_pos : 0 < M / γ + 1 := add_pos_of_nonneg_of_pos (div_nonneg hM_nonneg hγ.le) one_pos
   refine ⟨M / γ + 1, hT_pos, fun t₀ _ t₁ x hx h_init t ht => ?_⟩
   have hT_le : t₀ + (M / γ + 1) ≤ t₁ := ht.1.trans ht.2
-  have hx_T := IsIntegralCurveOn.mono hx (Icc_subset_Icc_right hT_le)
+  have hx_T := hx.mono (Icc_subset_Icc_right hT_le)
   -- Step 5. `V` falls at rate `γ` while the trajectory is outside the `δ(η)`-ball, so it has
   -- entered that ball by time `t₀ + M / γ + 1`.
   obtain ⟨τ, hτ, hτ_in⟩ : ∃ τ ∈ Icc t₀ (t₀ + (M / γ + 1)), ‖x τ - x_eq‖ < δ η := by
     by_contra h_never
     push Not at h_never
-    have h_drop := add_mul_le_of_lie_le hF hV (c := γ) hx_T (by linarith) fun τ hτ => by
-      have hτ' : τ ∈ Icc t₀ (t₀ + (M / γ + 1)) := Ioo_subset_Icc_self hτ
-      linarith [show γ ≤ -fderiv ℝ V (x τ) (f (x τ)) from h_rate _
-        ⟨(h_dec hx_T τ hτ').trans (hM_ball _ h_init.le), h_never τ hτ'⟩]
-    have h_eq : γ * (t₀ + (M / γ + 1)) = γ * t₀ + M + γ := by
+    have h_drop := hx_T.sub_le_integral_of_fderiv_le (h := fun _ => -γ) (by linarith) hV_lip
+      (fun _ _ => mem_univ _) (.of_forall fun τ _ => hV _) intervalIntegrable_const
+      (.of_forall fun τ hτ => by
+        have hτ' : τ ∈ Icc t₀ (t₀ + (M / γ + 1)) := Ioo_subset_Icc_self hτ
+        rw [vectorField_apply, hF]
+        linarith [show γ ≤ -fderiv ℝ V (x τ) (f (x τ)) from h_rate _
+          ⟨(h_dec hx_T τ hτ').trans (hM_ball _ h_init.le), h_never τ hτ'⟩])
+    have h_eq : ∫ _ in t₀..t₀ + (M / γ + 1), -γ = -(M + γ) := by
+      rw [intervalIntegral.integral_const, smul_eq_mul]
       field_simp
       ring
     linarith [hM_ball _ h_init.le, hV_nonneg (x (t₀ + (M / γ + 1)))]
   -- Step 6. From then on the trajectory stays in the `η`-ball.
-  exact h_trap_δ η hη (IsIntegralCurveOn.mono hx (Icc_subset_Icc_left hτ.1)) hτ_in t
+  exact h_trap_δ η hη (hx.mono (Icc_subset_Icc_left hτ.1)) hτ_in t
     ⟨hτ.2.trans ht.1, ht.2⟩
 
 end FiniteDimensional

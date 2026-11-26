@@ -2,7 +2,6 @@ import Mathlib.Analysis.Calculus.FDeriv.Prod
 import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.ODE.Basic
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import LeanForControl.Analysis.FrechetDerivative
 import Architect
@@ -32,8 +31,6 @@ Along an integral curve `γ` of `v` it is the rate of change of `t ↦ V(t, γ(t
   from `v` to `w` changes the Lie derivative by `∂V/∂x · (w - v)`.
 * `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos` — a nonpositive Lie derivative along an
   integral curve on an interval makes `V` nonincreasing along it.
-* `IsIntegralCurveOn.add_integral_le_of_lieDerivative_le` — the integrated form: if `L_v V ≤ -W`,
-  then `V(t₁) + ∫_{t₀}^{t₁} W ≤ V(t₀)`, a dissipation inequality.
 * `continuous_lieDerivative` — the Lie derivative along a continuous field of a `C¹` function
   is continuous.
 -/
@@ -214,72 +211,6 @@ lemma IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos {V : ℝ → E → �
     (hγ.continuousOn.comp_uncurry_of_differentiableAt hV)
     (fun _ ht => (hγ.hasDerivWithinAt_lieDerivative hV (interior_subset ht)).mono interior_subset)
     h_nonpos
-
-/-- **Integrated Lyapunov inequality.**  If `L_v V ≤ -W` along an integral curve on `[t₀, t₁]`,
-then `V` drops by at least the integral of `W`: `V(t₁, γ(t₁)) + ∫_{t₀}^{t₁} W ≤ V(t₀, γ(t₀))`. -/
-@[blueprint "lem:isIntegralCurveOn-add-integral-le-of-lieDerivative-le"
-  (title := "Integrated Lyapunov inequality")
-  (latexEnv := "lemma")
-  (statement := /-- Let $\gamma$ be an integral curve of $v$ on $[t_0, t_1]$, $V$ differentiable
-    at $(t, \gamma(t))$ for $t \in [t_0, t_1]$, $W$ continuous on $[t_0, t_1]$, and
-    $L_v V(t, \gamma(t)) \le -W(t)$ for $t \in (t_0, t_1)$.  Then
-    \[
-      V(t_1, \gamma(t_1)) + \int_{t_0}^{t_1} W(t)\, dt \le V(t_0, \gamma(t_0)).
-    \] -/)
-  (proof := /-- Integrate the derivative bound of
-    \cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}. -/)]
-lemma IsIntegralCurveOn.add_integral_le_of_lieDerivative_le {V : ℝ → E → ℝ} {v : ℝ → E → E}
-    {γ : ℝ → E} {W : ℝ → ℝ} {t₀ t₁ : ℝ} (hγ : IsIntegralCurveOn γ v (Icc t₀ t₁))
-    (hV : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ))
-    (hW : ContinuousOn W (Icc t₀ t₁)) (h_le : ∀ τ ∈ Ioo t₀ t₁, lieDerivative V v τ (γ τ) ≤ -W τ)
-    (h₀₁ : t₀ ≤ t₁) : V t₁ (γ t₁) + ∫ τ in t₀..t₁, W τ ≤ V t₀ (γ t₀) := by
-  have := intervalIntegral.integral_le_sub_of_hasDeriv_right_of_le h₀₁
-    (hγ.continuousOn.comp_uncurry_of_differentiableAt hV).neg
-    (fun τ hτ => ((hγ.hasDerivWithinAt_lieDerivative hV (Ioo_subset_Icc_self hτ)).neg
-      ).mono_of_mem_nhdsWithin (mem_nhdsWithin_of_mem_nhds (Icc_mem_nhds hτ.1 hτ.2)))
-    hW.integrableOn_Icc (fun τ hτ => le_neg_of_le_neg (h_le τ hτ))
-  simp only [Pi.neg_apply] at this
-  linarith
-
-/-- **Integrating factor along an integral curve.**  If `L_v V ≤ -c V` along an integral curve on
-`[t₀, t₁]`, then `V` decays at least like `e^{-c(t - t₀)}`: `e^{c t} V(t, γ(t))` does not
-increase.  With `c < 0` this is a growth bound. -/
-@[blueprint "lem:isIntegralCurveOn-le-exp-mul-of-lieDerivative-le"
-  (title := "Exponential bound from a linear Lie-derivative bound")
-  (latexEnv := "lemma")
-  (statement := /-- Let $\gamma$ be an integral curve of $v$ on $[t_0, t_1]$, $V$ differentiable
-    at $(t, \gamma(t))$ for $t \in [t_0, t_1]$, and $c \in \mathbb{R}$ with
-    $L_v V(t, \gamma(t)) \le -c\, V(t, \gamma(t))$ for $t \in (t_0, t_1)$.  Then
-    $V(t, \gamma(t)) \le e^{-c(t - t_0)}\, V(t_0, \gamma(t_0))$ on $[t_0, t_1]$. -/)
-  (proof := /-- The derivative of $e^{c t} V(t, \gamma(t))$ is
-    $e^{c t}\bigl(c V + L_v V\bigr) \le 0$
-    (\cref{lem:isIntegralCurveOn-hasDerivWithinAt-lieDerivative}), so it does not increase. -/)]
-lemma IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le {V : ℝ → E → ℝ} {v : ℝ → E → E}
-    {γ : ℝ → E} {c t₀ t₁ : ℝ} (hγ : IsIntegralCurveOn γ v (Icc t₀ t₁))
-    (hV : ∀ τ ∈ Icc t₀ t₁, DifferentiableAt ℝ (Function.uncurry V) (τ, γ τ))
-    (h_rate : ∀ τ ∈ Ioo t₀ t₁, lieDerivative V v τ (γ τ) ≤ -c * V τ (γ τ)) :
-    ∀ t ∈ Icc t₀ t₁, V t (γ t) ≤ Real.exp (-c * (t - t₀)) * V t₀ (γ t₀) := by
-  have h_anti : AntitoneOn (fun σ => Real.exp (c * σ) * V σ (γ σ)) (Icc t₀ t₁) := by
-    refine antitoneOn_of_hasDerivWithinAt_nonpos
-      (f' := fun σ => Real.exp (c * σ) * (c * V σ (γ σ) + lieDerivative V v σ (γ σ)))
-      (convex_Icc t₀ t₁) ?_ (fun σ hσ => ?_) (fun σ hσ => ?_)
-    · exact (Real.continuous_exp.comp (continuous_const.mul continuous_id)).continuousOn.mul
-        (hγ.continuousOn.comp_uncurry_of_differentiableAt hV)
-    · rw [interior_Icc] at hσ ⊢
-      have he : HasDerivAt (fun σ => Real.exp (c * σ)) (Real.exp (c * σ) * c) σ := by
-        simpa using ((hasDerivAt_id σ).const_mul c).exp
-      convert he.hasDerivWithinAt.mul ((hγ.hasDerivWithinAt_lieDerivative hV
-        (Ioo_subset_Icc_self hσ)).mono Ioo_subset_Icc_self) using 1
-      ring
-    · rw [interior_Icc] at hσ
-      exact mul_nonpos_of_nonneg_of_nonpos (Real.exp_pos _).le (by linarith [h_rate σ hσ])
-  intro t ht
-  have h := h_anti ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1
-  simp only at h
-  rw [show Real.exp (-c * (t - t₀)) = Real.exp (c * t₀) / Real.exp (c * t) by
-      rw [← Real.exp_sub]; congr 1; ring,
-    div_mul_eq_mul_div, le_div_iff₀ (Real.exp_pos _)]
-  linarith [h, mul_comm (V t (γ t)) (Real.exp (c * t))]
 
 /-- The Lie derivative along a continuous field of a `C¹` function is continuous in `(t, x)`. -/
 @[blueprint "lem:continuous-lieDerivative"

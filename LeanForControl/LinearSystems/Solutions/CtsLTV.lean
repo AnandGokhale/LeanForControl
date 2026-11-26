@@ -13,8 +13,11 @@ Theorem 5.2 (variation of constants: the forced response is the unique trajector
 input `u`).
 
 The analysis is the Banach-algebra theory of `PeanoBaker.lean`, at the algebra of operators on
-the state space; this file applies it to states. Uniqueness is the integrating
-factor: along a trajectory, `Φ(t₀, r) x(r)` has derivative `Φ(t₀, r) B(r) u(r)`.
+the state space; this file applies it to states. Trajectories are Carathéodory solutions; with
+continuous coefficients and input they are exactly the classical ones
+(`ContinuousLTV.isTrajectoryOn_iff_isIntegralCurveOn`), which is how they are handled here.
+Uniqueness is the integrating factor: along a trajectory, `Φ(t₀, r) x(r)` has derivative
+`Φ(t₀, r) B(r) u(r)`.
 
 Reference: Hespanha, *Linear Systems Theory* (2nd ed.), Chapter 5.
 -/
@@ -88,11 +91,14 @@ theory reaches the stability theory. -/
     trajectory (\cref{def:continuousLTV-isTrajectory}) under zero input.
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.1. -/)
-  (proof := /-- Apply \cref{thm:hasDerivAt-stateTransitionMatrix} to the fixed state $x_0$. -/)]
+  (proof := /-- Apply \cref{thm:hasDerivAt-stateTransitionMatrix} to the fixed state $x_0$: the
+    homogeneous response is a classical solution, hence a trajectory
+    (\cref{thm:continuousLTV-isTrajectory-zero-iff-isIntegralCurve}). -/)]
 theorem isTrajectory_homogeneousResponse (s : ContinuousLTV E U Y)
     (hA : Continuous s.A) (t₀ : ℝ) (x₀ : E) :
-    s.IsTrajectory 0 (fun t => s.stateTransition t t₀ x₀) := fun t => by
-  simpa using (s.hasDerivAt_stateTransition hA t t₀).clm_apply (hasDerivAt_const t x₀)
+    s.IsTrajectory 0 (fun t => s.stateTransition t t₀ x₀) :=
+  (isTrajectory_zero_iff_isIntegralCurve hA).2 fun t => by
+    simpa using (s.hasDerivAt_stateTransition hA t t₀).clm_apply (hasDerivAt_const t x₀)
 
 /-- The homogeneous response is a trajectory of the unforced system on the forward ray, the
 interval the stability predicates quantify over. -/
@@ -120,7 +126,9 @@ The integrating factor: along a trajectory `x`, `Φ(t₀, r) x(r)` has derivativ
     (\cref{def:continuousLTV-stateTransition}).
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.1. -/)
-  (proof := /-- $r \mapsto \Phi(t_0, r)\,\varphi(r)$ has derivative
+  (proof := /-- $\varphi$ is a classical solution
+    (\cref{thm:continuousLTV-isTrajectoryOn-zero-iff-isIntegralCurveOn}), so
+    $r \mapsto \Phi(t_0, r)\,\varphi(r)$ has derivative
     $-\Phi(t_0, r) A(r) \varphi(r) + \Phi(t_0, r) A(r) \varphi(r) = 0$
     (\cref{thm:hasDerivAt-stateTransitionMatrix-snd}), so it is constant on $[t_0, t_1]$, equal
     to $\varphi(t_0)$.  Apply $\Phi(t, t_0)$ and use
@@ -129,6 +137,8 @@ theorem eq_homogeneousResponse_of_isTrajectoryOn (s : ContinuousLTV E U Y)
     (hA : Continuous s.A) {x : ℝ → E} {t₀ t₁ : ℝ}
     (hx : s.IsTrajectoryOn 0 x (Set.Icc t₀ t₁)) {t : ℝ} (ht : t ∈ Set.Icc t₀ t₁) :
     x t = s.stateTransition t t₀ (x t₀) := by
+  replace hx := (isTrajectoryOn_zero_iff_isIntegralCurveOn hA.continuousOn
+    Set.ordConnected_Icc).1 hx
   have hd : ∀ r ∈ Set.Icc t₀ t₁,
       HasDerivWithinAt (fun r => s.stateTransition t₀ r (x r)) 0 (Set.Icc t₀ t₁) r := by
     intro r hr
@@ -196,7 +206,7 @@ theorem stateTransitionMap_zero (s : ContinuousLTV E U Y) (hA : Continuous s.A) 
     (ht : t₀ ≤ t) (x₀ : E) :
     s.toContinuousSystem.stateTransitionMap 0 t t₀ x₀ = s.stateTransition t t₀ x₀ := by
   have h := ContinuousSystem.eq_stateTransitionMap (hasUniqueSolutions_zero s hA)
-    (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x₀)
+    (ContinuousSystem.IsTrajectoryOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x₀)
       Set.Icc_subset_Ici_self) t ⟨ht, le_rfl⟩
   rw [h, stateTransition_self]
 
@@ -207,17 +217,18 @@ omit [CompleteSpace E] in
     (t₀ : ℝ) (x₀ : E) : s.forcedResponse u t₀ x₀ t₀ = x₀ := by
   simp [forcedResponse]
 
-/-- **The forced response is a trajectory**, at every time (Hespanha, Theorem 5.2).
+/-- **The forced response is a classical solution**, at every time (Hespanha, Theorem 5.2): it
+is differentiable with `ẋ(t) = A(t) x(t) + B(t) u(t)` at every `t`.
 
 Write `x(t) = Φ(t, t₀) w(t)` with `w(t) = x₀ + ∫ τ in t₀..t, Φ(t₀, τ) B(τ) u(τ) dτ`, using the
 semigroup property under the integral. Then the product rule gives
 `ẋ = A(t) Φ(t, t₀) w(t) + Φ(t, t₀) Φ(t₀, t) B(t) u(t) = A(t) x(t) + B(t) u(t)`. -/
-@[blueprint "thm:isTrajectory-forcedResponse"
-  (title := "The forced response is a trajectory")
+@[blueprint "thm:isIntegralCurve-forcedResponse"
+  (title := "The forced response is a classical solution")
   (statement := /-- Let $s$ be a continuous-time linear system with continuous coefficients
     $A$ and $B$, and let $u$ be a continuous input.  Then the forced response
-    (\cref{def:forcedResponse}) from any state $x_0$ at any time $t_0$ is a trajectory of $s$
-    (\cref{def:continuousLTV-isTrajectory}): it satisfies the state equation at every
+    (\cref{def:forcedResponse}) $x$ from any state $x_0$ at any time $t_0$ is differentiable, with
+    $\dot x(t) = A(t)\,x(t) + B(t)\,u(t)$ (\cref{def:continuousLTV-vectorField}) at every
     $t \in \mathbb{R}$.
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
@@ -227,10 +238,10 @@ semigroup property under the integral. Then the product rule gives
     $w(t) = x_0 + \int_{t_0}^{t} \Phi(t_0, \tau) B(\tau) u(\tau)\,d\tau$.  Differentiate the
     product: $\Phi(\cdot, t_0)$ by \cref{thm:hasDerivAt-stateTransitionMatrix}, and $w$ by the
     fundamental theorem of calculus. -/)]
-theorem isTrajectory_forcedResponse (s : ContinuousLTV E U Y) (hA : Continuous s.A)
+theorem isIntegralCurve_forcedResponse (s : ContinuousLTV E U Y) (hA : Continuous s.A)
     (hB : Continuous s.B) {u : ℝ → U} (hu : Continuous u) (t₀ : ℝ)
     (x₀ : E) :
-    s.IsTrajectory u (s.forcedResponse u t₀ x₀) := by
+    IsIntegralCurve (s.forcedResponse u t₀ x₀) (s.vectorField u) := by
   set g : ℝ → E := fun τ => s.B τ (u τ)
   have hg : Continuous g := hB.clm_apply hu
   have hΦg : Continuous fun τ => s.stateTransition t₀ τ (g τ) :=
@@ -246,6 +257,28 @@ theorem isTrajectory_forcedResponse (s : ContinuousLTV E U Y) (hA : Continuous s
     ((hasDerivAt_const t x₀).add (hΦg.integral_hasStrictDerivAt t₀ t).hasDerivAt) using 1
   simp [stateTransition_comp s hA, g]
 
+/-- **The forced response is a trajectory**, for all time (Hespanha, Theorem 5.2): it is a
+classical solution (`isIntegralCurve_forcedResponse`), and with continuous coefficients and input
+these are the trajectories. -/
+@[blueprint "thm:isTrajectory-forcedResponse"
+  (title := "The forced response is a trajectory")
+  (statement := /-- Let $s$ be a continuous-time linear system with continuous coefficients
+    $A$ and $B$, and let $u$ be a continuous input.  Then the forced response
+    (\cref{def:forcedResponse}) from any state $x_0$ at any time $t_0$ is a trajectory of $s$
+    under $u$ for all time (\cref{def:continuousLTV-isTrajectory}).
+
+    Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2.
+  -/)
+  (proof := /-- The forced response is a classical solution
+    (\cref{thm:isIntegralCurve-forcedResponse}), hence a trajectory
+    (\cref{thm:continuousLTV-isTrajectory-iff-isIntegralCurve}). -/)]
+theorem isTrajectory_forcedResponse (s : ContinuousLTV E U Y) (hA : Continuous s.A)
+    (hB : Continuous s.B) {u : ℝ → U} (hu : Continuous u) (t₀ : ℝ)
+    (x₀ : E) :
+    s.IsTrajectory u (s.forcedResponse u t₀ x₀) :=
+  (isTrajectory_iff_isIntegralCurve hA (hB.clm_apply hu)).2
+    (isIntegralCurve_forcedResponse s hA hB hu t₀ x₀)
+
 /-- **Every trajectory under the input `u` is the forced response** from its initial state
 (Hespanha, Theorem 5.2, uniqueness).
 
@@ -258,18 +291,25 @@ that starts at `0`, hence is `0` (`eq_homogeneousResponse_of_isTrajectoryOn`). -
     response (\cref{def:forcedResponse}) from $x(t_0)$ there.
 
     Reference: Hespanha, \emph{Linear Systems Theory} (2nd ed.), Chapter 5, Theorem 5.2. -/)
-  (proof := /-- $x$ minus the forced response is a trajectory of the unforced system
-    (\cref{thm:isTrajectory-forcedResponse}) starting at $0$, so it is
-    $\Phi(t, t_0)\,0 = 0$ (\cref{thm:eq-homogeneousResponse-of-isTrajectoryOn}). -/)]
+  (proof := /-- With continuous $A$, $B$, $u$, $x$ is a classical solution
+    (\cref{thm:continuousLTV-isTrajectoryOn-iff-isIntegralCurveOn}), and so is the forced
+    response (\cref{thm:isIntegralCurve-forcedResponse}).  Their difference is a classical
+    solution, hence a trajectory
+    (\cref{thm:continuousLTV-isTrajectoryOn-zero-iff-isIntegralCurveOn}), of the unforced system
+    starting at $0$, so it is $\Phi(t, t_0)\,0 = 0$
+    (\cref{thm:eq-homogeneousResponse-of-isTrajectoryOn}). -/)]
 theorem eq_forcedResponse_of_isTrajectoryOn (s : ContinuousLTV E U Y) (hA : Continuous s.A)
     (hB : Continuous s.B) {u : ℝ → U} (hu : Continuous u)
     {x : ℝ → E} {t₀ t₁ : ℝ} (hx : s.IsTrajectoryOn u x (Set.Icc t₀ t₁)) {t : ℝ}
     (ht : t ∈ Set.Icc t₀ t₁) : x t = s.forcedResponse u t₀ (x t₀) t := by
+  replace hx := (isTrajectoryOn_iff_isIntegralCurveOn hA.continuousOn
+    (hB.clm_apply hu).continuousOn Set.ordConnected_Icc).1 hx
   have hd : s.IsTrajectoryOn 0 (fun r => x r - s.forcedResponse u t₀ (x t₀) r) (Set.Icc t₀ t₁) :=
-    fun r hr => by
-      convert (hx r hr).sub
-        (isTrajectory_forcedResponse s hA hB hu t₀ (x t₀) r).hasDerivWithinAt using 1
-      simp
+    (isTrajectoryOn_zero_iff_isIntegralCurveOn hA.continuousOn Set.ordConnected_Icc).2
+      fun r hr => by
+        convert (hx r hr).sub
+          (isIntegralCurve_forcedResponse s hA hB hu t₀ (x t₀) r).hasDerivWithinAt using 1
+        simp
   have h := eq_homogeneousResponse_of_isTrajectoryOn s hA hd ht
   rw [forcedResponse_self, sub_self, map_zero] at h
   exact sub_eq_zero.1 h

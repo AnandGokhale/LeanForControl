@@ -19,8 +19,8 @@ Both conclude `s.Unstable`, the negation of `s.Stable`, rather than only failure
 depending on initial time. Neither theorem assumes an equilibrium or forward completeness.
 The state equation is time-invariant (`s.F t x () = f x`); no condition on output is imposed.
 
-Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Theorem 4.3,
-p. 125, for the positive-superlevel escape method.
+Reference: Khalil, *Nonlinear Systems*, 3rd ed. (Prentice Hall, 2002), Chetaev's theorem,
+for the positive-superlevel escape method.
 -/
 
 open Filter Function Metric Set Topology
@@ -60,13 +60,13 @@ private theorem exists_cutoff_forward_segment
     simpa [Metric.mem_closedBall, dist_eq_norm] using hball
   simpa [g, hb_one] using hφg t ht
 
-omit [FiniteDimensional ℝ E] in
-/-- For an input-free system with `s.F t x () = f x`, cutoff curves starting arbitrarily
-close to the base point and reaching a fixed positive radius imply `s.Unstable x_eq`.
+/-- For an input-free system with `s.F t x () = f x` and continuous `f`, cutoff curves starting
+arbitrarily close to the base point and reaching a fixed positive radius imply `s.Unstable x_eq`.
 
 Restrict to the first sphere hit to obtain a system trajectory on `[0, τ]`. -/
 private theorem unstable_of_cutoff_segment_escape {Y : Type*} {s : ContinuousSystem E Unit Y}
-    {f : E → E} (hF : ∀ t x, s.F t x () = f x) {x_eq : E} {ρ : ℝ} (hρ : 0 < ρ)
+    {f : E → E} (hf : Continuous f) (hF : ∀ t x, s.F t x () = f x) {x_eq : E} {ρ : ℝ}
+    (hρ : 0 < ρ)
     (hsegments : ∀ δ > 0, ∃ (T : ℝ) (φ : ℝ → E) (t : ℝ),
       ‖φ 0 - x_eq‖ < min δ ρ ∧
       ContinuousOn φ (Icc (0 : ℝ) T) ∧
@@ -81,11 +81,13 @@ private theorem unstable_of_cutoff_segment_escape {Y : Type*} {s : ContinuousSys
   have hφ0ρ : ‖φ 0 - x_eq‖ < ρ := hφ0.trans_le (min_le_right _ _)
   obtain ⟨τ, hτT, hτeq, hstay⟩ :=
     exists_first_sphere_hit hφcont hφ0ρ ht₁ hfar
-  have hφf : s.IsTrajectoryOn (fun _ => ()) φ (Icc 0 τ) := by
-    intro t ht
-    rw [ContinuousSystem.vectorField_apply, hF]
-    exact (hφderiv t ⟨ht.1, ht.2.trans hτT.2⟩ (hstay t ht)).mono
-      (Icc_subset_Icc_right hτT.2)
+  have hφf : s.IsTrajectoryOn (fun _ => ()) φ (Icc 0 τ) :=
+    (isTrajectoryOn_iff_isIntegralCurveOn_of_continuous (s := s) (u := fun _ => ())
+      ((hf.comp continuous_snd).congr fun p => (hF p.1 p.2).symm) ordConnected_Icc).2
+      fun t ht => by
+        rw [ContinuousSystem.vectorField_apply, hF]
+        exact (hφderiv t ⟨ht.1, ht.2.trans hτT.2⟩ (hstay t ht)).mono
+          (Icc_subset_Icc_right hτT.2)
   exact ⟨τ, φ, τ, hφf, hφ0δ, ⟨hτT.1, le_rfl⟩, hτeq.ge⟩
 
 /-- A continuous curve starting in an open region `D` with `V(φ t₀) > 0` stays
@@ -313,7 +315,7 @@ private theorem exists_cutoff_segment_reaching_radius_of_geometric_chetaev
 /-- A Chetaev certificate on a fixed closed ball implies instability for an input-free
 system with globally `C¹`, time-independent state equation `f`.
 
-Reference: Khalil, *Nonlinear Systems*, 3rd ed., Theorem 4.3, p. 125, for the
+Reference: Khalil, *Nonlinear Systems*, 3rd ed., Chetaev's theorem, for the
 positive-superlevel escape argument. -/
 @[blueprint "thm:continuousSystem-geometric-chetaev-unstable"
   (title := "Geometric Chetaev instability criterion")
@@ -321,7 +323,7 @@ positive-superlevel escape argument. -/
     a Chetaev certificate at $x_{\rm eq}$ (\cref{def:continuousSystem-isChetaevFunction})
     implies instability (\cref{def:continuousSystem-unstable}).
 
-    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed., Theorem 4.3, p. 125. -/)
+    Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed., Chetaev's theorem. -/)
   (proof := /-- Choose a positive seed near the boundary point and continue a cutoff curve.
     Boundary vanishing retains it in the region. The Lie derivative has a positive minimum
     on its compact superlevel, forcing growth beyond the ball's certificate ceiling. -/)]
@@ -330,7 +332,7 @@ theorem unstable_of_geometric_chetaev {Y : Type*} {s : ContinuousSystem E Unit Y
     {V : E → ℝ} {x_eq : E} {D : Set E} {ρ : ℝ}
     (hf : ContDiff ℝ 1 f) (hC : s.IsChetaevFunction V x_eq D ρ) :
     s.Unstable x_eq := by
-  apply unstable_of_cutoff_segment_escape hF hC.hradius
+  apply unstable_of_cutoff_segment_escape hf.continuous hF hC.hradius
   intro δ hδ
   have hmin : 0 < min δ ρ := lt_min hδ hC.hradius
   obtain ⟨x₀, hx₀D, hdist⟩ :=
@@ -359,7 +361,7 @@ theorem unstable_of_geometric_chetaev {Y : Type*} {s : ContinuousSystem E Unit Y
 `DV(x) f(x) ≥ 2 α V(x)` with `α > 0` imply instability. Apply the geometric criterion
 to the open positive set of `V`.
 
-Reference: Khalil, *Nonlinear Systems*, 3rd ed., Theorem 4.3, p. 125. -/
+Reference: Khalil, *Nonlinear Systems*, 3rd ed., Chetaev's theorem. -/
 @[blueprint "thm:exponential-chetaev-unstable"
   (title := "Exponential Chetaev instability criterion")
   (statement := /-- Suppose the vector field $f$ and certificate $V$ are $C^1$,
@@ -371,7 +373,7 @@ Reference: Khalil, *Nonlinear Systems*, 3rd ed., Theorem 4.3, p. 125. -/
     $\dot x = f(x)$.
 
     Reference: Khalil, \emph{Nonlinear Systems}, 3rd ed. (Prentice Hall, 2002),
-    Theorem 4.3, p. 125, for the method; this quantitative variant is not its statement.
+    Chetaev's theorem, for the method; this quantitative variant is not its statement.
   -/)
   (proof := /-- Take $D=\{V>0\}$. The quadratic bound gives $V(x_{\rm eq})=0$;
     the nearby positive seeds put $x_{\rm eq}$ in its closure. Continuity makes $V=0$

@@ -5,6 +5,7 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.ODE.Transform
 import Mathlib.Order.Interval.Set.UnorderedInterval
 import LeanForControl.Analysis.Integrals
+import LeanForControl.Analysis.OrderTopology
 import Architect
 
 open MeasureTheory Metric Set Filter TopologicalSpace
@@ -18,8 +19,9 @@ dictionary with Mathlib's differential formulation `IsIntegralCurveOn`.
 
 Nothing here is specific to control theory: these are the two directions of the fundamental
 theorem of calculus for ODE solutions, plus the reparametrizations (re-anchoring, time
-reflection, time translation) that both formulations are closed under. The control content —
-existence, continuous dependence, stability — lives in `ODEs/` and `Stability/`.
+reflection) of the integral formulation; time translation of an integral curve is Mathlib's
+`IsIntegralCurveOn.comp_add`. The control content — existence, continuous dependence,
+stability — lives in `ODEs/` and `Stability/`.
 
 ## Main declarations
 
@@ -27,8 +29,8 @@ existence, continuous dependence, stability — lives in `ODEs/` and `Stability/
 * `isIntegralSolution_iff_isIntegralCurveOn` — the two formulations agree, given integrability.
 * `IsIntegralSolution.reanchor`, `IsIntegralSolution.reflect` — re-anchoring the initial
   condition anywhere on the segment, and reversing time.
-* `IsIntegralCurveOn.comp_add_autonomous`, `IsIntegralCurveOn.shift_to_zero` — time translation
-  of an autonomous integral curve.
+* `isIntegralSolution_const`, `isIntegralCurveOn_const` — an equilibrium is a constant solution,
+  in either formulation.
 
 Integrability of `s ↦ F s (x s)` from joint continuity is `Continuous.intervalIntegrable_comp`,
 in `Analysis/Integrals.lean`.
@@ -150,22 +152,49 @@ lemma IsIntegralSolution.reflect {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {F
   · dsimp only
     rw [(hx _ hmem).2, intervalIntegral.integral_neg, hkey (fun w => F w (x w)) σ, neg_neg]
 
+/-- An integral solution is continuous on its segment: it is its initial value plus a primitive of
+an integrable function. -/
+@[blueprint "lem:isIntegralSolution-continuousOn"
+  (title := "Integral solutions are continuous")
+  (latexEnv := "lemma")
+  (statement := /-- An integral solution (\cref{def:isIntegralSolution}) on the segment between
+    $t_0$ and $t_1$ is continuous on that segment. -/)
+  (proof := /-- It is $x_0$ plus the primitive $t \mapsto \int_{t_0}^{t} F(s, x(s))\,\mathrm{d}s$
+    of a function integrable on the segment, and such a primitive is continuous. -/)]
+lemma IsIntegralSolution.continuousOn {t₀ t₁ : ℝ} {x : ℝ → E} {x₀ : E} {F : ℝ → E → E}
+    (hx : IsIntegralSolution t₀ t₁ x x₀ F) : ContinuousOn x (uIcc t₀ t₁) :=
+  (continuousOn_const.add (intervalIntegral.continuousOn_primitive_interval'
+    (hx t₁ right_mem_uIcc).1 left_mem_uIcc)).congr fun t ht => (hx t ht).2
+
+/-- **An equilibrium is a constant integral solution**: if `F(t, p) = 0` on the segment, then
+`t ↦ p` is an integral solution from `p` there. -/
+@[blueprint "lem:isIntegralSolution-const"
+  (title := "Constant integral solutions at equilibria")
+  (latexEnv := "lemma")
+  (statement := /-- If $F(t, p) = 0$ for every $t$ between $t_0$ and $t_1$, the constant curve
+    $t \mapsto p$ is an integral solution (\cref{def:isIntegralSolution}) of $\dot x = F(t, x)$
+    there, with initial value $p$. -/)]
+lemma isIntegralSolution_const {t₀ t₁ : ℝ} {F : ℝ → E → E} {p : E}
+    (h : ∀ t ∈ uIcc t₀ t₁, F t p = 0) : IsIntegralSolution t₀ t₁ (fun _ => p) p F := by
+  intro t ht
+  have h_zero : EqOn (fun s => F s p) 0 (uIcc t₀ t) := fun s hs => h s (uIcc_subset_uIcc_left ht hs)
+  exact ⟨(intervalIntegrable_const (c := (0 : E))).congr fun s hs =>
+    (h_zero (uIoc_subset_uIcc hs)).symm, by rw [intervalIntegral.integral_congr h_zero]; simp⟩
+
 end Reparametrization
 
 /-! ## Relation to Mathlib's integral curves
 
 `IsIntegralSolution` is the *integral* (Volterra) formulation of `ẋ = F(t, x)`; Mathlib's
-`IsIntegralCurveOn` is the *differential* one. Mathlib's public ODE API — Picard-Lindelöf
-existence (`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`), Grönwall uniqueness
-(`ODE_solution_unique_of_mem_Icc`) — is stated exclusively in the differential form, which is
-therefore the canonical one; the integral form appears in Mathlib only as `ODE.picard`, an
-internal proof device. The lemmas below are the two directions of the fundamental theorem of
-calculus relating them, so that results proved against either formulation transfer to the other.
+`IsIntegralCurveOn` is the *differential*, classical one, in which Mathlib states Picard-Lindelöf
+existence (`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`) and Grönwall uniqueness
+(`ODE_solution_unique_of_mem_Icc`). The lemmas below are the two directions of the fundamental
+theorem of calculus relating them: the two formulations agree when `F` is continuous along the
+curve, so results proved against either one transfer to the other.
 
-Note that `IsIntegralSolution` unfolds to exactly the statement that `x` is a fixed point of
-Mathlib's Picard operator, and that the differential form is the weaker hypothesis to discharge
-but the stronger one to assume: it carries no integrability side conditions, which is why the
-Lyapunov track differentiates along it directly.
+The integral form asks no derivative of `x` at any given time, only integrability of
+`s ↦ F s (x s)`: it is the Carathéodory notion of solution, and the one by which the trajectories
+of a system (`ContinuousSystem.IsTrajectoryOn`) are defined.
 -/
 
 section IntegralCurve
@@ -253,84 +282,19 @@ theorem isIntegralSolution_iff_isIntegralCurveOn
   ⟨fun h => h.isIntegralCurveOn hFx, fun h => h.isIntegralSolution hFx⟩
 
 /-- The forward-time form of `isIntegralSolution_iff_isIntegralCurveOn`, stated over `Icc t₀ t₁`
-rather than `uIcc t₀ t₁`. This is the form the finite-forward stability predicates are phrased
-in (with `t₀ = 0`). -/
+rather than `uIcc t₀ t₁`. -/
 @[blueprint "lem:isIntegralSolution-iff-isIntegralCurveOn-Icc"
   (title := "Integral and differential forms agree, forward time")
   (latexEnv := "lemma")
   (statement := /-- \cref{lem:isIntegralSolution-iff-isIntegralCurveOn} in forward time: for
-    $t_0 \le t_1$, the equivalence holds over $[t_0, t_1]$.  This is the interval the
-    finite-forward stability predicates are phrased over, so this is the form the stability
-    track would use to reach the results of this chapter. -/)]
+    $t_0 \le t_1$ and $s \mapsto F(s, x(s))$ continuous on $[t_0, t_1]$, $x$ is an integral
+    solution on $[t_0, t_1]$ anchored at $x(t_0)$ if and only if it is an integral curve of $F$
+    on $[t_0, t_1]$. -/)]
 theorem isIntegralSolution_iff_isIntegralCurveOn_Icc (hle : t₀ ≤ t₁)
     (hFx : ContinuousOn (fun s => F s (x s)) (Icc t₀ t₁)) :
     IsIntegralSolution t₀ t₁ x (x t₀) F ↔ IsIntegralCurveOn x F (Icc t₀ t₁) := by
   rw [← uIcc_of_le hle] at hFx ⊢
   exact isIntegralSolution_iff_isIntegralCurveOn hFx
-
-omit [CompleteSpace E] in
-/-- **Time invariance.** An autonomous vector field has no preferred time origin: translating
-an integral curve translates its interval of definition and nothing else.
-
-This is Mathlib's `IsIntegralCurveOn.comp_add` with the time-dependence removed — for
-`fun _ y => g y` the translated field `v ∘ (· + dt)` is the field itself. -/
-@[blueprint "lem:isIntegralCurveOn-comp-add-autonomous"
-  (title := "Time invariance")
-  (latexEnv := "lemma")
-  (statement := /-- If $x$ is an integral curve of an autonomous
-    field $g$ on a set $s$, then $t \mapsto x(t + \Delta t)$ is an integral curve of the same
-    $g$ on $s - \Delta t$, for every $\Delta t$.
-
-    An autonomous field has no preferred time origin, so translating a solution translates its
-    interval of definition and changes nothing else.  For a time-varying field the translated
-    solution would solve the \emph{translated} equation instead. -/)]
-lemma IsIntegralCurveOn.comp_add_autonomous {g : E → E} {s : Set ℝ}
-    (hx : IsIntegralCurveOn x (fun _ y => g y) s) (dt : ℝ) :
-    IsIntegralCurveOn (fun t => x (t + dt)) (fun _ y => g y) (-dt +ᵥ s) :=
-  hx.comp_add dt
-
-omit [CompleteSpace E] in
-/-- Time invariance in the form the finite-segment predicates need: a segment on `[t₀, t₁]`
-re-anchored to `[0, t₁ - t₀]`. -/
-@[blueprint "lem:isIntegralCurveOn-shift-to-zero"
-  (title := "Shifting a solution segment to the origin")
-  (latexEnv := "lemma")
-  (statement := /-- \cref{lem:isIntegralCurveOn-comp-add-autonomous} in the form the
-    finite-segment predicates need: a solution segment of an autonomous field on $[t_0, t_1]$
-    becomes one on $[0, t_1 - t_0]$ under $s \mapsto x(s + t_0)$.
-
-    This is why the autonomous stability predicates may fix the initial time at $0$ without
-    loss: any segment can be shifted there. -/)]
-lemma IsIntegralCurveOn.shift_to_zero {g : E → E} {t₀ t₁ : ℝ}
-    (hx : IsIntegralCurveOn x (fun _ y => g y) (Icc t₀ t₁)) :
-    IsIntegralCurveOn (fun s => x (s + t₀)) (fun _ y => g y) (Icc 0 (t₁ - t₀)) := by
-  have h := hx.comp_add_autonomous t₀
-  have hset : -t₀ +ᵥ Icc t₀ t₁ = Icc 0 (t₁ - t₀) := by
-    simp [Set.vadd_Icc, neg_add_eq_sub]
-  rwa [hset] at h
-
-/-- An integral curve of an autonomous field on `[t₀, t₁]` is an integral solution there.
-
-The continuity of `x` that the integral formulation needs comes for free from the curve
-hypothesis; only continuity of the field is assumed. Specializes
-`isIntegralSolution_iff_isIntegralCurveOn_Icc`. -/
-@[blueprint "lem:isIntegralCurveOn-isIntegralSolution-of-continuous"
-  (title := "Integral form for an autonomous field")
-  (latexEnv := "lemma")
-  (statement := /-- Let $g$ be a continuous \emph{autonomous} field and let $x$ be an integral
-    curve of $g$ on $[t_0,t_1]$, $t_0 \le t_1$.  Then $x$ is an integral solution there,
-    anchored at $x(t_0)$.
-
-    This is the autonomous, forward-time specialization of
-    \cref{lem:isIntegralSolution-iff-isIntegralCurveOn-Icc}, and so the shape a trajectory of an
-    autonomous system has: continuity of the field is the only hypothesis, the continuity of $x$
-    along which $F$ must be continuous being supplied by the curve itself. -/)]
-lemma IsIntegralCurveOn.isIntegralSolution_of_continuous {g : E → E} {t₀ t₁ : ℝ}
-    (hle : t₀ ≤ t₁) (hx : IsIntegralCurveOn x (fun _ y => g y) (Icc t₀ t₁))
-    (hg : Continuous g) :
-    IsIntegralSolution t₀ t₁ x (x t₀) (fun _ y => g y) :=
-  (isIntegralSolution_iff_isIntegralCurveOn_Icc hle
-    (hg.comp_continuousOn (fun s hs => (hx s hs).continuousWithinAt))).mpr hx
 
 end IntegralCurve
 
@@ -344,19 +308,3 @@ end IntegralCurve
 lemma isIntegralCurveOn_const {v : ℝ → E → E} {p : E} {s : Set ℝ} (h : ∀ t ∈ s, v t p = 0) :
     IsIntegralCurveOn (fun _ => p) v s := fun t ht =>
   (hasDerivWithinAt_const t s p).congr_deriv (h t ht).symm
-
-/-- **Bounded speed**: an integral curve of a field bounded by `B` along it, on a convex set,
-moves at most `B |τ₂ - τ₁|` between two of its times. -/
-@[blueprint "lem:isIntegralCurveOn-norm-sub-le"
-  (title := "Integral curves of a bounded field move at bounded speed")
-  (latexEnv := "lemma")
-  (statement := /-- Let $\gamma$ be an integral curve of $v$ on a convex set $s$, with
-    $\|v(\tau, \gamma(\tau))\| \le B$ for $\tau \in s$.  Then
-    $\|\gamma(\tau_2) - \gamma(\tau_1)\| \le B\,|\tau_2 - \tau_1|$ for $\tau_1, \tau_2 \in s$. -/)]
-theorem IsIntegralCurveOn.norm_sub_le {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    {γ : ℝ → E} {v : ℝ → E → E} {s : Set ℝ} {B : ℝ} (hγ : IsIntegralCurveOn γ v s)
-    (hs : Convex ℝ s) (hv : ∀ τ ∈ s, ‖v τ (γ τ)‖ ≤ B) {τ₁ τ₂ : ℝ} (h₁ : τ₁ ∈ s) (h₂ : τ₂ ∈ s) :
-    ‖γ τ₂ - γ τ₁‖ ≤ B * |τ₂ - τ₁| := by
-  simpa [Real.norm_eq_abs] using
-    hs.norm_image_sub_le_of_norm_hasDerivWithin_le (fun τ hτ => hγ τ hτ) hv h₁ h₂
-

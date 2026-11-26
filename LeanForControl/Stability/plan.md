@@ -40,7 +40,7 @@ Files:
 | Picard–Lindelöf existence on `[t₀, ∞)` | `exists_isIntegralCurveOn_Ici` | `ODEs/PicardLindelof.lean` | ✅ done, axiom-free |
 | Class-K sandwich bounds for positive-definite functions | `IsPositiveDefiniteOn.exists_classK_bounds` | `Comparison/PositiveDefiniteBounds.lean` | ✅ done |
 | Class-KL solutions of the decay system `ẏ = −α(y)` | `ClassK.exists_classKL_trajectory_decaySystem` | `Comparison/DecaySystem.lean` | ✅ done |
-| Subsolutions `D⁺v ≤ −α(v)` of the decay system ⟹ class-KL decay | `ClassK.exists_classKL_bound_of_subsolution` | `Comparison/DecaySystem.lean` | ✅ done |
+| Absolutely continuous subsolutions `v̇ ≤ −α(v)` a.e. of the decay system ⟹ class-KL decay | `ClassK.exists_classKL_bound_of_deriv_le` | `Comparison/DecaySystem.lean` | ✅ done |
 | Class-K characterization of (uniform) stability | `stable_iff_classK`, `uniformlyStable_iff_classK` | `Continuous/KLCharacterization.lean` | ✅ done |
 | Class-KL characterization of uniform asymptotic stability | `uniformlyAsymptoticallyStable_iff_classKL` | `Continuous/KLCharacterization.lean` | ✅ done |
 | Class-KL characterization of global uniform asymptotic stability | `globallyUniformlyAsymptoticallyStable_iff_classKL` | `Continuous/KLCharacterization.lean` | ✅ done |
@@ -114,8 +114,8 @@ Backlog:
 ## Finite-segment quantification and Lyapunov's indirect method
 
 Every stability predicate of `Continuous/Defs.lean` quantifies over *finite forward solution
-segments* (`s.IsTrajectoryOn u x (Icc t₀ t₁)`, an integral curve of the system's vector field on
-the segment) rather than over solutions defined on all of `ℝ`. This prevents a system whose
+segments* (`s.IsTrajectoryOn u x (Icc t₀ t₁)`, a Carathéodory solution of the system on the
+segment) rather than over solutions defined on all of `ℝ`. This prevents a system whose
 solution escapes in finite time from satisfying a stability predicate merely because no global
 trajectory exists.
 
@@ -124,7 +124,7 @@ There is no separate "forward" API: `Stable`, `LocallyExponentiallyStable` and `
 
 | Infrastructure or result | Lean name | File | Status |
 |---|---|---|---|
-| Finite forward solution segment | `ContinuousSystem.IsTrajectoryOn` (Mathlib's `IsIntegralCurveOn`) | `Systems/Continuous.lean` | ✅ done |
+| Finite forward solution segment | `ContinuousSystem.IsTrajectoryOn` (Carathéodory; Mathlib's `IsIntegralCurveOn` for a continuous field) | `Systems/Continuous.lean` | ✅ done |
 | Stability, local exponential stability, instability | `Stable`, `LocallyExponentiallyStable`, `Unstable` | `Continuous/Defs.lean` | ✅ done |
 | Local finite segment for a `C¹` field | `ContDiffAt.exists_isIntegralCurveOn_Icc` | `ODEs/ODE_properties.lean` | ✅ done |
 | Lyapunov first-exit theorem | `IsUniformLyapunovFunction.uniformlyStable` | `Continuous/LyapunovTheorems.lean` | ✅ done |
@@ -240,9 +240,10 @@ an independent open region, stronger global regularity, and finite-segment syste
 
 ## Infrastructure already in place (autonomous side)
 
-- Differentiating along solutions: `Analysis/LieDerivative.lean` (`lieDerivative`,
-  `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos`,
-  `IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le`)
+- Differentiating along solutions: `Analysis/LieDerivative.lean` (`lieDerivative`, and
+  `IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos` for classical solutions); along
+  trajectories, `Systems/Continuous.lean` (`IsTrajectoryOn.sub_le_integral_of_lieDerivative_le`,
+  `IsTrajectoryOn.antitoneOn_of_lieDerivative_nonpos`, `IsTrajectoryOn.le_mul_exp_of_lieDerivative_le`)
 - `isCompact_sublevel_set` (`Analysis/SublevelSet.lean`)
 - `omegaLimitSet`, `mem_omegaLimitSet_iff` (`Analysis/OmegaLimit.lean`) — Mathlib's `omegaLimit`
   specialized to a single trajectory, and its membership criterion
@@ -302,9 +303,10 @@ Each is documented in its docstring's *Differences* list; collected here so they
    `LocallyExponentiallyStable`, `GloballyExponentiallyStable` (`Continuous/Defs.lean`) and
    `InputToStateStable` (`Continuous/ISS.lean`) only bound trajectory segments `[t₀, t₁]`; the
    theorems producing them (4.19, Lemma 4.6, Lemma 4.7, the Lyapunov theorems) never prove
-   existence.  Two consequences: finite escape is not excluded by the definition, and an
-   ill-posed system with no classical solutions — e.g. under a discontinuous input — satisfies
-   the estimate vacuously.
+   existence.  Consequence: finite escape is not excluded by the definition.  Since 2026-11-25
+   trajectories are Carathéodory solutions, so a discontinuous input no longer makes the estimate
+   vacuous — its solutions are trajectories — but existence is proved only for fields continuous
+   in time (see *Carathéodory trajectories* below).
 
    *Decision (2026-10-24): keep the definitions estimate-only* — every result is an
    estimate-to-estimate implication and composes as is, and changing only ISS would split it from
@@ -326,11 +328,29 @@ Each is documented in its docstring's *Differences* list; collected here so they
    `t = 0` goes through solutions from slightly negative initial times (the time-augmented
    system and the private sensitivity lemmas in `Continuous/Converse.lean` work on open sets).  Fix:
    one-sided derivatives on `[0, ∞) × D` throughout the sensitivity lemmas.
-3. **Lyapunov functions are differentiable, not `C¹`.** Khalil's converse theorems 4.14 and 4.16
-   assert continuously differentiable `V`; the Lyapunov structures
-   (`Continuous/LyapunovFunctions.lean`) and the converse theorems give only differentiability.
+3. **Lyapunov functions are differentiable and locally Lipschitz, not `C¹`.** Khalil's converse
+   theorems 4.14 and 4.16 assert continuously differentiable `V`; the Lyapunov structures
+   (`Continuous/LyapunovFunctions.lean`) ask, and the converse theorems give, only
+   differentiability and local Lipschitz continuity (the latter is what makes `V` absolutely
+   continuous along a Carathéodory trajectory).
    Fix: continuity of the derivative — one more dominated-convergence argument in each converse
    construction.
+
+### Carathéodory trajectories (2026-11-25)
+
+`ContinuousSystem.IsTrajectoryOn` is now the Carathéodory notion: the field is integrable along
+`x` and `x b - x a = ∫ₐᵇ F(τ, x τ, u τ) dτ`.  It is the single notion of trajectory; right
+trajectories (`IsRightTrajectoryOn`) and the separate `IsCaratheodoryTrajectoryOn` are gone, and
+the classical notion is Mathlib's `IsIntegralCurveOn`, equal to it for a continuous field
+(`isTrajectoryOn_iff_isIntegralCurveOn`).  `[CompleteSpace E]` is assumed wherever trajectories
+appear, and Lyapunov functions are locally Lipschitz.  The Lyapunov arguments run along absolutely
+continuous functions (`Analysis/AbsolutelyContinuous.lean`, the *Functions along trajectories*
+section of `Systems/Continuous.lean`, `ClassK.exists_classKL_bound_of_deriv_le`).
+
+*Obligation:* an existence theorem for fields merely measurable in time (Carathéodory's existence
+theorem) is not in the library.  Existence is proved only for fields continuous in time
+(`ODEs/PicardLindelof.lean`, `ODEs/ODE_properties.lean`), so results that need a solution to
+exist cover discontinuous inputs only when existence is supplied by the caller.
 
 ### The ISS-branch audit is unfinished
 
@@ -363,11 +383,10 @@ time-varying changes only when a theorem needs them.
 The Dini derivative is now `EReal`-valued (as in Saks, Bruckner and Bullo), so `comparison_lemma`
 no longer carries boundedness hypotheses on the difference quotients.  It still asks the caller
 for the perturbed solutions `z_λ` of `ż = f(t, z) + λ` (`hz_exists`), which every caller
-discharges with `exists_isIntegralSolution_Icc_of_lipschitz`; build them inside the proof instead.
-For the linear case, `le_mul_exp_of_diniDerivRight_le` (a wrapper of Mathlib's Grönwall) is
-already the lighter tool.  (`IsIntegralCurveOn.le_exp_mul_of_lieDerivative_le` is *not* a
-corollary of it: the Lie-derivative version needs its rate bound only on the open interval, the
-Dini one on `[t₀, t₁)`.)
+could discharge with `exists_isIntegralSolution_Icc_of_lipschitz`; build them inside the proof
+instead.  Since 2026-11-25 it has no caller: the class-KL decay bounds use the absolutely
+continuous comparison of `Comparison/DecaySystem.lean`.  For the linear case,
+`le_mul_exp_of_diniDerivRight_le` (a wrapper of Mathlib's Grönwall) is already the lighter tool.
 
 ### `ClassKLGlobal.continuous_r` concludes on the wrong set
 
@@ -450,5 +469,5 @@ accurate and unrelated to the retired `Forward*` stability predicates.
 - **Non-autonomous work reuses the comparison-function library** (`Comparison/ClassK.lean`
   and related files) rather than the autonomous Lyapunov-function structures directly.
   Stability notions are characterized via class-K / class-KL bounds, and the main theorems
-  in `Continuous/LyapunovTheorems.lean` combine those bounds with the Dini-derivative
-  comparison lemma.
+  in `Continuous/LyapunovTheorems.lean` combine those bounds with the comparison bound for
+  absolutely continuous subsolutions of the decay system.

@@ -13,8 +13,8 @@ Remaining work only; done results are removed. Status: ◐ partial or stated wit
 
 | Result | Status | Where / what is needed |
 |---|---|---|
-| Uniqueness: `osL(F(t, ·)) ≤ b(t)`, `b` continuous ⇒ `HasUniqueSolutions` | ✗ easy | `norm_sub_le_exp_integral_of_oneSidedLipschitz`; today only the constant rate (`IsInfinitesimallyContractingOn.hasUniqueSolutions`) |
-| Displacement: `‖x(t) - x₀‖ ≤ ∫_{t₀}^t e^{∫ₛᵗ b} ‖F(s, x₀)‖ ds` | ✗ med | the forced curve lemma `norm_le_exp_integral_add_of_pairing_le` (`Norms/CurveNormDerivative.lean`) with `x - x₀` |
+| Uniqueness: `osL(F(t, ·)) ≤ b(t)`, `b` integrable ⇒ `HasUniqueSolutions` | ✗ easy | `norm_sub_le_exp_integral_of_oneSidedLipschitz`; today only the constant rate (`IsInfinitesimallyContractingOn.hasUniqueSolutions`) |
+| Displacement: `‖x(t) - x₀‖ ≤ ∫_{t₀}^t e^{∫ₛᵗ b} ‖F(s, x₀)‖ ds` | ✗ med | the forced curve lemma `norm_le_exp_integral_add_of_pairing_le` (`Norms/CurveNormDerivative.lean`) with `x - x₀`; it asks for right derivatives, so trajectories need an almost-everywhere version first |
 | Comparison with an approximate trajectory `z`: forcing `‖F(s, z(s)) - ż(s)‖` | ✗ med | the same forced lemma with `x - z`; the displacement is `z ≡ x₀` |
 | Local existence | ✗ med | Picard–Lindelöf for locally Lipschitz `F` (Mathlib); from continuity alone needs Peano (not in Mathlib, finite-dimensional) |
 | Forward completeness: `osL(F(t, ·)) ≤ b(t)` on the whole space, `F` continuous ⇒ `IsForwardComplete` | ✗ hard | displacement bound keeps solutions in a ball on `[t₀, T]`; uniform Picard–Lindelöf step there; gluing of trajectories |

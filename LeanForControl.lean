@@ -1,3 +1,4 @@
+import LeanForControl.Analysis.AbsolutelyContinuous
 import LeanForControl.Analysis.Continuity
 import LeanForControl.Analysis.ConvexAnalysis.BaillonHaddad
 import LeanForControl.Analysis.ConvexAnalysis.Prox
@@ -11,6 +12,7 @@ import LeanForControl.Analysis.LieDerivative
 import LeanForControl.Analysis.MonotoneFunctions
 import LeanForControl.Analysis.Norm
 import LeanForControl.Analysis.OmegaLimit
+import LeanForControl.Analysis.OrderTopology
 import LeanForControl.Analysis.PositiveDefinite
 import LeanForControl.Analysis.SpectralRadius
 import LeanForControl.Analysis.SublevelSet

@@ -1,4 +1,5 @@
 import LeanForControl.Contraction.Norms.RegularPairing
+import LeanForControl.Analysis.AbsolutelyContinuous
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.Calculus.MeanValue
@@ -13,8 +14,13 @@ import Architect
   the regular pairing of the norm.
 * `hasDerivAt_norm_sq` — the curve norm derivative formula: wherever `‖x(t)‖²` is differentiable,
   its derivative is `2 ⟦ẋ; x⟧`, for every regular pairing.
-* `norm_le_exp_integral_of_pairing_le` — if `⟦ẋ(r); x(r)⟧ ≤ b(r) ‖x(r)‖²` along a curve, then
+* `norm_le_exp_integral_of_pairing_le` — if `⟦ẋ(r); x(r)⟧_p ≤ b(r) ‖x(r)‖²` almost everywhere
+  along an absolutely continuous curve, for any regular pairing, then
   `‖x(t)‖ ≤ exp (∫_{t₀}^t b) ‖x(t₀)‖`.
+* `norm_le_exp_integral_add_of_pairing_le` — the version with a forcing term,
+  `⟦ẋ(r); x(r)⟧ ≤ a(r) ‖x(r)‖² + b(r) ‖x(r)‖` for the regular pairing of the norm.  It is still
+  stated for a continuous curve with a right derivative at every time and continuous `a`, `b`; it
+  has not been migrated to the almost-everywhere form.
 
 References: A. V. Proskurnikov and F. Bullo, *Regular Pairings for Nonquadratic Lyapunov
 Functions and Contraction Analysis*, SIAM J. Control Optim. 64(1):496–521 (2026),
@@ -130,51 +136,41 @@ theorem hasDerivAt_norm_sq (p : RegularPairing E) {x : ℝ → E} {v : E} {t : �
     linarith [p.le_ofNorm v (x t), p.neg_ofNorm_neg_le v (x t)]]
   exact hd.hasDerivAt
 
-/-- **Exponential bound from a pairing bound**: if `⟦ẋ(r); x(r)⟧ ≤ b(r) ‖x(r)‖²` along a curve with
-right derivatives, then `‖x(t)‖ ≤ exp (∫_{t₀}^t b) ‖x(t₀)‖`. -/
+/-- **Exponential bound from a pairing bound**: if an absolutely continuous curve has derivative
+`w(r)` and satisfies `⟦w(r); x(r)⟧_p ≤ b(r) ‖x(r)‖²` at almost every `r`, for some regular pairing
+`p`, then `‖x(t)‖ ≤ exp (∫_{t₀}^t b) ‖x(t₀)‖`.  `b` need only be integrable, so the bound applies
+to Carathéodory solutions. -/
 @[blueprint "thm:norm-le-exp-integral-of-pairing-le"
   (title := "Exponential bound from a pairing bound")
-  (statement := /-- Let $b$ be continuous and $x$ continuous on $[t_0, t_1]$, with right
-    derivative $w(r)$ at every $r \in [t_0, t_1)$ satisfying
-    $\pair{w(r)}{x(r)} \le b(r) \|x(r)\|^2$ for the regular pairing of the norm
-    (\cref{def:regularPairing-ofNorm}).  Then for $t \in [t_0, t_1]$
+  (statement := /-- Let $\pair{\cdot}{\cdot}$ be a regular pairing (\cref{def:regularPairing}),
+    $b$ integrable on $[t_0, t_1]$, and $x$ absolutely continuous on $[t_0, t_1]$, with
+    derivative $w(r)$ at almost every $r \in (t_0, t_1)$ satisfying
+    $\pair{w(r)}{x(r)} \le b(r) \|x(r)\|^2$ for almost every $r \in (t_0, t_1)$.  Then for
+    $t \in [t_0, t_1]$
     \[ \|x(t)\| \le \exp\Bigl( \int_{t_0}^{t} b(\tau) \, d\tau \Bigr) \|x(t_0)\|. \] -/)
-  (proof := /-- With $M(r) = \int_{t_0}^r b$, the function $e^{-2M} \|x\|^2$ has right derivative
-    $e^{-2M}(-2 b \|x\|^2 + 2 \pair{w}{x}) \le 0$ (\cref{lem:hasDerivWithinAt-norm-sq}), so it is
-    nonincreasing on $[t_0, t_1]$. -/)]
-theorem norm_le_exp_integral_of_pairing_le {x w : ℝ → E} {b : ℝ → ℝ} {t₀ t₁ : ℝ}
-    (hb : Continuous b) (hx : ContinuousOn x (Icc t₀ t₁))
-    (hx' : ∀ r ∈ Ico t₀ t₁, HasDerivWithinAt x (w r) (Ici r) r)
-    (hw : ∀ r ∈ Ico t₀ t₁, ⟦w r; x r⟧ ≤ b r * ‖x r‖ ^ 2) :
+  (proof := /-- $\|x\|^2$ is absolutely continuous, hence differentiable almost everywhere, and
+    wherever both $x$ and $\|x\|^2$ are differentiable its derivative is
+    $2 \pair{w}{x} \le 2 b \|x\|^2$ (\cref{thm:hasDerivAt-norm-sq}).  Grönwall's inequality
+    (\cref{lem:absolutelyContinuousOnInterval-le-mul-exp-integral-of-deriv-le}) with
+    $\beta = 2 b$ gives $\|x(t)\|^2 \le e^{2 \int_{t_0}^t b} \|x(t_0)\|^2$; take square
+    roots. -/)]
+theorem norm_le_exp_integral_of_pairing_le (p : RegularPairing E) {x w : ℝ → E} {b : ℝ → ℝ}
+    {t₀ t₁ : ℝ} (hb : IntervalIntegrable b MeasureTheory.volume t₀ t₁)
+    (hx : AbsolutelyContinuousOnInterval x t₀ t₁)
+    (hx' : ∀ᵐ r, r ∈ Ioo t₀ t₁ → HasDerivAt x (w r) r)
+    (hw : ∀ᵐ r, r ∈ Ioo t₀ t₁ → ⟦w r; x r⟧_p ≤ b r * ‖x r‖ ^ 2) :
     ∀ t ∈ Icc t₀ t₁, ‖x t‖ ≤ Real.exp (∫ τ in t₀..t, b τ) * ‖x t₀‖ := by
   intro t ht
-  set M : ℝ → ℝ := fun r => ∫ τ in t₀..r, b τ
-  have hM (r : ℝ) : HasDerivAt M (b r) r := (hb.integral_hasStrictDerivAt t₀ r).hasDerivAt
-  have hMc : Continuous M := continuous_iff_continuousAt.2 fun r => (hM r).continuousAt
-  -- `g = e^{-2M} ‖x‖²` has a nonpositive right derivative, so `g t ≤ g t₀ = ‖x t₀‖²`
-  set g : ℝ → ℝ := fun r => Real.exp (-(2 * M r)) * ‖x r‖ ^ 2
-  have hle := image_le_of_deriv_right_le_deriv_boundary (f := g)
-    (f' := fun r => Real.exp (-(2 * M r)) * (-(2 * b r)) * ‖x r‖ ^ 2 +
-      Real.exp (-(2 * M r)) * (2 * ⟦w r; x r⟧))
-    (B := fun _ => ‖x t₀‖ ^ 2) (B' := fun _ => 0) (a := t₀) (b := t)
-    ((Real.continuous_exp.comp (continuous_const.mul hMc).neg).continuousOn.mul
-      ((hx.mono (Icc_subset_Icc_right ht.2)).norm.pow 2))
-    (fun r hr => (((hM r).const_mul 2).neg.exp).hasDerivWithinAt.mul
-      (hasDerivWithinAt_Ioi_iff_Ici.1 (hasDerivWithinAt_norm_sq
-        ((hx' r ⟨hr.1, hr.2.trans_le ht.2⟩).mono Ioi_subset_Ici_self))))
-    (by simp [g, M]) continuousOn_const (fun r _ => hasDerivWithinAt_const _ _ _)
-    (fun r hr => by
-      have h := hw r ⟨hr.1, hr.2.trans_le ht.2⟩
-      have he := Real.exp_pos (-(2 * M r))
-      nlinarith) (right_mem_Icc.2 ht.1)
-  -- `‖x t‖² ≤ e^{2 M t} ‖x t₀‖²`
-  have hsq : ‖x t‖ ^ 2 ≤ (Real.exp (M t) * ‖x t₀‖) ^ 2 := by
-    have h2 : Real.exp (-(2 * M t)) * Real.exp (M t) ^ 2 = 1 := by
-      rw [← Real.exp_nat_mul, ← Real.exp_add]; norm_num
-    have he := Real.exp_pos (-(2 * M t))
-    simp only [g] at hle
-    nlinarith
-  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
+  -- Grönwall for `‖x‖²`, whose derivative `2 ⟦w; x⟧_p` is at most `2 b ‖x‖²` almost everywhere
+  have hsq := (hx.norm.pow 2).le_mul_exp_integral_of_deriv_le (β := fun r => 2 * b r)
+    (hb.const_mul 2) ?_ t ht
+  · rw [intervalIntegral.integral_const_mul, two_mul, Real.exp_add] at hsq
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1
+      (hsq.trans_eq (by ring))
+  filter_upwards [hx', hw, (hx.norm.pow 2).ae_differentiableAt] with r hxr hwr hdr hr
+  refine (p.hasDerivAt_norm_sq (hxr hr) (hdr (Icc_subset_uIcc (Ioo_subset_Icc_self hr)))).deriv
+    |>.trans_le ?_
+  linarith [hwr hr]
 
 /-- **Exponential bound from a pairing bound, with a forcing term**: if
 `⟦ẋ(r); x(r)⟧ ≤ a(r) ‖x(r)‖² + b(r) ‖x(r)‖` along a curve with right derivatives, with `b ≥ 0`,

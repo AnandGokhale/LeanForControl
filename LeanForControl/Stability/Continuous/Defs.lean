@@ -10,7 +10,8 @@ Stability notions for an equilibrium `x_eq` of an autonomous (input-free) contin
 `ContinuousSystem.zeroInput`; input–output notions such as input-to-state stability are separate
 and not defined here.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definitions 4.4–4.6.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the definitions of stability, exponential
+stability and boundedness for time-varying systems.
 
 ## One definition per notion
 
@@ -23,13 +24,17 @@ read with `t₀ = 0` is a theorem about time-invariant systems.
 * **Uniform** (constants independent of `t₀`): `UniformlyStable`,
   `UniformlyAsymptoticallyStable`, `GloballyUniformlyStable`,
   `GloballyUniformlyAsymptoticallyStable`.
-* **Exponential**, uniform as in Khalil's Definition 4.5: `LocallyExponentiallyStable`,
+* **Exponential**, uniform as in Khalil's definition: `LocallyExponentiallyStable`,
   `GloballyExponentiallyStable`.
 
 For time-invariant systems uniform and non-uniform notions coincide; for time-varying ones they
 differ (`ẋ = -x / (1 + t)` is globally asymptotically but not uniformly asymptotically stable).
 
 ## Which trajectories are quantified over
+
+Trajectories are Carathéodory solutions (`ContinuousSystem.IsTrajectoryOn`): the state equation
+holds in integral form, the state space `E` is a Banach space, and no differentiability of `x` is
+assumed.  This covers Khalil's solutions, where `f` is piecewise continuous in `t`.
 
 * **Bounds** — stability, uniform convergence times, exponential estimates — quantify over
   trajectories on *segments* `[t₀, t₁]`.  A solution that escapes in finite time is then not
@@ -52,7 +57,7 @@ is the stronger reading when solutions are not unique.  Theorems that need uniqu
 ## Conventions
 
 * Inequalities are strict, as in Khalil, except in the boundedness notions, which follow
-  Khalil's non-strict Definition 4.6.
+  Khalil's non-strict definition.
 * The equilibrium is a general `x_eq`; Khalil places it at the origin.  The boundedness notions
   are about a general point `x_c`, which need not be an equilibrium.
 * The output space `Y` plays no role.
@@ -62,14 +67,14 @@ open Set Filter Topology
 
 namespace ContinuousSystem
 
-variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
 /-! ## Stability and instability -/
 
 /-- The equilibrium `x_eq` is **stable**: for every `ε > 0` and initial time `t₀ ≥ 0` there is
 `δ > 0` such that every trajectory starting within `δ` of `x_eq` at `t₀` stays within `ε` of it.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*stable*). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*stable*). -/
 @[blueprint "def:continuousSystem-stable"
   (title := "Stability")
   (statement := /-- The equilibrium $x_{\mathrm{eq}}$ of an autonomous continuous-time system
@@ -78,10 +83,15 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*stable*). -/
     with $\|x(t_0) - x_{\mathrm{eq}}\| < \delta$ satisfies
     $\|x(t) - x_{\mathrm{eq}}\| < \varepsilon$ for all $t \in [t_0, t_1]$.
 
+    Here and in all stability notions, trajectories are Carath\'eodory solutions
+    (\cref{def:continuousSystem-isTrajectoryOn}) in a Banach space $E$; they include Khalil's
+    solutions, where $f$ is piecewise continuous in $t$.
+
     Quantifying over segments rather than over solutions on $[t_0, \infty)$ means a solution that
     escapes in finite time counts against stability instead of being silently excluded.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4 (\emph{stable}). -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions
+    (\emph{stable}). -/)]
 def Stable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ δ > 0, ∀ (t₁ : ℝ) (x : ℝ → E),
     s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_eq‖ < δ →
@@ -89,27 +99,27 @@ def Stable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
 
 /-- The equilibrium `x_eq` is **unstable** when it is not stable.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*unstable*). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*unstable*). -/
 @[blueprint "def:continuousSystem-unstable"
   (title := "Instability")
   (statement := /-- The equilibrium is \emph{unstable} when it is not stable
     (\cref{def:continuousSystem-stable}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions. -/)]
 def Unstable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   ¬ s.Stable x_eq
 
 /-- The equilibrium `x_eq` is **uniformly stable**: `δ` in `Stable` can be chosen independently
 of the initial time.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*uniformly stable*). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*uniformly stable*). -/
 @[blueprint "def:continuousSystem-uniformlyStable"
   (title := "Uniform stability")
   (statement := /-- The equilibrium is \emph{uniformly stable} when $\delta$ in
     \cref{def:continuousSystem-stable} can be chosen independently of $t_0$:
     $\delta = \delta(\varepsilon)$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions
     (\emph{uniformly stable}). -/)]
 def UniformlyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
@@ -119,7 +129,7 @@ def UniformlyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
 /-- The equilibrium `x_eq` is **globally uniformly stable**: uniformly stable, with a choice of
 `δ(ε)` that grows without bound.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*globally uniformly
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*globally uniformly
 asymptotically stable*, its stability half). -/
 @[blueprint "def:continuousSystem-globallyUniformlyStable"
   (title := "Global uniform stability")
@@ -128,7 +138,7 @@ asymptotically stable*, its stability half). -/
     satisfying $\delta(\varepsilon) \to \infty$ as $\varepsilon \to \infty$.  In particular every
     trajectory is bounded, so none escapes in finite time.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions. -/)]
 def GloballyUniformlyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   ∃ δ : ℝ → ℝ, (∀ ε > 0, 0 < δ ε) ∧ Tendsto δ atTop atTop ∧
     ∀ ε > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
@@ -144,7 +154,8 @@ forward time and converge to it.  This is Khalil's *asymptotically stable*.
 Forward completeness is part of the definition: without it, a solution that escapes in finite
 time has no ray to converge on and would not be tested.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*asymptotically stable*). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*asymptotically
+stable*). -/
 @[blueprint "def:continuousSystem-locallyAsymptoticallyStable"
   (title := "Local asymptotic stability")
   (statement := /-- The equilibrium is \emph{locally asymptotically stable} when it is stable
@@ -154,7 +165,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*asymptoticall
     $[t_0, \infty)$ starting in that ball satisfies $x(t) \to x_{\mathrm{eq}}$.  Forward
     completeness keeps solutions that escape in finite time from being silently excluded.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions
     (\emph{asymptotically stable}). -/)]
 def LocallyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   s.Stable x_eq ∧ ∀ t₀ : ℝ, 0 ≤ t₀ → ∃ c > 0,
@@ -165,8 +176,8 @@ def LocallyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Pro
 /-- The equilibrium `x_eq` is **globally asymptotically stable**: stable, and every solution
 exists for all forward time and converges to it.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.1 (*globally asymptotically
-stable*), in the time-varying setting of Definition 4.4. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the section on autonomous systems
+(*globally asymptotically stable*), in the time-varying setting of the stability definitions. -/
 @[blueprint "def:continuousSystem-globallyAsymptoticallyStable"
   (title := "Global asymptotic stability")
   (statement := /-- The equilibrium is \emph{globally asymptotically stable} when it is stable
@@ -174,7 +185,8 @@ stable*), in the time-varying setting of Definition 4.4. -/
     every $t_0 \ge 0$ (\cref{def:continuousSystem-isForwardCompleteOn}), and every trajectory on
     $[t_0, \infty)$ satisfies $x(t) \to x_{\mathrm{eq}}$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Section 4.1. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the section on autonomous
+    systems. -/)]
 def GloballyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   s.Stable x_eq ∧ ∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ univ ∧
     ∀ x : ℝ → E, s.IsTrajectoryOn (fun _ => ()) x (Ici t₀) → Tendsto x atTop (𝓝 x_eq)
@@ -196,7 +208,7 @@ def HasUniformConvergenceTime (s : ContinuousSystem E Unit Y) (x_eq : E) (c : �
 /-- The equilibrium `x_eq` is **uniformly asymptotically stable**: uniformly stable, with a
 uniform convergence time from some ball around it.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*uniformly asymptotically
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*uniformly asymptotically
 stable*). -/
 @[blueprint "def:continuousSystem-uniformlyAsymptoticallyStable"
   (title := "Uniform asymptotic stability")
@@ -205,7 +217,7 @@ stable*). -/
     which convergence has a uniform convergence time
     (\cref{def:continuousSystem-hasUniformConvergenceTime}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions
     (\emph{uniformly asymptotically stable}). -/)]
 def UniformlyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   s.UniformlyStable x_eq ∧ ∃ c > 0, s.HasUniformConvergenceTime x_eq c
@@ -213,7 +225,7 @@ def UniformlyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : P
 /-- The equilibrium `x_eq` is **globally uniformly asymptotically stable**: globally uniformly
 stable, with a uniform convergence time from every ball around it.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.4 (*globally uniformly
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), stability definitions (*globally uniformly
 asymptotically stable*). -/
 @[blueprint "def:continuousSystem-globallyUniformlyAsymptoticallyStable"
   (title := "Global uniform asymptotic stability")
@@ -222,7 +234,7 @@ asymptotically stable*). -/
     $c > 0$ admits a uniform convergence time
     (\cref{def:continuousSystem-hasUniformConvergenceTime}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.4. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), stability definitions. -/)]
 def GloballyUniformlyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   s.GloballyUniformlyStable x_eq ∧ ∀ c > 0, s.HasUniformConvergenceTime x_eq c
 
@@ -232,7 +244,7 @@ def GloballyUniformlyAsymptoticallyStable (s : ContinuousSystem E Unit Y) (x_eq 
 every trajectory starting within `c` of `x_eq` satisfies
 `‖x(t) - x_eq‖ ≤ k ‖x(t₀) - x_eq‖ e^{-γ (t - t₀)}`.  The constants do not depend on `t₀`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), definition of exponential stability. -/
 @[blueprint "def:continuousSystem-locallyExponentiallyStable"
   (title := "Local exponential stability")
   (statement := /-- The equilibrium is \emph{locally exponentially stable} when there are
@@ -245,7 +257,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5. -/
     The constants do not depend on $t_0$: exponential stability is uniform, as in the
     reference.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.5. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), definition of exponential stability. -/)]
 def LocallyExponentiallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   ∃ c > 0, ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
     s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_eq‖ < c →
@@ -254,14 +266,14 @@ def LocallyExponentiallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop
 /-- The equilibrium `x_eq` is **globally exponentially stable**: the exponential estimate holds
 for every initial state.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.5. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), definition of exponential stability. -/
 @[blueprint "def:continuousSystem-globallyExponentiallyStable"
   (title := "Global exponential stability")
   (statement := /-- The equilibrium is \emph{globally exponentially stable} when the estimate of
     \cref{def:continuousSystem-locallyExponentiallyStable} holds for every initial state, with no
     radius $c$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.5. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), definition of exponential stability. -/)]
 def GloballyExponentiallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Prop :=
   ∃ k > 0, ∃ γ > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
     s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
@@ -273,7 +285,7 @@ def GloballyExponentiallyStable (s : ContinuousSystem E Unit Y) (x_eq : E) : Pro
 `a < c` a bound `β(a)` holds for all trajectories starting within `a` of `x_c`.  A property of the
 system rather than of an equilibrium: `x_c` need not be one.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*uniformly bounded*). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), boundedness definitions (*uniformly bounded*). -/
 @[blueprint "def:continuousSystem-uniformlyBounded"
   (title := "Uniform boundedness")
   (statement := /-- Trajectories are \emph{uniformly bounded} around $x_c$ when there is $c > 0$
@@ -286,7 +298,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*uniformly bou
     equilibrium.  The bound applies to every segment a solution exists on, so finite escape
     violates it.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), boundedness definitions. -/)]
 def UniformlyBounded (s : ContinuousSystem E Unit Y) (x_c : E) : Prop :=
   ∃ c > 0, ∀ a, 0 < a → a < c → ∃ β > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
     s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ ≤ a →
@@ -295,14 +307,14 @@ def UniformlyBounded (s : ContinuousSystem E Unit Y) (x_c : E) : Prop :=
 /-- Trajectories are **globally uniformly bounded** around `x_c`: `UniformlyBounded` for every
 initial radius `a`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*globally uniformly
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), boundedness definitions (*globally uniformly
 bounded*). -/
 @[blueprint "def:continuousSystem-globallyUniformlyBounded"
   (title := "Global uniform boundedness")
   (statement := /-- Trajectories are \emph{globally uniformly bounded} around $x_c$ when the bound
     of \cref{def:continuousSystem-uniformlyBounded} holds for every $a > 0$, with no radius $c$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), boundedness definitions. -/)]
 def GloballyUniformlyBounded (s : ContinuousSystem E Unit Y) (x_c : E) : Prop :=
   ∀ a > 0, ∃ β > 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
     s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_c‖ ≤ a →
@@ -316,7 +328,7 @@ for every `a < c` a time `T(a, b)` brings every trajectory starting within `a` o
 Forward completeness is part of the definition: the bound only constrains times after `t₀ + T`,
 so a solution escaping before then would otherwise pass untested.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*uniformly ultimately
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), boundedness definitions (*uniformly ultimately
 bounded*). -/
 @[blueprint "def:continuousSystem-uniformlyUltimatelyBounded"
   (title := "Uniform ultimate boundedness")
@@ -332,7 +344,7 @@ bounded*). -/
     Khalil leaves forward completeness implicit; without it, a solution escaping before
     $t_0 + T$ would never be tested.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), boundedness definitions. -/)]
 def UniformlyUltimatelyBounded (s : ContinuousSystem E Unit Y) (x_c : E) (b : ℝ) : Prop :=
   ∃ c > 0, (∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ (Metric.ball x_c c)) ∧
     ∀ a, 0 < a → a < c → ∃ T ≥ 0, ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝ → E,
@@ -343,8 +355,8 @@ def UniformlyUltimatelyBounded (s : ContinuousSystem E Unit Y) (x_c : E) (b : �
 `x_c`: the system is forward complete, and `UniformlyUltimatelyBounded` holds for every initial
 radius `a`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.6 (*globally uniformly ultimately
-bounded*). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), boundedness definitions (*globally uniformly
+ultimately bounded*). -/
 @[blueprint "def:continuousSystem-globallyUniformlyUltimatelyBounded"
   (title := "Global uniform ultimate boundedness")
   (statement := /-- Trajectories are \emph{globally uniformly ultimately bounded} with ultimate
@@ -353,7 +365,7 @@ bounded*). -/
     \cref{def:continuousSystem-uniformlyUltimatelyBounded} holds for every $a > 0$, with no
     radius $c$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.6. -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), boundedness definitions. -/)]
 def GloballyUniformlyUltimatelyBounded (s : ContinuousSystem E Unit Y) (x_c : E) (b : ℝ) :
     Prop :=
   (∀ t₀ : ℝ, 0 ≤ t₀ → s.IsForwardCompleteOn (fun _ => ()) t₀ univ) ∧
@@ -433,7 +445,7 @@ lemma HasUniformConvergenceTime.tendsto {c : ℝ} (h : s.HasUniformConvergenceTi
   refine ⟨t₀ + T, fun t ht => ?_⟩
   -- restrict the ray trajectory to the segment `[t₀, t]`
   have h_seg : s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t) :=
-    IsIntegralCurveOn.mono hx Icc_subset_Ici_self
+    hx.mono Icc_subset_Ici_self
   have h_near := hT t₀ ht₀ t x h_seg hx₀ t ⟨ht, le_rfl⟩
   rwa [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)]
 
@@ -608,21 +620,24 @@ lemma GloballyExponentiallyStable.globallyUniformlyAsymptoticallyStable
 
 /-- **Exponential stability pulls back along a semiconjugacy.**  Let a linear map `e : E → E'`
 carry the field of `s`, centred at `x_eq`, into the field of `s'`, centred at `x_eq'`:
-`F'(t, x_eq' + e(x - x_eq)) = e(F(t, x))`.  If `e` distorts norms by bounded factors, local
-exponential stability of `x_eq'` for `s'` gives it for `x_eq` and `s`: trajectories of `s` are
-carried to trajectories of `s'`. -/
+`F'(t, x_eq' + e(x - x_eq)) = e(F(t, x))`, with `E` and `E'` complete.  If `e` distorts norms by
+bounded factors, local exponential stability of `x_eq'` for `s'` gives it for `x_eq` and `s`:
+trajectories of `s` are carried to trajectories of `s'`. -/
 @[blueprint "lem:continuousSystem-locallyExponentiallyStable-of-semiconj"
   (title := "Exponential stability under a change of coordinates")
   (latexEnv := "lemma")
-  (statement := /-- Let $e : E \to E'$ be continuous linear with $\|x\| \le a\|e x\|$ and
-    $\|e x\| \le b\|x\|$, $a, b > 0$, and let
+  (statement := /-- Let $E, E'$ be Banach spaces, $e : E \to E'$ continuous linear with
+    $\|x\| \le a\|e x\|$ and $\|e x\| \le b\|x\|$, $a, b > 0$, and let
     $F'(t, x_{\mathrm{eq}}' + e(x - x_{\mathrm{eq}})) = e(F(t, x))$.  If $x_{\mathrm{eq}}'$ is
     locally exponentially stable for $s'$
     (\cref{def:continuousSystem-locallyExponentiallyStable}), so is $x_{\mathrm{eq}}$ for $s$. -/)
   (proof := /-- If $x$ is a trajectory of $s$, then $x_{\mathrm{eq}}' + e(x - x_{\mathrm{eq}})$
-    is one of $s'$.  Its estimate, with radius $c / b$ and constant $abk$, is one for $x$. -/)]
+    is one of $s'$: applying $e$ to the integral equation of $x$ gives the integral equation of
+    the image, since $e$ commutes with the integral.  Its estimate, with radius $c / b$ and
+    constant $abk$, is one for $x$. -/)]
 lemma LocallyExponentiallyStable.of_semiconj {E' Y' : Type*} [NormedAddCommGroup E']
-    [NormedSpace ℝ E'] {s' : ContinuousSystem E' Unit Y'} {x_eq' : E'} (e : E →L[ℝ] E')
+    [NormedSpace ℝ E'] [CompleteSpace E'] {s' : ContinuousSystem E' Unit Y'} {x_eq' : E'}
+    (e : E →L[ℝ] E')
     {a b : ℝ} (ha : 0 < a) (hb : 0 < b) (h_lo : ∀ x, ‖x‖ ≤ a * ‖e x‖)
     (h_up : ∀ x, ‖e x‖ ≤ b * ‖x‖)
     (h_conj : ∀ t x, s'.F t (x_eq' + e (x - x_eq)) () = e (s.F t x ()))
@@ -631,13 +646,11 @@ lemma LocallyExponentiallyStable.of_semiconj {E' Y' : Type*} [NormedAddCommGroup
   refine ⟨c / b, div_pos hc hb, a * b * k, by positivity, γ, hγ,
     fun t₀ ht₀ t₁ x hx hx₀ t ht => ?_⟩
   -- The image `y = x_eq' + e(x - x_eq)` is a trajectory of `s'`.
-  set y : ℝ → E' := fun τ => x_eq' + e (x τ - x_eq)
-  have hy : s'.IsTrajectoryOn (fun _ => ()) y (Icc t₀ t₁) := fun τ hτ => by
-    have h_deriv := (e.hasFDerivAt.comp_hasDerivWithinAt τ ((hx τ hτ).sub_const x_eq)).const_add
-      x_eq'
-    simp only [vectorField, y, h_conj]
-    exact h_deriv
-  have hy_sub : ∀ τ, y τ - x_eq' = e (x τ - x_eq) := fun τ => add_sub_cancel_left _ _
+  set y : ℝ → E' := fun τ => (x_eq' - e x_eq) + e (x τ)
+  have hy : s'.IsTrajectoryOn (fun _ => ()) y (Icc t₀ t₁) := hx.semiconj e _ fun t z => by
+    rw [← h_conj, map_sub, sub_add_eq_add_sub, add_sub_assoc]
+  have hy_sub : ∀ τ, y τ - x_eq' = e (x τ - x_eq) := fun τ => by
+    simp only [y, map_sub]; abel
   have hy₀ : ‖y t₀ - x_eq'‖ < c :=
     calc ‖y t₀ - x_eq'‖
         ≤ b * ‖x t₀ - x_eq‖ := by rw [hy_sub]; exact h_up _

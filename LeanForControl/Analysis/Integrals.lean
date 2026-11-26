@@ -352,3 +352,60 @@ theorem setIntegral_Ioi_comp_add_right {E : Type*} [NormedAddCommGroup E] [Norme
     (measurableEmbedding_addRight c) w (Ioi (a + c))
   rwa [preimage_add_const_Ioi, add_sub_cancel_right] at h
 
+
+/-- **The integral of a Lipschitz family is Lipschitz.**  If `x ↦ F x a` is Lipschitz on `s` with
+constant `bound a` for almost every `a`, with `bound` integrable, then `x ↦ ∫ a, F x a ∂μ` is
+Lipschitz on `s` with constant `∫ a, bound a ∂μ`.  It is the estimate behind differentiation
+under the integral sign (`hasFDerivAt_integral_of_dominated_loc_of_lip`), which does not export
+it. -/
+@[blueprint "lem:lipschitzOnWith-integral-of-norm-sub-le"
+  (title := "The integral of a Lipschitz family is Lipschitz")
+  (latexEnv := "lemma")
+  (statement := /-- Let $\mu$ be a measure, $s$ a subset of a metric space, and $F(x, \cdot)$
+    $\mu$-integrable for every $x \in s$, with values in a normed space.  If $b$ is
+    $\mu$-integrable and, for $\mu$-almost every $a$,
+    $\|F(x, a) - F(y, a)\| \le b(a)\, d(x, y)$ for all $x, y \in s$, then
+    $x \mapsto \int F(x, a)\,\mathrm{d}\mu(a)$ is Lipschitz on $s$ with constant
+    $\max\bigl(\int b\,\mathrm{d}\mu, 0\bigr)$. -/)
+  (proof := /-- The difference of the integrals is the integral of the difference, whose norm is
+    at most $\int b(a)\, d(x, y)\,\mathrm{d}\mu(a)$. -/)]
+theorem lipschitzOnWith_integral_of_norm_sub_le {α X E : Type*} [MeasurableSpace α]
+    {μ : Measure α} [PseudoMetricSpace X] [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {F : X → α → E} {bound : α → ℝ} {s : Set X} (hF_int : ∀ x ∈ s, Integrable (F x) μ)
+    (hbound : Integrable bound μ)
+    (h_lip : ∀ᵐ a ∂μ, ∀ x ∈ s, ∀ y ∈ s, ‖F x a - F y a‖ ≤ bound a * dist x y) :
+    LipschitzOnWith (∫ a, bound a ∂μ).toNNReal (fun x => ∫ a, F x a ∂μ) s :=
+  LipschitzOnWith.of_dist_le_mul fun x hx y hy =>
+    calc dist (∫ a, F x a ∂μ) (∫ a, F y a ∂μ)
+        = ‖∫ a, (F x a - F y a) ∂μ‖ := by
+          rw [dist_eq_norm, integral_sub (hF_int x hx) (hF_int y hy)]
+      _ ≤ ∫ a, bound a * dist x y ∂μ := norm_integral_le_of_norm_le (hbound.mul_const _)
+          (h_lip.mono fun a ha => ha x hx y hy)
+      _ = (∫ a, bound a ∂μ) * dist x y := integral_mul_const _ _
+      _ ≤ (∫ a, bound a ∂μ).toNNReal * dist x y := by
+          gcongr
+          exact Real.le_coe_toNNReal _
+
+/-- **The interval integral of a Lipschitz family is Lipschitz**: the interval form of
+`lipschitzOnWith_integral_of_norm_sub_le`, for `a ≤ b`. -/
+@[blueprint "lem:intervalIntegral-lipschitzOnWith-integral-of-norm-sub-le"
+  (title := "The interval integral of a Lipschitz family is Lipschitz")
+  (latexEnv := "lemma")
+  (statement := /-- Let $a \le b$, $s$ a subset of a metric space, and $F(x, \cdot)$ integrable
+    on $(a, b]$ with respect to a measure $\mu$ on $\mathbb{R}$ for every $x \in s$, with values
+    in a normed space.  If $\beta$ is $\mu$-integrable on $(a, b]$ and, for $\mu$-almost every
+    $t \in (a, b]$, $\|F(x, t) - F(y, t)\| \le \beta(t)\, d(x, y)$ for all $x, y \in s$, then
+    $x \mapsto \int_a^b F(x, t)\,\mathrm{d}\mu(t)$ is Lipschitz on $s$ with constant
+    $\max\bigl(\int_a^b \beta\,\mathrm{d}\mu, 0\bigr)$. -/)
+  (proof := /-- \cref{lem:lipschitzOnWith-integral-of-norm-sub-le} for the restriction of $\mu$
+    to $(a, b]$. -/)]
+theorem intervalIntegral.lipschitzOnWith_integral_of_norm_sub_le {X E : Type*}
+    [PseudoMetricSpace X] [NormedAddCommGroup E] [NormedSpace ℝ E] {μ : Measure ℝ}
+    {F : X → ℝ → E} {bound : ℝ → ℝ} {s : Set X} {a b : ℝ} (hab : a ≤ b)
+    (hF_int : ∀ x ∈ s, IntervalIntegrable (F x) μ a b) (hbound : IntervalIntegrable bound μ a b)
+    (h_lip : ∀ᵐ t ∂μ, t ∈ uIoc a b → ∀ x ∈ s, ∀ y ∈ s, ‖F x t - F y t‖ ≤ bound t * dist x y) :
+    LipschitzOnWith (∫ t in a..b, bound t ∂μ).toNNReal (fun x => ∫ t in a..b, F x t ∂μ) s := by
+  simp only [intervalIntegral.integral_of_le hab]
+  rw [uIoc_of_le hab] at h_lip
+  exact _root_.lipschitzOnWith_integral_of_norm_sub_le (fun x hx => (hF_int x hx).1) hbound.1
+    ((ae_restrict_iff' measurableSet_Ioc).2 h_lip)

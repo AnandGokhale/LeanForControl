@@ -9,12 +9,13 @@ LaSalle's invariance principle for a time-invariant system `ẋ = f(x)`, given a
 `ContinuousSystem E Unit Y` whose state equation is `s.F t x () = f x`, and its two stability
 corollaries, the theorems of Barbashin and Krasovskii.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1, Theorem 4.4 and Corollaries 4.1–4.2.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the lemma on positive limit sets, LaSalle's
+theorem and its two corollaries.
 
 ## Main results
 
 * `isForwardInvariant_omegaLimitSet` — the ω-limit set of a trajectory is forward invariant
-  (Khalil, Lemma 4.1).
+  (Khalil's lemma on positive limit sets).
 * `fderiv_apply_eq_zero_of_mem_omegaLimitSet` — if `∇V · f ≤ 0` on a compact forward invariant
   `Ω` containing the trajectory, then `∇V · f = 0` on its ω-limit set.
 * `lasalle_invariance_principle` — every trajectory starting in `Ω` converges to any set `M`
@@ -28,7 +29,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1, Theorem 4.4 and Cor
 that the invariance of the ω-limit set needs, a solution through every ω-limit point, and forward
 completeness, which the asymptotic stability notions require.  Khalil assumes only that `f` is
 locally Lipschitz: trajectories stay in the compact `Ω`, so a local hypothesis would suffice,
-at the price of a continuation theorem.
+at the price of a continuation theorem.  With `f` continuous, the (Carathéodory) trajectories are
+exactly the classical solutions (`isTrajectoryOn_iff_isIntegralCurveOn`).
 
 Invariance of `ω(φ)` is proved in the *forward* direction only.  Khalil's `M` is the largest
 invariant subset of `E`; here `M` must absorb every *forward* invariant subset, a larger family,
@@ -42,55 +44,28 @@ namespace ContinuousSystem
 
 variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-! ## Monotonicity along trajectories -/
+section Complete
 
-/-- `V` does not increase along a trajectory of a time-invariant system on an interval where
-`∇V · f ≤ 0` along it. -/
-private lemma antitoneOn_comp_of_fderiv_nonpos {s : ContinuousSystem E Unit Y} {f : E → E}
-    (hF : ∀ t x, s.F t x () = f x) {V : E → ℝ} (hV : Differentiable ℝ V) {φ : ℝ → E}
-    {I : Set ℝ} (hI : Convex ℝ I) (hφ : s.IsTrajectoryOn (fun _ => ()) φ I)
-    (h_nonpos : ∀ t ∈ interior I, fderiv ℝ V (φ t) (f (φ t)) ≤ 0) :
-    AntitoneOn (V ∘ φ) I :=
-  IsIntegralCurveOn.antitoneOn_of_lieDerivative_nonpos (V := fun _ => V) hφ hI
-    (fun t _ => (hV (φ t)).comp (t, φ t) differentiableAt_snd) fun t ht => by
-      rw [lieDerivative_const (hV _)]
-      simp only [vectorField_apply, hF]
-      exact h_nonpos t ht
+variable [CompleteSpace E]
+
+/-! ## Trajectories in a forward invariant set -/
 
 /-- A trajectory on `[t₀, ∞)` that starts in a forward invariant `Ω` stays in `Ω`: apply the
 invariance to the segment `[t₀, t]`. -/
 private lemma mem_of_isForwardInvariant {s : ContinuousSystem E Unit Y} {Ω : Set E}
     (hΩ : s.IsForwardInvariant (fun _ => ()) Ω) {t₀ : ℝ} {φ : ℝ → E}
     (hφ : s.IsTrajectoryOn (fun _ => ()) φ (Ici t₀)) (hφ₀ : φ t₀ ∈ Ω) : ∀ t ≥ t₀, φ t ∈ Ω :=
-  fun t ht => hΩ t₀ t φ (IsIntegralCurveOn.mono hφ Icc_subset_Ici_self) hφ₀ t ⟨ht, le_rfl⟩
-
-omit [NormedSpace ℝ E] in
-/-- `V(φ(t))` converges when `V` is continuous and nonincreasing along a trajectory confined to a
-compact set, where `V` is bounded below. -/
-private lemma exists_tendsto_comp {φ : ℝ → E} {V : E → ℝ} {Ω : Set E} (hΩ : IsCompact Ω)
-    (hV : Continuous V) {t₀ : ℝ} (h_in : ∀ t ≥ t₀, φ t ∈ Ω) (h_anti : AntitoneOn (V ∘ φ) (Ici t₀)) :
-    ∃ L, Tendsto (V ∘ φ) atTop (𝓝 L) := by
-  obtain ⟨x_min, -, h_min⟩ :=
-    hΩ.exists_isMinOn ⟨φ t₀, h_in t₀ le_rfl⟩ hV.continuousOn
-  -- Freeze the function before `t₀`, making it antitone on all of `ℝ`.
-  set g : ℝ → ℝ := fun t => (V ∘ φ) (max t t₀) with hg
-  have hg_anti : Antitone g := fun t t' htt' =>
-    h_anti (mem_Ici.mpr (le_max_right t t₀)) (mem_Ici.mpr (le_max_right t' t₀))
-      (max_le_max_right t₀ htt')
-  have hg_bdd : BddBelow (range g) :=
-    ⟨V x_min, fun _ ⟨t, ht⟩ => ht ▸ h_min (h_in (max t t₀) (le_max_right t t₀))⟩
-  exact ⟨⨅ t, g t, (tendsto_atTop_ciInf hg_anti hg_bdd).congr'
-    ((eventually_ge_atTop t₀).mono fun t ht => by simp [hg, max_eq_left ht])⟩
+  fun t ht => hΩ t₀ t φ (hφ.mono Icc_subset_Ici_self) hφ₀ t ⟨ht, le_rfl⟩
 
 /-! ## The ω-limit set of a trajectory -/
 
-/-- **The ω-limit set of a trajectory is forward invariant** (Khalil, Lemma 4.1), for a
+/-- **The ω-limit set of a trajectory is forward invariant**, for a
 time-invariant system with a Lipschitz field.
 
 This is what makes LaSalle's principle a theorem about Lyapunov functions rather than about
 compact sets: it turns `V ≡ L` on `ω(φ)` into `∇V · f = 0` on `ω(φ)`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the lemma on positive limit sets. -/
 @[blueprint "lem:continuousSystem-isForwardInvariant-omegaLimitSet"
   (title := "The $\\omega$-limit set is forward invariant")
   (latexEnv := "lemma")
@@ -99,16 +74,18 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.1. -/
     forward invariant (\cref{def:continuousSystem-isForwardInvariant}).
 
     Neither boundedness of $\varphi$ nor compactness of an enclosing set is needed; those
-    hypotheses of Khalil's Lemma 4.1 are what make $\omega(\varphi)$ nonempty and compact, not
+    hypotheses of Khalil's lemma are what make $\omega(\varphi)$ nonempty and compact, not
     what make it invariant.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.1. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the lemma on positive limit
+    sets. -/)
   (proof := /-- Let $\psi$ be a trajectory on $[a, b]$ with $p = \psi(a) \in \omega(\varphi)$,
     and fix $t \in [a, b]$.  Given $\varepsilon > 0$, put $C = e^{K(b - a)}$ and pick, by the
     definition of the $\omega$-limit set, arbitrarily large $r$ with
-    $\|\varphi(r) - p\| < \varepsilon / C$.  The time-shifted curve
-    $u(\cdot) = \varphi(\cdot + r - a)$ solves the same time-invariant equation on $[a, b]$ with
-    $u(a) = \varphi(r)$, so Grönwall gives
+    $\|\varphi(r) - p\| < \varepsilon / C$.  The equation does not depend on time, so the
+    time-shifted curve $u(\cdot) = \varphi(\cdot + r - a)$ is a trajectory on $[a, b]$
+    (\cref{lem:continuousSystem-isTrajectoryOn-comp-add}) with $u(a) = \varphi(r)$, and Grönwall
+    (\cref{thm:continuousSystem-isTrajectoryOn-dist-le-mul-exp}) gives
     \[
       \|\varphi(r + t - a) - \psi(t)\| = \|u(t) - \psi(t)\|
         \le \|\varphi(r) - p\|\, e^{K(t - a)} < \varepsilon .
@@ -124,9 +101,7 @@ theorem isForwardInvariant_omegaLimitSet {s : ContinuousSystem E Unit Y} {f : E 
     (hφ : s.IsTrajectoryOn (fun _ => ()) φ (Ici t₀)) :
     s.IsForwardInvariant (fun _ => ()) (omegaLimitSet φ) := by
   have hv : s.vectorField (fun _ => ()) = fun _ x => f x := funext fun t => funext fun x => hF t x
-  rw [IsTrajectoryOn, hv] at hφ
   intro a b ψ hψ hψa t ht
-  rw [IsTrajectoryOn, hv] at hψ
   rw [mem_omegaLimitSet_iff] at hψa ⊢
   intro U hU
   obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.mp hU
@@ -139,11 +114,12 @@ theorem isForwardInvariant_omegaLimitSet {s : ContinuousSystem E Unit Y} {f : E 
   obtain ⟨r, hr_ge, hr⟩ := h_freq (max T t₀)
   have hr₀ : t₀ ≤ r := (le_max_right T t₀).trans hr_ge
   -- The trajectory restarted at time `r`, re-anchored to `a`.
-  have hu : IsIntegralCurveOn (fun σ => φ (σ + (r - a))) (fun _ x => f x) (Icc a b) := by
-    refine (hφ.comp_add_autonomous (r - a)).mono fun σ hσ => ?_
+  have hu : s.IsTrajectoryOn (fun _ => ()) (fun σ => φ (σ + (r - a))) (Icc a b) := by
+    refine (hφ.comp_add (fun t t' => funext fun x => funext fun _ => by rw [hF, hF])
+      (r - a)).mono fun σ hσ => ?_
     simp only [mem_vadd_set_iff_neg_vadd_mem, vadd_eq_add, neg_neg, mem_Ici]
     linarith [hσ.1]
-  have h_cmp := dist_le_of_isIntegralCurveOn_Icc (fun _ => hf) hu hψ t ht
+  have h_cmp := hu.dist_le_mul_exp hψ (by rw [hv]; exact fun _ _ => hf) t ht
   simp only [show a + (r - a) = r by ring] at h_cmp
   refine ⟨r + (t - a), by linarith [(le_max_left T t₀).trans hr_ge, ht.1], hball ?_⟩
   have h_exp : Real.exp (K * (t - a)) ≤ C :=
@@ -157,16 +133,12 @@ theorem isForwardInvariant_omegaLimitSet {s : ContinuousSystem E Unit Y} {f : E 
       _ = ε := div_mul_cancel₀ ε hC_pos.ne'
   exact mem_ball.mpr h_close
 
-section Complete
-
-variable [CompleteSpace E]
-
 /-- **`∇V · f = 0` on the ω-limit set.**  Along the trajectory `V` is nonincreasing and bounded
 below, so it converges to some `L`, and `V ≡ L` on `ω(φ)`.  The solution through an ω-limit
 point stays in `ω(φ)` by invariance, so `V` is constant along it, and its derivative there,
 `∇V · f`, vanishes.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.4. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of LaSalle's theorem. -/
 @[blueprint "lem:continuousSystem-fderiv-apply-eq-zero-of-mem-omegaLimitSet"
   (title := "$\\dot V$ vanishes on the $\\omega$-limit set")
   (latexEnv := "lemma")
@@ -175,12 +147,17 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), proof of Theorem 4.4. -/
     on $[t_0, \infty)$ with $\varphi(t_0) \in \Omega$.  Then $\nabla V(y) \cdot f(y) = 0$ for
     every $y \in \omega(\varphi)$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of Theorem 4.4. -/)
-  (proof := /-- $V(\varphi(t))$ is nonincreasing and bounded below on the compact $\Omega$, so it
-    converges to some $L$, and $V \equiv L$ on $\omega(\varphi)$
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), proof of LaSalle's theorem. -/)
+  (proof := /-- $V(\varphi(t))$ is nonincreasing
+    (\cref{lem:continuousSystem-isTrajectoryOn-antitoneOn-of-fderiv-nonpos}; a $C^1$
+    function is locally Lipschitz) and bounded below on the compact $\Omega$, so it
+    converges to some $L$ (\cref{lem:antitoneOn-exists-tendsto-atTop}), and $V \equiv L$ on
+    $\omega(\varphi)$
     (\cref{lem:eq-of-tendsto-of-mem-omegaLimitSet}).  Through $y \in \omega(\varphi)$ take a
-    solution $\psi$ on $[0, 1]$ (Picard--Lindel\"of, \cref{thm:exists-isIntegralCurveOn-Ici});
-    it stays in $\omega(\varphi)$ by \cref{lem:continuousSystem-isForwardInvariant-omegaLimitSet},
+    classical solution $\psi$ on $[0, 1]$ (Picard--Lindel\"of,
+    \cref{thm:exists-isIntegralCurveOn-Ici}), a trajectory since $f$ is continuous
+    (\cref{thm:continuousSystem-isTrajectoryOn-iff-isIntegralCurveOn-of-continuous}); it stays in
+    $\omega(\varphi)$ by \cref{lem:continuousSystem-isForwardInvariant-omegaLimitSet},
     so $V \circ \psi \equiv L$ and its derivative at $0$, which is $\nabla V(y) \cdot f(y)$,
     vanishes. -/)]
 theorem fderiv_apply_eq_zero_of_mem_omegaLimitSet {s : ContinuousSystem E Unit Y} {f : E → E}
@@ -193,17 +170,25 @@ theorem fderiv_apply_eq_zero_of_mem_omegaLimitSet {s : ContinuousSystem E Unit Y
   have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
   have h_in := mem_of_isForwardInvariant hΩ_inv hφ hφ₀
   -- `V(φ(t)) → L`, so `V ≡ L` on `ω(φ)`.
-  obtain ⟨L, hL⟩ := exists_tendsto_comp hΩ hV.continuous h_in
-    (antitoneOn_comp_of_fderiv_nonpos hF hV (convex_Ici t₀) hφ fun t ht =>
-      h_nonpos _ (h_in t (interior_subset ht)))
+  -- `V` is nonincreasing along `φ`, and bounded below on the compact `Ω`.
+  obtain ⟨L, hL⟩ := AntitoneOn.exists_tendsto_atTop (f := V ∘ φ) (a := t₀)
+    (fun a ha b _ hab =>
+      (hφ.mono (J := Icc a b) fun _ hσ => ha.trans hσ.1).antitoneOn_of_fderiv_nonpos
+        hV_c1.locallyLipschitz.locallyLipschitzOn (fun _ _ => mem_univ _)
+        (.of_forall fun _ _ => hV _)
+        (.of_forall fun t ht =>
+          (congrArg _ (hF t _)).trans_le (h_nonpos _ (h_in t (ha.trans ht.1.le))))
+        ⟨le_rfl, hab⟩ ⟨hab, le_rfl⟩ hab)
+    ((hΩ.bddBelow_image hV.continuous.continuousOn).mono
+      (image_comp V φ _ ▸ image_mono (image_subset_iff.2 h_in)))
   intro y hy
   -- A solution through `y`, which stays in `ω(φ)` by invariance.
   obtain ⟨ψ, hψ₀, hψ, -⟩ := exists_isIntegralCurveOn_Ici (f := fun _ x => f x)
     (hf.continuous.comp continuous_snd) (fun _ => hf) 0 y
   have hψ_seg : IsIntegralCurveOn ψ (fun _ x => f x) (Icc 0 1) := hψ.mono Icc_subset_Ici_self
-  have hψ_traj : s.IsTrajectoryOn (fun _ => ()) ψ (Icc 0 1) := by
-    rw [IsTrajectoryOn, hv]
-    exact hψ_seg
+  have hψ_traj : s.IsTrajectoryOn (fun _ => ()) ψ (Icc 0 1) :=
+    (isTrajectoryOn_iff_isIntegralCurveOn_of_continuous
+      (by rw [hv]; exact hf.continuous.comp continuous_snd) ordConnected_Icc).2 (hv ▸ hψ_seg)
   have h_const : ∀ σ ∈ Icc (0 : ℝ) 1, (V ∘ ψ) σ = L := fun σ hσ =>
     eq_of_tendsto_of_mem_omegaLimitSet hV.continuous hL
       (isForwardInvariant_omegaLimitSet hF hf hφ 0 1 ψ hψ_traj (hψ₀ ▸ hy) σ hσ)
@@ -223,7 +208,7 @@ time-invariant system `ẋ = f(x)`, `f` Lipschitz, and `V` a `C¹` function with
 `Ω`.  Every trajectory starting in `Ω` converges to any set `M` containing the forward invariant
 subsets of `E = {x ∈ Ω | ∇V(x) · f(x) = 0}`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.4. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), LaSalle's theorem. -/
 @[blueprint "thm:continuousSystem-lasalle-invariance-principle"
   (title := "LaSalle's invariance principle")
   (statement := /-- Let $\dot x = f(x)$ with $f$ Lipschitz, $\Omega$ compact and forward
@@ -241,7 +226,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.4. -/
     stronger: backward invariance of $\omega(\varphi)$ would need solutions through its points to
     extend backwards in time.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.4. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), LaSalle's theorem. -/)
   (proof := /-- The $\omega$-limit set lies in $\Omega$, which is closed and contains the
     trajectory (\cref{lem:omegaLimitSet-subset-of-eventually-mem}), and $\nabla V \cdot f$
     vanishes on it (\cref{lem:continuousSystem-fderiv-apply-eq-zero-of-mem-omegaLimitSet}), so
@@ -286,7 +271,8 @@ definite on a neighbourhood `D` of `x_eq` with `∇V · f ≤ 0` there; some sub
 `{V ≤ c}` is contained in `D`, compact and forward invariant; and `{x_eq}` contains every
 forward invariant subset of `{V ≤ c}` on which `∇V · f` vanishes.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.1. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the first corollary of LaSalle's
+theorem. -/
 @[blueprint "thm:continuousSystem-locallyAsymptoticallyStable-of-lasalle"
   (title := "Barbashin's theorem")
   (statement := /-- Let $\dot x = f(x)$ on $\mathbb{R}^n$ with $f$ Lipschitz, and
@@ -300,7 +286,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.1. -/
     The hypothesis on $E$ is the one a user of LaSalle discharges: solve $\nabla V \cdot f = 0$
     and check that no solution can stay there but the equilibrium.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Corollary 4.1. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the first corollary of
+    LaSalle's theorem. -/)
   (proof := /-- Stability: $V$ is a uniform Lyapunov function
     (\cref{lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant},
     \cref{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}).  Forward
@@ -319,7 +306,8 @@ theorem locallyAsymptoticallyStable_of_lasalle [Nontrivial E] {s : ContinuousSys
     s.LocallyAsymptoticallyStable x_eq := by
   have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
   have h_stable : s.Stable x_eq :=
-    (IsUniformLyapunovFunction.of_timeInvariant hD (fun x _ => hV x) hV_pos fun t _ x hx => by
+    (IsUniformLyapunovFunction.of_timeInvariant_of_contDiffAt hD (fun _ _ => hV_c1.contDiffAt)
+      hV_pos fun t _ x hx => by
       rw [hF]
       exact h_nonpos x hx).uniformlyStable.stable
   have h_fc := isForwardComplete_of_timeInvariant hF hf
@@ -340,7 +328,8 @@ definite on the whole space, with compact sublevel sets and `∇V · f ≤ 0` ev
 every `c`, `{x_eq}` contains every forward invariant subset of `{V ≤ c}` on which `∇V · f`
 vanishes.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.2. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the second corollary of LaSalle's
+theorem. -/
 @[blueprint "thm:continuousSystem-globallyAsymptoticallyStable-of-lasalle"
   (title := "Krasovskii's theorem")
   (statement := /-- Let $\dot x = f(x)$ on $\mathbb{R}^n$ with $f$ Lipschitz, and $V \in C^1$
@@ -354,7 +343,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Corollary 4.2. -/
     no forward invariant set is assumed: every sublevel set is compact, and
     $\nabla V \cdot f \le 0$ keeps a trajectory in the one through its initial state.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Corollary 4.2. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the second corollary of
+    LaSalle's theorem. -/)
   (proof := /-- Stability and forward completeness as in Barbashin's theorem.  The sublevel set
     $\{V \le V(x(t_0))\}$ is compact and, since $V$ does not increase along trajectories, forward
     invariant; apply \cref{thm:continuousSystem-lasalle-invariance-principle} with
@@ -368,8 +358,8 @@ theorem globallyAsymptoticallyStable_of_lasalle [Nontrivial E] {s : ContinuousSy
     s.GloballyAsymptoticallyStable x_eq := by
   have hV : Differentiable ℝ V := hV_c1.differentiable one_ne_zero
   have h_stable : s.Stable x_eq :=
-    (IsUniformLyapunovFunction.of_timeInvariant univ_mem (fun x _ => hV x) hV_pos
-      fun t _ x _ => by
+    (IsUniformLyapunovFunction.of_timeInvariant_of_contDiffAt univ_mem
+      (fun _ _ => hV_c1.contDiffAt) hV_pos fun t _ x _ => by
       rw [hF]
       exact h_nonpos x).uniformlyStable.stable
   have h_fc := isForwardComplete_of_timeInvariant hF hf
@@ -377,7 +367,9 @@ theorem globallyAsymptoticallyStable_of_lasalle [Nontrivial E] {s : ContinuousSy
   -- The sublevel set through `x(t₀)` is forward invariant, since `V` does not increase.
   have hΩ_inv : s.IsForwardInvariant (fun _ => ()) {y | V y ≤ V (x t₀)} :=
     fun a b ξ hξ hξa t ht =>
-      ((antitoneOn_comp_of_fderiv_nonpos hF hV (convex_Icc a b) hξ fun τ _ => h_nonpos _)
+      ((hξ.antitoneOn_of_fderiv_nonpos hV_c1.locallyLipschitz.locallyLipschitzOn
+        (fun _ _ => mem_univ _) (.of_forall fun _ _ => hV _)
+        (.of_forall fun τ _ => (congrArg _ (hF τ _)).trans_le (h_nonpos _)))
         ⟨le_rfl, ht.1.trans ht.2⟩ ht ht.1).trans hξa
   have h_lim := lasalle_invariance_principle hF hf hV_c1 (hV_sub _) hΩ_inv
     (fun y _ => h_nonpos y) (hE (V (x t₀))) hx (show V (x t₀) ≤ V (x t₀) from le_rfl)
