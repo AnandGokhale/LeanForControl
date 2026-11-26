@@ -17,7 +17,7 @@ The uniform stability notions of `Stability.Continuous.Defs` are equivalent to c
 bounds on the trajectories of the system: uniform stability to a class `K` bound, uniform
 asymptotic stability to a class `KL` bound.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison-function characterization.
 
 ## Main declarations
 
@@ -64,7 +64,7 @@ open MeasureTheory intervalIntegral Set Filter Topology
 
 namespace ContinuousSystem
 
-variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+variable {E Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
 /-! ## Comparison-function estimates -/
 
@@ -74,7 +74,7 @@ starting at a time `t₀ ≥ 0` within `a` of `x_eq`, `‖x(t) - x_eq‖ ≤ α(
 The radius `a` is read off `α : ClassK a b`: a class `K` function is defined on `[0, a)`, so the
 locality of the bound is carried by its type.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), (4.19). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the class `K` estimate of uniform stability. -/
 @[blueprint "def:continuousSystem-hasUniformClassKBound"
   (title := "Uniform class $\\mathcal{K}$ bound")
   (statement := /-- The trajectories of $s$ \emph{have the uniform class $\mathcal{K}$ bound}
@@ -85,7 +85,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), (4.19). -/
     for every trajectory on a segment $[t_0, t_1]$ with $t_0 \ge 0$ and
     $\|x(t_0) - x_{\mathrm{eq}}\| < a$, and every $t \in [t_0, t_1]$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), (4.19). -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the class $\mathcal{K}$ estimate of
+    uniform stability. -/)]
 def HasUniformClassKBound (s : ContinuousSystem E Unit Y) (x_eq : E) {a b : ℝ} (α : ClassK a b) :
     Prop :=
   ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E), s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
@@ -94,7 +95,8 @@ def HasUniformClassKBound (s : ContinuousSystem E Unit Y) (x_eq : E) {a b : ℝ}
 /-- The same estimate with a class `K∞` bound, for every initial state: a class `K∞` function
 is defined on all of `[0, ∞)`, so no radius restriction survives.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), (4.20). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the class `KL` estimate of uniform
+asymptotic stability. -/
 @[blueprint "def:continuousSystem-hasUniformClassKInftyBound"
   (title := "Uniform class $\\mathcal{K}_{\\infty}$ bound")
   (statement := /-- The trajectories of $s$ \emph{have the uniform class
@@ -103,7 +105,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), (4.20). -/
     on a segment $[t_0, t_1]$ with $t_0 \ge 0$ and every $t \in [t_0, t_1]$, with no
     restriction on the initial state.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), (4.20). -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the class $\mathcal{KL}$ estimate of
+    uniform asymptotic stability. -/)]
 def HasUniformClassKInftyBound (s : ContinuousSystem E Unit Y) (x_eq : E) (α : ClassKInfty) :
     Prop :=
   ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E), s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) →
@@ -416,7 +419,7 @@ private lemma U_decay_bound {sys : ContinuousSystem E Unit Y} {x_eq : E} {c : �
     This is the time-decay half of the class `KL` characterization: `α` carries the dependence
     on the initial deviation and `U` the decay in elapsed time.
 
-    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison-function characterization. -/
 @[blueprint "lem:continuousSystem-exists-classLSingular-decayBound"
   (title := "Local uniform decay envelope")
   (latexEnv := "lemma")
@@ -435,7 +438,7 @@ private lemma U_decay_bound {sys : ContinuousSystem E Unit Y} {x_eq : E} {c : �
     The bound depends on the elapsed time alone: neither on $t_{0}$, nor on the trajectory, nor
     on where in the $a$-ball it started.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the comparison-function characterization.
   -/)
   (proof := /-- Let $\bar{T}(\eta, r)$ be the least delay after which every trajectory starting
     within $r$ of $x_{\mathrm{eq}}$ lies inside the $\eta$-ball; it is finite by hypothesis and
@@ -502,7 +505,8 @@ private lemma HasUniformClassKInftyBound.toClassK {sys : ContinuousSystem E Unit
     The four shape conditions are exactly the hypotheses of
     `ClassKLGlobal.exists_ge_min_of_decay`, which is what consumes this result.
 
-    Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5 (global case). -/
+    Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison-function characterization
+    (global case). -/
 @[blueprint "lem:continuousSystem-exists-decayBound-family"
   (title := "Global uniform decay envelope")
   (latexEnv := "lemma")
@@ -524,7 +528,8 @@ private lemma HasUniformClassKInftyBound.toClassK {sys : ContinuousSystem E Unit
     local case (\cref{lem:continuousSystem-exists-classLSingular-decayBound}) no single envelope
     can serve every initial state, so the radius remains a parameter.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5 (global case).
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the comparison-function
+    characterization (global case).
   -/)
   (proof := /-- Every radius is finite, so at radius $r$ the global hypotheses restrict to the
     local ones (a uniform convergence time from the $r$-ball, and the class $\mathcal{K}_{\infty}$
@@ -714,7 +719,7 @@ end WorstDeviation
 /-- **Class `K` characterization of uniform stability**: `x_eq` is uniformly stable if and only
 if the trajectories have a uniform class `K` bound.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison-function characterization. -/
 @[blueprint "lem:continuousSystem-uniformlyStable-iff-classK"
   (title := "Class $\\mathcal{K}$ characterization of uniform stability")
   (latexEnv := "lemma")
@@ -728,7 +733,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
     for every trajectory on a segment $[t_0, t_1]$ with $t_0 \ge 0$ and
     $\|x(t_0) - x_{\mathrm{eq}}\| < a$, and every $t \in [t_0, t_1]$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5, first half. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the comparison-function
+    characterization, first half. -/)
   (proof := /-- Forward: the worst deviation $\omega(r)$ reachable from the $r$-ball is
     nondecreasing, vanishes at $0$ and is continuous there by uniform stability; a continuous
     strictly increasing majorant (\cref{lem:exists-strictMono-upper-bound}) is the class
@@ -855,7 +861,7 @@ private lemma le_sqrt_mul_of_le_of_le {x A B : ℝ} (hx : 0 ≤ x) (hA : x ≤ A
 /-- **Class `KL` characterization of uniform asymptotic stability**: `x_eq` is uniformly
 asymptotically stable if and only if the trajectories from some ball have a class `KL` bound.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison-function characterization. -/
 @[blueprint "lem:continuousSystem-uniformlyAsymptoticallyStable-iff-classKL"
   (title := "Class $\\mathcal{KL}$ characterization of uniform asymptotic stability")
   (latexEnv := "lemma")
@@ -868,7 +874,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
     for every trajectory on a segment $[t_0, t_1]$ with $t_0 \ge 0$ and
     $\|x(t_0) - x_{\mathrm{eq}}\| < a$, and every $t \in [t_0, t_1]$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5, second half. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the comparison-function
+    characterization, second half. -/)
   (proof := /-- Forward: uniform stability gives a class $\mathcal{K}$ bound $\alpha$
     (\cref{lem:continuousSystem-uniformlyStable-iff-classK}) and, with the uniform convergence
     time, a decay envelope $U$ (\cref{lem:continuousSystem-exists-classLSingular-decayBound});
@@ -931,7 +938,7 @@ stability; it replaces `β` by a radially unbounded majorant
 (`ClassKLGlobal.exists_le_radiallyUnbounded`), so the statement asks only that `β` be class `KL`,
 as in Khalil.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the comparison-function characterization. -/
 @[blueprint "lem:continuousSystem-globallyUniformlyAsymptoticallyStable-iff-classKL"
   (title := "Class $\\mathcal{KL}$ characterization, global case")
   (latexEnv := "lemma")
@@ -942,7 +949,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.5. -/
     every trajectory on a segment $[t_0, t_1]$ with $t_0 \ge 0$ and every $t \in [t_0, t_1]$,
     with no restriction on the initial state.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.5, global case. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the comparison-function
+    characterization, global case. -/)
   (proof := /-- Forward: global uniform stability gives a class $\mathcal{K}_\infty$ bound, the
     convergence times from every ball a family of decay envelopes
     (\cref{lem:continuousSystem-exists-decayBound-family}), and
@@ -1019,7 +1027,7 @@ private lemma ray_of_segment {s : ContinuousSystem E Unit Y} {P : ℝ → E → 
     ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ x : ℝ → E, s.IsTrajectoryOn (fun _ => ()) x (Ici t₀) →
       P t₀ (x t₀) → ∀ t : ℝ, t₀ ≤ t → Q t₀ t (x t₀) (x t) :=
   fun t₀ ht₀ x hx hP t ht =>
-    h t₀ ht₀ t x (IsIntegralCurveOn.mono hx Icc_subset_Ici_self) hP t ⟨ht, le_rfl⟩
+    h t₀ ht₀ t x (hx.mono Icc_subset_Ici_self) hP t ⟨ht, le_rfl⟩
 
 /-- If segments starting where `P` holds extend to solutions over `[t₀, ∞)`, a bound on every
 such solution holds on every such segment: extend the segment and restrict back. -/

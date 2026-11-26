@@ -22,17 +22,18 @@ trajectories, `V(t, x) = ∫_t^{t+δ} ‖φ(τ; t, x) - x_eq‖² dτ` is sandwi
 `O(‖x - x_eq‖)`.  The gradient bound is what makes `V` robust: it is how a perturbation of the
 vector field, such as an input, enters `V̇`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.7, Theorem 4.14.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), converse Lyapunov theorems for exponential and
+uniform asymptotic stability.
 
 ## Main results
 
-* `exists_quadraticLyapunov_of_exponentialEstimate` — Khalil's Theorem 4.14 on a ball: an
-  exponential Lyapunov function with exponent `2` (`IsExponentialLyapunovFunction`) and a
-  gradient bound.
+* `exists_quadraticLyapunov_of_exponentialEstimate` — Khalil's converse theorem for exponential
+  stability, on a ball: an exponential Lyapunov function with exponent `2`
+  (`IsExponentialLyapunovFunction`) and a gradient bound.
 * `exists_quadraticLyapunov_of_globallyExponentiallyStable` — its global case: an exponential
   Lyapunov function with exponent `2` (`IsExponentialLyapunovFunction`) and a gradient bound.
-* `exists_lyapunov_of_KLBounded` — Khalil's Theorem 4.16: a class `KL` estimate gives a strict
-  uniform Lyapunov function with a class `K` gradient bound,
+* `exists_lyapunov_of_KLBounded` — Khalil's converse theorem for uniform asymptotic stability: a
+  class `KL` estimate gives a strict uniform Lyapunov function with a class `K` gradient bound,
   `V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` with `G` from Massera's lemma.
 
 ## Differences from Khalil
@@ -49,6 +50,9 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.7, Theorem 4.14.
 * The exponential estimate is assumed, as everywhere in this library, on trajectory segments
   starting in `D₀`.
 * Khalil's rate `λ` is written `γ`, as in `LocallyExponentiallyStable`.
+* Trajectories are Carathéodory solutions (`IsTrajectoryOn`); for the `C¹` fields here they are
+  classical, which the computation of `V̇` uses.  `V` is shown differentiable and locally
+  Lipschitz in `(t, x)`, as the Lyapunov structures require, not continuously differentiable.
 * Khalil's last clause, that `V` can be taken independent of `t` for a time-invariant system, is
   not stated yet.
 -/
@@ -60,7 +64,8 @@ open scoped Interval NNReal
 
 For `ż = g(z)` with `g` of class `C¹`, the solution at time `s` is differentiable in its initial
 state, with derivative the solution `Φ(s)` of the variational equation `Φ̇ = Dg(γ(s)) Φ`,
-`Φ(0) = I`, along the base solution `γ` (Khalil, *Nonlinear Systems* (3rd ed.), Section 3.3).
+`Φ(0) = I`, along the base solution `γ` (Khalil, *Nonlinear Systems* (3rd ed.), sensitivity
+equations).
 Below it is applied to the time-augmented system `ż = (1, f(z))`, which gives differentiability
 in the initial time and state together.
 
@@ -294,20 +299,33 @@ variable {Y : Type*} {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E
 
 /-! ## Ingredients -/
 
+omit [FiniteDimensional ℝ E] in
 /-- The solutions of an unforced system, indexed by their initial time and state:
 `flow s (t, x) τ = φ(τ; t, x)`, the state transition map. -/
-private noncomputable def flow (s : ContinuousSystem E Unit Y) (p : ℝ × E) (τ : ℝ) : E :=
+private noncomputable def flow [CompleteSpace E] (s : ContinuousSystem E Unit Y) (p : ℝ × E)
+    (τ : ℝ) : E :=
   s.stateTransitionMap (fun _ => ()) τ p.1 p.2
 
 omit [FiniteDimensional ℝ E] in
-/-- For a forward complete system with unique solutions, `flow s p` starts at `p.2` and solves the
-system on `[p.1, ∞)`. -/
-private lemma flow_spec {s : ContinuousSystem E Unit Y}
+/-- For a forward complete system with unique solutions, `flow s p` starts at `p.2` and is a
+trajectory on `[p.1, ∞)`. -/
+private lemma flow_spec [CompleteSpace E] {s : ContinuousSystem E Unit Y}
     (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ()) :
-    (∀ p, flow s p p.1 = p.2) ∧
-    ∀ p, IsIntegralCurveOn (flow s p) (fun t x => s.F t x ()) (Ici p.1) :=
+    (∀ p, flow s p p.1 = p.2) ∧ ∀ p, s.IsTrajectoryOn (fun _ => ()) (flow s p) (Ici p.1) :=
   ⟨fun p => stateTransitionMap_self p.1 p.2,
     fun p => isTrajectoryOn_stateTransitionMap_Ici hfc hu p.1 p.2⟩
+
+omit [FiniteDimensional ℝ E] in
+/-- The squared distance to `x_eq` along a solution is integrable over a window `[0, δ]`. -/
+private lemma intervalIntegrable_norm_sq_flow [CompleteSpace E] {s : ContinuousSystem E Unit Y}
+    (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
+    {δ : ℝ} (hδ : 0 ≤ δ) (x_eq : E) (z : ℝ × E) :
+    IntervalIntegrable (fun σ => ‖flow s z (z.1 + σ) - x_eq‖ ^ 2) MeasureTheory.volume 0 δ := by
+  have hc : ContinuousOn (flow s z) (Ici z.1) :=
+    ((flow_spec hfc hu).2 z).continuousOn ordConnected_Ici
+  apply ContinuousOn.intervalIntegrable
+  rw [uIcc_of_le hδ]
+  fun_prop (disch := intro σ hσ; simp only [mem_Ici]; linarith [hσ.1])
 
 omit [FiniteDimensional ℝ E] in
 /-- **Appending time to the state.**  If `φ (t, x)` solves `ẋ = f(t, x)` from `x` at time `t`,
@@ -324,7 +342,7 @@ private lemma isIntegralCurveOn_timeAugmented {f : ℝ → E → E} {φ : ℝ ×
 
 /-- **Solutions are differentiable and locally Lipschitz in their initial time and state.**  On
 `[0, δ]`, `z ↦ (z.1 + σ, φ z (z.1 + σ))` has derivative `Φ σ` at `z₀`, with `Φ` continuous in
-`σ`: the variational solution of the time-augmented system (Khalil, Section 3.3).
+`σ`: the variational solution of the time-augmented system (Khalil, sensitivity equations).
 Near `z₀` these maps are `e^{Kδ}`-Lipschitz (Gronwall). -/
 private lemma exists_hasFDerivAt_flow {f : ℝ → E → E}
     (hf : ContDiff ℝ 1 (fun p : ℝ × E => f p.1 p.2)) {φ : ℝ × E → ℝ → E}
@@ -349,40 +367,26 @@ private lemma exists_hasFDerivAt_flow {f : ℝ → E → E}
   exact h.trans (mul_le_mul_of_nonneg_left
     (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hσ.2 K.coe_nonneg)) dist_nonneg)
 
-/-- **The integral of the squared distance along solutions is differentiable** in the initial time
-and state.  With `φ (t, x)` the solution of `ẋ = f(t, x)` from `x` at time `t`, the map
-`(t, x) ↦ ∫₀^δ ‖φ (t, x) (t + σ) - x_eq‖² dσ` is differentiable, provided `f` is `C¹`.
-
-Appending time to the state turns the solutions into those of the autonomous `C¹` system
-`ż = (1, f(z))`, differentiable in the initial state (Khalil, Section 3.3) and
-locally Lipschitz in it (Gronwall); differentiate under the
-integral sign. -/
-private lemma differentiableAt_integral_norm_sq {s : ContinuousSystem E Unit Y}
-    (hf : ContDiff ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ()))
+/-- **The squared distance along solutions is locally Lipschitz in the initial time and state**,
+uniformly over a window: with `φ (t, x)` the solution of `ẋ = f(t, x)` from `x` at time `t` and
+`f` of class `C¹`, near `z₀` every `z ↦ ‖φ z (z.1 + σ) - x_eq‖²`, `σ ∈ [0, δ]`, is `C`-Lipschitz.
+Solutions from near `z₀` separate at most like `e^{Kδ}` (Gronwall) and so stay bounded. -/
+private lemma exists_lipschitzOnWith_norm_sq_flow {s : ContinuousSystem E Unit Y}
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ())))
     (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
-    {δ : ℝ} (hδ : 0 < δ) (x_eq : E) (z₀ : ℝ × E) :
-    DifferentiableAt ℝ
-      (fun z : ℝ × E => ∫ σ in (0 : ℝ)..δ, ‖flow s z (z.1 + σ) - x_eq‖ ^ 2) z₀ := by
-  obtain ⟨hφ0, hφ⟩ := flow_spec hfc hu
-  -- Step 1. With time appended to the state, `Ψ z σ = (z.1 + σ, φ z (z.1 + σ))` is
-  -- differentiable at `z₀` with derivative `Φ σ`, and `e^{Kδ}`-Lipschitz near `z₀`.
+    {δ : ℝ} (hδ : 0 ≤ δ) (x_eq : E) (z₀ : ℝ × E) :
+    ∃ ρ > 0, ∃ C : ℝ≥0, ∀ σ ∈ Icc 0 δ,
+      LipschitzOnWith C (fun z : ℝ × E => ‖flow s z (z.1 + σ) - x_eq‖ ^ 2) (ball z₀ ρ) := by
+  have hφ := fun p : ℝ × E => isIntegralCurveOn_stateTransitionMap_Ici hf.continuous hfc hu p.1 p.2
+  -- With time appended to the state, `Ψ z σ = (z.1 + σ, φ z (z.1 + σ))` is `e^{Kδ}`-Lipschitz
+  -- near `z₀`.
   set Ψ : ℝ × E → ℝ → ℝ × E := fun z σ => (z.1 + σ, flow s z (z.1 + σ))
-  obtain ⟨⟨Φ, hΦ_cont, h_flow⟩, K, ρ, hρ, h_sep'⟩ :=
-    exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf hφ0 hφ hδ.le z₀
-  have hΨ_cont : ∀ z, ContinuousOn (Ψ z) (Icc 0 δ) := fun z =>
-    (isIntegralCurveOn_timeAugmented hφ z δ).continuousOn
-  -- Step 2. Each integrand is differentiable at `z₀`, through the flow derivative `Φ`.
-  set F : ℝ × E → ℝ → ℝ := fun z σ => ‖(Ψ z σ).2 - x_eq‖ ^ 2
-  set F' : ℝ → (ℝ × E) →L[ℝ] ℝ := fun σ =>
-    2 • (innerSL ℝ ((Ψ z₀ σ).2 - x_eq)).comp ((ContinuousLinearMap.snd ℝ ℝ E).comp (Φ σ))
-  have hF' : ∀ σ ∈ Icc 0 δ, HasFDerivAt (fun z => F z σ) (F' σ) z₀ := fun σ hσ => by
-    have h_snd : HasFDerivAt (fun z => (Ψ z σ).2 - x_eq)
-        ((ContinuousLinearMap.snd ℝ ℝ E).comp (Φ σ)) z₀ :=
-      (hasFDerivAt_snd.comp z₀ (h_flow σ hσ)).sub_const x_eq
-    exact h_snd.norm_sq
-  -- Step 3. A uniform Lipschitz bound in `z` near `z₀`: the integrand is bounded by `R` there.
+  obtain ⟨-, K, ρ, hρ, h_sep'⟩ :=
+    exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf (flow_spec hfc hu).1 hφ hδ z₀
+  -- The integrand is bounded by `R` near `z₀`.
   obtain ⟨B, hB⟩ := isCompact_Icc.exists_bound_of_continuousOn
-    ((continuous_snd.comp_continuousOn (hΨ_cont z₀)).sub continuousOn_const)
+    ((continuous_snd.comp_continuousOn (isIntegralCurveOn_timeAugmented hφ z₀ δ).continuousOn).sub
+      continuousOn_const)
   set R := B + ρ * Real.exp (K * δ)
   set C := 2 * R * Real.exp (K * δ)
   have h_R : ∀ z ∈ ball z₀ ρ, ∀ σ ∈ Icc 0 δ, ‖(Ψ z σ).2 - x_eq‖ ≤ R := fun z hz σ hσ =>
@@ -394,27 +398,59 @@ private lemma differentiableAt_integral_norm_sq {s : ContinuousSystem E Unit Y}
       _ ≤ ρ * Real.exp (K * δ) + B :=
           add_le_add (mul_le_mul_of_nonneg_right (mem_ball.mp hz).le (Real.exp_pos _).le) le_rfl
       _ = R := add_comm _ _
-  have h_lip : ∀ σ ∈ Icc 0 δ,
-      LipschitzOnWith (Real.nnabs C) (fun z => F z σ) (ball z₀ ρ) := fun σ hσ =>
-    LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => by
-      set a := (Ψ z σ).2 - x_eq
-      set b := (Ψ z' σ).2 - x_eq
-      have hab : ‖a - b‖ ≤ dist z z' * Real.exp (K * δ) :=
-        calc ‖a - b‖ = ‖(Ψ z σ - Ψ z' σ).2‖ := by simp [a, b]
-          _ ≤ ‖Ψ z σ - Ψ z' σ‖ := norm_snd_le _
-          _ ≤ dist z z' * Real.exp (K * δ) := h_sep' z hz z' hz' σ hσ
-      have hR0 : 0 ≤ R := (norm_nonneg a).trans (h_R z hz σ hσ)
-      calc dist (F z σ) (F z' σ)
-          = |‖a‖ ^ 2 - ‖b‖ ^ 2| := Real.dist_eq _ _
-        _ ≤ (‖a‖ + ‖b‖) * ‖a - b‖ := abs_norm_sq_sub_norm_sq_le a b
-        _ ≤ (R + R) * ‖a - b‖ := by
-            gcongr
-            exacts [h_R z hz σ hσ, h_R z' hz' σ hσ]
-        _ ≤ (R + R) * (dist z z' * Real.exp (K * δ)) :=
-            mul_le_mul_of_nonneg_left hab (by linarith)
-        _ = Real.nnabs C * dist z z' := by
-            rw [Real.coe_nnabs, abs_of_nonneg (by positivity)]
-            ring
+  refine ⟨ρ, hρ, Real.nnabs C, fun σ hσ => LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => ?_⟩
+  set a := (Ψ z σ).2 - x_eq
+  set b := (Ψ z' σ).2 - x_eq
+  have hab : ‖a - b‖ ≤ dist z z' * Real.exp (K * δ) :=
+    calc ‖a - b‖ = ‖(Ψ z σ - Ψ z' σ).2‖ := by simp [a, b]
+      _ ≤ ‖Ψ z σ - Ψ z' σ‖ := norm_snd_le _
+      _ ≤ dist z z' * Real.exp (K * δ) := h_sep' z hz z' hz' σ hσ
+  have hR0 : 0 ≤ R := (norm_nonneg a).trans (h_R z hz σ hσ)
+  calc dist (‖a‖ ^ 2) (‖b‖ ^ 2)
+      = |‖a‖ ^ 2 - ‖b‖ ^ 2| := Real.dist_eq _ _
+    _ ≤ (‖a‖ + ‖b‖) * ‖a - b‖ := abs_norm_sq_sub_norm_sq_le a b
+    _ ≤ (R + R) * ‖a - b‖ := by
+        gcongr
+        exacts [h_R z hz σ hσ, h_R z' hz' σ hσ]
+    _ ≤ (R + R) * (dist z z' * Real.exp (K * δ)) :=
+        mul_le_mul_of_nonneg_left hab (by linarith)
+    _ = Real.nnabs C * dist z z' := by
+        rw [Real.coe_nnabs, abs_of_nonneg (by positivity)]
+        ring
+
+/-- **The integral of the squared distance along solutions is differentiable** in the initial time
+and state.  With `φ (t, x)` the solution of `ẋ = f(t, x)` from `x` at time `t`, the map
+`(t, x) ↦ ∫₀^δ ‖φ (t, x) (t + σ) - x_eq‖² dσ` is differentiable, provided `f` is `C¹`.
+
+Appending time to the state turns the solutions into those of the autonomous `C¹` system
+`ż = (1, f(z))`, differentiable in the initial state (Khalil, sensitivity equations) and
+locally Lipschitz in it (Gronwall); differentiate under the
+integral sign. -/
+private lemma differentiableAt_integral_norm_sq {s : ContinuousSystem E Unit Y}
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ())))
+    (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
+    {δ : ℝ} (hδ : 0 < δ) (x_eq : E) (z₀ : ℝ × E) :
+    DifferentiableAt ℝ
+      (fun z : ℝ × E => ∫ σ in (0 : ℝ)..δ, ‖flow s z (z.1 + σ) - x_eq‖ ^ 2) z₀ := by
+  have hφ := fun p : ℝ × E => isIntegralCurveOn_stateTransitionMap_Ici hf.continuous hfc hu p.1 p.2
+  -- Step 1. With time appended to the state, `Ψ z σ = (z.1 + σ, φ z (z.1 + σ))` is
+  -- differentiable at `z₀` with derivative `Φ σ`.
+  set Ψ : ℝ × E → ℝ → ℝ × E := fun z σ => (z.1 + σ, flow s z (z.1 + σ))
+  obtain ⟨⟨Φ, hΦ_cont, h_flow⟩, -⟩ :=
+    exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf (flow_spec hfc hu).1 hφ hδ.le z₀
+  have hΨ_cont : ∀ z, ContinuousOn (Ψ z) (Icc 0 δ) := fun z =>
+    (isIntegralCurveOn_timeAugmented hφ z δ).continuousOn
+  -- Step 2. Each integrand is differentiable at `z₀`, through the flow derivative `Φ`.
+  set F : ℝ × E → ℝ → ℝ := fun z σ => ‖(Ψ z σ).2 - x_eq‖ ^ 2
+  set F' : ℝ → (ℝ × E) →L[ℝ] ℝ := fun σ =>
+    2 • (innerSL ℝ ((Ψ z₀ σ).2 - x_eq)).comp ((ContinuousLinearMap.snd ℝ ℝ E).comp (Φ σ))
+  have hF' : ∀ σ ∈ Icc 0 δ, HasFDerivAt (fun z => F z σ) (F' σ) z₀ := fun σ hσ => by
+    have h_snd : HasFDerivAt (fun z => (Ψ z σ).2 - x_eq)
+        ((ContinuousLinearMap.snd ℝ ℝ E).comp (Φ σ)) z₀ :=
+      (hasFDerivAt_snd.comp z₀ (h_flow σ hσ)).sub_const x_eq
+    exact h_snd.norm_sq
+  -- Step 3. A uniform Lipschitz bound in `z` near `z₀`.
+  obtain ⟨ρ, hρ, C, h_lip⟩ := exists_lipschitzOnWith_norm_sq_flow hf hfc hu hδ.le x_eq z₀
   -- Step 4. Differentiate under the integral sign.
   have hIoc : Ι (0 : ℝ) δ ⊆ Icc 0 δ := by
     rw [uIoc_of_le hδ.le]
@@ -430,15 +466,59 @@ private lemma differentiableAt_integral_norm_sq {s : ContinuousSystem E Unit Y}
     (Eventually.of_forall fun z => (hF_cont z).mono hIoc |>.aestronglyMeasurable measurableSet_uIoc)
     ((hF_cont z₀).intervalIntegrable_of_Icc hδ.le)
     ((hF'_cont.mono hIoc).aestronglyMeasurable measurableSet_uIoc)
-    (Eventually.of_forall fun σ hσ => h_lip σ (hIoc hσ)) intervalIntegrable_const
+    (Eventually.of_forall fun σ hσ => by rw [Real.nnabs_coe]; exact h_lip σ (hIoc hσ))
+    intervalIntegrable_const
     (Eventually.of_forall fun σ hσ => hF' σ (hIoc hσ))).2.differentiableAt
 
+/-- **The integral of the squared distance along solutions is locally Lipschitz** in the initial
+time and state, provided `f` is `C¹`: the integrands are, uniformly over the window. -/
+private lemma locallyLipschitz_integral_norm_sq {s : ContinuousSystem E Unit Y}
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ())))
+    (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
+    {δ : ℝ} (hδ : 0 ≤ δ) (x_eq : E) :
+    LocallyLipschitz (fun z : ℝ × E => ∫ σ in (0 : ℝ)..δ, ‖flow s z (z.1 + σ) - x_eq‖ ^ 2) := by
+  intro z₀
+  obtain ⟨ρ, hρ, C, h_lip⟩ := exists_lipschitzOnWith_norm_sq_flow hf hfc hu hδ x_eq z₀
+  exact ⟨_, ball z₀ ρ, ball_mem_nhds z₀ hρ,
+    intervalIntegral.lipschitzOnWith_integral_of_norm_sub_le hδ
+      (fun z _ => intervalIntegrable_norm_sq_flow hfc hu hδ x_eq z)
+      (intervalIntegrable_const (c := (C : ℝ)))
+      (MeasureTheory.ae_of_all _ fun σ hσ z hz z' hz' => by
+        rw [uIoc_of_le hδ] at hσ
+        rw [← dist_eq_norm]
+        exact (h_lip σ (Ioc_subset_Icc_self hσ)).dist_le_mul z hz z' hz')⟩
+
 omit [FiniteDimensional ℝ E] in
-/-- **The derivative of an integral along the solutions, finite horizon.**  If
+/-- **The derivative of an integral along the solutions, finite horizon.**  For a forward
+complete system with unique solutions and a continuous field, `g` continuous and `δ ≥ 0`, if
 `V(t, x) = ∫₀^δ g(φ(t + σ; t, x)) dσ` is differentiable at `(t, x)`, then
 `V̇(t, x) = g(φ(t + δ; t, x)) - g(x)`: along the solution, by the semigroup property, `V` integrates
 `g` over a window that slides with time, so only its ends contribute. -/
-theorem lieDerivative_integral_stateTransitionMap {s : ContinuousSystem E Unit Y}
+@[blueprint "thm:continuousSystem-lieDerivative-integral-stateTransitionMap"
+  (title := "Derivative along the system of an integral along its solutions")
+  (statement := /-- Let $\dot x = f(t, x)$ be forward complete
+    (\cref{def:continuousSystem-isForwardComplete}) with unique solutions
+    (\cref{def:continuousSystem-hasUniqueSolutions}) and $f$ continuous, with state transition
+    map $\varphi$ (\cref{def:continuousSystem-stateTransitionMap}).  Let $g$ be continuous and
+    $\delta \ge 0$.  If
+    \[
+      V(t, x) = \int_0^\delta g(\varphi(t + \sigma; t, x))\,d\sigma
+    \]
+    is differentiable at $(t, x)$, its derivative along the system
+    (\cref{def:continuousSystem-lieDerivative}) there is
+    \[
+      \dot V(t, x) = g(\varphi(t + \delta; t, x)) - g(x).
+    \] -/)
+  (proof := /-- Write $\phi(\tau) = \varphi(\tau; t, x)$.  By the semigroup property
+    (\cref{lem:continuousSystem-stateTransitionMap-semigroup}), for $\tau \ge t$,
+    $V(\tau, \phi(\tau)) = \int_{\tau - t}^{\tau - t + \delta} g(\phi(t + \sigma))\,d\sigma$,
+    which by the fundamental theorem of calculus has right derivative
+    $g(\phi(t + \delta)) - g(x)$ at $\tau = t$.  Since $\phi$ is a classical solution
+    (\cref{lem:continuousSystem-isIntegralCurveOn-stateTransitionMap-Ici}), that right
+    derivative is $\dot V(t, x)$
+    (\cref{lem:isIntegralCurveOn-lieDerivative-eq-of-hasDerivWithinAt}). -/)]
+theorem lieDerivative_integral_stateTransitionMap [CompleteSpace E]
+    {s : ContinuousSystem E Unit Y} (hF : Continuous (Function.uncurry (s.vectorField fun _ => ())))
     (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
     {g : E → ℝ} (hg : Continuous g) {δ : ℝ} (hδ : 0 ≤ δ) {t : ℝ} {x : E}
     (h_diff : DifferentiableAt ℝ (Function.uncurry fun t x =>
@@ -448,13 +528,14 @@ theorem lieDerivative_integral_stateTransitionMap {s : ContinuousSystem E Unit Y
       g (s.stateTransitionMap (fun _ => ()) (t + δ) t x) - g x := by
   change s.lieDerivative (fun t x => ∫ σ in (0 : ℝ)..δ, g (flow s (t, x) (t + σ))) t x () =
     g (flow s (t, x) (t + δ)) - g x
-  obtain ⟨hφ0, hφ⟩ := flow_spec hfc hu
+  have hφ : IsIntegralCurveOn (flow s (t, x)) (fun t x => s.F t x ()) (Ici t) :=
+    isIntegralCurveOn_stateTransitionMap_Ici hF hfc hu t x
   set V : ℝ → E → ℝ := fun t x => ∫ σ in (0 : ℝ)..δ, g (flow s (t, x) (t + σ))
-  have hφ0' : flow s (t, x) t = x := hφ0 (t, x)
+  have hφ0' : flow s (t, x) t = x := stateTransitionMap_self t x
   -- Step 1. Along the solution, `V(τ, φ(τ)) = ∫_{τ-t}^{τ-t+δ} w`, with `w(σ) = g(φ(t + σ))`
   -- extended continuously to `σ < 0`.
   set w : ℝ → ℝ := fun σ => g (flow s (t, x) (t + max σ 0))
-  have hw : Continuous w := hg.comp ((hφ (t, x)).continuousOn.comp_continuous
+  have hw : Continuous w := hg.comp (hφ.continuousOn.comp_continuous
     (continuous_const.add (continuous_id.max continuous_const)) fun σ => by simp)
   have h_along : ∀ τ ∈ Ici t, V τ (flow s (t, x) τ) =
       (∫ σ in (0 : ℝ)..(τ - t) + δ, w σ) - ∫ σ in (0 : ℝ)..τ - t, w σ := by
@@ -488,7 +569,7 @@ theorem lieDerivative_integral_stateTransitionMap {s : ContinuousSystem E Unit Y
   have h_W' : HasDerivWithinAt (fun τ => V τ (flow s (t, x) τ)) (w δ - w 0) (Ici t) t :=
     h_W.hasDerivWithinAt.congr (fun τ hτ => h_along τ hτ) (h_along t self_mem_Ici)
   -- Step 3. That right derivative is the Lie derivative.
-  have h_lie := (hφ (t, x)).lieDerivative_eq_of_hasDerivWithinAt (V := V)
+  have h_lie := hφ.lieDerivative_eq_of_hasDerivWithinAt (V := V)
     (by rw [hφ0']; exact h_diff) h_W'
   rw [hφ0'] at h_lie
   rw [ContinuousSystem.lieDerivative, h_lie]
@@ -498,7 +579,8 @@ omit [FiniteDimensional ℝ E] in
 /-- **The gradient of `V` is `O(‖x - x_eq‖)`.**  Near `x`, `V(t, ·)` is Lipschitz with constant
 `2kδe^{Lδ}(‖x - x_eq‖ + r)`: solutions from `y` and `y'` separate at most like `e^{Lσ}‖y - y'‖`
 and stay within `k‖y - x_eq‖` of `x_eq`.  Letting `r → 0` bounds the derivative. -/
-private lemma norm_fderiv_integral_norm_sq_le {s : ContinuousSystem E Unit Y} {L : ℝ≥0}
+private lemma norm_fderiv_integral_norm_sq_le [CompleteSpace E] {s : ContinuousSystem E Unit Y}
+    {L : ℝ≥0}
     (h_lip : ∀ τ, LipschitzWith L (fun x => s.F τ x ()))
     (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
     {δ : ℝ} (hδ : 0 < δ) {x_eq : E} {k : ℝ} (hk : 0 < k) {t : ℝ} {U : Set E} (hU : IsOpen U)
@@ -506,7 +588,6 @@ private lemma norm_fderiv_integral_norm_sq_le {s : ContinuousSystem E Unit Y} {L
     {x : E} (hx : x ∈ U) :
     ‖fderiv ℝ (fun y => ∫ σ in (0 : ℝ)..δ, ‖flow s (t, y) (t + σ) - x_eq‖ ^ 2) x‖ ≤
       2 * (k * δ * Real.exp (L * δ)) * ‖x - x_eq‖ := by
-  obtain ⟨-, hφ⟩ := flow_spec hfc hu
   set A := k * δ * Real.exp (L * δ)
   have hA : 0 < A := by positivity
   obtain ⟨r_U, hr_U, h_ball_U⟩ := Metric.isOpen_iff.mp hU x hx
@@ -525,18 +606,16 @@ private lemma norm_fderiv_integral_norm_sq_le {s : ContinuousSystem E Unit Y} {L
     intro r hr hr_le
     have hU_ball : ∀ z ∈ ball x r, z ∈ U := fun z hz => h_ball_U (ball_subset_ball hr_le hz)
     have hR : 0 ≤ ‖x - x_eq‖ + r := by positivity
-    refine (norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds x hr)
-      (C := (2 * A * (‖x - x_eq‖ + r)).toNNReal) ?_).trans
-        (by rw [Real.coe_toNNReal _ (by positivity)])
-    refine LipschitzOnWith.of_dist_le_mul fun y hy y' hy' => ?_
     have h_near : ∀ z ∈ ball x r, ‖z - x_eq‖ ≤ ‖x - x_eq‖ + r := fun z hz =>
       calc ‖z - x_eq‖ ≤ ‖z - x‖ + ‖x - x_eq‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
         _ ≤ ‖x - x_eq‖ + r := by linarith [(mem_ball_iff_norm.mp hz).le]
-    -- The integrand changes by at most `2k(‖x - x_eq‖ + r) e^{Lδ} ‖y - y'‖`.
-    have h_pt : ∀ σ ∈ Ι (0 : ℝ) δ,
-        ‖‖flow s (t, y) (t + σ) - x_eq‖ ^ 2 - ‖flow s (t, y') (t + σ) - x_eq‖ ^ 2‖ ≤
-        2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) := by
-      intro σ hσ
+    refine (norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds x hr)
+      (intervalIntegral.lipschitzOnWith_integral_of_norm_sub_le
+        (F := fun y σ => ‖flow s (t, y) (t + σ) - x_eq‖ ^ 2) hδ.le
+        (fun y _ => intervalIntegrable_norm_sq_flow hfc hu hδ.le x_eq (t, y))
+        (intervalIntegrable_const (c := 2 * k * (‖x - x_eq‖ + r) * Real.exp (L * δ)))
+        (MeasureTheory.ae_of_all _ fun σ hσ y hy y' hy' => ?_))).trans_eq ?_
+    · -- The integrand changes by at most `2k(‖x - x_eq‖ + r) e^{Lδ} ‖y - y'‖`.
       rw [uIoc_of_le hδ.le] at hσ
       set a := flow s (t, y) (t + σ) - x_eq
       set b := flow s (t, y') (t + σ) - x_eq
@@ -552,24 +631,12 @@ private lemma norm_fderiv_integral_norm_sq_le {s : ContinuousSystem E Unit Y} {L
         _ ≤ (k * (‖x - x_eq‖ + r) + k * (‖x - x_eq‖ + r)) * ‖a - b‖ := by gcongr
         _ ≤ (k * (‖x - x_eq‖ + r) + k * (‖x - x_eq‖ + r)) *
               (‖y - y'‖ * Real.exp (L * δ)) := by gcongr
-        _ = 2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) := by ring
-    have h_int : ∀ z : E, IntervalIntegrable (fun σ => ‖flow s (t, z) (t + σ) - x_eq‖ ^ 2)
-        MeasureTheory.volume 0 δ := fun z => by
-      have hc : ContinuousOn (flow s (t, z)) (Ici t) := (hφ (t, z)).continuousOn
-      apply ContinuousOn.intervalIntegrable
-      rw [uIcc_of_le hδ.le]
-      fun_prop (disch := intro σ hσ; simp only [mem_Ici]; linarith [hσ.1])
-    calc dist (∫ σ in (0 : ℝ)..δ, ‖flow s (t, y) (t + σ) - x_eq‖ ^ 2)
-          (∫ σ in (0 : ℝ)..δ, ‖flow s (t, y') (t + σ) - x_eq‖ ^ 2)
-        = ‖∫ σ in (0 : ℝ)..δ,
-            (‖flow s (t, y) (t + σ) - x_eq‖ ^ 2 - ‖flow s (t, y') (t + σ) - x_eq‖ ^ 2)‖ := by
-          rw [dist_eq_norm, intervalIntegral.integral_sub (h_int y) (h_int y')]
-      _ ≤ 2 * k * (‖x - x_eq‖ + r) * (‖y - y'‖ * Real.exp (L * δ)) * |δ - 0| :=
-          intervalIntegral.norm_integral_le_of_norm_le_const h_pt
-      _ = (2 * A * (‖x - x_eq‖ + r)).toNNReal * dist y y' := by
-          rw [Real.coe_toNNReal _ (by positivity), dist_eq_norm, sub_zero,
-            abs_of_pos hδ]
-          ring
+        _ = 2 * k * (‖x - x_eq‖ + r) * Real.exp (L * δ) * dist y y' := by
+            rw [dist_eq_norm]
+            ring
+    · rw [intervalIntegral.integral_const, sub_zero, smul_eq_mul,
+        Real.coe_toNNReal _ (by positivity)]
+      ring
   -- Let `r → 0`.
   refine le_of_forall_pos_le_add fun ε hε => ?_
   calc ‖fderiv ℝ (fun y => ∫ σ in (0 : ℝ)..δ, ‖flow s (t, y) (t + σ) - x_eq‖ ^ 2) x‖
@@ -580,18 +647,19 @@ private lemma norm_fderiv_integral_norm_sq_le {s : ContinuousSystem E Unit Y} {L
 
 /-- **The construction**, for a globally Lipschitz `C¹` field: if solutions starting in an open
 set `U` at times `t ≥ 0` obey the exponential estimate, then
-`V(t, x) = ∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ`, with `δ = ln(2k² + 1)/(2γ)`, is differentiable
-everywhere and is a quadratic Lyapunov function on `U` with gradient `O(‖x - x_eq‖)`.  Both
-converse theorems are this lemma: the global one with `U = E`, the local one for a cut-off
-field. -/
+`V(t, x) = ∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ`, with `δ = ln(2k² + 1)/(2γ)`, is differentiable and
+locally Lipschitz everywhere and is a quadratic Lyapunov function on `U` with gradient
+`O(‖x - x_eq‖)`.  Both converse theorems are this lemma: the global one with `U = E`, the local one
+for a cut-off field. -/
 private lemma exists_quadraticLyapunov_of_estimateOn {s : ContinuousSystem E Unit Y}
-    (hf : ContDiff ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ())) {L : ℝ≥0}
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ()))) {L : ℝ≥0}
     (hf_lip : ∀ t, LipschitzWith L (fun x => s.F t x ())) {x_eq : E}
     (h_eq : ∀ t, s.F t x_eq () = 0) {U : Set E} (hU : IsOpen U) {k γ : ℝ} (hk : 0 < k)
     (hγ : 0 < γ)
     (h_exp : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ U, ∀ τ, t ≤ τ →
       ‖flow s (t, x) τ - x_eq‖ ≤ k * ‖x - x_eq‖ * Real.exp (-γ * (τ - t))) :
     ∃ V : ℝ → E → ℝ, (∀ t x, DifferentiableAt ℝ (Function.uncurry V) (t, x)) ∧
+      LocallyLipschitz (Function.uncurry V) ∧
       ∃ c₁ > 0, ∃ c₂ > 0, ∃ c₄ > 0, ∀ t : ℝ, 0 ≤ t → ∀ x ∈ U,
         c₁ * ‖x - x_eq‖ ^ 2 ≤ V t x ∧ V t x ≤ c₂ * ‖x - x_eq‖ ^ 2 ∧
         s.lieDerivative V t x () ≤ -(1 / 2 * ‖x - x_eq‖ ^ 2) ∧
@@ -615,23 +683,17 @@ private lemma exists_quadraticLyapunov_of_estimateOn {s : ContinuousSystem E Uni
     linarith
   -- Step 4. `V(t, x) = ∫₀^δ ‖φ(t + σ; t, x) - x_eq‖² dσ`.
   set V : ℝ → E → ℝ := fun t x => ∫ σ in (0 : ℝ)..δ, ‖flow s (t, x) (t + σ) - x_eq‖ ^ 2
-  have h_int : ∀ (t : ℝ) (x : E),
-      IntervalIntegrable (fun σ => ‖flow s (t, x) (t + σ) - x_eq‖ ^ 2) MeasureTheory.volume 0 δ :=
-    fun t x => by
-    have hc : ContinuousOn (flow s (t, x)) (Ici t) := (hφ (t, x)).continuousOn
-    apply ContinuousOn.intervalIntegrable
-    rw [uIcc_of_le hδ.le]
-    fun_prop (disch := intro σ hσ; simp only [mem_Ici]; linarith [hσ.1])
   refine ⟨V, fun t x => differentiableAt_integral_norm_sq hf hfc hu hδ x_eq (t, x),
-    δ * Real.exp (-(2 * L) * δ), by positivity, δ * k ^ 2, by positivity,
-    2 * (k * δ * Real.exp (L * δ)), by positivity, fun t ht x hx => ⟨?_, ?_, ?_, ?_⟩⟩
+    locallyLipschitz_integral_norm_sq hf hfc hu hδ.le x_eq, δ * Real.exp (-(2 * L) * δ),
+    by positivity, δ * k ^ 2, by positivity, 2 * (k * δ * Real.exp (L * δ)), by positivity,
+    fun t ht x hx => ⟨?_, ?_, ?_, ?_⟩⟩
   · -- The lower bound: solutions decay no faster than `e^{-Lσ}`.
     calc δ * Real.exp (-(2 * L) * δ) * ‖x - x_eq‖ ^ 2
         = ∫ σ in (0 : ℝ)..δ, ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * δ) := by
           rw [intervalIntegral.integral_const, smul_eq_mul]
           ring
-      _ ≤ V t x := intervalIntegral.integral_mono_on hδ.le intervalIntegrable_const (h_int t x)
-          fun σ hσ =>
+      _ ≤ V t x := intervalIntegral.integral_mono_on hδ.le intervalIntegrable_const
+          (intervalIntegrable_norm_sq_flow hfc hu hδ.le x_eq (t, x)) fun σ hσ =>
           calc ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * δ)
               ≤ ‖x - x_eq‖ ^ 2 * Real.exp (-(2 * L) * (t + σ - t)) :=
                 mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (by
@@ -639,7 +701,8 @@ private lemma exists_quadraticLyapunov_of_estimateOn {s : ContinuousSystem E Uni
                   nlinarith [mul_nonneg L.coe_nonneg (sub_nonneg.mpr hσ.2)])) (by positivity)
             _ ≤ ‖flow s (t, x) (t + σ) - x_eq‖ ^ 2 := by
                 have h := (IsTrajectoryOn.norm_exp_bounds (s := s) (u := fun _ => ()) (t := t + σ)
-                  (x_c := x_eq) ((hφ (t, x)).mono Icc_subset_Ici_self) (fun r _ => by
+                  (x_c := x_eq) ((hφ (t, x)).mono Icc_subset_Ici_self)
+                  (Filter.Eventually.of_forall fun r _ => by
                     simpa [ContinuousSystem.vectorField, h_eq r, dist_eq_norm] using
                       (hf_lip r).dist_le_mul (flow s (t, x) r) x_eq)
                   ⟨by linarith [hσ.1], le_rfl⟩).1
@@ -651,7 +714,8 @@ private lemma exists_quadraticLyapunov_of_estimateOn {s : ContinuousSystem E Uni
   · -- The upper bound: solutions stay within `k‖x - x_eq‖` of `x_eq`.
     calc V t x
         ≤ ∫ σ in (0 : ℝ)..δ, k ^ 2 * ‖x - x_eq‖ ^ 2 :=
-          intervalIntegral.integral_mono_on hδ.le (h_int t x) intervalIntegrable_const
+          intervalIntegral.integral_mono_on hδ.le
+          (intervalIntegrable_norm_sq_flow hfc hu hδ.le x_eq (t, x)) intervalIntegrable_const
           fun σ hσ =>
           calc ‖flow s (t, x) (t + σ) - x_eq‖ ^ 2
               ≤ (k * ‖x - x_eq‖) ^ 2 := by
@@ -663,7 +727,7 @@ private lemma exists_quadraticLyapunov_of_estimateOn {s : ContinuousSystem E Uni
           ring
   · -- The decrease: `V̇ = ‖φ(t + δ) - x_eq‖² - ‖x - x_eq‖² ≤ (k² e^{-2γδ} - 1) ‖x - x_eq‖²`.
     rw [show s.lieDerivative V t x () = ‖flow s (t, x) (t + δ) - x_eq‖ ^ 2 - ‖x - x_eq‖ ^ 2 from
-      lieDerivative_integral_stateTransitionMap hfc hu (g := fun y => ‖y - x_eq‖ ^ 2)
+      lieDerivative_integral_stateTransitionMap hf.continuous hfc hu (g := fun y => ‖y - x_eq‖ ^ 2)
         (by fun_prop) hδ.le (differentiableAt_integral_norm_sq hf hfc hu hδ x_eq (t, x))]
     calc ‖flow s (t, x) (t + δ) - x_eq‖ ^ 2 - ‖x - x_eq‖ ^ 2
         ≤ (k * ‖x - x_eq‖ * Real.exp (-γ * (t + δ - t))) ^ 2 - ‖x - x_eq‖ ^ 2 := by
@@ -683,7 +747,7 @@ uniformly in `t` and bounded by `L r`, vanishing at `x_eq` and equal to `f` on t
 radius `ρ₁`: `fχ = χ f` with `χ` a smooth bump equal to `1` on that ball. -/
 private lemma exists_cutoff {s : ContinuousSystem E Unit Y} {x_eq : E} {r ρ₁ : ℝ} {L : ℝ≥0}
     (hρ₁ : 0 < ρ₁) (hρ₁r : ρ₁ < r) (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
-    (hf : ContDiffOn ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ()) (univ ×ˢ ball x_eq r))
+    (hf : ContDiffOn ℝ 1 (Function.uncurry (s.vectorField fun _ => ())) (univ ×ˢ ball x_eq r))
     (hL : ∀ t : ℝ, LipschitzOnWith L (fun x => s.F t x ()) (ball x_eq r)) :
     ∃ fχ : ℝ → E → E, ContDiff ℝ 1 (fun p : ℝ × E => fχ p.1 p.2) ∧
       (∃ L' : ℝ≥0, ∀ t, LipschitzWith L' (fχ t)) ∧ (∀ t y, ‖fχ t y‖ ≤ L * r) ∧
@@ -732,33 +796,32 @@ private lemma exists_cutoff {s : ContinuousSystem E Unit Y} {x_eq : E} {r ρ₁ 
 omit [FiniteDimensional ℝ E] in
 /-- **Solutions of the cut-off field obey the estimate.**  Let `fχ = f` on the closed ball of
 radius `ρ₁`, and let trajectories of `f` from `D₀ = B(x_eq, r₀)` at times `t₀ ≥ 0` obey an
-estimate `‖x(t) - x_eq‖ ≤ B(x(t₀), t₀, t)` that stays below `ρ₁`.  Then a solution of `fχ` from
+estimate `‖x(t) - x_eq‖ ≤ B(x(t₀), t₀, t)` that stays below `ρ₁`.  Then a trajectory of `fχ` from
 `D₀` never reaches the `ρ₁`-sphere: up to the first time it would, it is a trajectory of `f`, so
 the estimate keeps it inside.  It therefore obeys the estimate for all time. -/
-private lemma estimate_of_cutoff {s : ContinuousSystem E Unit Y} {x_eq : E} {ρ₁ r₀ : ℝ}
-    {fχ : ℝ → E → E} (h_agree : ∀ t, ∀ y ∈ closedBall x_eq ρ₁, fχ t y = s.F t y ())
+private lemma estimate_of_cutoff [CompleteSpace E] {s : ContinuousSystem E Unit Y} {x_eq : E}
+    {ρ₁ r₀ : ℝ} {Y' : Type*} {sχ : ContinuousSystem E Unit Y'}
+    (h_agree : ∀ t, ∀ y ∈ closedBall x_eq ρ₁, sχ.F t y () = s.F t y ())
     {B : E → ℝ → ℝ → ℝ} (hB : ∀ x ∈ ball x_eq r₀, ∀ t τ, t ≤ τ → B x t τ < ρ₁)
     (h_est : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
       s.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t₁) → ‖x t₀ - x_eq‖ < r₀ →
         ∀ t ∈ Icc t₀ t₁, ‖x t - x_eq‖ ≤ B (x t₀) t₀ t) :
     ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → E, y t = x →
-      IsIntegralCurveOn y fχ (Ici t) → ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ B x t τ := by
+      sχ.IsTrajectoryOn (fun _ => ()) y (Ici t) → ∀ τ, t ≤ τ → ‖y τ - x_eq‖ ≤ B x t τ := by
   intro t ht x hx y hy0 hy τ hτ
   have hx' : ‖x - x_eq‖ < r₀ := mem_ball_iff_norm.mp hx
   -- On a stretch inside the `ρ₁`-ball, `y` is a trajectory of `f`.
-  have h_traj : ∀ σ, (∀ u ∈ Icc t σ, ‖y u - x_eq‖ ≤ ρ₁) →
-      s.IsTrajectoryOn (fun _ => ()) y (Icc t σ) := fun σ h_in u hu =>
-    ((hy u hu.1).mono Icc_subset_Ici_self).congr_deriv
-      (h_agree u (y u) (mem_closedBall_iff_norm.mpr (h_in u hu)))
   have h_bound : ∀ σ, (∀ u ∈ Icc t σ, ‖y u - x_eq‖ ≤ ρ₁) → t ≤ σ →
       ‖y σ - x_eq‖ ≤ B x t σ := fun σ h_in hσ => by
-    have h := h_est t ht σ y (h_traj σ h_in) (by rw [hy0]; exact hx') σ ⟨hσ, le_rfl⟩
+    have h := h_est t ht σ y
+      ((hy.mono Icc_subset_Ici_self).congr_vectorField fun u hu =>
+        h_agree u (y u) (mem_closedBall_iff_norm.mpr (h_in u hu)))
+      (by rw [hy0]; exact hx') σ ⟨hσ, le_rfl⟩
     rwa [hy0] at h
   -- The initial state is inside: the estimate on the one-point segment.
   have h_start : ‖y t - x_eq‖ < ρ₁ := by
     have h := h_est t ht t (fun _ => x)
-      (fun σ _ => HasFDerivWithinAt.of_subsingleton (subsingleton_Icc_of_ge le_rfl)) hx' t
-      ⟨le_rfl, le_rfl⟩
+      (isTrajectoryOn_of_subsingleton (subsingleton_Icc_of_ge le_rfl)) hx' t ⟨le_rfl, le_rfl⟩
     rw [hy0]
     exact h.trans_lt (hB x hx t t le_rfl)
   -- `y` never reaches the `ρ₁`-sphere.
@@ -766,7 +829,7 @@ private lemma estimate_of_cutoff {s : ContinuousSystem E Unit Y} {x_eq : E} {ρ�
     intro σ hσ
     by_contra h_out
     obtain ⟨σ', hσ', hσ'_eq, h_before⟩ := exists_first_sphere_hit
-      ((hy.mono Icc_subset_Ici_self).continuousOn) h_start hσ (not_lt.mp h_out)
+      ((hy.continuousOn ordConnected_Ici).mono Icc_subset_Ici_self) h_start hσ (not_lt.mp h_out)
     linarith [h_bound σ' h_before hσ'.1, hB x hx t σ' hσ'.1]
   exact h_bound τ (fun u hu => (h_inside u hu).le) hτ
 
@@ -776,7 +839,8 @@ radius `r`, uniformly in `t`.  If trajectories starting in the ball `D₀` of ra
 obey `‖x(t) - x_eq‖ ≤ k ‖x(t₀) - x_eq‖ e^{-γ(t - t₀)}`, there is an exponential Lyapunov
 function with exponent `2` on `D₀` whose gradient is `O(‖x - x_eq‖)` there.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), converse Lyapunov theorem for exponential
+stability. -/
 @[blueprint "thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate"
   (title := "Converse Lyapunov theorem for exponential stability")
   (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = f(t, x)$ on
@@ -801,11 +865,13 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14. -/
     for $t \ge 0$ and $x \in D_0$, and $c_4 > 0$ with
     $\|\partial V / \partial x\| \le c_4 \|x - x_{\mathrm{eq}}\|$ there.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.14.  Differences:
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), converse Lyapunov theorem for
+    exponential stability.  Differences:
     \begin{itemize} \item $f$ is $C^1$ and Lipschitz for all $t \in \mathbb{R}$, not only
     $t \ge 0$: differentiability of $V$ at $t = 0$ involves solutions from negative initial
     times. \item The Lipschitz bound replaces Khalil's equivalent Jacobian bound. \item The
-    estimate is assumed on trajectory segments. \end{itemize} -/)
+    estimate is assumed on (Carath\'eodory) trajectory segments. \item $V$ is differentiable and
+    locally Lipschitz rather than $C^1$. \end{itemize} -/)
   (proof := /-- Cut the field off outside the ball: with $\chi$ a smooth bump equal to $1$ on the
     ball of radius $\rho_1$, $k r_0 < \rho_1 < r$, and vanishing near the sphere of radius $r$,
     $\tilde f = \chi f$ is $C^1$ and globally Lipschitz in $x$, uniformly in $t$, and agrees
@@ -819,7 +885,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14. -/
 theorem exists_quadraticLyapunov_of_exponentialEstimate {s : ContinuousSystem E Unit Y}
     {x_eq : E} {r k γ r₀ : ℝ}
     (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
-    (hf : ContDiffOn ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ()) (univ ×ˢ ball x_eq r))
+    (hf : ContDiffOn ℝ 1 (Function.uncurry (s.vectorField fun _ => ())) (univ ×ˢ ball x_eq r))
     (h_lip : ∃ L : ℝ≥0, ∀ t : ℝ, LipschitzOnWith L (fun x => s.F t x ()) (ball x_eq r))
     (hk : 0 < k) (hγ : 0 < γ) (hr₀ : 0 < r₀) (hr₀r : r₀ < r / k)
     (h_exp : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
@@ -835,7 +901,8 @@ theorem exists_quadraticLyapunov_of_exponentialEstimate {s : ContinuousSystem E 
   obtain ⟨fχ, hfχ, ⟨L', hfχ_lip⟩, -, hfχ_eq, h_agree⟩ := exists_cutoff (ρ₁ := ρ₁)
     ((by positivity : 0 < k * r₀).trans hρ₁) (by rw [hρ₁_def]; linarith) h_eq hf hL
   -- Step 2. Starting in `D₀`, the estimate stays below `k r₀ < ρ₁`, so solutions of `fχ` obey it.
-  have h_exp' := estimate_of_cutoff h_agree
+  set sχ : ContinuousSystem E Unit Unit := autonomous fχ fun _ _ => ()
+  have h_exp' := estimate_of_cutoff (sχ := sχ) h_agree
     (B := fun x t τ => k * ‖x - x_eq‖ * Real.exp (-γ * (τ - t)))
     (fun x hx t τ hτ =>
       calc k * ‖x - x_eq‖ * Real.exp (-γ * (τ - t))
@@ -846,22 +913,22 @@ theorem exists_quadraticLyapunov_of_exponentialEstimate {s : ContinuousSystem E 
   -- `D₀` lies inside the `ρ₁`-ball: the estimate on a one-point segment.
   have h_small : ∀ x ∈ ball x_eq r₀, ‖x - x_eq‖ < ρ₁ := fun x hx => by
     have h := h_exp 0 le_rfl 0 (fun _ => x)
-      (fun σ _ => HasFDerivWithinAt.of_subsingleton (subsingleton_Icc_of_ge le_rfl))
+      (isTrajectoryOn_of_subsingleton (subsingleton_Icc_of_ge le_rfl))
       (mem_ball_iff_norm.mp hx) 0 ⟨le_rfl, le_rfl⟩
     simp only [sub_self, mul_zero, Real.exp_zero, mul_one] at h
     calc ‖x - x_eq‖ ≤ k * ‖x - x_eq‖ := h
       _ < k * r₀ := mul_lt_mul_of_pos_left (mem_ball_iff_norm.mp hx) hk
       _ < ρ₁ := hρ₁
   -- Step 3. The construction for the cut-off system; on `D₀` its `V̇` is that of `f`.
-  set sχ : ContinuousSystem E Unit Unit := autonomous fχ fun _ _ => ()
   obtain ⟨-, hφχ⟩ := flow_spec (s := sχ)
     (isForwardComplete_of_lipschitz hfχ.continuous hfχ_lip)
     (hasUniqueSolutions_of_lipschitz hfχ_lip)
-  obtain ⟨V, hV_diff, c₁, hc₁, c₂, hc₂, c₄, hc₄, hV⟩ :=
+  obtain ⟨V, hV_diff, hV_lip, c₁, hc₁, c₂, hc₂, c₄, hc₄, hV⟩ :=
     exists_quadraticLyapunov_of_estimateOn (s := sχ) hfχ hfχ_lip hfχ_eq isOpen_ball hk hγ
       fun t ht x hx τ hτ => h_exp' t ht x hx _ (stateTransitionMap_self t x) (hφχ (t, x)) τ hτ
-  refine ⟨V, ⟨ball_mem_nhds x_eq hr₀, fun t _ x _ => hV_diff t x, two_pos, c₁, hc₁, c₂, hc₂,
-    1 / 2, by norm_num, fun t ht x hx => ?_⟩, c₄, hc₄, fun t ht x hx => (hV t ht x hx).2.2.2⟩
+  refine ⟨V, ⟨ball_mem_nhds x_eq hr₀, fun t _ x _ => hV_diff t x, hV_lip.locallyLipschitzOn,
+    two_pos, c₁, hc₁, c₂, hc₂, 1 / 2, by norm_num, fun t ht x hx => ?_⟩, c₄, hc₄,
+    fun t ht x hx => (hV t ht x hx).2.2.2⟩
   obtain ⟨h_lower, h_upper, h_lie, -⟩ := hV t ht x hx
   rw [Real.rpow_two]
   refine ⟨h_lower, h_upper, ?_⟩
@@ -880,7 +947,8 @@ Jacobian; the proof only uses `L` as a Lipschitz constant, so that is the hypoth
 `f` the two are equivalent).  It is asked for every `t ∈ ℝ`, not only `t ≥ 0`: differentiability of
 `V` at `t = 0` involves solutions from slightly negative initial times.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14, global case. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), converse Lyapunov theorem for exponential
+stability, global case. -/
 @[blueprint "thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable"
   (title := "Converse Lyapunov theorem for global exponential stability")
   (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = f(t, x)$ on
@@ -894,7 +962,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14, global case. -/
     $\|\partial V / \partial x\| \le c_4 \|x - x_{\mathrm{eq}}\|$ for all $t \ge 0$ and
     $x \in \mathbb{R}^n$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.14, global case.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), converse Lyapunov theorem for
+    exponential stability, global case.
     Differences: \begin{itemize} \item The Lipschitz bound replaces Khalil's equivalent Jacobian
     bound, and is asked for all $t \in \mathbb{R}$: differentiability of $V$ at $t = 0$ involves
     solutions from negative initial times.
@@ -906,18 +975,19 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.14, global case. -/
     estimate and the lower bound $\|\phi(\tau) - x_{\mathrm{eq}}\|^2 \ge e^{-2L(\tau - t)}
     \|x - x_{\mathrm{eq}}\|^2$ sandwich $V$.  $V$ is differentiable: appending time to the state,
     solutions are differentiable in their initial data, with derivative the solution of the
-    variational equation (Khalil, Section 3.3), and locally Lipschitz in it, so the integral can be
-    differentiated under the integral sign.  Along a solution, uniqueness gives
+    variational equation (Khalil, sensitivity equations), and locally Lipschitz in it, so the
+    integral can be differentiated under the integral sign.  Along a solution, uniqueness gives
     $V = \int_h^{h+\delta}\|\phi(t + \sigma) - x_{\mathrm{eq}}\|^2 d\sigma$, so
     $\dot V = \|\phi(t + \delta) - x_{\mathrm{eq}}\|^2 - \|x - x_{\mathrm{eq}}\|^2 \le
     (k^2 e^{-2\gamma\delta} - 1)\|x - x_{\mathrm{eq}}\|^2 \le -\tfrac12\|x - x_{\mathrm{eq}}\|^2$.
     Finally, solutions from nearby states separate at most like $e^{L\sigma}$, which makes
     $V(t, \cdot)$ locally Lipschitz with constant $\approx 2k\delta e^{L\delta}
-    \|x - x_{\mathrm{eq}}\|$. -/)]
+    \|x - x_{\mathrm{eq}}\|$; the same separation bound in $(t, x)$ makes $V$ locally Lipschitz
+    in $(t, x)$. -/)]
 theorem exists_quadraticLyapunov_of_globallyExponentiallyStable
     {s : ContinuousSystem E Unit Y} {x_eq : E}
     (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
-    (hf : ContDiff ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ()))
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ())))
     (h_lip : ∃ L : ℝ≥0, ∀ t : ℝ, LipschitzWith L (fun x => s.F t x ()))
     (h_ges : s.GloballyExponentiallyStable x_eq) :
     ∃ V : ℝ → E → ℝ, s.IsExponentialLyapunovFunction V x_eq univ 2 ∧
@@ -926,14 +996,15 @@ theorem exists_quadraticLyapunov_of_globallyExponentiallyStable
   obtain ⟨k, hk, γ, hγ, h_exp⟩ := h_ges
   obtain ⟨-, hφ⟩ := flow_spec (s := s) (isForwardComplete_of_lipschitz hf.continuous hf_lip)
     (hasUniqueSolutions_of_lipschitz hf_lip)
-  obtain ⟨V, hV_diff, c₁, hc₁, c₂, hc₂, c₄, hc₄, hV⟩ :=
+  obtain ⟨V, hV_diff, hV_lip, c₁, hc₁, c₂, hc₂, c₄, hc₄, hV⟩ :=
     exists_quadraticLyapunov_of_estimateOn hf hf_lip h_eq isOpen_univ hk hγ
       fun t ht x _ τ hτ => by
         have h := h_exp t ht τ (flow s (t, x)) ((hφ (t, x)).mono Icc_subset_Ici_self) τ
           ⟨hτ, le_rfl⟩
         rwa [show flow s (t, x) t = x from stateTransitionMap_self t x] at h
-  refine ⟨V, ⟨univ_mem, fun t _ x _ => hV_diff t x, two_pos, c₁, hc₁, c₂, hc₂, 1 / 2,
-    by norm_num, fun t ht x hx => ?_⟩, c₄, hc₄, fun t ht x => (hV t ht x (mem_univ x)).2.2.2⟩
+  refine ⟨V, ⟨univ_mem, fun t _ x _ => hV_diff t x, hV_lip.locallyLipschitzOn, two_pos, c₁, hc₁,
+    c₂, hc₂, 1 / 2, by norm_num, fun t ht x hx => ?_⟩, c₄, hc₄,
+    fun t ht x => (hV t ht x (mem_univ x)).2.2.2⟩
   obtain ⟨h_lower, h_upper, h_lie, -⟩ := hV t ht x hx
   rw [Real.rpow_two]
   exact ⟨h_lower, h_upper, h_lie⟩
@@ -996,7 +1067,7 @@ omit [FiniteDimensional ℝ E] in
 ball around `(t₀, x₀)` every solution satisfies `‖φ(z.1 + σ) - x_eq‖ ≤ ĝ(σ)`.  From a nonnegative
 initial time this is the class `KL` estimate; from a slightly negative one, the solution reaches
 time `0` still inside `D₀` and obeys the estimate from there. -/
-private lemma norm_flow_le_klRate {s : ContinuousSystem E Unit Y} {B : ℝ}
+private lemma norm_flow_le_klRate [CompleteSpace E] {s : ContinuousSystem E Unit Y} {B : ℝ}
     (hf_bdd : ∀ t y, ‖s.F t y ()‖ ≤ B)
     (hfc : s.IsForwardComplete fun _ => ())
     (hu : s.HasUniqueSolutions fun _ => ()) {x_eq : E} {a r₀ : ℝ} (β : ClassKL a)
@@ -1027,8 +1098,8 @@ private lemma norm_flow_le_klRate {s : ContinuousSystem E Unit Y} {B : ℝ}
       _ < ε + ρ := by rw [← dist_eq_norm]; linarith [hz'.2]
       _ = ρ + ε := add_comm _ _
   have hx_r₀ : ‖z.2 - x_eq‖ < r₀ := by nlinarith
-  have h_speed := fun {τ₁ τ₂ : ℝ} (h₁ : z.1 ≤ τ₁) (h₂ : z.1 ≤ τ₂) =>
-    (hφ z).norm_sub_le (convex_Ici _) (fun _ _ => hf_bdd _ _) h₁ h₂
+  have h_speed := fun {τ : ℝ} (h : z.1 ≤ τ) =>
+    (hφ z).norm_sub_le h (fun _ hτ => hτ.1) fun _ _ => hf_bdd _ _
   rcases le_or_gt 0 z.1 with hz1 | hz1
   · -- From a nonnegative initial time: the estimate itself.
     have h := h_KL z.1 hz1 z.2 (mem_ball_iff_norm.mpr hx_r₀) (flow s z) (hφ0 z) (hφ z) (z.1 + σ)
@@ -1043,9 +1114,9 @@ private lemma norm_flow_le_klRate {s : ContinuousSystem E Unit Y} {B : ℝ}
             rw [← hφ0 z]; exact norm_sub_le_norm_sub_add_norm_sub _ _ _
         _ ≤ B * ε + ‖z.2 - x_eq‖ := by
             gcongr
-            refine (h_speed le_rfl hz1.le).trans ?_
+            refine (h_speed hz1.le).trans ?_
             gcongr
-            rw [abs_le]; constructor <;> linarith
+            linarith
         _ < r₀ := by nlinarith
     rcases le_or_gt 0 (z.1 + σ) with hτ | hτ
     · have h := h_KL 0 le_rfl (flow s z 0) (mem_ball_iff_norm.mpr h_y₀) (flow s z) rfl
@@ -1059,9 +1130,9 @@ private lemma norm_flow_le_klRate {s : ContinuousSystem E Unit Y} {B : ℝ}
             rw [← hφ0 z]; exact norm_sub_le_norm_sub_add_norm_sub _ _ _
         _ ≤ B * ε + ‖z.2 - x_eq‖ := by
             gcongr
-            refine (h_speed le_rfl (by linarith)).trans ?_
+            refine (h_speed (by linarith)).trans ?_
             gcongr
-            rw [add_sub_cancel_left, abs_of_nonneg hσ]; linarith
+            linarith
         _ ≤ r₀ := by nlinarith
         _ ≤ klRate β r₀ σ := h_rate_one σ hσ1
 
@@ -1087,7 +1158,7 @@ private lemma integrableOn_comp_classKL {a r₀ : ℝ} (β : ClassKL a) (hr₀ :
 omit [FiniteDimensional ℝ E] in
 /-- **`G(‖φ(t + σ; t, x) - x_eq‖²)` is integrable** for `t ≥ 0` and `x ∈ D₀`, dominated by
 `G(β(‖x - x_eq‖, σ)²)` through the class `KL` estimate. -/
-private lemma integrableOn_comp_flow {s : ContinuousSystem E Unit Y}
+private lemma integrableOn_comp_flow [CompleteSpace E] {s : ContinuousSystem E Unit Y}
     (hfc : s.IsForwardComplete fun _ => ())
     (hu : s.HasUniqueSolutions fun _ => ()) {x_eq : E}
     {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr₀a : r₀ < a)
@@ -1099,7 +1170,7 @@ private lemma integrableOn_comp_flow {s : ContinuousSystem E Unit Y}
     IntegrableOn (fun σ => G (‖flow s (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0) := by
   obtain ⟨hφ0, hφ⟩ := flow_spec hfc hu
   have h_cont : ContinuousOn (fun σ => G (‖flow s (t, x) (t + σ) - x_eq‖ ^ 2)) (Ioi 0) :=
-    G.continuous.comp ((((hφ (t, x)).continuousOn.comp
+    G.continuous.comp (((((hφ (t, x)).continuousOn ordConnected_Ici).comp
       (continuousOn_const.add continuousOn_id) fun σ hσ =>
         mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ))).sub continuousOn_const).norm.pow 2)
       fun σ _ => mem_Ici.2 (sq_nonneg _)
@@ -1204,6 +1275,63 @@ private lemma exists_classK_ge_integral_gradRate {a r₀ : ℝ} (β : ClassKL a)
   exact ⟨_, ClassK.ofStrictMono hr₀ hα₄_pos α₄f hα₄_zero rfl hα₄_cont hα₄_mono,
     fun ρ hρ => le_add_of_nonneg_right hρ.1⟩
 
+omit [FiniteDimensional ℝ E] in
+/-- **Near `(t₀, x₀)` the integrands are Lipschitz with an integrable constant**, for `t₀ ≥ 0` and
+`x₀ ∈ D₀`: solutions from near `(t₀, x₀)` obey the rate `ĝ` (`norm_flow_le_klRate`) and separate
+at most like `(2B + 1) e^{Lσ}` (`norm_stateTransitionMap_sub_le`), so by the mean value theorem
+`z ↦ G(‖φ(z.1 + σ; z) - x_eq‖²)` is Lipschitz there with constant
+`2ĝ(0)(2B + 1) G'(ĝ(σ)²) e^{Lσ}`, integrable by Massera's lemma. -/
+private lemma exists_lipschitzOnWith_comp_flow [CompleteSpace E] {s : ContinuousSystem E Unit Y}
+    {L : ℝ≥0} (hf_lip : ∀ t, LipschitzWith L (fun x => s.F t x ())) {B : ℝ}
+    (hf_bdd : ∀ t y, ‖s.F t y ()‖ ≤ B) (hfc : s.IsForwardComplete fun _ => ()) {x_eq : E}
+    {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr₀a : r₀ < a)
+    (h_KL : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → E, y t = x →
+      s.IsTrajectoryOn (fun _ => ()) y (Ici t) → ∀ τ, t ≤ τ →
+        ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t))
+    {G G' : ClassKInfty} (hG : ∀ r, 0 ≤ r → HasDerivAt G (G' r) r) {z₀ : ℝ × E}
+    (ht₀ : 0 ≤ z₀.1) (hx₀ : z₀.2 ∈ ball x_eq r₀) :
+    ∃ ε > 0, ∀ σ ∈ Ioi (0 : ℝ), LipschitzOnWith
+      (Real.nnabs (2 * klRate β r₀ 0 * (2 * B + 1) * (G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ))))
+      (fun z : ℝ × E => G (‖flow s z (z.1 + σ) - x_eq‖ ^ 2)) (ball z₀ ε) := by
+  let ĝ := klRate β r₀
+  obtain ⟨hĝ_pos, -, hĝ_anti, -, -, -⟩ := klRate_spec β hr₀ hr₀a
+  have hĝ_le : ∀ σ, 0 ≤ σ → ĝ σ ≤ ĝ 0 := fun σ hσ => hĝ_anti.antitone hσ
+  have hG'_nonneg : ∀ r, 0 ≤ r → 0 ≤ G' r := fun r hr => G'.maps_to hr
+  have hB : 0 ≤ B := (norm_nonneg _).trans (hf_bdd 0 0)
+  obtain ⟨ε, hε, h_near⟩ := norm_flow_le_klRate hf_bdd hfc (hasUniqueSolutions_of_lipschitz hf_lip)
+    β hr₀ hr₀a h_KL ht₀ hx₀
+  refine ⟨ε, hε, fun σ hσ => ?_⟩
+  have hσ' : 0 ≤ σ := le_of_lt hσ
+  refine LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => ?_
+  let p := flow s z (z.1 + σ) - x_eq
+  let q := flow s z' (z'.1 + σ) - x_eq
+  have hp : ‖p‖ ≤ ĝ σ := h_near z hz σ hσ'
+  have hq : ‖q‖ ≤ ĝ σ := h_near z' hz' σ hσ'
+  have hpq : ‖p - q‖ ≤ (2 * B + 1) * Real.exp (L * σ) * dist z z' := by
+    rw [sub_sub_sub_cancel_right]
+    exact norm_stateTransitionMap_sub_le hfc hf_lip hf_bdd z z' hσ'
+  rw [Real.coe_nnabs, abs_of_nonneg (mul_nonneg (mul_nonneg (mul_nonneg two_pos.le (hĝ_pos 0).le)
+    (by linarith)) (mul_nonneg (hG'_nonneg _ (sq_nonneg _)) (Real.exp_pos _).le)), Real.dist_eq]
+  calc |G (‖p‖ ^ 2) - G (‖q‖ ^ 2)|
+      ≤ G' (ĝ σ ^ 2) * |‖p‖ ^ 2 - ‖q‖ ^ 2| := by
+        -- The mean value bound: on `[0, ĝ(σ)²]`, `G' ≤ G'(ĝ(σ)²)`.
+        simpa [Real.norm_eq_abs] using Convex.norm_image_sub_le_of_norm_hasDerivWithin_le
+          (f := G.toFun) (f' := G'.toFun) (s := Icc 0 (ĝ σ ^ 2))
+          (fun r hr => (hG r hr.1).hasDerivWithinAt)
+          (fun r hr => by
+            rw [Real.norm_eq_abs, abs_of_nonneg (G'.maps_to hr.1)]
+            exact G'.mono hr.1 hr.2)
+          (convex_Icc 0 _) ⟨sq_nonneg ‖q‖, pow_le_pow_left₀ (norm_nonneg _) hq 2⟩
+          ⟨sq_nonneg ‖p‖, pow_le_pow_left₀ (norm_nonneg _) hp 2⟩
+    _ ≤ G' (ĝ σ ^ 2) * ((‖p‖ + ‖q‖) * ‖p - q‖) :=
+        mul_le_mul_of_nonneg_left (abs_norm_sq_sub_norm_sq_le p q)
+          (hG'_nonneg _ (sq_nonneg _))
+    _ ≤ G' (ĝ σ ^ 2) * ((ĝ 0 + ĝ 0) * ((2 * B + 1) * Real.exp (L * σ) * dist z z')) :=
+        mul_le_mul_of_nonneg_left (mul_le_mul (add_le_add (hp.trans (hĝ_le σ hσ'))
+          (hq.trans (hĝ_le σ hσ'))) hpq (norm_nonneg _)
+            (add_nonneg (hĝ_pos 0).le (hĝ_pos 0).le)) (hG'_nonneg _ (sq_nonneg _))
+    _ = 2 * ĝ 0 * (2 * B + 1) * (G' (ĝ σ ^ 2) * Real.exp (L * σ)) * dist z z' := by ring
+
 /-- **Differentiation under the integral sign.**  At `t ≥ 0` and `x ∈ D₀`,
 `(t, x) ↦ ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` has a derivative whose state part is at most
 `∫_0^∞ A(‖x - x_eq‖, σ) dσ` (`gradRate`).  Near `(t, x)`, solutions obey the rate `ĝ`
@@ -1213,7 +1341,7 @@ so the integrands are Lipschitz with the constant `2ĝ(0)(2B + 1) G'(ĝ²) e^{L�
 Massera's lemma.  In the state alone they separate like `e^{Lσ}`
 (`dist_stateTransitionMap_le`). -/
 private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
-    (hf : ContDiff ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ())) {L : ℝ≥0}
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ()))) {L : ℝ≥0}
     (hf_lip : ∀ t, LipschitzWith L (fun x => s.F t x ())) {B : ℝ} (hf_bdd : ∀ t y, ‖s.F t y ()‖ ≤ B)
     (hfc : s.IsForwardComplete fun _ => ())
     (hu : s.HasUniqueSolutions fun _ => ()) {x_eq : E} {a r₀ : ℝ} (β : ClassKL a)
@@ -1230,9 +1358,8 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
       ‖V'.comp (ContinuousLinearMap.inr ℝ ℝ E)‖ ≤
         ∫ σ in Ioi 0, gradRate β G' L ‖x - x_eq‖ σ := by
   obtain ⟨hφ0, hφ⟩ := flow_spec hfc hu
+  have hφc := fun p : ℝ × E => isIntegralCurveOn_stateTransitionMap_Ici hf.continuous hfc hu p.1 p.2
   let ĝ := klRate β r₀
-  obtain ⟨hĝ_pos, -, hĝ_anti, -, -, -⟩ := klRate_spec β hr₀ hr₀a
-  have hĝ_le : ∀ σ, 0 ≤ σ → ĝ σ ≤ ĝ 0 := fun σ hσ => hĝ_anti.antitone hσ
   have hG'_nonneg : ∀ r, 0 ≤ r → 0 ≤ G' r := fun r hr => G'.maps_to hr
   -- The derivative of `y ↦ G(‖y - x_eq‖²)`, by the chain rule:
   -- `D(y) = G'(‖y - x_eq‖²) • 2⟪y - x_eq, ·⟫`.
@@ -1253,7 +1380,7 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
   let u : ℝ × E → ℝ → E := fun z σ => flow s z (z.1 + σ)
   let F : ℝ × E → ℝ → ℝ := fun z σ => G (‖u z σ - x_eq‖ ^ 2)
   have hu_cont : ∀ z, ContinuousOn (u z) (Ici 0) := fun z =>
-    (hφ z).continuousOn.comp (continuousOn_const.add continuousOn_id)
+    ((hφ z).continuousOn ordConnected_Ici).comp (continuousOn_const.add continuousOn_id)
       fun σ hσ => mem_Ici.2 (le_add_of_nonneg_right hσ)
   have hF_meas : ∀ z, AEStronglyMeasurable (F z) (volume.restrict (Ioi 0)) := fun z =>
     ((G.continuous.comp (((hu_cont z).sub continuousOn_const).norm.pow 2)
@@ -1262,7 +1389,7 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
   -- Each integrand is differentiable in the initial data, with derivative continuous in `σ`.
   have h_u_diff : ∀ z₀ σ, 0 ≤ σ →
       HasFDerivAt (fun z => u z σ) (fderiv ℝ (fun z => u z σ) z₀) z₀ := fun z₀ σ hσ => by
-    obtain ⟨⟨Φ, -, hΦ⟩, -⟩ := exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf hφ0 hφ hσ z₀
+    obtain ⟨⟨Φ, -, hΦ⟩, -⟩ := exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf hφ0 hφc hσ z₀
     exact (hasFDerivAt_snd.comp z₀ (hΦ σ ⟨hσ, le_rfl⟩)).differentiableAt.hasFDerivAt
   let F' : ℝ × E → ℝ → (ℝ × E) →L[ℝ] ℝ := fun z₀ σ =>
     (D (u z₀ σ)).comp (fderiv ℝ (fun z => u z σ) z₀)
@@ -1272,7 +1399,7 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
   have hDu_cont : ∀ z₀, ContinuousOn (fun σ => fderiv ℝ (fun z => u z σ) z₀) (Ioi 0) := by
     intro z₀ σ₀ hσ₀
     obtain ⟨⟨Φ, hΦ_cont, hΦ⟩, -⟩ :=
-      exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf hφ0 hφ (δ := σ₀ + 1)
+      exists_hasFDerivAt_flow (f := fun t x => s.F t x ()) hf hφ0 hφc (δ := σ₀ + 1)
         (by linarith [mem_Ioi.1 hσ₀]) z₀
     have h_at : ContinuousAt (fun σ => (ContinuousLinearMap.snd ℝ ℝ E).comp (Φ σ)) σ₀ :=
       (continuousOn_const.clm_comp hΦ_cont).continuousAt (Icc_mem_nhds hσ₀ (lt_add_one σ₀))
@@ -1283,44 +1410,8 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
     (hD_cont.comp_continuousOn ((hu_cont z₀).mono Ioi_subset_Ici_self)).clm_comp (hDu_cont z₀)
   -- Near `(t, x)`, the integrands are Lipschitz with an integrable constant: Massera's bound.
   let bound : ℝ → ℝ := fun σ => 2 * ĝ 0 * (2 * B + 1) * (G' (ĝ σ ^ 2) * Real.exp (L * σ))
-  have hB : 0 ≤ B := (norm_nonneg _).trans (hf_bdd 0 0)
-  have hbound_nonneg : ∀ σ, 0 ≤ bound σ := fun σ =>
-    mul_nonneg (mul_nonneg (mul_nonneg two_pos.le (hĝ_pos 0).le) (by linarith))
-      (mul_nonneg (hG'_nonneg _ (sq_nonneg _)) (Real.exp_pos _).le)
-  obtain ⟨ε, hε, h_near⟩ := norm_flow_le_klRate hf_bdd hfc hu β hr₀ hr₀a h_KL
+  obtain ⟨ε, hε, h_lip⟩ := exists_lipschitzOnWith_comp_flow hf_lip hf_bdd hfc β hr₀ hr₀a h_KL hG
     (z₀ := (t, x)) ht hx
-  have h_lip : ∀ σ ∈ Ioi (0 : ℝ),
-      LipschitzOnWith (Real.nnabs (bound σ)) (fun z => F z σ) (ball (t, x) ε) := by
-    intro σ hσ
-    have hσ' : 0 ≤ σ := le_of_lt hσ
-    refine LipschitzOnWith.of_dist_le_mul fun z hz z' hz' => ?_
-    let p := u z σ - x_eq
-    let q := u z' σ - x_eq
-    have hp : ‖p‖ ≤ ĝ σ := h_near z hz σ hσ'
-    have hq : ‖q‖ ≤ ĝ σ := h_near z' hz' σ hσ'
-    have hpq : ‖p - q‖ ≤ (2 * B + 1) * Real.exp (L * σ) * dist z z' := by
-      rw [sub_sub_sub_cancel_right]
-      exact norm_stateTransitionMap_sub_le hfc hf_lip hf_bdd z z' hσ'
-    rw [Real.coe_nnabs, abs_of_nonneg (hbound_nonneg σ), Real.dist_eq]
-    calc |G (‖p‖ ^ 2) - G (‖q‖ ^ 2)|
-        ≤ G' (ĝ σ ^ 2) * |‖p‖ ^ 2 - ‖q‖ ^ 2| := by
-          -- The mean value bound: on `[0, ĝ(σ)²]`, `G' ≤ G'(ĝ(σ)²)`.
-          simpa [Real.norm_eq_abs] using Convex.norm_image_sub_le_of_norm_hasDerivWithin_le
-            (f := G.toFun) (f' := G'.toFun) (s := Icc 0 (ĝ σ ^ 2))
-            (fun r hr => (hG r hr.1).hasDerivWithinAt)
-            (fun r hr => by
-              rw [Real.norm_eq_abs, abs_of_nonneg (G'.maps_to hr.1)]
-              exact G'.mono hr.1 hr.2)
-            (convex_Icc 0 _) ⟨sq_nonneg ‖q‖, pow_le_pow_left₀ (norm_nonneg _) hq 2⟩
-            ⟨sq_nonneg ‖p‖, pow_le_pow_left₀ (norm_nonneg _) hp 2⟩
-      _ ≤ G' (ĝ σ ^ 2) * ((‖p‖ + ‖q‖) * ‖p - q‖) :=
-          mul_le_mul_of_nonneg_left (abs_norm_sq_sub_norm_sq_le p q)
-            (hG'_nonneg _ (sq_nonneg _))
-      _ ≤ G' (ĝ σ ^ 2) * ((ĝ 0 + ĝ 0) * ((2 * B + 1) * Real.exp (L * σ) * dist z z')) :=
-          mul_le_mul_of_nonneg_left (mul_le_mul (add_le_add (hp.trans (hĝ_le σ hσ'))
-            (hq.trans (hĝ_le σ hσ'))) hpq (norm_nonneg _)
-              (add_nonneg (hĝ_pos 0).le (hĝ_pos 0).le)) (hG'_nonneg _ (sq_nonneg _))
-      _ = bound σ * dist z z' := by simp only [bound]; ring
   obtain ⟨hF'_int, h_deriv⟩ := hasFDerivAt_integral_of_dominated_loc_of_lip
     (μ := volume.restrict (Ioi 0)) (F := F) (F' := F' (t, x)) (x₀ := (t, x)) (bound := bound)
     (ball_mem_nhds (t, x) hε) (Eventually.of_forall hF_meas)
@@ -1374,10 +1465,55 @@ private lemma hasFDerivAt_integral_comp_flow {s : ContinuousSystem E Unit Y}
         (ae_restrict_of_forall_mem measurableSet_Ioi h_pt)
 
 omit [FiniteDimensional ℝ E] in
+/-- **The integral along solutions is locally Lipschitz** on `[0, ∞) × D₀`: near each point the
+integrands `G(‖φ(z.1 + σ; z) - x_eq‖²)` are Lipschitz in `z` with an integrable constant
+(`exists_lipschitzOnWith_comp_flow`), and integrable, so their integral is Lipschitz there. -/
+private lemma locallyLipschitzOn_integral_comp_flow [CompleteSpace E]
+    {s : ContinuousSystem E Unit Y} {L : ℝ≥0} (hf_lip : ∀ t, LipschitzWith L (fun x => s.F t x ()))
+    {B : ℝ} (hf_bdd : ∀ t y, ‖s.F t y ()‖ ≤ B) (hfc : s.IsForwardComplete fun _ => ())
+    {x_eq : E} {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀) (hr₀a : r₀ < a)
+    (h_KL : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, ∀ y : ℝ → E, y t = x →
+      s.IsTrajectoryOn (fun _ => ()) y (Ici t) → ∀ τ, t ≤ τ →
+        ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t))
+    {G G' : ClassKInfty} (hG : ∀ r, 0 ≤ r → HasDerivAt G (G' r) r)
+    (hGg_int : IntegrableOn (fun σ => G (klRate β r₀ σ ^ 2)) (Ioi 0))
+    (hG'g_int : IntegrableOn (fun σ => G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ)) (Ioi 0)) :
+    LocallyLipschitzOn (Ici 0 ×ˢ ball x_eq r₀)
+      (fun z : ℝ × E => ∫ σ in Ioi 0, G (‖flow s z (z.1 + σ) - x_eq‖ ^ 2)) := by
+  rintro ⟨t, x⟩ ⟨ht, hx⟩
+  have hu := hasUniqueSolutions_of_lipschitz hf_lip
+  obtain ⟨ε, hε, h_lip⟩ := exists_lipschitzOnWith_comp_flow hf_lip hf_bdd hfc β hr₀ hr₀a h_KL hG
+    (z₀ := (t, x)) ht hx
+  set bound : ℝ → ℝ := fun σ =>
+    2 * klRate β r₀ 0 * (2 * B + 1) * (G' (klRate β r₀ σ ^ 2) * Real.exp (L * σ))
+  have hbound_int : IntegrableOn (fun σ => |bound σ|) (Ioi 0) := (hG'g_int.const_mul _).abs
+  set F : ℝ × E → ℝ → ℝ := fun z σ => G (‖flow s z (z.1 + σ) - x_eq‖ ^ 2)
+  have hF_dist : ∀ σ ∈ Ioi (0 : ℝ), ∀ z ∈ ball (t, x) ε, ∀ z' ∈ ball (t, x) ε,
+      ‖F z σ - F z' σ‖ ≤ |bound σ| * dist z z' := fun σ hσ z hz z' hz' => by
+    rw [← dist_eq_norm, ← Real.coe_nnabs]
+    exact (h_lip σ hσ).dist_le_mul z hz z' hz'
+  -- Each integrand near `(t, x)` is integrable, within `ε |bound|` of the one at `(t, x)`.
+  have h_int : ∀ z ∈ ball (t, x) ε, IntegrableOn (F z) (Ioi 0) := fun z hz => by
+    have hu_cont : ContinuousOn (fun σ => flow s z (z.1 + σ)) (Ioi 0) :=
+      (((flow_spec hfc hu).2 z).continuousOn ordConnected_Ici).comp
+        (continuousOn_const.add continuousOn_id)
+          fun σ hσ => mem_Ici.2 (le_add_of_nonneg_right (le_of_lt hσ))
+    refine integrable_of_norm_sub_le
+      ((G.continuous.comp ((hu_cont.sub continuousOn_const).norm.pow 2)
+        fun σ _ => mem_Ici.2 (sq_nonneg _)).aestronglyMeasurable measurableSet_Ioi)
+      (integrableOn_comp_flow hfc hu β hr₀ hr₀a h_KL hGg_int ht hx) (hbound_int.mul_const ε)
+      (ae_restrict_of_forall_mem measurableSet_Ioi fun σ hσ =>
+        (hF_dist σ hσ _ (mem_ball_self hε) z hz).trans (mul_le_mul_of_nonneg_left
+          (by rw [dist_comm]; exact (mem_ball.mp hz).le) (abs_nonneg _)))
+  exact ⟨_, ball (t, x) ε, mem_nhdsWithin_of_mem_nhds (ball_mem_nhds _ hε),
+    lipschitzOnWith_integral_of_norm_sub_le h_int hbound_int
+      (ae_restrict_of_forall_mem measurableSet_Ioi hF_dist)⟩
+
+omit [FiniteDimensional ℝ E] in
 /-- **`V` is bounded below** by `G(e^{-2L} ‖x - x_eq‖²)`: solutions decay no faster than
 `e^{-Lσ}` (`IsTrajectoryOn.norm_exp_bounds`), and `V` is at least its integral over
 `(0, 1]`. -/
-private lemma le_integral_comp_flow {s : ContinuousSystem E Unit Y} {L : ℝ≥0}
+private lemma le_integral_comp_flow [CompleteSpace E] {s : ContinuousSystem E Unit Y} {L : ℝ≥0}
     (hf_lip : ∀ t, LipschitzWith L (fun x => s.F t x ())) {x_eq : E} (h_eq : ∀ t, s.F t x_eq () = 0)
     (hfc : s.IsForwardComplete fun _ => ())
     (hu : s.HasUniqueSolutions fun _ => ()) {G : ClassKInfty} {t : ℝ} {x : E}
@@ -1389,7 +1525,8 @@ private lemma le_integral_comp_flow {s : ContinuousSystem E Unit Y} {L : ℝ≥0
       G (Real.exp (-(2 * L)) * ‖x - x_eq‖ ^ 2) ≤ G (‖flow s (t, x) (t + σ) - x_eq‖ ^ 2) :=
     fun σ hσ => by
       have h := (IsTrajectoryOn.norm_exp_bounds (s := s) (u := fun _ => ()) (t := t + σ)
-        (x_c := x_eq) ((hφ (t, x)).mono Icc_subset_Ici_self) (fun r _ => by
+        (x_c := x_eq) ((hφ (t, x)).mono Icc_subset_Ici_self)
+        (Filter.Eventually.of_forall fun r _ => by
           simpa [ContinuousSystem.vectorField, h_eq r, dist_eq_norm] using
             (hf_lip r).dist_le_mul (flow s (t, x) r) x_eq)
         ⟨by linarith [hσ.1], le_rfl⟩).1
@@ -1413,11 +1550,32 @@ private lemma le_integral_comp_flow {s : ContinuousSystem E Unit Y} {L : ℝ≥0
         (ae_of_all _ Ioc_subset_Ioi_self)
 
 omit [FiniteDimensional ℝ E] in
-/-- **The derivative of an integral along the solutions, infinite horizon.**  If
+/-- **The derivative of an integral along the solutions, infinite horizon.**  For a forward
+complete system with unique solutions and a continuous field, and `g` continuous, if
 `V(t, x) = ∫₀^∞ g(φ(t + σ; t, x)) dσ` converges and is differentiable at `(t, x)`, then
 `V̇(t, x) = -g(x)`: along the solution, by the semigroup property, `V` integrates `g` from a lower
 limit that moves with time. -/
-theorem lieDerivative_integral_Ioi_stateTransitionMap {s : ContinuousSystem E Unit Y}
+@[blueprint "thm:continuousSystem-lieDerivative-integral-Ioi-stateTransitionMap"
+  (title := "Derivative along the system of an infinite-horizon integral along its solutions")
+  (statement := /-- Let $\dot x = f(t, x)$ be forward complete
+    (\cref{def:continuousSystem-isForwardComplete}) with unique solutions
+    (\cref{def:continuousSystem-hasUniqueSolutions}) and $f$ continuous, with state transition
+    map $\varphi$ (\cref{def:continuousSystem-stateTransitionMap}), and let $g$ be continuous.
+    If $\sigma \mapsto g(\varphi(t + \sigma; t, x))$ is integrable on $(0, \infty)$ and
+    \[
+      V(t, x) = \int_0^\infty g(\varphi(t + \sigma; t, x))\,d\sigma
+    \]
+    is differentiable at $(t, x)$, its derivative along the system
+    (\cref{def:continuousSystem-lieDerivative}) there is $\dot V(t, x) = -g(x)$. -/)
+  (proof := /-- Write $\phi(\tau) = \varphi(\tau; t, x)$.  By the semigroup property
+    (\cref{lem:continuousSystem-stateTransitionMap-semigroup}), for $\tau \ge t$,
+    $V(\tau, \phi(\tau)) = \int_{\tau - t}^\infty g(\phi(t + \sigma))\,d\sigma
+    = V(t, x) - \int_t^\tau g(\phi(\sigma))\,d\sigma$.  Since $\phi$ is a classical solution
+    (\cref{lem:continuousSystem-isIntegralCurveOn-stateTransitionMap-Ici}), $\dot V(t, x)$ is
+    the integrand at $\sigma = t$, $-g(x)$
+    (\cref{lem:isIntegralCurveOn-lieDerivative-eq-of-eq-add-integral}). -/)]
+theorem lieDerivative_integral_Ioi_stateTransitionMap [CompleteSpace E]
+    {s : ContinuousSystem E Unit Y} (hF : Continuous (Function.uncurry (s.vectorField fun _ => ())))
     (hfc : s.IsForwardComplete fun _ => ()) (hu : s.HasUniqueSolutions fun _ => ())
     {g : E → ℝ} (hg : Continuous g) {t : ℝ} {x : E}
     (h_int : IntegrableOn (fun σ => g (s.stateTransitionMap (fun _ => ()) (t + σ) t x)) (Ioi 0))
@@ -1427,11 +1585,12 @@ theorem lieDerivative_integral_Ioi_stateTransitionMap {s : ContinuousSystem E Un
         (fun t x => ∫ σ in Ioi 0, g (s.stateTransitionMap (fun _ => ()) (t + σ) t x)) t x () =
       -g x := by
   change s.lieDerivative (fun t x => ∫ σ in Ioi 0, g (flow s (t, x) (t + σ))) t x () = -g x
-  obtain ⟨hφ0, hφ⟩ := flow_spec hfc hu
+  have hφ : IsIntegralCurveOn (flow s (t, x)) (fun t x => s.F t x ()) (Ici t) :=
+    isIntegralCurveOn_stateTransitionMap_Ici hF hfc hu t x
   set V : ℝ → E → ℝ := fun t x => ∫ σ in Ioi 0, g (flow s (t, x) (t + σ))
-  have hy0 : flow s (t, x) t = x := hφ0 (t, x)
+  have hy0 : flow s (t, x) t = x := stateTransitionMap_self t x
   set w : ℝ → ℝ := fun σ => g (flow s (t, x) (t + max σ 0))
-  have hw : Continuous w := hg.comp ((hφ (t, x)).continuousOn.comp_continuous
+  have hw : Continuous w := hg.comp (hφ.continuousOn.comp_continuous
     (continuous_const.add (continuous_id.max continuous_const))
       fun σ => mem_Ici.2 (le_add_of_nonneg_right (le_max_right _ _)))
   have hw_int : IntegrableOn w (Ioi 0) :=
@@ -1457,7 +1616,7 @@ theorem lieDerivative_integral_Ioi_stateTransitionMap {s : ContinuousSystem E Un
       _ = (∫ s in Ioi 0, w s) - ∫ s in (0 : ℝ)..τ - t, w s := by
           rw [← intervalIntegral.integral_Ioi_sub_Ioi hw_int (sub_nonneg.2 hτ'),
             sub_sub_cancel]
-  have h := (hφ (t, x)).lieDerivative_eq_of_eq_add_integral (V := V) (by rw [hy0]; exact h_diff)
+  have h := hφ.lieDerivative_eq_of_eq_add_integral (V := V) (by rw [hy0]; exact h_diff)
     (ψ := fun σ => -w (σ - t)) (by fun_prop) fun τ hτ => by
       rw [h_along τ hτ, intervalIntegral.integral_neg, intervalIntegral.integral_comp_sub_right,
         sub_self, sub_eq_add_neg]
@@ -1468,11 +1627,12 @@ theorem lieDerivative_integral_Ioi_stateTransitionMap {s : ContinuousSystem E Un
 /-- **The construction for uniform asymptotic stability**, for a `C¹` field, globally Lipschitz in
 `x` uniformly in `t` and bounded, whose solutions from `D₀ = B(x_eq, r₀)` at times `t ≥ 0` obey a
 class `KL` estimate.  With `G` from Massera's lemma,
-`V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` is differentiable on `[0, ∞) × D₀`, vanishes at
+`V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ` is differentiable and locally Lipschitz on
+`[0, ∞) × D₀`, vanishes at
 `x_eq`, is sandwiched between positive definite functions, decreases at the rate
 `G(‖x - x_eq‖²)`, and has gradient bounded by a class `K` function of `‖x - x_eq‖`. -/
 private lemma exists_lyapunov_of_KLBoundedOn {s : ContinuousSystem E Unit Y}
-    (hf : ContDiff ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ())) {L : ℝ≥0}
+    (hf : ContDiff ℝ 1 (Function.uncurry (s.vectorField fun _ => ()))) {L : ℝ≥0}
     (hf_lip : ∀ t, LipschitzWith L (fun x => s.F t x ())) {B : ℝ} (hf_bdd : ∀ t y, ‖s.F t y ()‖ ≤ B)
     {x_eq : E} (h_eq : ∀ t, s.F t x_eq () = 0) {a r₀ : ℝ} (β : ClassKL a) (hr₀ : 0 < r₀)
     (hr₀a : r₀ < a)
@@ -1481,6 +1641,7 @@ private lemma exists_lyapunov_of_KLBoundedOn {s : ContinuousSystem E Unit Y}
         ‖y τ - x_eq‖ ≤ β.toFun ‖x - x_eq‖ (τ - t)) :
     ∃ V : ℝ → E → ℝ,
       (∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, DifferentiableAt ℝ (Function.uncurry V) (t, x)) ∧
+      LocallyLipschitzOn (Ici 0 ×ˢ ball x_eq r₀) (Function.uncurry V) ∧
       (∀ t : ℝ, 0 ≤ t → V t x_eq = 0) ∧
       ∃ W₁ W₂ W₃ : E → ℝ, IsPositiveDefiniteOn W₁ x_eq (ball x_eq r₀) ∧
         IsPositiveDefiniteOn W₂ x_eq (ball x_eq r₀) ∧
@@ -1572,10 +1733,13 @@ private lemma exists_lyapunov_of_KLBoundedOn {s : ContinuousSystem E Unit Y}
   -- Step 7. Along solutions, `V̇ = -G(‖x - x_eq‖²)`.
   have h_lie : ∀ t, 0 ≤ t → ∀ x ∈ ball x_eq r₀,
       s.lieDerivative V t x () = -G (‖x - x_eq‖ ^ 2) := fun t ht x hx =>
-    lieDerivative_integral_Ioi_stateTransitionMap hfc hu (g := fun y => G (‖y - x_eq‖ ^ 2))
+    lieDerivative_integral_Ioi_stateTransitionMap hf.continuous hfc hu
+      (g := fun y => G (‖y - x_eq‖ ^ 2))
       (G.continuous.comp_continuous (by fun_prop) fun y => mem_Ici.2 (sq_nonneg _))
       (hF_int t ht x hx) (hV_diff t ht x hx)
-  exact ⟨V, hV_diff, hV_zero, W₁, W₂, fun x => G (‖x - x_eq‖ ^ 2), hW₁, hW₂,
+  exact ⟨V, hV_diff,
+    locallyLipschitzOn_integral_comp_flow hf_lip hf_bdd hfc β hr₀ hr₀a h_KL hG hGg_int hG'g_int,
+    hV_zero, W₁, W₂, fun x => G (‖x - x_eq‖ ^ 2), hW₁, hW₂,
     by simpa only [one_mul, Function.comp_def] using
       G.isPositiveDefiniteOn.comp (isPositiveDefiniteOn_mul_norm_sub_sq one_pos x_eq _),
     fun t ht x hx => ⟨h_lower t ht x hx, h_upper t ht x hx, (h_lie t ht x hx).le⟩, _, α₄,
@@ -1593,13 +1757,15 @@ The function is `V(t, x) = ∫_0^∞ G(‖φ(t + σ; t, x) - x_eq‖²) dσ`, wi
 and `V̇ = -G(‖x - x_eq‖²)` are recorded as the positive definite bounds of the structure, from
 which `IsPositiveDefiniteOn.exists_classK_bounds` recovers class `K` bounds.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.16.  Differences:
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), converse Lyapunov theorem for uniform asymptotic
+stability.  Differences:
 - The integrand is `G(‖φ - x_eq‖²)` rather than `G(‖φ - x_eq‖)`: the square is smooth at the
   equilibrium, so no separate argument is needed there.
 - Massera's lemma is applied to `ĝ(σ)² = (β(r₀, max(σ - 1, 0)) + r₀ e^{1 - σ})²` rather than to
   `β(r₀, σ)`: it is strictly decreasing, and it also dominates solutions started up to one time
   unit before `t = 0`, which differentiability at `t = 0` involves.
-- `V` is differentiable rather than continuously differentiable, as in the Lyapunov structures.
+- `V` is differentiable and locally Lipschitz rather than continuously differentiable, as in the
+  Lyapunov structures.
 - The sandwich and decrease bounds are positive definite functions (the Lyapunov structure)
   rather than class `K` functions of `‖x‖`.
 - The bounds hold on the open ball `D₀`, where Khalil writes `‖x‖ ≤ r₀`.
@@ -1622,11 +1788,12 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.16.  Differences:
       \Bigl\|\frac{\partial V}{\partial x}(t, x)\Bigr\| \le \alpha_4(\|x - x_{\mathrm{eq}}\|).
     \]
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.16.  Differences: the
-    bounds on $V$ and $\dot V$ are positive definite functions rather than class $\mathcal{K}$
-    functions of $\|x\|$ (equivalent on compact sub-balls, \cref{thm:lyapunov-class-K-bounds});
-    $V$ is differentiable rather than $C^1$; the bounds hold on the open ball $D_0$; the
-    hypotheses are asked for all $t \in \mathbb{R}$; the autonomous clause is not stated. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), converse Lyapunov theorem for
+    uniform asymptotic stability.  Differences: the bounds on $V$ and $\dot V$ are positive
+    definite functions rather than class $\mathcal{K}$ functions of $\|x\|$ (equivalent on
+    compact sub-balls, \cref{thm:lyapunov-class-K-bounds}); $V$ is differentiable and locally
+    Lipschitz rather than $C^1$; the bounds hold on the open ball $D_0$; the hypotheses are
+    asked for all $t \in \mathbb{R}$; the autonomous clause is not stated. -/)
   (proof := /-- Cut the field off outside a ball of radius between $\beta(r_0, 0)$ and $r$, as in
     \cref{thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate}: solutions from
     $D_0$ never see the cut, so they obey the estimate for all time.  Let
@@ -1638,7 +1805,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.16.  Differences:
     and $h(\sigma) = e^{L\sigma}$.  Solutions from near $(t, x)$ obey $\hat g$ and separate at
     most like $e^{L\sigma}$, so the integrand is Lipschitz in $(t, x)$ with constant
     $\propto G'(\hat g^2) e^{L\sigma}$, integrable by Massera's lemma; differentiate under the
-    integral sign.  The growth bound
+    integral sign, and integrate the Lipschitz bound to see that $V$ is locally Lipschitz.  The
+    growth bound
     $\|\varphi - x_{\mathrm{eq}}\|^2 \ge e^{-2L\sigma}\|x - x_{\mathrm{eq}}\|^2$ gives
     $V \ge G(e^{-2L}\|x - x_{\mathrm{eq}}\|^2)$; the estimate gives
     $V \le \int_0^\infty G(\beta(\|x - x_{\mathrm{eq}}\|, \sigma)^2)\,d\sigma$; along the
@@ -1650,7 +1818,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.16.  Differences:
     \,d\sigma + \rho$. -/)]
 theorem exists_lyapunov_of_KLBounded {s : ContinuousSystem E Unit Y} {x_eq : E}
     {r r₀ a : ℝ} (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
-    (hf : ContDiffOn ℝ 1 (fun p : ℝ × E => s.F p.1 p.2 ()) (univ ×ˢ ball x_eq r))
+    (hf : ContDiffOn ℝ 1 (Function.uncurry (s.vectorField fun _ => ())) (univ ×ˢ ball x_eq r))
     (h_lip : ∃ L : ℝ≥0, ∀ t : ℝ, LipschitzOnWith L (fun x => s.F t x ()) (ball x_eq r))
     (β : ClassKL a) (hr₀ : 0 < r₀) (hr₀a : r₀ < a) (hβr : β.toFun r₀ 0 < r)
     (h_KL : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (x : ℝ → E),
@@ -1677,14 +1845,15 @@ theorem exists_lyapunov_of_KLBounded {s : ContinuousSystem E Unit Y} {x_eq : E}
           (mem_Ici.2 (sub_nonneg.2 hτ)) (sub_nonneg.2 hτ)
       _ < β.toFun r₀ 0 := β.strict_mono_r 0 le_rfl hx_mem hr₀_mem (mem_ball_iff_norm.mp hx)
       _ < ρ₁ := hβρ₁
-  have h_KL' := estimate_of_cutoff h_agree (B := fun x t τ => β.toFun ‖x - x_eq‖ (τ - t)) hE h_KL
+  have h_KL' := estimate_of_cutoff (sχ := autonomous fχ fun _ _ => ()) h_agree
+    (B := fun x t τ => β.toFun ‖x - x_eq‖ (τ - t)) hE h_KL
   have h_small : ∀ x ∈ ball x_eq r₀, ‖x - x_eq‖ < ρ₁ := fun x hx => by
     have h := h_KL 0 le_rfl 0 (fun _ => x)
-      (fun σ _ => HasFDerivWithinAt.of_subsingleton (subsingleton_Icc_of_ge le_rfl))
+      (isTrajectoryOn_of_subsingleton (subsingleton_Icc_of_ge le_rfl))
       (mem_ball_iff_norm.mp hx) 0 ⟨le_rfl, le_rfl⟩
     exact h.trans_lt (hE x hx 0 0 le_rfl)
   -- Step 3. The construction for the cut-off system; on `D₀` its `V̇` is that of `f`.
-  obtain ⟨V, hV_diff, hV_zero, W₁, W₂, W₃, hW₁, hW₂, hW₃, hV, b₄, α₄, h_grad⟩ :=
+  obtain ⟨V, hV_diff, hV_lip, hV_zero, W₁, W₂, W₃, hW₁, hW₂, hW₃, hV, b₄, α₄, h_grad⟩ :=
     exists_lyapunov_of_KLBoundedOn (s := autonomous fχ fun _ _ => ()) hfχ hfχ_lip hfχ_bdd hfχ_eq
       β hr₀ hr₀a h_KL'
   have h_lie : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ ball x_eq r₀, s.lieDerivative V t x () ≤ -W₃ x := by
@@ -1692,7 +1861,7 @@ theorem exists_lyapunov_of_KLBounded {s : ContinuousSystem E Unit Y} {x_eq : E}
     change fderiv ℝ (Function.uncurry V) (t, x) (1, s.F t x ()) ≤ _
     rw [← h_agree t x (mem_closedBall_iff_norm.mpr (h_small x hx).le)]
     exact (hV t ht x hx).2.2
-  exact ⟨V, ⟨⟨⟨ball_mem_nhds x_eq hr₀, hV_diff, hV_zero,
+  exact ⟨V, ⟨⟨⟨ball_mem_nhds x_eq hr₀, hV_diff, hV_lip, hV_zero,
     ⟨W₁, hW₁, fun t ht x hx => (hV t ht x hx).1⟩,
     fun t ht x hx => (h_lie t ht x hx).trans (neg_nonpos.2 (hW₃.nonneg hx))⟩,
     ⟨W₂, hW₂, fun t ht x hx => (hV t ht x hx).2.1⟩⟩, ⟨W₃, hW₃, h_lie⟩⟩, b₄, α₄, h_grad⟩

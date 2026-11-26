@@ -41,22 +41,28 @@ variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpa
 
     Reference: Bullo, \emph{Contraction Theory for Dynamical Systems} (ed.~1.0),
     Section 2.4. -/)
-  (proof := /-- Let $x(r) = \Phi(r, t_0) x_0$ and $M(r) = \int_{t_0}^r \mu(A(\tau)) d\tau$.  By the
-    curve norm derivative (\cref{lem:hasDerivWithinAt-norm-sq}) and Lumer's inequality
-    (\cref{thm:regularPairing-pairing-le-logNorm}), the right derivative of $\|x\|^2$ is
-    $2 \pair{A x}{x} \le 2 \mu(A) \|x\|^2$, so $e^{-2M} \|x\|^2$ has a nonpositive right
-    derivative and is nonincreasing.  Hence $\|x(t)\| \le e^{M(t)} \|x_0\|$. -/)]
+  (proof := /-- Let $x(r) = \Phi(r, t_0) x_0$, which is continuously differentiable with
+    $\dot x = A x$.  By Lumer's inequality (\cref{thm:regularPairing-pairing-le-logNorm}),
+    $\pair{A x}{x} \le \mu(A) \|x\|^2$, so the exponential bound from a pairing bound
+    (\cref{thm:norm-le-exp-integral-of-pairing-le}) gives
+    $\|x(t)\| \le e^{\int_{t_0}^t \mu(A)} \|x_0\|$. -/)]
 theorem norm_stateTransition_le (s : ContinuousLTV E U Y) (hA : Continuous s.A) {t₀ t : ℝ}
     (ht : t₀ ≤ t) : ‖s.stateTransition t t₀‖ ≤ exp (∫ τ in t₀..t, μ (s.A τ)) := by
   refine ContinuousLinearMap.opNorm_le_bound _ (exp_pos _).le fun x₀ => ?_
-  have hx (r : ℝ) : HasDerivAt (fun r => s.stateTransition r t₀ x₀)
-      (s.A r (s.stateTransition r t₀ x₀)) r := by
+  set x : ℝ → E := fun r => s.stateTransition r t₀ x₀
+  have hx (r : ℝ) : HasDerivAt x (s.A r (x r)) r := by
     simpa using (s.hasDerivAt_stateTransition hA r t₀).clm_apply (hasDerivAt_const r x₀)
+  -- `x` is `C¹`, hence absolutely continuous
+  have hx_contDiff : ContDiff ℝ 1 x :=
+    contDiff_one_iff_deriv.2 ⟨fun r => (hx r).differentiableAt, by
+      rw [show deriv x = fun r => s.A r (x r) from funext fun r => (hx r).deriv]
+      exact hA.clm_apply (continuous_iff_continuousAt.2 fun r => (hx r).continuousAt)⟩
   -- the exponential bound for `x(r) = Φ(r, t₀) x₀`, whose pairing with `A x` is bounded by Lumer
-  simpa using RegularPairing.norm_le_exp_integral_of_pairing_le (t₁ := t)
-    (continuous_logNorm.comp hA)
-    (fun r _ => (hx r).continuousAt.continuousWithinAt) (fun r _ => (hx r).hasDerivWithinAt)
-    (fun r _ => (RegularPairing.ofNorm E).pairing_le_logNorm (s.A r) _) t (right_mem_Icc.2 ht)
+  simpa [x] using (RegularPairing.ofNorm E).norm_le_exp_integral_of_pairing_le (t₁ := t)
+    ((continuous_logNorm.comp hA).intervalIntegrable _ _)
+    hx_contDiff.contDiffOn.absolutelyContinuousOnInterval (ae_of_all _ fun r _ => hx r)
+    (ae_of_all _ fun r _ => (RegularPairing.ofNorm E).pairing_le_logNorm (s.A r) _) t
+    (right_mem_Icc.2 ht)
 
 /-- **Coppel's lower inequality**: `exp (-∫_{t₀}^t μ(-A(τ)) dτ) ≤ ‖Φ(t, t₀)‖` for `t₀ ≤ t`. -/
 @[blueprint "thm:continuousLTV-le-norm-stateTransition"

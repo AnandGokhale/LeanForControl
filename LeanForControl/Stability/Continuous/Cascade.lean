@@ -11,11 +11,12 @@ driven system is input-to-state stable with `x₂` as its input and the driving 
 uniformly asymptotically stable, the cascade is globally uniformly asymptotically stable: `x₂`
 decays, and with it its effect on `x₁`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, Lemma 4.7.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the cascade lemma of the section on
+input-to-state stability.
 
 ## Main results
 
-* `cascade_globallyUniformlyAsymptoticallyStable` — Khalil's Lemma 4.7.
+* `cascade_globallyUniformlyAsymptoticallyStable` — Khalil's cascade lemma.
 * `cascade_inputToStateStable` — a cascade of input-to-state stable systems is input-to-state
   stable.
 
@@ -62,15 +63,15 @@ data `β₁, γ₁`, and let the driving state obey
 input-to-state stability on `[t₀, m]` and on `[m, t]`, `m = (t₀ + t)/2`,
 `‖x₁(t) - x_c‖ ≤ β₁(β₁(r, s/2) + γ₁(β₂(r, 0) + g), s/2) + γ₁(β₂(r, s/2) + g)`, `s = t - t₀`. -/
 private lemma norm_fst_sub_le_of_cascade {E₁ E₂ Y₁ : Type*} [NormedAddCommGroup E₁]
-    [NormedSpace ℝ E₁] [NormedAddCommGroup E₂]
+    [NormedSpace ℝ E₁] [CompleteSpace E₁] [NormedAddCommGroup E₂]
     {s₁ : ContinuousSystem E₁ E₂ Y₁} {x_c : E₁} {x_e : E₂} {β₁ : ClassKLGlobal}
     {γ₁ : ClassKInfty}
     (hISS : ∀ t₀ : ℝ, 0 ≤ t₀ → ∀ (t₁ : ℝ) (u : ℝ → E₂) (x : ℝ → E₁),
-      s₁.IsRightTrajectoryOn u x (Icc t₀ t₁) →
+      s₁.IsTrajectoryOn u x (Icc t₀ t₁) →
         ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ - x_e‖ ≤ M) →
           ‖x t - x_c‖ ≤ β₁.toFun ‖x t₀ - x_c‖ (t - t₀) + γ₁.toFun M)
     {β₂ : ClassKLGlobal} {g r t₀ t₁ t : ℝ} (ht₀ : 0 ≤ t₀) (ht : t ∈ Icc t₀ t₁)
-    {x₁ : ℝ → E₁} {x₂ : ℝ → E₂} (hx₁ : s₁.IsRightTrajectoryOn x₂ x₁ (Icc t₀ t₁))
+    {x₁ : ℝ → E₁} {x₂ : ℝ → E₂} (hx₁ : s₁.IsTrajectoryOn x₂ x₁ (Icc t₀ t₁))
     (hr₁ : ‖x₁ t₀ - x_c‖ ≤ r) (h_x₂ : ∀ τ ∈ Icc t₀ t, ‖x₂ τ - x_e‖ ≤ β₂.toFun r (τ - t₀) + g) :
     ‖x₁ t - x_c‖ ≤ β₁.toFun (β₁.toFun r ((t - t₀) / 2) + γ₁.toFun (β₂.toFun r 0 + g))
       ((t - t₀) / 2) + γ₁.toFun (β₂.toFun r ((t - t₀) / 2) + g) := by
@@ -95,8 +96,8 @@ private lemma norm_fst_sub_le_of_cascade {E₁ E₂ Y₁ : Type*} [NormedAddComm
   rw [h_half'] at h
   exact h.trans (add_le_add (β₁.mono_r (norm_nonneg _) hσ h_mid) le_rfl)
 
-variable {E₁ E₂ Y₁ Y₂ : Type*} [NormedAddCommGroup E₁] [NormedSpace ℝ E₁]
-  [NormedAddCommGroup E₂] [NormedSpace ℝ E₂]
+variable {E₁ E₂ Y₁ Y₂ : Type*} [NormedAddCommGroup E₁] [NormedSpace ℝ E₁] [CompleteSpace E₁]
+  [NormedAddCommGroup E₂] [NormedSpace ℝ E₂] [CompleteSpace E₂]
 
 /-- **A cascade of an input-to-state stable system and a globally uniformly asymptotically stable
 one is globally uniformly asymptotically stable.**  If `s₁`, with the state of `s₂` as its input,
@@ -104,8 +105,8 @@ is input-to-state stable about `(x_c, x_e)`, and `x_e` is globally uniformly
 asymptotically stable for `s₂`, then `(x_c, x_e)` is globally uniformly asymptotically stable
 for the cascade.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.7.  Differences: no regularity of the
-fields is assumed; the equilibria are general, with `s₁`'s input measured from `x_e`. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the cascade lemma.  Differences: no regularity
+of the fields is assumed; the equilibria are general, with `s₁`'s input measured from `x_e`. -/
 @[blueprint "lem:continuousSystem-cascade-globallyUniformlyAsymptoticallyStable"
   (title := "Cascades of input-to-state stable systems")
   (latexEnv := "lemma")
@@ -116,7 +117,7 @@ fields is assumed; the equilibria are general, with `s₁`'s input measured from
     globally uniformly asymptotically stable for the cascade
     (\cref{def:continuousSystem-cascade}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.7.  Differences: no
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the cascade lemma.  Differences: no
     regularity of the fields is assumed, since both hypotheses are estimates on trajectories;
     the equilibria are general, with the input of $s_1$ measured from $x_e$. -/)
   (proof := /-- Let $\beta_1, \gamma_1$ be the input-to-state stability data of $s_1$ and
@@ -155,7 +156,7 @@ theorem cascade_globallyUniformlyAsymptoticallyStable {s₁ : ContinuousSystem E
     rw [add_zero]
     exact (hβ₂ t₀ ht₀ t₁ (fun τ => (x τ).2) hx₂ τ hτ).trans
       (β₂.mono_r (norm_nonneg _) (by linarith [hτ.1]) hr₂)
-  have h_x₁ := norm_fst_sub_le_of_cascade hISS ht₀ ht (IsTrajectoryOn.isRightTrajectoryOn hx₁) hr₁
+  have h_x₁ := norm_fst_sub_le_of_cascade hISS ht₀ ht hx₁ hr₁
     fun τ hτ => h_x₂ τ ⟨hτ.1, hτ.2.trans ht.2⟩
   simp only [add_zero] at h_x₁
   calc ‖x t - (x_c, x_e)‖
@@ -174,7 +175,8 @@ The proof is that of `cascade_globallyUniformlyAsymptoticallyStable`, with the i
 contribution `g = γ₂(M)` carried through and split off by `f(a + b) ≤ f(2a) + f(2b)`
 (`MonotoneOn.weak_triangle`).
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Lemma 4.7; Sontag (2008). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the section on input-to-state
+stability; Sontag (2008). -/
 @[blueprint "lem:continuousSystem-cascade-inputToStateStable"
   (title := "Cascades of input-to-state stable systems are input-to-state stable")
   (latexEnv := "lemma")
@@ -184,7 +186,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Lemma 4.7; 
     (\cref{def:continuousSystem-cascade}), with input $w$, is input-to-state stable about
     $((x_c, x_e), w_{\mathrm{eq}})$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Section 4.9; Sontag (2008). -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the section on input-to-state
+    stability; Sontag (2008). -/)
   (proof := /-- As in \cref{lem:continuousSystem-cascade-globallyUniformlyAsymptoticallyStable},
     with $\|x_2(\tau) - x_e\| \le \beta_2(r, \tau - t_0) + g$, $g = \gamma_2(M)$, carried
     through.  Splitting with $f(a + b) \le f(2a) + f(2b)$ for nondecreasing $f \ge 0$
@@ -209,7 +212,7 @@ theorem cascade_inputToStateStable {W : Type*} [NormedAddCommGroup W]
   have h_split : ∀ a b, 0 ≤ a → 0 ≤ b → γ₁.toFun (a + b) ≤ γ₁.toFun (2 * a) + γ₁.toFun (2 * b) :=
     fun _ _ => γ₁.strict_mono.monotoneOn.weak_triangle fun y hy => γ₁.maps_to hy
   refine ⟨cascadeKL β₁ γ₁ β₂ two_pos, γ, fun t₀ ht₀ t₁ w x hx t ht M hM => ?_⟩
-  obtain ⟨hx₁, hx₂⟩ := cascade_isRightTrajectoryOn_iff.1 hx
+  obtain ⟨hx₁, hx₂⟩ := cascade_isTrajectoryOn_iff.1 hx
   set r := ‖x t₀ - (x_c, x_e)‖
   have hr : 0 ≤ r := norm_nonneg _
   have hr₂ : ‖(x t₀).2 - x_e‖ ≤ r := norm_snd_le (x t₀ - (x_c, x_e))

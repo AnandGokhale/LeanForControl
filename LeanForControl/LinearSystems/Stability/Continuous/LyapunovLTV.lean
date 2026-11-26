@@ -80,10 +80,9 @@ private lemma bound_of_margin (s : ContinuousLTV E U Y) (hA : Continuous s.A)
   -- From the `δ`-ball the response is within `ε` of the origin at time `t`.
   have hball : ∀ y : E, ‖y‖ < δ → ‖s.stateTransition t t₀ y‖ ≤ ε := by
     intro y hy
-    have htraj := IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ y)
-      (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)
     have hy' : ‖s.stateTransition t₀ t₀ y - 0‖ < δ := by simpa using hy
-    simpa using (hstab t _ htraj hy' t ⟨ht, le_rfl⟩).le
+    simpa using (hstab t _ ((isTrajectoryOn_homogeneousResponse s hA t₀ y).mono
+      (Icc_subset_Ici_self : Icc t₀ t ⊆ Ici t₀)) hy' t ⟨ht, le_rfl⟩).le
   -- On the shell `δ / 2 ≤ ‖y‖ < δ` that is a bound by `(2ε / δ) ‖y‖`, which scales everywhere.
   have hop := ContinuousLinearMap.opNorm_le_of_shell
     (f := s.stateTransition t t₀) hδ
@@ -316,7 +315,7 @@ theorem locallyAsymptoticallyStable_iff_decayingHomogeneousResponse (s : Continu
     refine Filter.Tendsto.congr' ?_ (hconv t₀ ht₀ (φ t₀))
     filter_upwards [eventually_ge_atTop t₀] with t ht
     exact (eq_homogeneousResponse_of_isTrajectoryOn s hA
-      (IsIntegralCurveOn.mono hφ Icc_subset_Ici_self) ⟨ht, le_rfl⟩).symm
+      (hφ.mono Icc_subset_Ici_self) ⟨ht, le_rfl⟩).symm
 
 /-! ## Definition 8.1(3): exponential stability -/
 
@@ -354,7 +353,7 @@ theorem globallyExponentiallyStable_iff_decayingStateTransition
     refine ⟨k, hk, γ, hγ, fun t₀ ht₀ t ht x => ?_⟩
     have h1 : ‖s.stateTransition t t₀ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := by
       simpa using
-        hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t₀ x)
+        hbd t₀ ht₀ t _ ((isTrajectoryOn_homogeneousResponse s hA t₀ x).mono
           Icc_subset_Ici_self) t ⟨ht, le_rfl⟩
     calc ‖s.stateTransition t t₀ x‖ ≤ k * ‖x‖ * Real.exp (-γ * (t - t₀)) := h1
       _ = k * Real.exp (-γ * (t - t₀)) * ‖x‖ := by ring
@@ -410,8 +409,8 @@ theorem locallyExponentiallyStable_iff_decayingStateTransition (s : ContinuousLT
       rw [mem_ball_zero_iff] at hy
       have hy' : ‖s.stateTransition t₀ t₀ y - 0‖ < c := by simpa using hy
       have h1 : ‖s.stateTransition t t₀ y‖ ≤ k * ‖y‖ * Real.exp (-γ * (t - t₀)) := by
-        simpa using hbd t₀ ht₀ t _ (IsIntegralCurveOn.mono
-          (isTrajectoryOn_homogeneousResponse s hA t₀ y) Icc_subset_Ici_self) hy' t ⟨ht, le_rfl⟩
+        simpa using hbd t₀ ht₀ t _ ((isTrajectoryOn_homogeneousResponse s hA t₀ y).mono
+          Icc_subset_Ici_self) hy' t ⟨ht, le_rfl⟩
       simpa [mul_right_comm] using h1
     simpa using ContinuousLinearMap.le_of_opNorm_le _
       (ContinuousLinearMap.opNorm_le_of_ball hc (by positivity) hball) x

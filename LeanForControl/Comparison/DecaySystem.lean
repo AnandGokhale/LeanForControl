@@ -2,9 +2,8 @@ import LeanForControl.Comparison.ClassK
 import LeanForControl.Systems.Continuous
 import LeanForControl.Comparison.ClassKInfty
 import LeanForControl.Comparison.ClassKL
-import LeanForControl.Analysis.DiniDeriv
+import LeanForControl.Analysis.AbsolutelyContinuous
 import LeanForControl.ODEs.ComparisonLemma
-import LeanForControl.ODEs.PicardLindelof
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Architect
@@ -17,16 +16,21 @@ For a class `K` function `α`, the scalar system `ẏ = -α(y)` (`ClassK.decaySy
 comparison system of Lyapunov theory: a Lyapunov function `v` with `v̇ ≤ -α(v)` is a subsolution
 of it, and so decays at least as fast as its solutions.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemmas 3.4 and 4.4.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.): the comparison lemma, and the class `KL`
+solution of the scalar equation `ẏ = -α(y)`.
 
 ## Main results
 
 * `ClassK.decaySystem` — the system `ẏ = -α(y)`, as a `ContinuousSystem ℝ Unit Unit`.
 * `ClassK.exists_classKL_trajectory_decaySystem` — for `α` at most linear near the origin, the
   decay system has a class `KL` solution operator: `t ↦ σ(y₀, t - t₀)` is its trajectory from
-  `y₀ ∈ [0, a)` (Khalil, Lemma 4.4).
-* `ClassK.exists_classKL_bound_of_subsolution` — a continuous Dini subsolution of the decay
-  system, `D⁺v ≤ -α(v)`, is bounded by a class `KL` function, for any class `K` function `α`.
+  `y₀ ∈ [0, a)`.
+* `ClassK.exists_classKL_bound_of_deriv_le` — an absolutely continuous subsolution of the decay
+  system, `v̇ ≤ -α(v)` almost everywhere, is bounded by a class `KL` function, for any class `K`
+  function `α`, by the comparison lemma.  This is the form that applies along Carathéodory
+  trajectories.
+* `ClassK.exists_classKL_bound_above_level_of_deriv_le` — the same bound when the decay holds only
+  above a level `η`.
 
 Only states `y ∈ [0, a)` matter: `α` is class `K` on `[0, a)`, and trajectories starting there
 stay there.
@@ -40,19 +44,13 @@ reached in finite time. Then `σ(r, s) = η⁻¹(η(r) + s)`, extended by `σ(0,
 solution operator: advancing time by `s` moves `η` up by `s` and so moves the state down.
 
 `η` and `η⁻¹` are steps in building a solution, not facts about class K functions, so they are
-`private` — the two results above are the whole interface.
+`private` — the public interface is the system `ClassK.decaySystem` and the three results listed
+above.
 
 Reference for the construction: Osgood's condition; see Khalil, Appendix C.
 -/
 
 open Set Filter Topology MeasureTheory intervalIntegral
-
-/-- Adding a constant is an isometry, so it preserves a Lipschitz bound.  Mathlib has no
-`LipschitzWith.add_const`, and the perturbed field `-β + λ` needs one. -/
-private lemma lipschitzWith_add_const {L : NNReal} {f : ℝ → ℝ}
-    (h : LipschitzWith L f) (c : ℝ) : LipschitzWith L (fun x => f x + c) :=
-  LipschitzWith.of_dist_le_mul fun x y => by
-    simpa [Real.dist_eq, add_sub_add_right_eq_sub] using h.dist_le_mul x y
 
 private lemma ClassK.pos_on_Ioo (α : ClassK a b) {x : ℝ} (hx : x ∈ Ioo 0 a) :
     0 < α.toFun x :=
@@ -640,12 +638,13 @@ Lyapunov theory.  Only states in `[0, a)`, where `α` is class `K`, are meaningf
 def ClassK.decaySystem (α : ClassK a b) : ContinuousSystem ℝ Unit Unit :=
   ContinuousSystem.autonomous (fun _ y => -α.toFun y) (fun _ _ => ())
 
-/-- **The decay system has a class `KL` solution operator** (Khalil, Lemma 4.4).  If `α` is at
+/-- **The decay system has a class `KL` solution operator.**  If `α` is at
 most linear near the origin — so that the origin is not reached in finite time — there is a
 class `KL` function `σ` with `σ(y₀, 0) = y₀` such that, for every `y₀ ∈ [0, a)` and every `t₀`,
 `t ↦ σ(y₀, t - t₀)` is a trajectory of the decay system on `[t₀, ∞)`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4.  Differences:
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the lemma on the class `KL` solution of
+`ẏ = -α(y)`.  Differences:
 - Khalil assumes `α` locally Lipschitz; here the hypothesis is the linear bound `α(x) ≤ L·x`
   near the origin, which is what the construction uses.
 - Uniqueness of the solution is not asserted. -/
@@ -658,7 +657,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.4.  Differences:
     $[t_0, \infty)$ (\cref{def:continuousSystem-isTrajectoryOn}) of the decay system
     $\dot y = -\alpha(y)$ (\cref{def:classK-decaySystem}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.4.  Differences:
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the lemma on the class
+    $\mathcal{KL}$ solution of $\dot y = -\alpha(y)$.  Differences:
     \begin{itemize} \item Khalil assumes $\alpha$ locally Lipschitz; here the hypothesis is the
     linear bound $\alpha(x) \le Lx$ near the origin, which is what the construction uses.
     \item Uniqueness of the solution is not asserted. \end{itemize} -/)
@@ -679,7 +679,7 @@ theorem ClassK.exists_classKL_trajectory_decaySystem (α : ClassK a b) (base : �
       ∀ y₀ ∈ Set.Ico 0 a, ∀ t₀ : ℝ,
         α.decaySystem.IsTrajectoryOn (fun _ => ()) (fun t => σ.toFun y₀ (t - t₀)) (Set.Ici t₀) := by
   obtain ⟨σ, -, hσ_init, hσ_deriv⟩ := α.exists_classKL_decaySolution base hbase L hL_pos hLip
-  refine ⟨σ, hσ_init, fun r hr t₀ t ht => ?_⟩
+  refine ⟨σ, hσ_init, fun r hr t₀ => ?_⟩
   -- `s ↦ σ(r, s)` is continuous at `0` from the right, and stays in `[0, a)`.
   have h_cont : ContinuousWithinAt (fun s => σ.toFun r s) (Set.Ici 0) 0 :=
     (σ.continuous (r, 0) ⟨hr, Set.self_mem_Ici⟩).comp
@@ -688,162 +688,166 @@ theorem ClassK.exists_classKL_trajectory_decaySystem (α : ClassK a b) (base : �
   have h_mem : ∀ s > 0, σ.toFun r s ∈ Set.Ico 0 a := fun s hs =>
     ⟨σ.nonneg r hr s hs.le, ((σ.anti_s r hr (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr hs.le)
       hs.le).trans_eq (hσ_init r hr)).trans_lt hr.2⟩
-  -- The derivative of `s ↦ σ(r, s)` within `[0, ∞)`, at `s = t - t₀`.
-  have h_sec : HasDerivWithinAt (fun s => σ.toFun r s) (-α.toFun (σ.toFun r (t - t₀)))
-      (Set.Ici 0) (t - t₀) := by
-    rcases (sub_nonneg.mpr (Set.mem_Ici.mp ht)).eq_or_lt with h_zero | h_pos
-    · -- At the left endpoint, the limit of the derivatives `-α(σ(r, s)) → -α(r)`.
-      rw [← h_zero, hσ_init r hr]
-      have h_lim : Tendsto (fun s => σ.toFun r s) (𝓝[>] 0) (𝓝[Set.Ico 0 a] r) :=
-        tendsto_nhdsWithin_iff.mpr ⟨by
-          simpa [hσ_init r hr] using (h_cont.mono Set.Ioi_subset_Ici_self).tendsto,
-          eventually_nhdsWithin_of_forall fun s hs => h_mem s hs⟩
-      refine hasDerivWithinAt_Ici_of_tendsto_deriv (s := Set.Ioi 0)
-        (fun s hs => (hσ_deriv r hr s hs).differentiableAt.differentiableWithinAt)
-        (h_cont.mono Set.Ioi_subset_Ici_self) self_mem_nhdsWithin ?_
-      refine ((α.continuous r hr).tendsto.comp h_lim).neg.congr' ?_
-      filter_upwards [self_mem_nhdsWithin] with s hs
-      exact ((hσ_deriv r hr s hs).deriv).symm
-    · exact (hσ_deriv r hr _ h_pos).hasDerivWithinAt
-  have h_traj : HasDerivWithinAt (fun x => σ.toFun r (x - t₀))
-      (-α.toFun (σ.toFun r (t - t₀)) * 1) (Set.Ici t₀) t :=
-    HasDerivWithinAt.comp (h₂ := fun s => σ.toFun r s) (h := fun x => x - t₀) t h_sec
-      ((hasDerivWithinAt_id t _).sub_const t₀)
-      fun x (hx : x ∈ Set.Ici t₀) => Set.mem_Ici.mpr (sub_nonneg.mpr hx)
-  rw [mul_one] at h_traj
-  exact h_traj
+  -- The curve is a classical solution on `[t₀, ∞)`.
+  have h_curve : IsIntegralCurveOn (fun t => σ.toFun r (t - t₀))
+      (α.decaySystem.vectorField fun _ => ()) (Set.Ici t₀) := by
+    intro t ht
+    -- The derivative of `s ↦ σ(r, s)` within `[0, ∞)`, at `s = t - t₀`.
+    have h_sec : HasDerivWithinAt (fun s => σ.toFun r s) (-α.toFun (σ.toFun r (t - t₀)))
+        (Set.Ici 0) (t - t₀) := by
+      rcases (sub_nonneg.mpr (Set.mem_Ici.mp ht)).eq_or_lt with h_zero | h_pos
+      · -- At the left endpoint, the limit of the derivatives `-α(σ(r, s)) → -α(r)`.
+        rw [← h_zero, hσ_init r hr]
+        have h_lim : Tendsto (fun s => σ.toFun r s) (𝓝[>] 0) (𝓝[Set.Ico 0 a] r) :=
+          tendsto_nhdsWithin_iff.mpr ⟨by
+            simpa [hσ_init r hr] using (h_cont.mono Set.Ioi_subset_Ici_self).tendsto,
+            eventually_nhdsWithin_of_forall fun s hs => h_mem s hs⟩
+        refine hasDerivWithinAt_Ici_of_tendsto_deriv (s := Set.Ioi 0)
+          (fun s hs => (hσ_deriv r hr s hs).differentiableAt.differentiableWithinAt)
+          (h_cont.mono Set.Ioi_subset_Ici_self) self_mem_nhdsWithin ?_
+        refine ((α.continuous r hr).tendsto.comp h_lim).neg.congr' ?_
+        filter_upwards [self_mem_nhdsWithin] with s hs
+        exact ((hσ_deriv r hr s hs).deriv).symm
+      · exact (hσ_deriv r hr _ h_pos).hasDerivWithinAt
+    have h_traj : HasDerivWithinAt (fun x => σ.toFun r (x - t₀))
+        (-α.toFun (σ.toFun r (t - t₀)) * 1) (Set.Ici t₀) t :=
+      HasDerivWithinAt.comp (h₂ := fun s => σ.toFun r s) (h := fun x => x - t₀) t h_sec
+        ((hasDerivWithinAt_id t _).sub_const t₀)
+        fun x (hx : x ∈ Set.Ici t₀) => Set.mem_Ici.mpr (sub_nonneg.mpr hx)
+    rw [mul_one] at h_traj
+    exact h_traj
+  -- Its values stay in `[0, a)`, where `α` is continuous, so the field along it is continuous.
+  have h_maps : ∀ t ∈ Set.Ici t₀, σ.toFun r (t - t₀) ∈ Set.Ico 0 a := fun t ht => by
+    rcases (sub_nonneg.mpr (Set.mem_Ici.mp ht)).eq_or_lt with h | h
+    · rw [← h, hσ_init r hr]; exact hr
+    · exact h_mem _ h
+  refine ContinuousSystem.isTrajectoryOn_of_isIntegralCurveOn h_curve
+    fun c d hcd hJ => ContinuousOn.intervalIntegrable_of_Icc hcd ?_
+  exact ((α.continuous.comp (fun t ht => (h_curve t ht).continuousWithinAt) h_maps).neg).mono hJ
 
-/-! ## Comparison bound from Dini ≤ −ClassK -/
+/-! ## Comparison bound from `v̇ ≤ -α(v)` -/
 
-/-- **Subsolutions of the decay system decay** (Khalil, Lemma 3.4): for any class `K` function
-`α` there is a class `KL` function `σ` such that a continuous `v` that is a Dini subsolution of
-the decay system, `D⁺v ≤ -α(v)`, starting and remaining in `[0, a)`, satisfies
-`v(t) ≤ σ(v(t₀), t − t₀)`.
+/-- **Subsolutions of the decay system decay** (Khalil's comparison lemma): for any class `K`
+function
+`α` there is a class `KL` function `σ` such that an absolutely continuous `v` with
+`v̇ ≤ -α(v)` almost everywhere, starting and remaining in `[0, a)`, satisfies
+`v(t) ≤ σ(v(t₀), t − t₀)`.  This is what `t ↦ V(t, x(t))` satisfies along a Carathéodory
+trajectory.
 
 `σ` is the solution operator of the decay system of a Lipschitz class `K` minorant of `α`; no
-hypothesis on `α` beyond class `K` is needed. -/
-@[blueprint "thm:classK-dini-bound"
+hypothesis on `α` beyond class `K` is needed.
+
+Difference from Khalil: Khalil asks `v` continuous with `D⁺v ≤ -α(v)` everywhere; here `v` is
+absolutely continuous and the inequality holds almost everywhere. -/
+@[blueprint "thm:classK-ae-bound"
   (title := "Subsolutions of the decay system decay")
-  (statement := /-- Let $\alpha$ be
-    class $\mathcal{K}$ on $[0,a)$.  Then there is a class $\mathcal{KL}$ function $\sigma$
-    with $\sigma(r,0) = r$ such that: whenever $v$ is continuous on $[t_0,t]$, takes values
-    in $[0,a)$ there, and is a Dini subsolution of the decay system (\cref{def:classK-decaySystem}),
+  (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$.  Then there is a class
+    $\mathcal{KL}$ function $\sigma$ with $\sigma(r,0) = r$ such that: whenever $v$ is absolutely
+    continuous on $[t_0,t]$, takes values in $[0,a)$ there, and is a subsolution of the decay
+    system (\cref{def:classK-decaySystem}) almost everywhere,
     \[
-      D^{+}v(s) \;\le\; -\alpha(v(s)),
+      \dot v(s) \;\le\; -\alpha(v(s)) \quad \text{for almost every } s \in (t_0, t),
     \]
     it obeys $v(t) \le \sigma\bigl(v(t_0),\, t - t_0\bigr)$.
 
     A differential \emph{inequality} with a class $\mathcal{K}$ decay rate therefore yields a
-    class $\mathcal{KL}$ bound — which is what converts a Lyapunov decay estimate into an
-    asymptotic stability statement.  No hypothesis is placed on $\alpha$ beyond being class
-    $\mathcal{K}$: the linear-growth condition the construction needs is obtained internally by
-    passing to a Lipschitz minorant. -/)
-  (proof := /-- Replace $\alpha$ by a class $\mathcal{K}$ minorant $\beta \le \alpha$ that is
-    Lipschitz near the origin; this only weakens the Dini hypothesis, and supplies the linear
-    bound $\beta(x) \le Lx$ that \cref{thm:class-KL-osgood} requires.  That theorem gives a
-    class $\mathcal{KL}$ $\sigma$ whose sections solve $\dot y = -\beta(y)$ with
-    $\sigma(r,0) = r$.  Since $v$ is a Dini subsolution of the same equation and starts at
-    $\sigma(v(t_0), 0)$, \cref{thm:comparison-lemma} bounds $v$ by it — the perturbed
-    solutions that lemma requires coming from
-    \cref{thm:exists-isIntegralSolution-Icc-of-lipschitz}, whose hypotheses hold because
-    $\beta$ is globally Lipschitz (\cref{lem:exists-classK-minorant-lipschitz}). -/)]
-theorem ClassK.exists_classKL_bound_of_subsolution {a b : ℝ} (α : ClassK a b) :
+    class $\mathcal{KL}$ bound, which is what converts a Lyapunov decay estimate into an
+    asymptotic stability statement.  Khalil's comparison lemma is for a continuous $v$ with
+    $D^{+}v \le -\alpha(v)$; the absolutely continuous form is the one that applies along
+    Carath\'eodory trajectories. -/)
+  (proof := /-- Replace $\alpha$ by a class $\mathcal{K}$
+    minorant $\beta \le \alpha$ that is $L$-Lipschitz
+    (\cref{lem:exists-classK-minorant-lipschitz}), and let $u(s) = \sigma(v(t_0), s - t_0)$ be
+    the solution of $\dot u = -\beta(u)$, $u(t_0) = v(t_0)$, given by
+    \cref{thm:class-KL-osgood}; $u$ is the integral of its continuous derivative, hence absolutely
+    continuous.  Almost everywhere $\dot v \le -\alpha(v) \le -\beta(v)$, so $v$ is a subsolution
+    of $\dot y = -\beta(y)$, whose right-hand side is $L$-Lipschitz; by the comparison lemma for
+    absolutely continuous functions (\cref{thm:absolutelyContinuousOnInterval-comparison-lemma}),
+    $v(t) \le u(t)$. -/)]
+theorem ClassK.exists_classKL_bound_of_deriv_le {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a,
       (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 = r) ∧
-      ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), ContinuousOn v (Set.Icc t₀ t) →
+      ∀ {t₀ t : ℝ}, t₀ ≤ t → ∀ (v : ℝ → ℝ), AbsolutelyContinuousOnInterval v t₀ t →
         v t₀ ∈ Set.Ico 0 a →
         (∀ s ∈ Set.Ico t₀ t, v s ∈ Set.Ico 0 a) →
-        (∀ s ∈ Set.Ico t₀ t, D⁺ v s ≤ (-α.toFun (v s) : ℝ)) →
+        (∀ᵐ s, s ∈ Set.Ioo t₀ t → deriv v s ≤ -α.toFun (v s)) →
         v t ≤ σ.toFun (v t₀) (t - t₀) := by
   obtain ⟨_, L, β, hL_pos, hβ_le_α, hβ_lin, hLip⟩ := exists_classK_minorant_lipschitz α
-  have h_base : a / 2 ∈ Set.Ioo 0 a := ⟨half_pos α.ha, half_lt_self α.ha⟩
-  obtain ⟨σ, hσ_zero_s, hσ_init, hσ_deriv⟩ :=
-    ClassK.exists_classKL_decaySolution β (a / 2) h_base L hL_pos
+  obtain ⟨σ, -, hσ_init, hσ_deriv⟩ :=
+    ClassK.exists_classKL_decaySolution β (a / 2) ⟨half_pos α.ha, half_lt_self α.ha⟩ L hL_pos
       fun x hx => hβ_lin x hx.1.le
-  refine ⟨σ, hσ_init, ?_⟩
-  · -- Trajectory bound
-    intro t₀ t ht v hv_cont hv₀ hv_range hDv
-    rcases eq_or_lt_of_le ht with rfl | ht_lt
-    · simp only [sub_self]
-      exact le_of_eq (hσ_init (v t₀) hv₀).symm
-    · -- Strengthen: D⁺v ≤ -α(v) ≤ -β(v)
-      have hDv' : ∀ s ∈ Set.Ico t₀ t,
-          D⁺ v s ≤ (((fun _ x => -β.toFun x) s (v s) : ℝ) : EReal) := fun s hs =>
-        (hDv s hs).trans (EReal.coe_le_coe_iff.2 (neg_le_neg (hβ_le_α (v s) (hv_range s hs))))
-      -- σ satisfies the comparison ODE u̇ = -β(u)
-      have hu_deriv : ∀ s ∈ Set.Ioo t₀ t,
-          HasDerivAt (fun x => σ.toFun (v t₀) (x - t₀))
-            ((fun _ x => -β.toFun x) s (σ.toFun (v t₀) (s - t₀))) s := by
-        intro s hs
-        have hs_sub_pos : 0 < s - t₀ := sub_pos.mpr hs.1
-        -- σ(v t₀, ·) solves the decay ODE; compose with the shift `· - t₀`
-        have h_comp := (hσ_deriv (v t₀) hv₀ (s - t₀) hs_sub_pos).comp s
-          ((hasDerivAt_id s).sub_const t₀)
-        simpa only [mul_one, Function.comp_def, id] using h_comp
-      -- σ is continuous on [t₀, t]
-      have hu_cont : ContinuousOn (fun s => σ.toFun (v t₀) (s - t₀)) (Set.Icc t₀ t) :=
-        (σ.continuous.comp
-          (continuousOn_const.prodMk (continuousOn_id.sub continuousOn_const))
-          (fun s (hs : s ∈ Set.Icc t₀ t) =>
-            ⟨hv₀, Set.mem_Ici.mpr (sub_nonneg.mpr hs.1)⟩)).congr
-          (fun s _ => rfl)
-      -- σ(v t₀, 0) = v t₀ (initial condition)
-      have hu₀ : (fun s => σ.toFun (v t₀) (s - t₀)) t₀ = v t₀ := by
-        simp only [sub_self]; exact hσ_init (v t₀) hv₀
-      -- Apply comparison_lemma
-      have h_bound : ∀ s ∈ Set.Icc t₀ t, v s ≤ σ.toFun (v t₀) (s - t₀) :=
-        comparison_lemma (f := fun _ x => -β.toFun x) ht_lt hL_pos
-          ((hLip.continuous.neg.comp continuous_snd))
-          (fun _ _ => hLip.neg)
-          hu_deriv hu_cont hu₀
-          hv_cont hDv' le_rfl
-          (fun lam _ =>
-            exists_isIntegralSolution_Icc_of_lipschitz (g := fun _ x => -β.toFun x + lam)
-              ((hLip.continuous.neg.add continuous_const).comp continuous_snd)
-              (fun _ => lipschitzWith_add_const hLip.neg lam) ht_lt.le)
-      exact h_bound t ⟨ht_lt.le, le_rfl⟩
+  refine ⟨σ, hσ_init, fun {t₀ t} ht v hv hv₀ hv_range hDv => ?_⟩
+  -- The comparison solution `u(s) = σ(v(t₀), s - t₀)` of `u̇ = -β(u)`.
+  set u : ℝ → ℝ := fun s => σ.toFun (v t₀) (s - t₀)
+  have hu_deriv : ∀ s, t₀ < s → HasDerivAt u (-β.toFun (u s)) s := fun s hs => by
+    simpa only [mul_one, Function.comp_def, id] using
+      (hσ_deriv (v t₀) hv₀ (s - t₀) (sub_pos.mpr hs)).comp s ((hasDerivAt_id s).sub_const t₀)
+  have hu_cont : ContinuousOn u (Set.Icc t₀ t) :=
+    σ.continuous.comp (continuousOn_const.prodMk (continuousOn_id.sub continuousOn_const))
+      fun s hs => ⟨hv₀, Set.mem_Ici.mpr (sub_nonneg.mpr hs.1)⟩
+  -- `u` is the integral of its continuous derivative, hence absolutely continuous.
+  have hu_ac : AbsolutelyContinuousOnInterval u t₀ t := by
+    have hint : ∀ s ∈ Set.Icc t₀ t,
+        IntervalIntegrable (fun τ => -β.toFun (u τ)) volume t₀ s := fun s hs =>
+      ((hLip.continuous.comp_continuousOn hu_cont).neg.mono
+        (Set.Icc_subset_Icc_right hs.2)).intervalIntegrable_of_Icc hs.1
+    refine absolutelyContinuousOnInterval_of_sub_eq_integral (hint t ⟨ht, le_rfl⟩)
+      fun s hs => ?_
+    rw [Set.uIcc_of_le ht] at hs
+    exact (intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hs.1
+      (hu_cont.mono (Set.Icc_subset_Icc_right hs.2)) (fun τ hτ => hu_deriv τ hτ.1)
+      (hint s hs)).symm
+  -- `v` is a subsolution and `u` a solution of `ẏ = -β(y)`, and `β` is `L`-Lipschitz.
+  have hu₀ : u t₀ = v t₀ := by simp [u, hσ_init _ hv₀]
+  refine hv.comparison_lemma (f := fun _ y => -β.toFun y) (L := L) hu_ac
+    (.of_forall fun s _ hlt => ?_) ?_ (.of_forall fun s hs => (hu_deriv s hs.1).deriv.ge) hu₀.ge t
+    ⟨ht, le_rfl⟩
+  · have := hLip.dist_le_mul (u s) (v s)
+    rw [Real.dist_eq, Real.dist_eq, abs_sub_comm (u s), abs_of_pos (sub_pos.2 hlt)] at this
+    exact (neg_sub_neg _ _).trans_le ((le_abs_self _).trans this)
+  · filter_upwards [hDv] with s hs hmem
+    exact (hs hmem).trans (neg_le_neg (hβ_le_α (v s) (hv_range s ⟨hmem.1.le, hmem.2⟩)))
 
-/-- **Decay down to a level.**  The comparison bound of
-`ClassK.exists_classKL_bound_of_subsolution` when `v̇ ≤ -α(v)` holds only *above* a level `η`:
-then `v(t) ≤ max (σ(v(t₀), t − t₀)) η`.  Either `v` stays above `η` on `[t₀, t)`, and the
-comparison lemma applies; or it drops to `η` at some `τ < t`, and since it can only fall while
-above `η`, it is still at most `η` at `t`. -/
-@[blueprint "thm:classK-bound-above-level"
+/-- **Decay down to a level.**  The comparison bound of `ClassK.exists_classKL_bound_of_deriv_le`
+when `v̇ ≤ -α(v)` holds (almost everywhere) only *above* a level `η`: then
+`v(t) ≤ max (σ(v(t₀), t − t₀)) η`.  Either `v` stays above `η` on `[t₀, t)`, and the comparison
+bound applies; or it drops to `η` at some `τ < t`, and since it can only fall while above `η`, it
+is still at most `η` at `t`. -/
+@[blueprint "thm:classK-ae-bound-above-level"
   (title := "Subsolutions above a level decay to it")
   (statement := /-- Let $\alpha$ be class $\mathcal{K}$ on $[0,a)$, and $\sigma$ the class
-    $\mathcal{KL}$ function of \cref{thm:classK-dini-bound}.  Let $v$ be continuous on
-    $[t_0,t]$ with values in $[0,a)$, with right derivative $v'$ on $[t_0, t)$ satisfying
-    $v'(s) \le -\alpha(v(s))$ whenever $v(s) > \eta$.  Then
+    $\mathcal{KL}$ function of \cref{thm:classK-ae-bound}.  Let $v$ be absolutely continuous on
+    $[t_0,t]$ with values in $[0,a)$, with $\dot v(s) \le -\alpha(v(s))$ for almost every
+    $s \in (t_0, t)$ at which $v(s) > \eta$.  Then
     \[
       v(t) \le \max\{\sigma(v(t_0), t - t_0),\ \eta\}.
     \] -/)
-  (proof := /-- If $v > \eta$ on all of $[t_0, t)$, $v$ is a subsolution of the decay system
-    there and \cref{thm:classK-dini-bound} applies.  Otherwise $v(\tau) \le \eta$ for some
-    $\tau \in [t_0, t)$.  Wherever $v > \eta$, $v' \le -\alpha(v) \le 0$, so by
-    \cref{lem:le-max-of-hasDerivWithinAt-nonpos-above} on $[\tau, t]$,
+  (proof := /-- If $v > \eta$ on all of $[t_0, t)$, \cref{thm:classK-ae-bound} applies.
+    Otherwise $v(\tau) \le \eta$ for some $\tau \in [t_0, t)$.  Almost everywhere where
+    $v > \eta$, $\dot v \le -\alpha(v) \le 0$, so by
+    \cref{lem:absolutelyContinuousOnInterval-le-max-of-deriv-nonpos} on $[\tau, t]$,
     $v(t) \le \max\{v(\tau), \eta\} = \eta$. -/)]
-theorem ClassK.exists_classKL_bound_above_level {a b : ℝ} (α : ClassK a b) :
+theorem ClassK.exists_classKL_bound_above_level_of_deriv_le {a b : ℝ} (α : ClassK a b) :
     ∃ σ : ClassKL a, (∀ r ∈ Set.Ico 0 a, σ.toFun r 0 ≤ r) ∧
-      ∀ {t₀ t η : ℝ} {v v' : ℝ → ℝ}, t₀ ≤ t → ContinuousOn v (Set.Icc t₀ t) →
-        (∀ s ∈ Set.Ico t₀ t, HasDerivWithinAt v (v' s) (Set.Ici s) s) →
+      ∀ {t₀ t η : ℝ} {v : ℝ → ℝ}, t₀ ≤ t → AbsolutelyContinuousOnInterval v t₀ t →
         (∀ s ∈ Set.Icc t₀ t, v s ∈ Set.Ico 0 a) →
-        (∀ s ∈ Set.Ico t₀ t, η < v s → v' s ≤ -α.toFun (v s)) →
+        (∀ᵐ s, s ∈ Set.Ioo t₀ t → η < v s → deriv v s ≤ -α.toFun (v s)) →
         v t ≤ max (σ.toFun (v t₀) (t - t₀)) η := by
-  obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_of_subsolution
-  refine ⟨σ, fun r hr => (hσ_zero r hr).le, fun {t₀ t η v v'} ht hv hv' hv_mem h_decay => ?_⟩
+  obtain ⟨σ, hσ_zero, hσ⟩ := α.exists_classKL_bound_of_deriv_le
+  refine ⟨σ, fun r hr => (hσ_zero r hr).le, fun {t₀ t η v} ht hv hv_mem h_decay => ?_⟩
   by_cases h_above : ∀ s ∈ Set.Ico t₀ t, η < v s
   · -- Above `η` throughout: `v` is a subsolution of the decay system.
     refine le_max_of_le_left (hσ ht v hv (hv_mem t₀ ⟨le_rfl, ht⟩)
-      (fun s hs => hv_mem s (Set.Ico_subset_Icc_self hs)) (fun s hs => ?_))
-    rw [diniDerivRight_of_hasDerivWithinAt (hv' s hs)]
-    exact EReal.coe_le_coe_iff.2 (h_decay s hs (h_above s hs))
+      (fun s hs => hv_mem s (Set.Ico_subset_Icc_self hs)) ?_)
+    filter_upwards [h_decay] with s hs hmem
+    exact hs hmem (h_above s (Set.Ioo_subset_Ico_self hmem))
   · -- At most `η` at some `τ < t`, and `v` cannot climb back above `η`.
     push Not at h_above
     obtain ⟨τ, hτ, hvτ⟩ := h_above
-    have h_le := le_max_of_hasDerivWithinAt_nonpos_above (v' := v')
-      (hv.mono (Set.Icc_subset_Icc_left hτ.1))
-      (fun s hs => hv' s ⟨hτ.1.trans hs.1, hs.2⟩)
-      (fun s hs hηs => (h_decay s ⟨hτ.1.trans hs.1, hs.2⟩ hηs).trans
-        (neg_nonpos.mpr (α.maps_to (hv_mem s ⟨hτ.1.trans hs.1, hs.2.le⟩)).1))
-      t ⟨hτ.2.le, le_rfl⟩
-    exact le_max_of_le_right (h_le.trans (max_le hvτ le_rfl))
+    have h_le := (hv.mono (Set.uIcc_subset_uIcc (Set.Icc_subset_uIcc ⟨hτ.1, hτ.2.le⟩)
+      Set.right_mem_uIcc)).le_max_of_deriv_nonpos (η := η) ?_ t ⟨hτ.2.le, le_rfl⟩
+    · exact le_max_of_le_right (h_le.trans (max_le hvτ le_rfl))
+    filter_upwards [h_decay] with s hs hmem hηs
+    have hmem' : s ∈ Set.Ioo t₀ t := ⟨hτ.1.trans_lt hmem.1, hmem.2⟩
+    exact (hs hmem' hηs).trans
+      (neg_nonpos.mpr (α.maps_to (hv_mem s (Set.Ioo_subset_Icc_self hmem'))).1)

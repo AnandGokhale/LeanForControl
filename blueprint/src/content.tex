@@ -87,6 +87,10 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:setIntegral-Ioi-comp-add-right}
 
+\inputleannode{lem:lipschitzOnWith-integral-of-norm-sub-le}
+
+\inputleannode{lem:intervalIntegral-lipschitzOnWith-integral-of-norm-sub-le}
+
 \inputleannode{lem:continuousOn-integral-Icc}
 
 \inputleannode{lem:continuousOn-integral-endpoints}
@@ -95,9 +99,53 @@ class $\mathcal{KL}$ construction of the chapter on comparison functions.
 
 \inputleannode{lem:tendsto-integral-average-atTop-zero}
 
-\section{Monotonicity above a level}
+\section{Absolutely continuous functions}
 
-\inputleannode{lem:le-max-of-hasDerivWithinAt-nonpos-above}
+A Carath\'eodory solution of $\dot x = g(t)$ is a curve $x$ with $x(t) - x(a) =
+\int_a^t g$ for an integrable $g$: it is absolutely continuous and has derivative $g(t)$ at
+almost every $t$, but in general no derivative at any given point.  These are the facts about
+such functions that the trajectories of the Systems chapter need: closure properties, an
+almost-everywhere bound on the derivative integrated into a bound on the increment (monotonicity,
+a level bound, Gr\"onwall's inequality), and the absolute continuity of a locally Lipschitz
+function of an absolutely continuous curve.
+
+\inputleannode{lem:absolutelyContinuousOnInterval-prodMk}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-norm}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-pow}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-graph}
+
+\inputleannode{lem:locallyLipschitzOn-comp-snd}
+
+\inputleannode{lem:locallyLipschitzOn-of-contDiffAt}
+
+\inputleannode{lem:locallyLipschitzOn-comp-absolutelyContinuousOnInterval}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-primitive}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-of-sub-eq-integral}
+
+\inputleannode{lem:ae-hasDerivAt-of-sub-eq-integral}
+
+\inputleannode{lem:ae-mem-interior-imp-of-forall-Icc-subset}
+
+\inputleannode{lem:hasDerivAt-abs-le-norm-of-norm}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-sub-le-integral-of-deriv-le}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-antitoneOn-of-deriv-nonpos}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-monotoneOn-of-deriv-nonneg}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-le-max-of-deriv-nonpos}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-le-mul-exp-integral-of-deriv-le}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-le-mul-exp-of-deriv-le}
+
+\inputleannode{lem:absolutelyContinuousOnInterval-le-gronwallBound-of-deriv-le}
 
 \section{Norm inequalities}
 
@@ -144,17 +192,19 @@ $C e^{\mu(t-a)}$ bound behind every continuous-dependence estimate.
 
 \inputleannode{lem:isIntegralSolution-reflect}
 
+\inputleannode{lem:isIntegralSolution-continuousOn}
+
+\inputleannode{lem:isIntegralSolution-const}
+
 \subsection{The integral and differential formulations}
 
-An ODE can be written as a differential equation, $\dot x = F(t,x)$, or as the equivalent
-integral equation. The continuous-dependence and Gronwall arguments want the integral form, which
-presupposes no differentiability and carries its initial condition; the Lyapunov arguments want
-the differential form, so that $V \circ \varphi$ can be differentiated. The results below are the
-two directions of the fundamental theorem of calculus relating them.
-
-They are provision rather than current practice: nothing in the stability chapters has yet been
-routed through this equivalence, so it is the intended path from a trajectory to the results of
-this chapter rather than an exercised one.
+An ODE can be written as a differential equation, $\dot x = F(t,x)$, or as an integral equation.
+The integral form presupposes no differentiability and carries its initial condition; it is the
+form of the trajectories of the Systems chapter, which are integral solutions on every segment,
+so the continuous-dependence and Gr\"onwall arguments of this chapter apply to them directly.
+When the field is continuous along the solution the two forms are equivalent; the results below
+are the two directions of the fundamental theorem of calculus relating them.  The last result is
+how statements on segments reach arbitrary intervals.
 
 \inputleannode{lem:isIntegralCurveOn-isIntegralSolution}
 
@@ -164,16 +214,9 @@ this chapter rather than an exercised one.
 
 \inputleannode{lem:isIntegralSolution-iff-isIntegralCurveOn-Icc}
 
-\inputleannode{lem:isIntegralCurveOn-isIntegralSolution-of-continuous}
+\inputleannode{lem:exists-Icc-mem-nhdsWithin}
 
-\subsection{Time invariance and local existence}
-
-A time-invariant field has no preferred time origin: a solution can be shifted to start at time
-$0$.
-
-\inputleannode{lem:isIntegralCurveOn-comp-add-autonomous}
-
-\inputleannode{lem:isIntegralCurveOn-shift-to-zero}
+\subsection{Local existence}
 
 \inputleannode{lem:isIntegralCurveOn-const}
 
@@ -187,8 +230,6 @@ $0$.
 
 \inputleannode{lem:eqOn-of-isIntegralCurveOn-Icc}
 
-\inputleannode{lem:isIntegralCurveOn-norm-sub-le}
-
 \inputleannode{thm:exists-isIntegralCurveOn-Ici}
 
 \inputleannode{thm:exists-isIntegralSolution-Icc-of-lipschitz}
@@ -199,6 +240,8 @@ Two solutions of the same equation, started at different points or subject to di
 perturbations, separate no faster than exponentially — at a rate fixed by the Lipschitz constant
 of the field. Everything downstream that needs uniqueness gets it from here, by taking the two
 solutions to agree initially and the perturbation to vanish, which collapses the bound to zero.
+
+\inputleannode{thm:isIntegralSolution-norm-sub-le-mul-exp}
 
 \inputleannode{thm:continuous-dependence-ODE}
 
@@ -218,11 +261,16 @@ $\|x(t)\|$, not differentiable where a trajectory crosses the origin.
 
 \inputleannode{thm:comparison-lemma}
 
+\inputleannode{thm:absolutelyContinuousOnInterval-comparison-lemma}
+
 \section{Lie derivatives}
 
 The rate of change of a function $V(t, x)$ along the integral curves of a time-dependent vector
-field, with no differential-equation content beyond the chain rule: what every Lyapunov, Chetaev
-and invariance argument differentiates.
+field, with no differential-equation content beyond the chain rule: the quantity that every
+Lyapunov, Chetaev and invariance argument bounds.  Along a classical solution it is the derivative
+of $t \mapsto V(t, x(t))$ at every time.  Along a trajectory of a system, $t \mapsto V(t, x(t))$
+is only absolutely continuous, for $V$ locally Lipschitz: the Lie derivative is its derivative at
+almost every time, and the arguments integrate a bound on it.
 
 \inputleannode{def:lieDerivative}
 
@@ -240,10 +288,6 @@ and invariance argument differentiates.
 
 \inputleannode{lem:isIntegralCurveOn-antitoneOn-of-lieDerivative-nonpos}
 
-\inputleannode{lem:isIntegralCurveOn-add-integral-le-of-lieDerivative-le}
-
-\inputleannode{lem:isIntegralCurveOn-le-exp-mul-of-lieDerivative-le}
-
 \inputleannode{lem:continuous-lieDerivative}
 
 \section{\texorpdfstring{$\omega$}{omega}-limit sets}
@@ -260,6 +304,8 @@ trapped in a compact set converges to its $\omega$-limit set.
 \inputleannode{lem:mem-omegaLimitSet-iff}
 
 \inputleannode{lem:omegaLimitSet-eq-omegaLimit}
+
+\inputleannode{lem:antitoneOn-exists-tendsto-atTop}
 
 \inputleannode{lem:eq-of-tendsto-of-mem-omegaLimitSet}
 
@@ -299,17 +345,112 @@ for time invariance instead.
 
 \inputleannode{lem:continuousSystem-isAutonomous-exists}
 
-\inputleannode{def:continuousSystem-constInput}
+Under an input signal $u$, the state equation is a time-dependent vector field on the state space
+and the output equation a time-dependent map.
 
-\inputleannode{def:continuousSystem-zeroInput}
+\inputleannode{def:continuousSystem-vectorField}
 
-\inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
+\inputleannode{def:continuousSystem-outputMap}
 
-\inputleannode{def:continuousSystem-cascade}
+\subsection{Trajectories}
 
-\inputleannode{lem:continuousSystem-cascade-isTrajectoryOn-iff}
+A trajectory on a set $I$ is a solution in the sense of Carath\'eodory: on every segment
+contained in $I$ the field is integrable along it, and the increment of the state over the segment
+is the integral of the field.  It need not be
+differentiable, so it admits the solutions produced by discontinuous inputs --- steps,
+sample-and-hold, bang-bang, or merely measurable ones --- which have corners where the input
+jumps.  A trajectory is continuous on an interval, and it solves the equation at almost every
+time of the interior of $I$.  This is the
+one notion of solution in the library.
 
-\inputleannode{lem:continuousSystem-cascade-isRightTrajectoryOn-iff}
+\inputleannode{def:continuousSystem-isTrajectoryOn}
+
+\inputleannode{def:continuousSystem-isTrajectory}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-mono}
+
+\inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-of-subsingleton}
+
+On a segment, a trajectory is exactly an integral solution of the chapter on ordinary differential
+equations, so the integral-form tools there apply to it with no continuity assumption.
+
+\inputleannode{thm:continuousSystem-isTrajectoryOn-Icc-iff-isIntegralSolution}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-continuousOn}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-ae-hasDerivAt}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-absolutelyContinuousOnInterval}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-congr}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-congr-vectorField}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-glue-Icc}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-Ici-iff}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-comp-add}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-semiconj}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-const}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-norm-sub-le}
+
+The classical solutions, differentiable with $\dot x(t) = F(t, x(t), u(t))$, are trajectories as
+soon as the field is integrable along them.  Conversely, a trajectory along which the field is
+continuous is classical, so for a continuous field the two notions coincide
+(\cref{thm:continuousSystem-isTrajectoryOn-iff-isIntegralCurveOn}).
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-of-isIntegralCurveOn}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-isIntegralCurveOn}
+
+\inputleannode{thm:continuousSystem-isTrajectoryOn-iff-isIntegralCurveOn}
+
+\inputleannode{thm:continuousSystem-isTrajectoryOn-iff-isIntegralCurveOn-of-continuous}
+
+\subsection{Functions along trajectories}
+
+The derivative of a function along the system is the rate at which it changes along trajectories.
+It takes the input value as an argument: stability uses the input-free system, input-to-state
+notions a general input.
+
+\inputleannode{def:continuousSystem-lieDerivative}
+
+A trajectory is absolutely continuous, so a function $V(t, x)$ that is locally Lipschitz near its
+graph is absolutely continuous along it, with derivative the derivative along the system at almost
+every time at which $V$ is differentiable.  An almost-everywhere bound on that derivative therefore integrates to a bound on the
+increment of $V$, to monotonicity, to a level bound and to exponential decay: the Lyapunov
+arguments for trajectories under discontinuous inputs.
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-ae-hasDerivAt-lieDerivative}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-ae-deriv-eq-lieDerivative}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-absolutelyContinuousOnInterval-comp}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-sub-le-integral-of-lieDerivative-le}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-antitoneOn-of-lieDerivative-nonpos}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-le-max-of-lieDerivative-nonpos}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-le-mul-exp-of-lieDerivative-le}
+
+For a function $V(x)$ that does not depend on time, the derivative along the system is
+$DV(x)\, F(t, x, u)$, and the two most used of these tools take that form.
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-sub-le-integral-of-fderiv-le}
+
+\inputleannode{lem:continuousSystem-isTrajectoryOn-antitoneOn-of-fderiv-nonpos}
+
+\subsection{Well-posedness}
 
 Well-posedness is kept apart from stability. The stability notions quantify over every solution,
 so they need no uniqueness; forward completeness enters only where a limit as $t \to \infty$ is
@@ -321,11 +462,11 @@ taken. Theorems that need either property assume it.
 
 \inputleannode{def:continuousSystem-hasUniqueSolutions}
 
+\inputleannode{thm:continuousSystem-isTrajectoryOn-dist-le-mul-exp}
+
 \inputleannode{thm:continuousSystem-hasUniqueSolutions-of-lipschitz}
 
 \inputleannode{thm:continuousSystem-isForwardComplete-of-lipschitz}
-
-\inputleannode{thm:continuousSystem-isTrajectoryOn-eqOn-of-equilibrium}
 
 \inputleannode{thm:continuousSystem-isTrajectoryOn-norm-exp-bounds}
 
@@ -337,7 +478,13 @@ linear system is its linear case.
 
 \inputleannode{def:continuousSystem-existenceInterval}
 
+\inputleannode{lem:continuousSystem-mem-existenceInterval-self}
+
+\inputleannode{lem:continuousSystem-mem-existenceInterval-of-le}
+
 \inputleannode{def:continuousSystem-stateTransitionMap}
+
+\inputleannode{lem:continuousSystem-stateTransitionMap-self}
 
 \inputleannode{lem:continuousSystem-existenceInterval-eq-Ici}
 
@@ -345,56 +492,39 @@ linear system is its linear case.
 
 \inputleannode{lem:continuousSystem-isTrajectoryOn-stateTransitionMap}
 
+\inputleannode{lem:continuousSystem-isTrajectoryOn-stateTransitionMap-Ici}
+
+\inputleannode{lem:continuousSystem-isIntegralCurveOn-stateTransitionMap-Ici}
+
 \inputleannode{lem:continuousSystem-stateTransitionMap-semigroup}
+
+\inputleannode{lem:continuousSystem-stateTransitionMap-of-equilibrium}
 
 \inputleannode{thm:continuousSystem-dist-stateTransitionMap-le}
 
 \inputleannode{thm:continuousSystem-norm-stateTransitionMap-sub-le}
 
-\inputleannode{def:continuousSystem-vectorField}
-
-\inputleannode{def:continuousSystem-outputMap}
-
-\inputleannode{def:continuousSystem-isTrajectoryOn}
-
-\inputleannode{def:continuousSystem-isTrajectory}
-
-\inputleannode{lem:continuousSystem-isTrajectoryOn-univ}
-
-\inputleannode{lem:continuousSystem-isTrajectory-isTrajectoryOn}
-
-Inputs that switch — steps, sample-and-hold, bang-bang — produce solutions with corners at the
-switching times.  With the input taken right-continuous, such a solution still has a right
-derivative everywhere, given by the new value of the input; these right trajectories are the
-solution concept for input-to-state stability, and every trajectory is one.
-
-\inputleannode{def:continuousSystem-isRightTrajectoryOn}
-
-\inputleannode{lem:continuousSystem-isTrajectoryOn-isRightTrajectoryOn}
+\subsection{Invariance, constant inputs and cascades}
 
 A set is forward invariant when trajectories that start in it stay in it.
 
 \inputleannode{def:continuousSystem-isForwardInvariant}
 
-The derivative of a function along the system is the rate at which it changes along trajectories.
-It takes the input value as an argument: stability uses the input-free system, input-to-state
-notions a general input.
+\inputleannode{def:continuousSystem-constInput}
 
-\inputleannode{def:continuousSystem-lieDerivative}
+\inputleannode{lem:continuousSystem-isAutonomous-constInput}
 
-The derivative form above excludes the solutions produced by discontinuous inputs, which have
-corners where the input jumps. The integral form admits them, and is the one input-driven notions
-such as input-to-state stability are stated with; for continuous right-hand sides the two agree.
+\inputleannode{lem:continuousSystem-constInput-isTrajectoryOn-iff}
 
-\inputleannode{def:continuousSystem-isCaratheodoryTrajectoryOn}
+\inputleannode{def:continuousSystem-zeroInput}
 
-\inputleannode{def:continuousSystem-isCaratheodoryTrajectory}
+\inputleannode{lem:continuousSystem-isAutonomous-zeroInput}
 
-\inputleannode{lem:continuousSystem-isCaratheodoryTrajectory-isCaratheodoryTrajectoryOn}
+\inputleannode{lem:continuousSystem-zeroInput-isTrajectoryOn-iff}
 
-\inputleannode{thm:continuousSystem-isCaratheodoryTrajectoryOn-Icc-iff}
+\inputleannode{def:continuousSystem-cascade}
 
-\inputleannode{thm:continuousSystem-isCaratheodoryTrajectoryOn-iff}
+\inputleannode{lem:continuousSystem-cascade-isTrajectoryOn-iff}
 
 \section{Discrete time}
 
@@ -615,7 +745,13 @@ chapter, by definition.
 
 \inputleannode{def:continuousLTV-isTrajectory}
 
-\inputleannode{def:continuousLTV-isCaratheodoryTrajectoryOn}
+\inputleannode{thm:continuousLTV-isTrajectoryOn-iff-isIntegralCurveOn}
+
+\inputleannode{thm:continuousLTV-isTrajectory-iff-isIntegralCurve}
+
+\inputleannode{thm:continuousLTV-isTrajectoryOn-zero-iff-isIntegralCurveOn}
+
+\inputleannode{thm:continuousLTV-isTrajectory-zero-iff-isIntegralCurve}
 
 \inputleannode{def:continuousLTV-isTimeInvariant}
 
@@ -752,6 +888,8 @@ quantifies over.
 
 
 
+
+\inputleannode{thm:isIntegralCurve-forcedResponse}
 
 \inputleannode{thm:isTrajectory-forcedResponse}
 
@@ -1097,9 +1235,9 @@ Lyapunov function along a trajectory is a subsolution of it.
 
 \inputleannode{lem:exists-classK-minorant-lipschitz}
 
-\inputleannode{thm:classK-dini-bound}
+\inputleannode{thm:classK-ae-bound}
 
-\inputleannode{thm:classK-bound-above-level}
+\inputleannode{thm:classK-ae-bound-above-level}
 
 \section{Massera's lemma}
 
@@ -1236,11 +1374,34 @@ it decreases along the system.
 
 \inputleannode{def:continuousSystem-isExponentialLyapunovFunction}
 
+\inputleannode{lem:continuousSystem-isExponentialLyapunovFunction-mono}
+
+Along a trajectory that stays in its region, a certificate is absolutely continuous, with
+derivative $\dot V$ almost everywhere.
+
+\inputleannode{lem:continuousSystem-isLyapunovFunction-absolutelyContinuousOnInterval-comp}
+
+\inputleannode{lem:continuousSystem-isLyapunovFunction-ae-deriv-comp-eq-lieDerivative}
+
+\inputleannode{lem:continuousSystem-isLyapunovFunction-antitoneOn-comp}
+
+\inputleannode{lem:continuousSystem-isExponentialLyapunovFunction-exists-comp-le-mul-exp}
+
+A time-invariant $V(x)$ gives a certificate $(t, x) \mapsto V(x)$.
+
 \inputleannode{lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isUniformLyapunovFunction-of-timeInvariant-of-contDiffAt}
 
 \inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant}
 
+\inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant-of-contDiffAt}
+
 \inputleannode{lem:continuousSystem-isStrictUniformLyapunovFunction-of-timeInvariant-of-neg}
+
+\inputleannode{lem:continuousSystem-isExponentialLyapunovFunction-of-timeInvariant}
+
+\inputleannode{lem:continuousSystem-isExponentialLyapunovFunction-of-timeInvariant-of-contDiffAt}
 
 \section{Lyapunov's direct method}
 
@@ -1250,7 +1411,7 @@ flatten as $t \to \infty$. Sandwiching $V$ between two positive-definite functio
 alone is what restores uniformity. Only trajectories on segments $[t_0, t_1]$ are used, so no
 solution is assumed to exist for all time.
 
-\inputleannode{lem:continuousSystem-isRightTrajectoryOn-trapped-in-ball}
+\inputleannode{lem:continuousSystem-isTrajectoryOn-trapped-in-ball}
 
 \inputleannode{thm:continuousSystem-isUniformLyapunovFunction-uniformlyStable}
 
@@ -1275,9 +1436,13 @@ Exponential stability has a quadratic Lyapunov function, built by integrating th
 along solutions over a fixed horizon.  Its gradient is of the order of the distance to the
 equilibrium, which is what lets it absorb perturbations of the vector field.
 
+\inputleannode{thm:continuousSystem-lieDerivative-integral-stateTransitionMap}
+
 \inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-globallyExponentiallyStable}
 
 \inputleannode{thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate}
+
+\inputleannode{thm:continuousSystem-lieDerivative-integral-Ioi-stateTransitionMap}
 
 \inputleannode{thm:continuousSystem-exists-lyapunov-of-KLBounded}
 
@@ -1290,6 +1455,8 @@ until they reach a neighbourhood of the ball, and stay there.
 \inputleannode{def:continuousSystem-isUltimateBoundLyapunovFunction}
 
 \inputleannode{def:continuousSystem-isGlobalUltimateBoundLyapunovFunction}
+
+\inputleannode{lem:continuousSystem-isGlobalUltimateBoundLyapunovFunction-restrict}
 
 \inputleannode{lem:continuousSystem-uniformlyBounded-of-classKL-bound}
 

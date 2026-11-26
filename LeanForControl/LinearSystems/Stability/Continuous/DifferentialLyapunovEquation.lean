@@ -248,8 +248,9 @@ lemma exists_lower_bound_lyapunovIntegral (hA : Continuous s.A) {L : ℝ}
   have h_ex317 : ∀ τ, t ≤ τ → ‖x‖ * Real.exp (-K * (τ - t)) ≤ ‖s.stateTransition τ t x‖ :=
     fun τ hτ => by
       have h := (ContinuousSystem.IsTrajectoryOn.norm_exp_bounds (L := K) (x_c := 0)
-        (IsIntegralCurveOn.mono (isTrajectoryOn_homogeneousResponse s hA t x)
-          (Icc_subset_Ici_self : Icc t τ ⊆ Ici t)) (fun r _ => ?_) ⟨hτ, le_rfl⟩).1
+        ((isTrajectoryOn_homogeneousResponse s hA t x).mono
+          (Icc_subset_Ici_self : Icc t τ ⊆ Ici t)) (Filter.Eventually.of_forall fun r _ => ?_)
+        ⟨hτ, le_rfl⟩).1
       · simpa [stateTransition_self] using h
       simp only [ContinuousSystem.vectorField_apply, Pi.zero_apply, toContinuousSystem_F,
         map_zero, add_zero, sub_zero]
@@ -350,10 +351,12 @@ theorem exists_differentialLyapunovEquation (s : ContinuousLTV E U Y) (hA : Cont
 
 /-- **A solution of the differential Lyapunov equation is a Lyapunov function** (Khalil,
 Example 4.21): if `P` solves `-Ṗ = PA + A*P + Q` with `c₁‖x‖² ≤ ⟪x, P(t) x⟫`, `‖P(t)‖ ≤ p` and
-`⟪x, Q(t) x⟫ ≥ q₁‖x‖²`, then `V(t, x) = ⟪x, P(t) x⟫` is an exponential Lyapunov function with
-exponent `2` for `ẋ = A(t) x`.
+`⟪x, Q(t) x⟫ ≥ q₁‖x‖²`, and `A` and `Q` are continuous, then `V(t, x) = ⟪x, P(t) x⟫` is an
+exponential Lyapunov function with exponent `2` for `ẋ = A(t) x`.
 
-Along the system, `V̇ = ⟪x, Ṗx⟫ + ⟪Ax, Px⟫ + ⟪x, PAx⟫ = -⟪x, Qx⟫`.
+Along the system, `V̇ = ⟪x, Ṗx⟫ + ⟪Ax, Px⟫ + ⟪x, PAx⟫ = -⟪x, Qx⟫`.  Continuity of `A` and `Q`
+(Khalil's standing assumption in Theorem 4.12) makes `Ṗ = -(PA + A*P + Q)` continuous on `t ≥ 0`,
+so `P`, hence `V`, is `C¹` there, and therefore locally Lipschitz, as a Lyapunov function must be.
 
 Reference: Khalil, *Nonlinear Systems* (3rd ed.), Example 4.21. -/
 @[blueprint "thm:continuousLTV-isExponentialLyapunovFunction-of-differentialLyapunovEquation"
@@ -361,7 +364,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Example 4.21. -/
   (statement := /-- Let $P$ satisfy the differential Lyapunov equation
     (\cref{def:differentialLyapunovEquation}) for $A$ with forcing $Q$, with
     $c_1\|x\|^2 \le \langle x, P(t)x\rangle$, $\|P(t)\| \le p$ and
-    $\langle x, Q(t)x\rangle \ge q_1\|x\|^2$ for $t \ge 0$, $c_1, q_1 > 0$.  Then
+    $\langle x, Q(t)x\rangle \ge q_1\|x\|^2$ for $t \ge 0$, $c_1, q_1 > 0$, and $A$ and $Q$
+    continuous on $t \ge 0$.  Then
     $V(t, x) = \langle x, P(t)x\rangle$ is an exponential Lyapunov function with exponent $2$
     (\cref{def:continuousSystem-isExponentialLyapunovFunction}) for $\dot x = A(t)x$.
 
@@ -369,12 +373,15 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Example 4.21. -/
   (proof := /-- The bounds are the hypotheses and Cauchy--Schwarz.  The derivative along the
     system is $\langle x, \dot P x\rangle + \langle Ax, Px\rangle + \langle x, PAx\rangle$, which
     the differential Lyapunov equation turns into
-    $-\langle x, Qx\rangle \le -q_1\|x\|^2$. -/)]
+    $-\langle x, Qx\rangle \le -q_1\|x\|^2$.  Since $A$ and $Q$ are continuous on $t \ge 0$, so
+    is $\dot P = -(PA + A^{*}P + Q)$; hence $P$ is $C^1$ on $t \ge 0$, so is $V$, and a $C^1$
+    function on a convex set is locally Lipschitz there. -/)]
 theorem isExponentialLyapunovFunction_of_differentialLyapunovEquation
-    (s : ContinuousLTV E U Y) {P Q : ℝ → E →L[ℝ] E}
+    (s : ContinuousLTV E U Y) (hA : ContinuousOn s.A (Ici 0)) {P Q : ℝ → E →L[ℝ] E}
     (hP : DifferentialLyapunovEquation s.A P Q) {p : ℝ} (hP_bdd : ∀ t, 0 ≤ t → ‖P t‖ ≤ p)
     {c₁ : ℝ} (hc₁ : 0 < c₁) (hP_low : ∀ t, 0 ≤ t → ∀ x : E, c₁ * ‖x‖ ^ 2 ≤ inner ℝ x (P t x))
-    {q₁ : ℝ} (hq₁ : 0 < q₁) (hQ_pos : ∀ t, 0 ≤ t → ∀ x : E, q₁ * ‖x‖ ^ 2 ≤ inner ℝ x (Q t x)) :
+    (hQ : ContinuousOn Q (Ici 0)) {q₁ : ℝ} (hq₁ : 0 < q₁)
+    (hQ_pos : ∀ t, 0 ≤ t → ∀ x : E, q₁ * ‖x‖ ^ 2 ≤ inner ℝ x (Q t x)) :
     s.toContinuousSystem.zeroInput.IsExponentialLyapunovFunction
       (fun t x => inner ℝ x (P t x)) 0 univ 2 := by
   set V : ℝ → E → ℝ := fun t x => inner ℝ x (P t x)
@@ -383,8 +390,20 @@ theorem isExponentialLyapunovFunction_of_differentialLyapunovEquation
       ((DifferentiableAt.comp (g := P) (t, x) (hP t ht).differentiableAt
         differentiableAt_fst).clm_apply differentiableAt_snd)
   have hp : 0 ≤ p := (norm_nonneg _).trans (hP_bdd 0 le_rfl)
-  refine ⟨Filter.univ_mem, fun t ht x _ => hV_diff t ht x, two_pos, c₁, hc₁, p + 1,
+  refine ⟨Filter.univ_mem, fun t ht x _ => hV_diff t ht x, ?_, two_pos, c₁, hc₁, p + 1,
     by positivity, q₁, hq₁, fun t ht x _ => ?_⟩
+  -- `Ṗ = -(PA + A*P + Q)` is continuous on `t ≥ 0`, so `P`, hence `V`, is `C¹` there.
+  · have hP_diff : DifferentiableOn ℝ P (Ici 0) :=
+      fun t ht => (hP t ht).differentiableAt.differentiableWithinAt
+    have hP_contDiff : ContDiffOn ℝ 1 P (Ici 0) :=
+      (contDiffOn_succ_iff_derivWithin (n := 0) (uniqueDiffOn_Ici 0)).2 ⟨hP_diff, by simp,
+        contDiffOn_zero.2 <| (((hP_diff.continuousOn.mul hA).add
+          ((continuous_star.comp_continuousOn hA).mul hP_diff.continuousOn)).add hQ).neg.congr
+          fun t ht => (hP t ht).hasDerivWithinAt.derivWithin (uniqueDiffOn_Ici 0 t ht)⟩
+    exact ContDiffOn.locallyLipschitzOn ((convex_Ici 0).prod convex_univ)
+      (contDiffOn_snd.inner ℝ
+        ((hP_contDiff.comp contDiffOn_fst (prod_subset_preimage_fst _ _)).clm_apply
+          contDiffOn_snd))
   simp only [sub_zero, Real.rpow_two]
   refine ⟨hP_low t ht x, ?_, ?_⟩
   · calc inner ℝ x (P t x)

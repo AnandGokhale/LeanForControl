@@ -10,17 +10,18 @@ A system with input is *input-to-state stable* about `(x_eq, u_eq)` when every t
 `[t₀, t]`: the effect of the initial state decays, and the input contributes at most a gain of
 its distance from `u_eq`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, Definition 4.7 and Theorem 4.19;
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the section on input-to-state stability;
 Sontag, *Input to state stability: basic concepts and results*, in *Nonlinear and Optimal Control
 Theory*, Lecture Notes in Mathematics 1932, Springer (2008).
 
 ## Main results
 
-* `InputToStateStable` — Khalil's Definition 4.7, with a class `K∞` gain.
-* `norm_le_of_isISSLyapunov` — the estimate of Khalil's Theorem 4.19, for a merely monotone `ρ`:
+* `InputToStateStable` — Khalil's definition, with a class `K∞` gain.
+* `norm_le_of_isISSLyapunov` — the estimate of Khalil's ISS-Lyapunov theorem, for a merely
+  monotone `ρ`:
   `‖x(t) - x_c‖ ≤ β(‖x(t₀) - x_c‖, t - t₀) + α₁⁻¹(α₂(ρ(M)))`.
-* `inputToStateStable_of_isISSLyapunov` — Theorem 4.19 itself, with `ρ` of class `K∞`.
-* `inputToStateStable_of_globallyExponentiallyStable` — Khalil's Lemma 4.6: a system whose
+* `inputToStateStable_of_isISSLyapunov` — the ISS-Lyapunov theorem itself, with `ρ` of class `K∞`.
+* `inputToStateStable_of_globallyExponentiallyStable` — Khalil's lemma: a system whose
   unforced part is globally exponentially stable, and whose field is Lipschitz in the input, is
   input-to-state stable.
 * `InputToStateStable.globallyUniformlyAsymptoticallyStable` — with the input held at `u_eq`,
@@ -44,13 +45,14 @@ so the same `β` serves every input.
   two are equivalent, taking `M` to be the supremum, and a bound avoids the junk value of `sSup`
   on an unbounded set.
 * The gain `γ` is class `K∞` rather than class `K`, as in Sontag.  Nothing is lost: a class `K`
-  gain `γ` is dominated by `γ + id`, of class `K∞`.  Theorem 4.19 accordingly asks for `ρ` of
-  class `K∞`, also no loss, since enlarging `ρ` only weakens its hypothesis;
+  gain `γ` is dominated by `γ + id`, of class `K∞`.  The ISS-Lyapunov theorem accordingly asks for
+  `ρ` of class `K∞`, also no loss, since enlarging `ρ` only weakens its hypothesis;
   `norm_le_of_isISSLyapunov` keeps Khalil's exact gain `α₁⁻¹ ∘ α₂ ∘ ρ` for any monotone `ρ`.
-* Trajectories are *right trajectories* (`IsRightTrajectoryOn`): continuous, with right
-  derivative `F(t, x, u(t))`.  These are the solutions under piecewise continuous inputs, taken
-  right-continuous — Khalil's input class — so the estimate covers step, sample-and-hold and
-  switching inputs, whose solutions have corners.  Every classical trajectory is one.
+* Trajectories are Carathéodory solutions (`IsTrajectoryOn`): `x(b) - x(a)` is the integral of
+  `F(τ, x, u(τ))` over `[a, b]`.  These include the solutions under piecewise continuous inputs —
+  Khalil's input class, with no right-continuity convention needed — so the estimate covers step,
+  sample-and-hold and switching inputs, whose solutions have corners, and also measurable inputs.
+  Every classical trajectory along which the field is integrable is one.
 * As for every bound in this library, trajectories are quantified on segments: solutions are not
   required to exist for all time (see the forward-completeness item in `Stability/plan.md`).
 -/
@@ -59,24 +61,25 @@ open Set Filter Topology Metric
 
 namespace ContinuousSystem
 
-variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup U]
+variable {E U Y : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+  [NormedAddCommGroup U]
 
 /-- The system is **input-to-state stable** about `(x_eq, u_eq)`: there are a global class `KL`
 function `β` and a class `K∞` gain `γ` with `‖x(t) - x_eq‖ ≤ β(‖x(t₀) - x_eq‖, t - t₀) + γ(M)`
-along every right trajectory, whenever `M` bounds `‖u - u_eq‖` on `[t₀, t]`.  Right trajectories
-are the solutions under piecewise continuous, right-continuous inputs, so discontinuous inputs are
-covered.
+along every trajectory, whenever `M` bounds `‖u - u_eq‖` on `[t₀, t]`.  Trajectories are
+Carathéodory solutions, which include the solutions under piecewise continuous and under measurable
+inputs, so discontinuous inputs are covered.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.7; Sontag (2008), for the class
-`K∞` gain. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the definition of input-to-state
+stability; Sontag (2008), for the class `K∞` gain. -/
 @[blueprint "def:continuousSystem-inputToStateStable"
   (title := "Input-to-state stability")
   (statement := /-- A continuous-time system with input is \emph{input-to-state stable} about
     $(x_{\mathrm{eq}}, u_{\mathrm{eq}})$ when there are a global class $\mathcal{KL}$ function
     $\beta$
     (\cref{def:isClassKLGlobal}) and a class $\mathcal{K}_{\infty}$ function $\gamma$
-    (\cref{def:isClassKInfty}) such that every right trajectory
-    (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
+    (\cref{def:isClassKInfty}) such that every trajectory
+    (\cref{def:continuousSystem-isTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
     under any input $u$ satisfies
     \[
       \|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0) + \gamma(M)
@@ -84,25 +87,28 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Definition 4.7; Sontag (2008),
     \]
     whenever $\|u(\tau) - u_{\mathrm{eq}}\| \le M$ for all $\tau \in [t_0, t]$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Definition 4.7.  Differences:
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the definition of
+    input-to-state stability.  Differences:
     \begin{itemize} \item The equilibrium and the input are measured from a general
     $(x_{\mathrm{eq}}, u_{\mathrm{eq}})$ rather than the origin.  \item Any bound $M$ on the
     input replaces its supremum, which is equivalent.
     \item $\gamma$ is class $\mathcal{K}_{\infty}$, as in Sontag, rather than class
     $\mathcal{K}$; a class $\mathcal{K}$ gain $\gamma$ is dominated by $\gamma + \mathrm{id}$.
-    \item Trajectories are right trajectories, the solutions under Khalil's piecewise continuous
-    inputs (taken right-continuous): continuous, with right derivative $F(t, x, u(t))$.
+    \item Trajectories are Carathéodory solutions, which include the solutions under Khalil's
+    piecewise continuous inputs (no right-continuity convention needed) and under measurable
+    inputs.
     \item Solutions are not required to exist for all time. \end{itemize} -/)]
 def InputToStateStable (s : ContinuousSystem E U Y) (x_eq : E) (u_eq : U) : Prop :=
   ∃ β : ClassKLGlobal, ∃ γ : ClassKInfty, ∀ t₀ : ℝ, 0 ≤ t₀ →
-    ∀ (t₁ : ℝ) (u : ℝ → U) (x : ℝ → E), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
+    ∀ (t₁ : ℝ) (u : ℝ → U) (x : ℝ → E), s.IsTrajectoryOn u x (Icc t₀ t₁) →
       ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ - u_eq‖ ≤ M) →
         ‖x t - x_eq‖ ≤ β.toFun ‖x t₀ - x_eq‖ (t - t₀) + γ.toFun M
 
 /-- **Input-to-state stability implies global uniform asymptotic stability with the input held
 at `u_eq`**: with `u ≡ u_eq` and `M = 0` the estimate is a global class `KL` bound.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Definition 4.7. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the section on input-to-state
+stability. -/
 @[blueprint "thm:continuousSystem-inputToStateStable-globallyUniformlyAsymptoticallyStable"
   (title := "Input-to-state stability implies global uniform asymptotic stability")
   (statement := /-- If $s$ is input-to-state stable about $x_{\mathrm{eq}}$
@@ -112,7 +118,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Section 4.9, after Definition 
     (\cref{def:continuousSystem-constInput},
     \cref{def:continuousSystem-globallyUniformlyAsymptoticallyStable}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Section 4.9. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the section on input-to-state
+    stability. -/)
   (proof := /-- With $u \equiv u_{\mathrm{eq}}$ and $M = 0$, $\gamma(M) = 0$ and the estimate is
     $\|x(t) - x_{\mathrm{eq}}\| \le \beta(\|x(t_0) - x_{\mathrm{eq}}\|, t - t_0)$, a global
     class $\mathcal{KL}$ bound;
@@ -124,34 +131,39 @@ theorem InputToStateStable.globallyUniformlyAsymptoticallyStable {s : Continuous
   -- With `u ≡ u_eq` and `M = 0`, `γ(M) = 0` and the estimate is a global class `KL` bound.
   refine (globallyUniformlyAsymptoticallyStable_iff_classKL _ _).mpr
     ⟨β, fun t₀ ht₀ t₁ x hx t ht => ?_⟩
-  have h := hβ t₀ ht₀ t₁ (fun _ => u_eq) x (IsTrajectoryOn.isRightTrajectoryOn hx) t ht 0
+  have h := hβ t₀ ht₀ t₁ (fun _ => u_eq) x ((constInput_isTrajectoryOn_iff s u_eq).1 hx) t ht 0
     fun _ _ => by simp
   rwa [γ.map_zero, add_zero] at h
 
-/-- An **ISS-Lyapunov function** about `(x_c, u_eq)`: `V` is differentiable, sandwiched between
+/-- An **ISS-Lyapunov function** about `(x_c, u_eq)`: `V` is differentiable and locally
+Lipschitz, sandwiched between
 `α₁(‖x - x_c‖)` and `α₂(‖x - x_c‖)` with `α₁, α₂` of class `K∞`, and decreases at least as fast as
 `W₃` wherever `‖x - x_c‖ ≥ ρ(‖u - u_eq‖)`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19, (4.48)–(4.49); Sontag (2008). -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the hypotheses of the ISS-Lyapunov
+theorem; Sontag (2008). -/
 @[blueprint "def:continuousSystem-isISSLyapunovFunction"
   (title := "ISS-Lyapunov function")
   (statement := /-- Let $\alpha_1, \alpha_2$ be class $\mathcal{K}_{\infty}$, $W_3 : E \to
     \mathbb{R}$ and $\rho : [0, \infty) \to \mathbb{R}$.  A function
     $V : \mathbb{R} \times E \to \mathbb{R}$ is an \emph{ISS-Lyapunov function} for the system
-    about $(x_c, u_{\mathrm{eq}})$ if, for all $t \ge 0$, $x$ and $u$, $V$ is differentiable at
-    $(t, x)$ and
+    about $(x_c, u_{\mathrm{eq}})$ if $V$ is locally Lipschitz on $[0, \infty) \times E$ and, for
+    all $t \ge 0$, $x$ and $u$, $V$ is differentiable at $(t, x)$ and
     \[
       \alpha_1(\|x - x_c\|) \le V(t, x) \le \alpha_2(\|x - x_c\|), \qquad
       \dot V(t, x, u) \le -W_3(x) \quad
         \text{for } \|x - x_c\| \ge \rho(\|u - u_{\mathrm{eq}}\|).
     \]
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.19, (4.48)--(4.49);
-    Sontag (2008). -/)]
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the hypotheses of the
+    ISS-Lyapunov theorem; Sontag (2008). -/)]
 structure IsISSLyapunovFunction (s : ContinuousSystem E U Y) (V : ℝ → E → ℝ) (x_c : E) (u_eq : U)
     (α₁ α₂ : ClassKInfty) (W₃ : E → ℝ) (ρ : ℝ → ℝ) : Prop where
   /-- `V` is differentiable. -/
   differentiableAt : ∀ t : ℝ, 0 ≤ t → ∀ y : E, DifferentiableAt ℝ (Function.uncurry V) (t, y)
+  /-- `V` is locally Lipschitz in `(t, x)` on `t ≥ 0`, so that it is absolutely continuous along
+  every trajectory. -/
+  locallyLipschitzOn : LocallyLipschitzOn (Ici 0 ×ˢ univ) (Function.uncurry V)
   /-- `V` is sandwiched between class `K∞` functions of `‖x - x_c‖`. -/
   sandwich : ∀ t : ℝ, 0 ≤ t → ∀ y : E,
     α₁.toFun ‖y - x_c‖ ≤ V t y ∧ V t y ≤ α₂.toFun ‖y - x_c‖
@@ -170,7 +182,8 @@ function, with `W₃` positive definite and `ρ` nonnegative and monotone.  Then
 `‖x(t) - x_c‖ ≤ β(‖x(t₀) - x_c‖, t - t₀) + α₁⁻¹(α₂(ρ(M)))` whenever `M` bounds `‖u - u_eq‖` on
 `[t₀, t]`, for a single global class `KL` function `β`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the ISS-Lyapunov theorem and its
+proof. -/
 @[blueprint "thm:continuousSystem-norm-le-of-isISSLyapunov"
   (title := "Input-to-state estimate from an ISS-Lyapunov function")
   (statement := /-- Let the state space be $\mathbb{R}^n$ and $V$ an ISS-Lyapunov function about
@@ -179,8 +192,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
     $x_c$ on $\mathbb{R}^n$ (\cref{def:isPositiveDefiniteOn}) and
     $\rho : [0, \infty) \to [0, \infty)$ is nondecreasing.  Then there is a global class
     $\mathcal{KL}$ function
-    $\beta$ such that every right trajectory
-    (\cref{def:continuousSystem-isRightTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
+    $\beta$ such that every trajectory
+    (\cref{def:continuousSystem-isTrajectoryOn}) on a segment $[t_0, t_1]$, $t_0 \ge 0$,
     satisfies
     \[
       \|x(t) - x_c\| \le \beta(\|x(t_0) - x_c\|, t - t_0) + \alpha_1^{-1}(\alpha_2(\rho(M)))
@@ -188,8 +201,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19 and its proof. -/
     for $t \in [t_0, t_1]$, whenever $\|u(\tau) - u_{\mathrm{eq}}\| \le M$ for all
     $\tau \in [t_0, t]$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.19, with
-    $u_{\mathrm{eq}} = 0$ and $\rho$ class $\mathcal{K}$; only its monotonicity is used. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the ISS-Lyapunov theorem,
+    with $u_{\mathrm{eq}} = 0$ and $\rho$ class $\mathcal{K}$; only its monotonicity is used. -/)
   (proof := /-- Fix the input and $t$.  Freeze the input, clamped to $[t_0, t]$, into the
     system: $\dot x = F(\tau, x, u(\tau))$ is an unforced system with the same trajectories on
     $[t_0, t]$, and since $\|u(\tau) - u_{\mathrm{eq}}\| \le M$ and $\rho$ is nondecreasing,
@@ -203,7 +216,7 @@ theorem norm_le_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
     (hW₃ : IsPositiveDefiniteOn W₃ x_c univ)
     (hρ_mono : MonotoneOn ρ (Ici 0)) (hρ_nonneg : ∀ r, 0 ≤ r → 0 ≤ ρ r) :
     ∃ β : ClassKLGlobal, ∀ t₀ : ℝ, 0 ≤ t₀ →
-      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → E), s.IsRightTrajectoryOn u x (Icc t₀ t₁) →
+      ∀ (t₁ : ℝ) (u : ℝ → U') (x : ℝ → E), s.IsTrajectoryOn u x (Icc t₀ t₁) →
         ∀ t ∈ Icc t₀ t₁, ∀ M : ℝ, (∀ τ ∈ Icc t₀ t, ‖u τ - u_eq‖ ≤ M) →
           ‖x t - x_c‖ ≤ β.toFun ‖x t₀ - x_c‖ (t - t₀) + α₁.invFun (α₂.toFun (ρ M)) := by
   -- `β` is chosen once, before the input.
@@ -218,11 +231,10 @@ theorem norm_le_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
     simp only [clamp, min_eq_left hτ.2, max_eq_right hτ.1]
   let s' : ContinuousSystem E Unit Y' :=
     autonomous (fun τ y => s.F τ y (u (clamp τ))) (fun τ y => s.h τ y (u (clamp τ)))
-  -- On `[t₀, t]` the frozen system has the same trajectories ...
-  have hx' : s'.IsRightTrajectoryOn (fun _ => ()) x (Icc t₀ t) :=
-    ⟨hx.1.mono (Icc_subset_Icc_right ht.2), fun τ hτ => by
-      simpa [s', vectorField, h_clamp_eq τ hτ] using (hx.2 τ ⟨hτ.1, hτ.2.trans ht.2⟩).mono
-        (inter_subset_inter_left _ (Icc_subset_Icc_right ht.2))⟩
+  -- On `[t₀, t]` the frozen system has the same field along `x`, hence the same trajectories ...
+  have hx' : s'.IsTrajectoryOn (fun _ => ()) x (Icc t₀ t) :=
+    (hx.mono (Icc_subset_Icc_right ht.2)).congr_vectorField fun τ hτ => by
+      simp [s', h_clamp_eq τ hτ]
   -- ... and `V̇ ≤ -W₃` outside the ball of radius `ρ(M)`, as `ρ(‖u - u_eq‖) ≤ ρ(M)` at every
   -- time.
   have hlie' : ∀ τ : ℝ, 0 ≤ τ → ∀ y : E, ρ M ≤ ‖y - x_c‖ →
@@ -230,15 +242,15 @@ theorem norm_le_of_isISSLyapunov [Nontrivial E] {s : ContinuousSystem E U' Y'}
     hV.decrease τ hτ y (u (clamp τ)) ((hρ_mono (norm_nonneg _) hM_nonneg
       (hM _ (h_clamp_mem τ))).trans hy)
   -- Step 2. The global ultimate bound with `μ = ρ(M)`, and `max ≤ sum`.
-  have h := hβ ⟨hV.differentiableAt, hV.sandwich, hlie'⟩ (hρ_nonneg M hM_nonneg) t₀ ht₀ t x hx' t
-    ⟨ht.1, le_rfl⟩
+  have h := hβ ⟨hV.differentiableAt, hV.locallyLipschitzOn, hV.sandwich, hlie'⟩
+    (hρ_nonneg M hM_nonneg) t₀ ht₀ t x hx' t ⟨ht.1, le_rfl⟩
   exact h.trans (max_le_add_of_nonneg (β.nonneg _ (norm_nonneg _) _ (sub_nonneg.mpr ht.1))
     (α₁.inv_maps_to (α₂.maps_to (hρ_nonneg M hM_nonneg))))
 
 /-- **ISS-Lyapunov functions certify input-to-state stability**, with gain
 `γ = α₁⁻¹ ∘ α₂ ∘ ρ`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the ISS-Lyapunov theorem. -/
 @[blueprint "thm:continuousSystem-inputToStateStable-of-isISSLyapunov"
   (title := "ISS-Lyapunov theorem")
   (statement := /-- Under the hypotheses of \cref{thm:continuousSystem-norm-le-of-isISSLyapunov}
@@ -247,7 +259,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.19. -/
     (\cref{def:continuousSystem-inputToStateStable}) with gain
     $\gamma = \alpha_1^{-1} \circ \alpha_2 \circ \rho$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.19, with $\rho$ of class
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the ISS-Lyapunov theorem,
+    with $\rho$ of class
     $\mathcal{K}$; a class $\mathcal{K}$ $\rho$ can be replaced by $\rho + \mathrm{id}$, which
     only weakens the hypothesis. -/)
   (proof := /-- \cref{thm:continuousSystem-norm-le-of-isISSLyapunov}, with
@@ -268,11 +281,13 @@ globally Lipschitz in `x`, uniformly in `t`, and let the input enter Lipschitz:
 `‖f(t, x, u) - f(t, x, u_eq)‖ ≤ L ‖u - u_eq‖`.  If `x_c` is a globally exponentially stable
 equilibrium of `ẋ = f(t, x, u_eq)`, the system is input-to-state stable about `(x_c, u_eq)`.
 
-The converse Lyapunov function `V` of `ẋ = f(t, x, u_eq)` (Theorem 4.14) is an ISS-Lyapunov
+The converse Lyapunov function `V` of `ẋ = f(t, x, u_eq)` is an ISS-Lyapunov
 function: along the forced system `V̇ ≤ -c₃‖x - x_c‖² + c₄ L ‖x - x_c‖ ‖u - u_eq‖`, which is at
-most `-(c₃/2)‖x - x_c‖²` once `‖x - x_c‖ ≥ (2 c₄ L / c₃) ‖u - u_eq‖`; then apply Theorem 4.19.
+most `-(c₃/2)‖x - x_c‖²` once `‖x - x_c‖ ≥ (2 c₄ L / c₃) ‖u - u_eq‖`; then apply the
+ISS-Lyapunov theorem.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lemma 4.6.  Differences: the input is measured
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), the lemma deriving input-to-state stability
+from exponential stability of the unforced system.  Differences: the input is measured
 from a general `u_eq` (Khalil's is `0`); Khalil asks `f` to be `C¹` and globally Lipschitz in
 `(x, u)`; only the regularity of `f(t, x, u_eq)` and the Lipschitz dependence on the input are
 used. -/
@@ -289,7 +304,8 @@ used. -/
     \cref{def:continuousSystem-constInput}), the system is input-to-state stable about
     $(x_c, u_{\mathrm{eq}})$ (\cref{def:continuousSystem-inputToStateStable}).
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lemma 4.6.  Differences: the input is
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the lemma deriving input-to-state
+    stability from exponential stability of the unforced system.  Differences: the input is
     measured from a general $u_{\mathrm{eq}}$ rather than $0$; Khalil asks $f$ to be $C^1$ and
     globally Lipschitz in $(x, u)$; only the regularity of $f(t, x, u_{\mathrm{eq}})$ and the
     Lipschitz dependence on the input are used. -/)
@@ -316,7 +332,7 @@ theorem inputToStateStable_of_globallyExponentiallyStable {H : Type*} [NormedAdd
     s.InputToStateStable x_c u_eq := by
   obtain ⟨Lu, hLu⟩ := h_input
   -- Step 1. The converse Lyapunov function of `ẋ = f(t, x, u_eq)`.
-  obtain ⟨V, ⟨-, hV_diff, -, c₁, hc₁, c₂, hc₂, c₃, hc₃, hV_bd⟩, c₄, hc₄, h_grad⟩ :=
+  obtain ⟨V, ⟨-, hV_diff, hV_lip, -, c₁, hc₁, c₂, hc₂, c₃, hc₃, hV_bd⟩, c₄, hc₄, h_grad⟩ :=
     ContinuousSystem.exists_quadraticLyapunov_of_globallyExponentiallyStable
       (s := s.constInput u_eq) h_eq hf h_lip h_ges
   -- Step 2. The ISS-Lyapunov data: `αᵢ(r) = cᵢ r²`, `ρ(r) = k r`, `W₃ = (c₃/2)‖x - x_c‖²`.
@@ -329,7 +345,7 @@ theorem inputToStateStable_of_globallyExponentiallyStable {H : Type*} [NormedAdd
   have hW₃ : IsPositiveDefiniteOn W₃ x_c univ :=
     isPositiveDefiniteOn_mul_norm_sub_sq (by positivity) x_c univ
   refine inputToStateStable_of_isISSLyapunov α₁ α₂ ρ (W₃ := W₃)
-    ⟨fun t ht y => hV_diff t ht y (mem_univ y),
+    ⟨fun t ht y => hV_diff t ht y (mem_univ y), hV_lip,
       fun t ht y => ⟨(hV_bd t ht y (mem_univ y)).1, (hV_bd t ht y (mem_univ y)).2.1⟩,
       fun t ht y w hw => ?_⟩ hW₃
   -- Step 3. Along the forced system, `V̇` is `V̇` of `ẋ = f(t, x, u_eq)` plus `∂V/∂x · e`, with

@@ -18,13 +18,13 @@ The stability of an equilibrium is decided by its linearization, except in the c
 Every result builds a quadratic Lyapunov (or Chetaev) function from the linearization and absorbs
 the nonlinear remainder near the equilibrium.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorems 4.7, 4.13 and 4.15; Hahn, *Stability
-of Motion*.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lyapunov's indirect method, for time-invariant
+and for time-varying systems, and its converse; Hahn, *Stability of Motion*.
 
 ## Main results
 
-Time-invariant systems `ẋ = f(x)`, `A = Df(x_eq)` (Khalil, Theorem 4.7), stated for any system
-whose state equation is `ẋ = f(x)` (`s.F t x () = f x`):
+Time-invariant systems `ẋ = f(x)`, `A = Df(x_eq)` (Lyapunov's indirect method), stated for any
+system whose state equation is `ẋ = f(x)` (`s.F t x () = f x`):
 
 * `hurwitz_linearization_locally_exponentially_stable` — the **stable branch**: if `A` is
   Hurwitz, `x_eq` is locally exponentially stable.  A positive-definite solution of the Lyapunov
@@ -38,13 +38,14 @@ whose state equation is `ẋ = f(x)` (`s.F t x () = f x`):
 Time-varying systems `ẋ = f(t, x)`, `A(t) = ∂f/∂x(t, x_eq)`, with `f` and its Jacobian
 Lipschitz near `x_eq` uniformly in `t`:
 
-* `ContinuousSystem.locallyExponentiallyStable_of_linearization_zero` — Khalil's Theorem 4.13:
-  exponential stability of `ẋ = A(t)x` gives that of the origin.  `P(t)` from Theorem 4.12 gives
-  the Lyapunov function `⟪x, P(t) x⟫`.
+* `ContinuousSystem.locallyExponentiallyStable_of_linearization_zero` — Lyapunov's indirect
+  method for time-varying systems: exponential stability of `ẋ = A(t)x` gives that of the origin.
+  `P(t)` from the differential Lyapunov equation gives the Lyapunov function `⟪x, P(t) x⟫`.
 * `ContinuousSystem.locallyExponentiallyStable_of_linearization` — the same at any equilibrium.
 * `ContinuousSystem.locallyExponentiallyStable_linearization` — the converse: exponential
   stability passes to the linearization, through the converse Lyapunov function.
-* `ContinuousSystem.locallyExponentiallyStable_iff_linearization` — Khalil's Theorem 4.15.
+* `ContinuousSystem.locallyExponentiallyStable_iff_linearization` — the two directions
+  together.
 
 In both time-varying directions the two fields differ by `O(‖x - x_eq‖²)`, so a Lyapunov function
 for one serves for the other near `x_eq`
@@ -124,19 +125,16 @@ private theorem isExponentialLyapunovFunction_of_continuousLyapunovEquation
   let p : ℝⁿ →L[ℝ] ℝⁿ := Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) P
   have hV : ContDiff ℝ 1 (centeredQuadraticForm P x_eq) :=
     (centeredQuadraticForm_contDiff P x_eq).of_le (by norm_num)
-  refine ⟨r, hr, Metric.ball_mem_nhds x_eq hr,
-    fun t _ x _ => (hV.differentiable one_ne_zero x).comp (t, x) differentiableAt_snd,
-    two_pos, m, hm, ‖p‖ + 1, by positivity, 1 / 2, by norm_num,
-    fun t _ x hx => ⟨?_, ?_, ?_⟩⟩
+  refine ⟨r, hr, .of_timeInvariant_of_contDiffAt (Metric.ball_mem_nhds x_eq hr)
+    (fun _ _ => hV.contDiffAt) two_pos ⟨m, hm, ‖p‖ + 1, by positivity, 1 / 2, by norm_num,
+    fun t _ x hx => ⟨?_, ?_, ?_⟩⟩⟩
   · rw [Real.rpow_two]
     simpa [centeredQuadraticForm] using hm_lower (x - x_eq)
   · rw [Real.rpow_two]
     calc centeredQuadraticForm P x_eq x ≤ ‖p‖ * ‖x - x_eq‖ ^ 2 := by
           simpa [centeredQuadraticForm, p] using quadraticForm_le_opNorm_mul_norm_sq P (x - x_eq)
       _ ≤ (‖p‖ + 1) * ‖x - x_eq‖ ^ 2 := by gcongr; linarith
-  · rw [Real.rpow_two, ContinuousSystem.lieDerivative,
-      lieDerivative_const ((hV.differentiable one_ne_zero) x)]
-    simp only [hF]
+  · rw [Real.rpow_two, hF]
     linarith [hdecay x (by simpa [Metric.mem_ball, dist_eq_norm] using hx)]
 
 /-- **Stable branch of Lyapunov's indirect method.** If the Jacobian at a `C¹`
@@ -347,7 +345,7 @@ same statement in the coordinate `x - x_eq`.
 It is the nonlinear theorem `unstable_of_exists_complex_eigenvalue_re_pos` for the linear
 field, which is its own linearization.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lyapunov's indirect method.
 -/
 @[blueprint "thm:unstable-linear-of-eigenvalue-re-pos"
   (title := "Instability of a linear system")
@@ -356,7 +354,7 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.7.
     (\cref{def:continuousSystem-unstable}) for any system on $\mathbb{R}^n$ whose state
     equation is $\dot x = A x$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.7.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lyapunov's indirect method.
   -/)
   (proof := /-- The field $x \mapsto Ax$ is $C^1$, vanishes at $0$ and is its own Jacobian, so
     this is \cref{thm:positive-real-eigenvalue-unstable} at $x_{\mathrm{eq}} = 0$. -/)]
@@ -382,7 +380,7 @@ open scoped NNReal
 /-- **The linearization remainder is quadratic**: with `f(t, x_eq) = 0` and `∂f/∂x(t, ·)`
 `L₁`-Lipschitz on the ball, `‖A(t)(x - x_eq) - f(t, x)‖ ≤ L₁ ‖x - x_eq‖²` there.  The quadratic
 linearization error (`Convex.norm_image_sub_sub_le_of_lipschitzOnWith`) for `f(t, ·)` at an
-equilibrium; Khalil's `‖g(t, x)‖ ≤ L‖x‖²` before Theorem 4.13. -/
+equilibrium; Khalil's bound `‖g(t, x)‖ ≤ L‖x‖²` on the remainder. -/
 private lemma norm_linearization_remainder_le {Y : Type*} {s : ContinuousSystem ℝⁿ Unit Y}
     {x_eq : ℝⁿ} {r : ℝ} (hr : 0 < r) (h_eq : ∀ t : ℝ, s.F t x_eq () = 0)
     (hf : ContDiffOn ℝ 1 (fun p : ℝ × ℝⁿ => s.F p.1 p.2 ()) (univ ×ˢ ball x_eq r))
@@ -400,13 +398,13 @@ private lemma norm_linearization_remainder_le {Y : Type*} {s : ContinuousSystem 
   simp only [h_eq t, sub_zero] at h
   exact h.trans (mul_le_mul_of_nonneg_right (half_le_self L₁.coe_nonneg) (sq_nonneg _))
 
-/-- **Exponential stability passes to the linearization** (Khalil, Theorem 4.15, the "only if"
-direction).  Let `x_eq` be an equilibrium of `ẋ = f(t, x)` with `f` continuously
+/-- **Exponential stability passes to the linearization** (the "only if" direction of Khalil's
+linearization theorem).  Let `x_eq` be an equilibrium of `ẋ = f(t, x)` with `f` continuously
 differentiable, Lipschitz, and with Lipschitz Jacobian on a ball `D`, uniformly in `t`.  If
 `x_eq` is locally exponentially stable, so it is for the linearization
 `ẋ = A(t)(x - x_eq)`, `A(t) = ∂f/∂x(t, x_eq)`.
 
-The converse Lyapunov function of the nonlinear system (Theorem 4.14) serves for the
+The converse Lyapunov function for exponential stability of the nonlinear system serves for the
 linearization near `x_eq`: the two vector fields differ by `O(‖x - x_eq‖²)` and `∂V/∂x` is
 `O(‖x - x_eq‖)`, so the difference in `V̇` is cubic and is absorbed by `-c₃‖x - x_eq‖²`. -/
 @[blueprint "thm:continuousSystem-locallyExponentiallyStable-linearization"
@@ -422,7 +420,8 @@ linearization near `x_eq`: the two vector fields differ by `O(‖x - x_eq‖²)`
       A(t) = \frac{\partial f}{\partial x}(t, x_{\mathrm{eq}}).
     \]
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.15, "only if" direction.
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the linearization theorem for
+    exponential stability, "only if" direction.
     Khalil's bounded Jacobian is the Lipschitz bound on $f(t, \cdot)$. -/)
   (proof := /-- Let $V$ be the converse Lyapunov function of the nonlinear system
     (\cref{thm:continuousSystem-exists-quadraticLyapunov-of-exponentialEstimate}), with
@@ -461,16 +460,18 @@ theorem ContinuousSystem.locallyExponentiallyStable_linearization {Y : Type*}
       norm_linearization_remainder_le hr h_eq hf hL₁ t (mem_ball_iff_norm.mpr hx)
   exact hV_lin.locallyExponentiallyStable
 
-/-- **Lyapunov's indirect method for time-varying systems** (Khalil, Theorem 4.13).  Let the
+/-- **Lyapunov's indirect method for time-varying systems** (Khalil).  Let the
 origin be an equilibrium of `ẋ = f(t, x)`, with `f` continuously differentiable on `ℝ × D`,
 `D = {‖x‖ < r}`, and `f(t, ·)` and its Jacobian Lipschitz on `D`, uniformly in `t`.  If the origin
 is exponentially stable for the linear system `ẋ = A(t) x`, `A(t) = ∂f/∂x(t, 0)`, it is so for
 `ẋ = f(t, x)`.
 
-Khalil's proof: Theorem 4.12 gives `P(t)` for the linear system, and along `f = A(t)x + g`,
+Khalil's proof: the differential Lyapunov equation gives `P(t)` for the linear system, and along
+`f = A(t)x + g`,
 `V̇ = -xᵀQx + 2xᵀPg ≤ -c₃‖x‖² + 2c₂L‖x‖³`, negative definite for `‖x‖ < ρ`.
 
-Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.13. -/
+Reference: Khalil, *Nonlinear Systems* (3rd ed.), Lyapunov's indirect method for
+time-varying systems. -/
 @[blueprint "thm:continuousSystem-locallyExponentiallyStable-of-linearization-zero"
   (title := "Lyapunov's indirect method for time-varying systems")
   (statement := /-- Let the origin be an equilibrium of $\dot x = f(t, x)$ on $\mathbb{R}^n$, with
@@ -480,8 +481,8 @@ Reference: Khalil, *Nonlinear Systems* (3rd ed.), Theorem 4.13. -/
     $A(t) = \frac{\partial f}{\partial x}(t, 0)$, then it is an exponentially stable equilibrium
     of $\dot x = f(t, x)$.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.13.  Khalil's bounded
-    Jacobian is the Lipschitz bound on $f(t, \cdot)$. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Lyapunov's indirect method for
+    time-varying systems.  Khalil's bounded Jacobian is the Lipschitz bound on $f(t, \cdot)$. -/)
   (proof := /-- $A(t)$ is continuous and bounded, so
     \cref{thm:continuousLTV-exists-differentialLyapunovEquation} with $Q = I$ gives $P(t)$, and
     $V(t, x) = x^{\mathsf T}P(t)x$ is an exponential Lyapunov function for the linear system
@@ -526,16 +527,17 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization_zero {Y : T
       (fun v => by simp) (fun v => by simp) fun t v => by
         rw [hF]
         simp [J]
-  -- Step 2. Theorem 4.12 with `Q = I` gives `P(t)`; `V(t, x) = ⟪x, P(t) x⟫` is an exponential
-  -- Lyapunov function for the linear system (Example 4.21).
+  -- Step 2. The differential Lyapunov equation with `Q = I` gives `P(t)`;
+  -- `V(t, x) = ⟪x, P(t) x⟫` is an exponential Lyapunov function for the linear system.
   have hQ_pos : ∀ v : ℝⁿ, 1 * ‖v‖ ^ 2 ≤ inner ℝ v ((1 : ℝⁿ →L[ℝ] ℝⁿ) v) := fun v => by
     rw [one_apply_eq_self, real_inner_self_eq_norm_sq, one_mul]
   obtain ⟨P, hP, -, ⟨p, hP_bdd⟩, c₁, hc₁, hP_low⟩ := exists_differentialLyapunovEquation sl
     hJ_cont (fun t => norm_fderiv_le_of_lipschitzOn ℝ (ball_mem_nhds 0 hr) (hL t))
     (Q := fun _ => 1) continuous_const (q := 1) (fun _ => ContinuousLinearMap.norm_id_le)
     (fun _ => IsSelfAdjoint.one _) one_pos (fun _ => hQ_pos) h_sl
-  have hV := isExponentialLyapunovFunction_of_differentialLyapunovEquation sl hP hP_bdd hc₁
-    (fun t _ x => hP_low t x) one_pos (fun _ _ => hQ_pos)
+  have hV := isExponentialLyapunovFunction_of_differentialLyapunovEquation sl
+    hJ_cont.continuousOn hP hP_bdd hc₁ (fun t _ x => hP_low t x) continuousOn_const one_pos
+    (fun _ _ => hQ_pos)
   -- Step 3. Along `f = A(t)x + g`, `‖g‖ ≤ L₁‖x‖²` and `‖∂V/∂x‖ ≤ 2‖P‖‖x‖`, so `V` serves for `f`
   -- near the origin.
   obtain ⟨ρ, -, hV_f⟩ := hV.of_norm_sub_le_sq (s' := s) (c := 2 * p) (L := L₁)
@@ -550,8 +552,8 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization_zero {Y : T
         norm_linearization_remainder_le hr h_eq hf hL₁ t (mem_ball_zero_iff.mpr (by simpa using hx))
   exact hV_f.locallyExponentiallyStable
 
-/-- **Lyapunov's indirect method at any equilibrium**: Khalil's Theorem 4.13 for an equilibrium
-`x_eq`, by translating it to the origin, `y = x - x_eq`. -/
+/-- **Lyapunov's indirect method at any equilibrium**: the indirect method for time-varying
+systems at an equilibrium `x_eq`, by translating it to the origin, `y = x - x_eq`. -/
 @[blueprint "thm:continuousSystem-locallyExponentiallyStable-of-linearization"
   (title := "Lyapunov's indirect method at any equilibrium")
   (statement := /-- Let $x_{\mathrm{eq}}$ be an equilibrium of $\dot x = f(t, x)$, with $f$
@@ -610,7 +612,7 @@ theorem ContinuousSystem.locallyExponentiallyStable_of_linearization {Y : Type*}
       change s.F t (0 + (x - x_eq) + x_eq) () = s.F t x ()
       rw [zero_add, sub_add_cancel]
 
-/-- **Exponential stability is decided by the linearization** (Khalil's Theorem 4.15): under the
+/-- **Exponential stability is decided by the linearization** (Khalil): under the
 hypotheses of `ContinuousSystem.locallyExponentiallyStable_linearization`, `x_eq` is locally
 exponentially stable for `ẋ = f(t, x)` if and only if it is so for the linearization. -/
 @[blueprint "thm:continuousSystem-locallyExponentiallyStable-iff-linearization"
@@ -620,7 +622,8 @@ exponentially stable for `ẋ = f(t, x)` if and only if it is so for the lineari
     locally exponentially stable for $\dot x = f(t, x)$ if and only if it is for the
     linearization.
 
-    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), Theorem 4.15. -/)
+    Reference: Khalil, \emph{Nonlinear Systems} (3rd ed.), the linearization theorem for
+    exponential stability. -/)
   (proof := /-- \Cref{thm:continuousSystem-locallyExponentiallyStable-linearization} and
     \cref{thm:continuousSystem-locallyExponentiallyStable-of-linearization}. -/)]
 theorem ContinuousSystem.locallyExponentiallyStable_iff_linearization {Y : Type*}

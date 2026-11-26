@@ -17,8 +17,8 @@ equation is `y = C(t) x + D(t) u`.  Two objects carry the coefficient data:
 Each is the data of a constructor rather than a separate notion of system:
 `ContinuousLTV.toContinuousSystem` builds the general system, and `ContinuousLTI.toLTV` builds the
 time-varying one with constant coefficients.  The semantics — `vectorField`, `outputMap`,
-`IsTrajectoryOn`, `IsCaratheodoryTrajectoryOn` — are *defined through* `toContinuousSystem`, so
-every result about general systems applies to linear ones unchanged.  The two routes from an LTI
+`IsTrajectoryOn` — are *defined through* `toContinuousSystem`, so every result about general
+systems applies to linear ones unchanged.  The two routes from an LTI
 system to the general object agree definitionally with `ContinuousSystem.timeInvariant`
 (`ContinuousLTI.toContinuousSystem_eq_timeInvariant`).
 
@@ -168,17 +168,23 @@ end Semantics
 
 section Trajectory
 
+variable [CompleteSpace E]
+
 /-- `x` is a trajectory of `s` under the input `u` on the set `I`: a trajectory
-(`ContinuousSystem.IsTrajectoryOn`) of the system `s` describes,
-`ẋ(t) = A(t) x(t) + B(t) u(t)` for every `t ∈ I`. -/
+(`ContinuousSystem.IsTrajectoryOn`, the Carathéodory notion) of the system `s` describes,
+`x(b) - x(a) = ∫ τ in a..b, A(τ) x(τ) + B(τ) u(τ)` on every segment `[a, b] ⊆ I`.  With
+continuous coefficients and input these are exactly the classical solutions
+(`isTrajectoryOn_iff_isIntegralCurveOn`). -/
 @[blueprint "def:continuousLTV-isTrajectoryOn"
   (title := "Trajectory of an LTV system")
   (statement := /-- A map $x$ is a \emph{trajectory} of $s$ under the input $u$ on a set
     $I \subseteq \mathbb{R}$ when it is a trajectory (\cref{def:continuousSystem-isTrajectoryOn})
     of \cref{def:continuousLTV-toContinuousSystem}:
     \[
-      \dot x(t) = A(t)\,x(t) + B(t)\,u(t), \qquad \forall\, t \in I.
-    \] -/)]
+      x(b) - x(a) = \int_a^b \bigl(A(\tau)\,x(\tau) + B(\tau)\,u(\tau)\bigr)\,d\tau,
+      \qquad \text{for every segment } [a, b] \subseteq I,
+    \]
+    the integrand being integrable on $[a, b]$. -/)]
 abbrev IsTrajectoryOn (s : ContinuousLTV E U Y) (u : ℝ → U) (x : ℝ → E) (I : Set ℝ) : Prop :=
   s.toContinuousSystem.IsTrajectoryOn u x I
 
@@ -190,27 +196,75 @@ abbrev IsTrajectoryOn (s : ContinuousLTV E U Y) (u : ℝ → U) (x : ℝ → E) 
 abbrev IsTrajectory (s : ContinuousLTV E U Y) (u : ℝ → U) (x : ℝ → E) : Prop :=
   s.toContinuousSystem.IsTrajectory u x
 
-/-- An LTV trajectory is an integral curve of the LTV vector field, by definition. -/
-lemma isTrajectoryOn_iff {s : ContinuousLTV E U Y} {u : ℝ → U} {x : ℝ → E} {I : Set ℝ} :
-    s.IsTrajectoryOn u x I ↔ IsIntegralCurveOn x (s.vectorField u) I :=
-  Iff.rfl
+/-- **With continuous coefficients, LTV trajectories are the classical solutions**: if `A` and
+the input term `t ↦ B(t) u(t)` are continuous on an interval `I`, then `x` is a trajectory on `I`
+exactly when `ẋ(t) = A(t) x(t) + B(t) u(t)` (within `I`) at every `t ∈ I`.  Both kinds of solution
+are continuous on `I`, so the field along them is continuous there and the general equivalence
+applies. -/
+@[blueprint "thm:continuousLTV-isTrajectoryOn-iff-isIntegralCurveOn"
+  (title := "Trajectories of an LTV system with continuous coefficients are classical")
+  (statement := /-- Let $I \subseteq \mathbb{R}$ be an interval and let $A$ and
+    $t \mapsto B(t)\,u(t)$ be continuous on $I$.  Then $x$ is a trajectory of $s$ under $u$ on $I$
+    (\cref{def:continuousLTV-isTrajectoryOn}) if and only if it is differentiable within $I$ with
+    $\dot x(t) = A(t)\,x(t) + B(t)\,u(t)$ for every $t \in I$. -/)
+  (proof := /-- Either kind of solution is continuous on $I$
+    (\cref{lem:continuousSystem-isTrajectoryOn-continuousOn}), so
+    $\tau \mapsto A(\tau)\,x(\tau) + B(\tau)\,u(\tau)$ is continuous on $I$; apply
+    \cref{thm:continuousSystem-isTrajectoryOn-iff-isIntegralCurveOn}. -/)]
+theorem isTrajectoryOn_iff_isIntegralCurveOn {s : ContinuousLTV E U Y} {u : ℝ → U} {x : ℝ → E}
+    {I : Set ℝ} (hA : ContinuousOn s.A I) (hBu : ContinuousOn (fun t => s.B t (u t)) I)
+    (hI : I.OrdConnected) :
+    s.IsTrajectoryOn u x I ↔ IsIntegralCurveOn x (s.vectorField u) I := by
+  have hg : ContinuousOn x I → ContinuousOn (fun τ => s.vectorField u τ (x τ)) I :=
+    fun hx => (hA.clm_apply hx).add hBu
+  exact ⟨fun h => (ContinuousSystem.isTrajectoryOn_iff_isIntegralCurveOn hI
+      (hg (h.continuousOn hI))).1 h,
+    fun h => (ContinuousSystem.isTrajectoryOn_iff_isIntegralCurveOn hI (hg h.continuousOn)).2 h⟩
 
-/-- An LTV trajectory for all time is an integral curve of the LTV vector field, by
-definition. -/
-lemma isTrajectory_iff {s : ContinuousLTV E U Y} {u : ℝ → U} {x : ℝ → E} :
-    s.IsTrajectory u x ↔ IsIntegralCurve x (s.vectorField u) :=
-  Iff.rfl
+/-- `isTrajectoryOn_iff_isIntegralCurveOn` for all time: if `A` and `t ↦ B(t) u(t)` are
+continuous, `x` is a trajectory exactly when `ẋ(t) = A(t) x(t) + B(t) u(t)` at every `t`. -/
+@[blueprint "thm:continuousLTV-isTrajectory-iff-isIntegralCurve"
+  (title := "Trajectories for all time of an LTV system with continuous coefficients are classical")
+  (statement := /-- Let $A$ and $t \mapsto B(t)\,u(t)$ be continuous.  Then $x$ is a trajectory
+    of $s$ under $u$ for all time (\cref{def:continuousLTV-isTrajectory}) if and only if it is
+    differentiable with $\dot x(t) = A(t)\,x(t) + B(t)\,u(t)$ for every $t \in \mathbb{R}$. -/)
+  (proof := /-- \cref{thm:continuousLTV-isTrajectoryOn-iff-isIntegralCurveOn} on
+    $I = \mathbb{R}$. -/)]
+theorem isTrajectory_iff_isIntegralCurve {s : ContinuousLTV E U Y} {u : ℝ → U} {x : ℝ → E}
+    (hA : Continuous s.A) (hBu : Continuous fun t => s.B t (u t)) :
+    s.IsTrajectory u x ↔ IsIntegralCurve x (s.vectorField u) := by
+  rw [← isIntegralCurveOn_univ]
+  exact isTrajectoryOn_iff_isIntegralCurveOn hA.continuousOn hBu.continuousOn
+    Set.ordConnected_univ
 
-/-- `x` is a Carathéodory trajectory of `s` under the input `u` on the set `I`: the integral
-form, which admits discontinuous inputs. -/
-@[blueprint "def:continuousLTV-isCaratheodoryTrajectoryOn"
-  (title := "Carathéodory trajectory of an LTV system")
-  (statement := /-- A Carathéodory trajectory
-    (\cref{def:continuousSystem-isCaratheodoryTrajectoryOn}) of
-    \cref{def:continuousLTV-toContinuousSystem}. -/)]
-abbrev IsCaratheodoryTrajectoryOn (s : ContinuousLTV E U Y) (u : ℝ → U) (x : ℝ → E)
-    (I : Set ℝ) : Prop :=
-  s.toContinuousSystem.IsCaratheodoryTrajectoryOn u x I
+/-- **Unforced LTV trajectories are the classical solutions** when `A` is continuous on the
+interval `I`: `x` is a trajectory under zero input on `I` exactly when `ẋ(t) = A(t) x(t)` (within
+`I`) at every `t ∈ I`.  No hypothesis on `B` appears: the input term is switched off. -/
+@[blueprint "thm:continuousLTV-isTrajectoryOn-zero-iff-isIntegralCurveOn"
+  (title := "Trajectories of an unforced LTV system with continuous A are classical")
+  (statement := /-- Let $I \subseteq \mathbb{R}$ be an interval and let $A$ be continuous on $I$.
+    Then $x$ is a trajectory of $s$ under zero input on $I$
+    (\cref{def:continuousLTV-isTrajectoryOn}) if and only if it is differentiable within $I$ with
+    $\dot x(t) = A(t)\,x(t)$ for every $t \in I$. -/)
+  (proof := /-- \cref{thm:continuousLTV-isTrajectoryOn-iff-isIntegralCurveOn} with $u = 0$: the
+    input term $t \mapsto B(t)\,0 = 0$ is continuous. -/)]
+theorem isTrajectoryOn_zero_iff_isIntegralCurveOn {s : ContinuousLTV E U Y} {x : ℝ → E}
+    {I : Set ℝ} (hA : ContinuousOn s.A I) (hI : I.OrdConnected) :
+    s.IsTrajectoryOn 0 x I ↔ IsIntegralCurveOn x (s.vectorField 0) I :=
+  isTrajectoryOn_iff_isIntegralCurveOn hA (by simpa using continuousOn_const) hI
+
+/-- `isTrajectoryOn_zero_iff_isIntegralCurveOn` for all time: if `A` is continuous, `x` is a
+trajectory under zero input exactly when `ẋ(t) = A(t) x(t)` at every `t`. -/
+@[blueprint "thm:continuousLTV-isTrajectory-zero-iff-isIntegralCurve"
+  (title := "Trajectories for all time of an unforced LTV system with continuous A are classical")
+  (statement := /-- Let $A$ be continuous.  Then $x$ is a trajectory of $s$ under zero input for
+    all time (\cref{def:continuousLTV-isTrajectory}) if and only if it is differentiable with
+    $\dot x(t) = A(t)\,x(t)$ for every $t \in \mathbb{R}$. -/)
+  (proof := /-- \cref{thm:continuousLTV-isTrajectory-iff-isIntegralCurve} with $u = 0$: the
+    input term $t \mapsto B(t)\,0 = 0$ is continuous. -/)]
+theorem isTrajectory_zero_iff_isIntegralCurve {s : ContinuousLTV E U Y} {x : ℝ → E}
+    (hA : Continuous s.A) : s.IsTrajectory 0 x ↔ IsIntegralCurve x (s.vectorField 0) :=
+  isTrajectory_iff_isIntegralCurve hA (by simpa using continuous_const)
 
 end Trajectory
 
